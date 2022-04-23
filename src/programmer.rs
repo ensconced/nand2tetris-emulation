@@ -1,6 +1,8 @@
 pub mod programmer {
+    use std::fs;
+
     pub fn get_rom(file_path: &str) -> [i16; 32768] {
-        let program = std::fs::read_to_string(file_path).unwrap();
+        let program = fs::read_to_string(file_path).unwrap();
         let mut clean_lines: Vec<String> = program
             .lines()
             .map(|line| {

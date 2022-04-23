@@ -1,9 +1,10 @@
 use minifb::{Window, WindowOptions};
 use raqote::{DrawOptions, DrawTarget, PathBuilder, SolidSource, Source};
-const WIDTH: usize = 400;
-const HEIGHT: usize = 400;
-
 use std::fs;
+use std::time::SystemTime;
+
+const WIDTH: usize = 1000;
+const HEIGHT: usize = 1000;
 
 fn bit(instruction: i16, idx: u32) -> u16 {
     (instruction as u16 & (2u16).pow(idx)) >> idx
@@ -86,22 +87,34 @@ struct Computer {
 }
 
 fn display_led_output(window: &mut Window, dt: &mut DrawTarget, val: i16) {
-    for ch in format!("{:016b}", val).chars() {
-        print!("{}", ch);
-    }
-    print!("\r");
     let size = window.get_size();
     dt.clear(SolidSource::from_unpremultiplied_argb(
         0xff, 0xff, 0xff, 0xff,
     ));
-    let mut pb = PathBuilder::new();
-    pb.rect(100.0, 100.0, 100., 130.);
-    let path = pb.finish();
-    dt.fill(
-        &path,
-        &Source::Solid(SolidSource::from_unpremultiplied_argb(0xff, 0, 0xff, 0)),
-        &DrawOptions::new(),
-    );
+    let led_width = size.0 as f32 / 16 as f32;
+    let padding = 5.0;
+
+    for i in 0..16 {
+        let mut pb = PathBuilder::new();
+        pb.rect(
+            i as f32 * led_width + padding,
+            padding,
+            led_width - padding * 2.,
+            led_width - padding * 2.,
+        );
+        let path = pb.finish();
+        let val = bit(val, 15 - i);
+        dt.fill(
+            &path,
+            &Source::Solid(SolidSource::from_unpremultiplied_argb(
+                0xff,
+                0,
+                if val == 1 { 0xff } else { 0 },
+                0,
+            )),
+            &DrawOptions::new(),
+        );
+    }
 
     window
         .update_with_buffer(dt.get_data(), size.0, size.1)
@@ -152,6 +165,8 @@ fn main() {
         computer.rom[idx] = instruction;
     }
 
+    let mut last_draw_time = SystemTime::now();
+
     loop {
         let instruction = computer.rom[computer.cpu.pc as usize];
         computer
@@ -160,8 +175,13 @@ fn main() {
         if computer.cpu.memory_load {
             computer.ram[computer.cpu.reg_a as usize] = computer.cpu.out_m;
         }
-        // TODO - only update display every 16ms or so...
-        display_led_output(&mut window, &mut dt, computer.ram[16384]);
+        let time = SystemTime::now();
+        if let Ok(t) = time.duration_since(last_draw_time) {
+            if t.as_millis() >= 16 {
+                display_led_output(&mut window, &mut dt, computer.ram[16384]);
+                last_draw_time = time;
+            }
+        }
     }
 }
 

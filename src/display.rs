@@ -1,5 +1,5 @@
 pub mod display {
-    use crate::computer::computer::bit;
+    use crate::computer::bit;
     use minifb::{Window, WindowOptions};
     use raqote::{DrawOptions, DrawTarget, PathBuilder, SolidSource, Source};
 

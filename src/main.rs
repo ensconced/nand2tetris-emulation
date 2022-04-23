@@ -1,3 +1,8 @@
+use minifb::{Window, WindowOptions};
+use raqote::{DrawOptions, DrawTarget, PathBuilder, SolidSource, Source};
+const WIDTH: usize = 400;
+const HEIGHT: usize = 400;
+
 use std::fs;
 
 fn bit(instruction: i16, idx: u32) -> u16 {
@@ -80,7 +85,42 @@ struct Computer {
     cpu: Cpu,
 }
 
+fn display_led_output(window: &mut Window, dt: &mut DrawTarget, val: i16) {
+    for ch in format!("{:016b}", val).chars() {
+        print!("{}", ch);
+    }
+    print!("\r");
+    let size = window.get_size();
+    dt.clear(SolidSource::from_unpremultiplied_argb(
+        0xff, 0xff, 0xff, 0xff,
+    ));
+    let mut pb = PathBuilder::new();
+    pb.rect(100.0, 100.0, 100., 130.);
+    let path = pb.finish();
+    dt.fill(
+        &path,
+        &Source::Solid(SolidSource::from_unpremultiplied_argb(0xff, 0, 0xff, 0)),
+        &DrawOptions::new(),
+    );
+
+    window
+        .update_with_buffer(dt.get_data(), size.0, size.1)
+        .unwrap();
+}
+
 fn main() {
+    let mut window = Window::new(
+        "LED output",
+        WIDTH,
+        HEIGHT,
+        WindowOptions {
+            ..WindowOptions::default()
+        },
+    )
+    .unwrap();
+    let size = window.get_size();
+    let mut dt = DrawTarget::new(size.0 as i32, size.1 as i32);
+
     let mut computer = Computer {
         rom: [0; 32768],
         ram: [0; 32678],
@@ -114,14 +154,14 @@ fn main() {
 
     loop {
         let instruction = computer.rom[computer.cpu.pc as usize];
-        // println!("instruction: {:016b}", instruction);
         computer
             .cpu
             .execute(instruction, computer.ram[computer.cpu.reg_a as usize]);
         if computer.cpu.memory_load {
             computer.ram[computer.cpu.reg_a as usize] = computer.cpu.out_m;
         }
-        println!("{}", computer.ram[16384]); // show led output
+        // TODO - only update display every 16ms or so...
+        display_led_output(&mut window, &mut dt, computer.ram[16384]);
     }
 }
 

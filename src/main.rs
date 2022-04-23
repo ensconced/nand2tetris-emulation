@@ -1,63 +1,14 @@
 mod computer;
+mod display;
 mod programmer;
 
-use computer::computer::{bit, Computer};
-use minifb::{Window, WindowOptions};
+use computer::computer::Computer;
+use display::display::Display;
 use programmer::programmer::get_rom;
-use raqote::{DrawOptions, DrawTarget, PathBuilder, SolidSource, Source};
 use std::time::SystemTime;
 
-const WIDTH: usize = 1000;
-const HEIGHT: usize = 1000;
-
-fn display_led_output(window: &mut Window, dt: &mut DrawTarget, val: i16) {
-    let size = window.get_size();
-    dt.clear(SolidSource::from_unpremultiplied_argb(
-        0xff, 0xff, 0xff, 0xff,
-    ));
-    let led_width = size.0 as f32 / 16 as f32;
-    let padding = 5.0;
-
-    for i in 0..16 {
-        let mut pb = PathBuilder::new();
-        pb.rect(
-            i as f32 * led_width + padding,
-            padding,
-            led_width - padding * 2.,
-            led_width - padding * 2.,
-        );
-        let path = pb.finish();
-        let val = bit(val, 15 - i);
-        dt.fill(
-            &path,
-            &Source::Solid(SolidSource::from_unpremultiplied_argb(
-                0xff,
-                0,
-                if val == 1 { 0xff } else { 0 },
-                0,
-            )),
-            &DrawOptions::new(),
-        );
-    }
-
-    window
-        .update_with_buffer(dt.get_data(), size.0, size.1)
-        .unwrap();
-}
-
 fn main() {
-    let mut window = Window::new(
-        "LED output",
-        WIDTH,
-        HEIGHT,
-        WindowOptions {
-            ..WindowOptions::default()
-        },
-    )
-    .unwrap();
-    let size = window.get_size();
-    let mut dt = DrawTarget::new(size.0 as i32, size.1 as i32);
-
+    let mut display = Display::new();
     let mut computer = Computer::new(get_rom("./programs/blinky"));
 
     let mut last_draw_time = SystemTime::now();
@@ -66,7 +17,7 @@ fn main() {
         let time = SystemTime::now();
         if let Ok(t) = time.duration_since(last_draw_time) {
             if t.as_millis() >= 16 {
-                display_led_output(&mut window, &mut dt, computer.led_output());
+                display.refresh(computer.led_output());
                 last_draw_time = time;
             }
         }

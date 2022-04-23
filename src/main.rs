@@ -1,9 +1,11 @@
-fn bit(instruction: i16, bit: i16) -> i16 {
-    (instruction & (2i16).pow(bit as u32)) >> bit
+use std::fs;
+
+fn bit(instruction: i16, idx: u32) -> u16 {
+    (instruction as u16 & (2u16).pow(idx)) >> idx
 }
 
 fn comp_bits(instruction: i16) -> i16 {
-    (instruction & 0b1_111111_000_000) >> 6
+    (instruction >> 6) & 0b1_111111
 }
 
 struct Cpu {
@@ -11,6 +13,7 @@ struct Cpu {
     reg_d: i16,
     out_m: i16,
     pc: i16,
+    memory_load: bool,
 }
 
 impl Cpu {
@@ -18,6 +21,7 @@ impl Cpu {
         if bit(instruction, 15) == 0 {
             // A Instruction
             self.reg_a = instruction;
+            self.pc = self.pc + 1;
         } else {
             // C Instruction
             let alu_out = match comp_bits(instruction) {
@@ -54,8 +58,11 @@ impl Cpu {
                 || (bit(instruction, 2) == 1 && alu_out < 0)
             {
                 self.pc = self.reg_a;
+            } else {
+                self.pc = self.pc + 1;
             }
-            if bit(instruction, 3) == 1 {
+            self.memory_load = bit(instruction, 3) == 1;
+            if self.memory_load {
                 self.out_m = alu_out;
             }
             if bit(instruction, 4) == 1 {
@@ -82,15 +89,39 @@ fn main() {
             reg_d: 0,
             pc: 0,
             out_m: 0,
+            memory_load: false,
         },
     };
-    // TODO - flash rom
+
+    let program = fs::read_to_string("./programs/blinky").unwrap();
+    let mut clean_lines: Vec<String> = program
+        .lines()
+        .map(|line| {
+            let clean_line: String = line
+                .chars()
+                .take_while(|ch| ch.is_ascii_digit() || ch.is_whitespace())
+                .collect();
+            clean_line
+        })
+        .filter(|line| line.len() > 0)
+        .collect();
+
+    for (idx, line) in clean_lines.iter_mut().enumerate() {
+        line.retain(|ch| !ch.is_whitespace());
+        let instruction = u16::from_str_radix(line, 2).unwrap() as i16;
+        computer.rom[idx] = instruction;
+    }
+
     loop {
         let instruction = computer.rom[computer.cpu.pc as usize];
+        // println!("instruction: {:016b}", instruction);
         computer
             .cpu
             .execute(instruction, computer.ram[computer.cpu.reg_a as usize]);
-        println!("{}", computer.ram[65536]); // show led output
+        if computer.cpu.memory_load {
+            computer.ram[computer.cpu.reg_a as usize] = computer.cpu.out_m;
+        }
+        println!("{}", computer.ram[16384]); // show led output
     }
 }
 

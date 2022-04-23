@@ -50,7 +50,7 @@ WAIT ONE SECOND
 // if M[2] - 32767 < 0, jump to 12
 0000 0000 0000 0010 // load 2 into A | 24
 1111 110000 010 000 // load M[2] into D | 25
-0000 0001 0000 0000 // load 1024 into A | 26
+0000 0000 0000 0001 // load 1 into A | 26
 1110 010011 010 000 // load D - A into D | 27
 0000 0000 0000 1100 // load 12 into A | 28
 1110 001100 000 100 // if D < 0, jump | 29

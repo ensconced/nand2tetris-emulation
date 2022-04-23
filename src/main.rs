@@ -2,7 +2,7 @@ mod computer;
 mod display;
 mod programmer;
 
-use computer::computer::Computer;
+use computer::Computer;
 use display::display::Display;
 use programmer::programmer::get_rom;
 use std::time::SystemTime;

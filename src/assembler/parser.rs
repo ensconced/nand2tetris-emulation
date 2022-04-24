@@ -290,7 +290,6 @@ fn take_c_command(chars: &mut Peekable<impl Iterator<Item = char>>) -> Command {
                 first_ch,
                 take_remainder_of_destination(chars)
             ));
-            dbg!(dest);
         }
 
         let expr = take_expression(chars);

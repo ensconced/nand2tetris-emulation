@@ -3,15 +3,12 @@ mod computer;
 mod display;
 mod programmer;
 
-use assembler::assemble;
 use computer::Computer;
 use display::Display;
 use programmer::get_rom;
-use std::fs;
 use std::time::SystemTime;
 
 fn main() {
-    assemble(fs::read_to_string("./programs/sum.asm").unwrap());
     let mut display = Display::new();
     let mut computer = Computer::new(get_rom("./programs/blinky"));
 

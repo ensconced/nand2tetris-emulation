@@ -204,6 +204,10 @@ fn test_take_l_command() {
 }
 
 fn take_c_command(chars: &mut Peekable<impl Iterator<Item = char>>) -> Command {
+    // [dest], {whitespace}, expr, {whitespace}, [jump]
+    // if let Some(first_ch) = chars.peek() {
+    //     if
+    // }
     todo!()
 }
 

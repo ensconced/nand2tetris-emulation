@@ -26,7 +26,7 @@ l_command = (, identifier, )
 
 */
 
-use std::iter::SkipWhile;
+use std::iter::Peekable;
 
 enum AValue<'a> {
     Numeric(i16),
@@ -45,13 +45,27 @@ enum Command<'a> {
     },
 }
 
-fn skip_whitespace<'a>(
-    chars: impl Iterator<Item = char> + 'a,
-) -> Box<dyn Iterator<Item = char> + 'a> {
-    Box::new(chars.skip_while(|ch| ch.is_whitespace()))
+fn skip_whitespace(chars: &mut Peekable<impl Iterator<Item = char>>) {
+    while let Some(next_ch) = chars.peek() {
+        if next_ch.is_whitespace() {
+            chars.next();
+        } else {
+            break;
+        }
+    }
 }
 
-fn parse(line: &str) -> Result<Option<Command>, ()> {
-    let iter = skip_whitespace(line.chars());
-    Ok(None)
+#[test]
+fn test_skip_whitespace() {
+    let str = "      hello";
+    let mut chars = str.chars().peekable();
+    skip_whitespace(&mut chars);
+    let result: String = chars.collect();
+    assert_eq!(result, "hello")
 }
+
+// fn parse(line: &str) -> Result<Option<Command>, ()> {
+//     let mut chars = line.chars();
+//     skip_whitespace(&mut chars);
+//     Ok(None)
+// }

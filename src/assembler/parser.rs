@@ -21,7 +21,7 @@ unary_expr = unary_op, simple_val
 unary_op = - OR !
 binary_expr = simple_val OR binary_op OR simple_val
 binary_op = + OR & OR - OR |
-jump = JGT OR JEQ OR JGE OR JLT OR JNE OR JLE OR JMP
+jump = ; , {whitespace} , JGT OR JEQ OR JGE OR JLT OR JNE OR JLE OR JMP
 l_command = (, identifier, )
 
 */
@@ -203,12 +203,121 @@ fn test_take_l_command() {
     );
 }
 
-fn take_c_command(chars: &mut Peekable<impl Iterator<Item = char>>) -> Command {
-    // [dest], {whitespace}, expr, {whitespace}, [jump]
-    // if let Some(first_ch) = chars.peek() {
-    //     if
-    // }
+fn take_remainder_of_destination(chars: &mut Peekable<impl Iterator<Item = char>>) -> String {
+    let mut result = String::new();
+    while let Some(ch) = chars.peek() {
+        if "AMD".contains(*ch) {
+            result.push(chars.next().unwrap());
+        } else {
+            break;
+        }
+    }
+    result
+}
+
+fn take_unary_expression(chars: &mut Peekable<impl Iterator<Item = char>>) -> String {
     todo!()
+}
+
+fn take_expression(chars: &mut Peekable<impl Iterator<Item = char>>) -> String {
+    if let Some(first_ch) = chars.next() {
+        if "01ADM".contains(first_ch) {
+            let mut result = String::new();
+            result.push(first_ch);
+            // Could be either a simple value or a binary expression.
+            if let Some(second_ch) = chars.peek() {
+                if "-+|&".contains(*second_ch) {
+                    // Must be binary expression. TODO - clean this up by using
+                    // a separate take_remainder_of_binary_expression fn? Or at
+                    // least take_operator etc...?
+                    result.push(chars.next().unwrap());
+                    result.push(chars.next().unwrap());
+                }
+            }
+            result
+        } else if "-!".contains(first_ch) {
+            take_unary_expression(chars)
+        } else {
+            panic!("failed to parse expression");
+        }
+    } else {
+        panic!("failed to parse expression");
+    }
+}
+
+fn take_optional_jump(chars: &mut Peekable<impl Iterator<Item = char>>) -> Option<String> {
+    let valid_jumps: Vec<String> = vec!["JGT", "JEQ", "JGE", "JLT", "JNE", "JLE", "JMP"]
+        .into_iter()
+        .map(String::from)
+        .collect();
+    if let Some(first_ch) = chars.peek() {
+        if *first_ch == ';' {
+            chars.next(); // ;
+            skip_optional_whitespace(chars);
+            let jump: String = chars.take(3).collect();
+            if valid_jumps.contains(&jump) {
+                Some(jump)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
+fn take_c_command(chars: &mut Peekable<impl Iterator<Item = char>>) -> Command {
+    if let Some(first_ch) = chars.next() {
+        let mut has_destination = false;
+        let mut dest = None;
+        if "AMD".contains(first_ch) {
+            // This is a bit tricky - this could either be the destination or
+            // the expression. Crucially, we don't allow whitespace separating
+            // the destination characters, or between the destination characters
+            // and the equals sign.
+            if let Some(second_ch) = chars.peek() {
+                if "AMD=".contains(*second_ch) {
+                    has_destination = true;
+                }
+            }
+        }
+
+        if has_destination {
+            dest = Some(format!(
+                "{}{}",
+                first_ch,
+                take_remainder_of_destination(chars)
+            ));
+            dbg!(dest);
+        }
+
+        let expr = take_expression(chars);
+
+        skip_optional_whitespace(chars);
+
+        let jump = take_optional_jump(chars);
+
+        Command::CCommand { expr, dest, jump }
+    } else {
+        panic!("failed to parse c_command");
+    }
+}
+
+#[test]
+fn test_take_c_command() {
+    let str = "M=M+1;JGT";
+    let mut chars = str.chars().peekable();
+    let c_command = take_c_command(&mut chars);
+    assert_eq!(
+        c_command,
+        Command::CCommand {
+            expr: "M+1".to_string(),
+            dest: Some("M".to_string()),
+            jump: Some("JGT".to_string())
+        }
+    );
 }
 
 fn take_command(chars: &mut Peekable<impl Iterator<Item = char>>) -> Command {
@@ -230,8 +339,8 @@ fn parse(line: &str) -> Result<Option<Command>, ()> {
     }
     let command = take_command(&mut chars);
 
-    // we could get away with not parsing the rest of the line, but it's good to
-    // do, because there could be any kind of syntax errors there...
+    // We could get away with not parsing the rest of the line, but it's good to
+    // do, because there could be any kind of syntax errors lurking there...
     skip_optional_whitespace(&mut chars);
     skip_optional_comment(&mut chars);
 

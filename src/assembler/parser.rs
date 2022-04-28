@@ -1,31 +1,3 @@
-/*
-
-line =  {whitespace}, [command], {whitespace}, [comment]
-whitespace = space OR tab
-command = a_command OR c_command OR l_command
-a_command = @, a_value
-a_value = number OR identifier
-number = non-zero-digit, {digit}
-non-zero-digit = 1 OR 2 OR 3 OR 4 OR 5 OR 6 OR 7 OR 8 OR 9
-digit = 0 OR non-zero-digit
-identifier = non-digit-identifier-char, {identifier-char}
-non-digit-identifier-char = alphabetic OR : OR $ OR _ OR .
-identifier-char = digit OR non-digit-identifier-char
-c_command = [dest], {whitespace}, expr, {whitespace}, [jump]
-dest = location, {whitespace}, =, {whitespace}
-location = single_location, [single_location], [single_location]
-single_location = A OR D OR M
-simple_val = digit OR single_location
-expr = simple_val OR unary_expr OR binary_expr
-unary_expr = unary_op, simple_val
-unary_op = - OR !
-binary_expr = simple_val OR binary_op OR simple_val
-binary_op = + OR & OR - OR |
-jump = ; , {whitespace} , JGT OR JEQ OR JGE OR JLT OR JNE OR JLE OR JMP
-l_command = (, identifier, )
-
-*/
-
 use std::iter::Peekable;
 
 #[derive(PartialEq, Debug)]
@@ -61,21 +33,6 @@ fn skip_optional_comment(chars: &mut Peekable<impl Iterator<Item = char>>) {
     }
 }
 
-#[test]
-fn test_skip_optional_comment() {
-    let str = "// hey there";
-    let mut chars = str.chars().peekable();
-    skip_optional_comment(&mut chars);
-    let result: String = chars.collect();
-    assert_eq!(result, "");
-
-    let str = "not a comment";
-    let mut chars = str.chars().peekable();
-    skip_optional_comment(&mut chars);
-    let result: String = chars.collect();
-    assert_eq!(result, "not a comment");
-}
-
 fn skip_optional_whitespace(chars: &mut Peekable<impl Iterator<Item = char>>) {
     while let Some(next_ch) = chars.peek() {
         if next_ch.is_whitespace() {
@@ -84,25 +41,6 @@ fn skip_optional_whitespace(chars: &mut Peekable<impl Iterator<Item = char>>) {
             break;
         }
     }
-}
-
-#[test]
-fn test_skip_optional_whitespace() {
-    let str = "      hello";
-    let mut chars = str.chars().peekable();
-    skip_optional_whitespace(&mut chars);
-    let result: String = chars.collect();
-    assert_eq!(result, "hello");
-}
-
-#[test]
-fn test_skip_optional_whitespace_and_comment() {
-    let str = "      // this is a comment";
-    let mut chars = str.chars().peekable();
-    skip_optional_whitespace(&mut chars);
-    skip_optional_comment(&mut chars);
-    let result: String = chars.collect();
-    assert_eq!(result, "");
 }
 
 fn is_valid_identifier_char(ch: char) -> bool {
@@ -166,19 +104,8 @@ fn take_a_command(chars: &mut Peekable<impl Iterator<Item = char>>) -> Command {
     Command::ACommand(a_value)
 }
 
-#[test]
-fn test_take_a_command() {
-    let str = "@1234";
-    let mut chars = str.chars().peekable();
-    let a_command = take_a_command(&mut chars);
-    assert_eq!(
-        a_command,
-        Command::ACommand(AValue::Numeric("1234".to_string()))
-    );
-}
-
 fn take_l_command(chars: &mut Peekable<impl Iterator<Item = char>>) -> Command {
-    chars.next(); // (
+    chars.next();
     let identifier = take_identifier(chars);
     if let Some(ch) = chars.next() {
         if ch == ')' {
@@ -189,19 +116,6 @@ fn take_l_command(chars: &mut Peekable<impl Iterator<Item = char>>) -> Command {
     } else {
         panic!("failed to parse l command");
     }
-}
-
-#[test]
-fn test_take_l_command() {
-    let str = "(TEST)";
-    let mut chars = str.chars().peekable();
-    let a_command = take_l_command(&mut chars);
-    assert_eq!(
-        a_command,
-        Command::LCommand {
-            identifier: "TEST".to_string()
-        }
-    );
 }
 
 fn take_remainder_of_destination(chars: &mut Peekable<impl Iterator<Item = char>>) -> String {
@@ -246,7 +160,6 @@ fn take_expression(
         result
     } else if "-!".contains(first_ch) {
         format!("{}{}", first_ch, take_identifier(chars))
-        // take_identifier(chars)
     } else {
         panic!(
             "failed to parse expression - invalid first character {:?}",
@@ -321,81 +234,6 @@ fn take_c_command(chars: &mut Peekable<impl Iterator<Item = char>>) -> Command {
     }
 }
 
-#[test]
-fn test_take_c_command() {
-    let str = "M=M+1;JGT";
-    let mut chars = str.chars().peekable();
-    let c_command = take_c_command(&mut chars);
-    assert_eq!(
-        c_command,
-        Command::CCommand {
-            expr: "M+1".to_string(),
-            dest: Some("M".to_string()),
-            jump: Some("JGT".to_string())
-        }
-    );
-
-    let str = "AMD=A|D;JLT";
-    let mut chars = str.chars().peekable();
-    let c_command = take_c_command(&mut chars);
-    assert_eq!(
-        c_command,
-        Command::CCommand {
-            expr: "A|D".to_string(),
-            dest: Some("AMD".to_string()),
-            jump: Some("JLT".to_string())
-        }
-    );
-
-    let str = "M+1";
-    let mut chars = str.chars().peekable();
-    let c_command = take_c_command(&mut chars);
-    assert_eq!(
-        c_command,
-        Command::CCommand {
-            expr: "M+1".to_string(),
-            dest: None,
-            jump: None
-        }
-    );
-
-    let str = "D&M;JGT";
-    let mut chars = str.chars().peekable();
-    let c_command = take_c_command(&mut chars);
-    assert_eq!(
-        c_command,
-        Command::CCommand {
-            expr: "D&M".to_string(),
-            dest: None,
-            jump: Some("JGT".to_string()),
-        }
-    );
-
-    let str = "!M;JGT";
-    let mut chars = str.chars().peekable();
-    let c_command = take_c_command(&mut chars);
-    assert_eq!(
-        c_command,
-        Command::CCommand {
-            expr: "!M".to_string(),
-            dest: None,
-            jump: Some("JGT".to_string()),
-        }
-    );
-
-    let str = "MD=-A";
-    let mut chars = str.chars().peekable();
-    let c_command = take_c_command(&mut chars);
-    assert_eq!(
-        c_command,
-        Command::CCommand {
-            expr: "-A".to_string(),
-            dest: Some("MD".to_string()),
-            jump: None,
-        }
-    );
-}
-
 fn take_command(chars: &mut Peekable<impl Iterator<Item = char>>) -> Command {
     match chars.peek() {
         Some('@') => take_a_command(chars),
@@ -410,7 +248,7 @@ fn parse(line: &str) -> Result<Option<Command>, ()> {
     skip_optional_whitespace(&mut chars);
     skip_optional_comment(&mut chars);
     if chars.peek().is_none() {
-        // there is no command on this line
+        // There is no command on this line.
         return Ok(None);
     }
     let command = take_command(&mut chars);
@@ -419,6 +257,194 @@ fn parse(line: &str) -> Result<Option<Command>, ()> {
     // do, because there could be any kind of syntax errors lurking there...
     skip_optional_whitespace(&mut chars);
     skip_optional_comment(&mut chars);
+    if let Some(remaining_char) = chars.next() {
+        panic!(
+            "unexpected character \"{}\" instead of end of line",
+            remaining_char
+        );
+    }
 
     Ok(Some(command))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_take_c_command() {
+        let str = "M=M+1;JGT";
+        let mut chars = str.chars().peekable();
+        let c_command = take_c_command(&mut chars);
+        assert_eq!(
+            c_command,
+            Command::CCommand {
+                expr: "M+1".to_string(),
+                dest: Some("M".to_string()),
+                jump: Some("JGT".to_string())
+            }
+        );
+
+        let str = "AMD=A|D;JLT";
+        let mut chars = str.chars().peekable();
+        let c_command = take_c_command(&mut chars);
+        assert_eq!(
+            c_command,
+            Command::CCommand {
+                expr: "A|D".to_string(),
+                dest: Some("AMD".to_string()),
+                jump: Some("JLT".to_string())
+            }
+        );
+
+        let str = "M+1";
+        let mut chars = str.chars().peekable();
+        let c_command = take_c_command(&mut chars);
+        assert_eq!(
+            c_command,
+            Command::CCommand {
+                expr: "M+1".to_string(),
+                dest: None,
+                jump: None
+            }
+        );
+
+        let str = "D&M;JGT";
+        let mut chars = str.chars().peekable();
+        let c_command = take_c_command(&mut chars);
+        assert_eq!(
+            c_command,
+            Command::CCommand {
+                expr: "D&M".to_string(),
+                dest: None,
+                jump: Some("JGT".to_string()),
+            }
+        );
+
+        let str = "!M;JGT";
+        let mut chars = str.chars().peekable();
+        let c_command = take_c_command(&mut chars);
+        assert_eq!(
+            c_command,
+            Command::CCommand {
+                expr: "!M".to_string(),
+                dest: None,
+                jump: Some("JGT".to_string()),
+            }
+        );
+
+        let str = "MD=-A";
+        let mut chars = str.chars().peekable();
+        let c_command = take_c_command(&mut chars);
+        assert_eq!(
+            c_command,
+            Command::CCommand {
+                expr: "-A".to_string(),
+                dest: Some("MD".to_string()),
+                jump: None,
+            }
+        );
+    }
+
+    #[test]
+    fn test_skip_optional_comment() {
+        let str = "// hey there";
+        let mut chars = str.chars().peekable();
+        skip_optional_comment(&mut chars);
+        let result: String = chars.collect();
+        assert_eq!(result, "");
+
+        let str = "not a comment";
+        let mut chars = str.chars().peekable();
+        skip_optional_comment(&mut chars);
+        let result: String = chars.collect();
+        assert_eq!(result, "not a comment");
+    }
+
+    #[test]
+    fn test_skip_optional_whitespace() {
+        let str = "      hello";
+        let mut chars = str.chars().peekable();
+        skip_optional_whitespace(&mut chars);
+        let result: String = chars.collect();
+        assert_eq!(result, "hello");
+    }
+
+    #[test]
+    fn test_skip_optional_whitespace_and_comment() {
+        let str = "      // this is a comment";
+        let mut chars = str.chars().peekable();
+        skip_optional_whitespace(&mut chars);
+        skip_optional_comment(&mut chars);
+        let result: String = chars.collect();
+        assert_eq!(result, "");
+    }
+
+    #[test]
+    fn test_take_a_command() {
+        let str = "@1234";
+        let mut chars = str.chars().peekable();
+        let a_command = take_a_command(&mut chars);
+        assert_eq!(
+            a_command,
+            Command::ACommand(AValue::Numeric("1234".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_take_l_command() {
+        let str = "(TEST)";
+        let mut chars = str.chars().peekable();
+        let a_command = take_l_command(&mut chars);
+        assert_eq!(
+            a_command,
+            Command::LCommand {
+                identifier: "TEST".to_string()
+            }
+        );
+    }
+
+    #[test]
+    fn test_parse() {
+        let line = "";
+        let result = parse(line);
+        assert_eq!(result, Ok(None));
+
+        let line = "     ";
+        let result = parse(line);
+        assert_eq!(result, Ok(None));
+
+        let line = "  // hello this is a comment   ";
+        let result = parse(line);
+        assert_eq!(result, Ok(None));
+
+        let line = "// hello this is a comment";
+        let result = parse(line);
+        assert_eq!(result, Ok(None));
+
+        let line = "@1234";
+        let result = parse(line);
+        assert_eq!(
+            result,
+            Ok(Some(Command::ACommand(AValue::Numeric("1234".to_string()))))
+        );
+
+        let line = "   @1234  // here is a comment  ";
+        let result = parse(line);
+        assert_eq!(
+            result,
+            Ok(Some(Command::ACommand(AValue::Numeric("1234".to_string()))))
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "unexpected character \"b\" instead of end of line")]
+    fn test_parse_panic() {
+        let line = "   @1234 blah blah blah";
+        let result = parse(line);
+        assert_eq!(
+            result,
+            Ok(Some(Command::ACommand(AValue::Numeric("1234".to_string()))))
+        );
+    }
 }

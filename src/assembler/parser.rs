@@ -206,8 +206,12 @@ fn test_take_l_command() {
 fn take_remainder_of_destination(chars: &mut Peekable<impl Iterator<Item = char>>) -> String {
     let mut result = String::new();
     while let Some(ch) = chars.peek() {
-        if "AMD".contains(*ch) {
-            result.push(chars.next().unwrap());
+        if *ch == '=' {
+            chars.next();
+            break;
+        } else if "AMD".contains(*ch) {
+            let keep = chars.next().unwrap();
+            result.push(keep);
         } else {
             break;
         }
@@ -238,7 +242,7 @@ fn take_expression(chars: &mut Peekable<impl Iterator<Item = char>>) -> String {
         } else if "-!".contains(first_ch) {
             take_unary_expression(chars)
         } else {
-            panic!("failed to parse expression");
+            panic!("failed to parse expression - invalid first character");
         }
     } else {
         panic!("failed to parse expression");
@@ -291,6 +295,9 @@ fn take_c_command(chars: &mut Peekable<impl Iterator<Item = char>>) -> Command {
                 take_remainder_of_destination(chars)
             ));
         }
+
+        let peek = chars.peek();
+        println!("now peek in caller: {:?}", peek);
 
         let expr = take_expression(chars);
 

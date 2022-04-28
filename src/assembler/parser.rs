@@ -116,13 +116,14 @@ fn is_valid_first_place_identifier_char(ch: char) -> bool {
 fn take_identifier(chars: &mut Peekable<impl Iterator<Item = char>>) -> String {
     let mut result = String::new();
     if let Some(first_char) = chars.next() {
+        dbg!(first_char);
         if is_valid_first_place_identifier_char(first_char) {
             result.push(first_char);
         } else {
             panic!("failed to parse identifier");
         }
     } else {
-        panic!("failed to parse identifier");
+        panic!("failed to parse identifier - unexpected end of input");
     }
 
     while let Some(ch) = chars.peek() {
@@ -219,33 +220,38 @@ fn take_remainder_of_destination(chars: &mut Peekable<impl Iterator<Item = char>
     result
 }
 
-fn take_unary_expression(chars: &mut Peekable<impl Iterator<Item = char>>) -> String {
-    todo!()
-}
+fn take_expression(
+    chars: &mut Peekable<impl Iterator<Item = char>>,
+    first_ch_maybe: Option<char>,
+) -> String {
+    let first_ch = first_ch_maybe.unwrap_or_else(|| {
+        chars
+            .next()
+            .expect("failed to parse expression - unexpected end of input")
+    });
 
-fn take_expression(chars: &mut Peekable<impl Iterator<Item = char>>) -> String {
-    if let Some(first_ch) = chars.next() {
-        if "01ADM".contains(first_ch) {
-            let mut result = String::new();
-            result.push(first_ch);
-            // Could be either a simple value or a binary expression.
-            if let Some(second_ch) = chars.peek() {
-                if "-+|&".contains(*second_ch) {
-                    // Must be binary expression. TODO - clean this up by using
-                    // a separate take_remainder_of_binary_expression fn? Or at
-                    // least take_operator etc...?
-                    result.push(chars.next().unwrap());
-                    result.push(chars.next().unwrap());
-                }
+    if "01ADM".contains(first_ch) {
+        let mut result = String::new();
+        result.push(first_ch);
+        // Could be either a simple value or a binary expression.
+        if let Some(second_ch) = chars.peek() {
+            if "-+|&".contains(*second_ch) {
+                // Must be binary expression. TODO - clean this up by using
+                // a separate take_remainder_of_binary_expression fn? Or at
+                // least take_operator etc...?
+                result.push(chars.next().unwrap());
+                result.push(chars.next().unwrap());
             }
-            result
-        } else if "-!".contains(first_ch) {
-            take_unary_expression(chars)
-        } else {
-            panic!("failed to parse expression - invalid first character");
         }
+        result
+    } else if "-!".contains(first_ch) {
+        format!("{}{}", first_ch, take_identifier(chars))
+        // take_identifier(chars)
     } else {
-        panic!("failed to parse expression");
+        panic!(
+            "failed to parse expression - invalid first character {:?}",
+            first_ch
+        );
     }
 }
 
@@ -296,7 +302,14 @@ fn take_c_command(chars: &mut Peekable<impl Iterator<Item = char>>) -> Command {
             ));
         }
 
-        let expr = take_expression(chars);
+        let expr = take_expression(
+            chars,
+            if has_destination {
+                None
+            } else {
+                Some(first_ch)
+            },
+        );
 
         skip_optional_whitespace(chars);
 
@@ -319,6 +332,66 @@ fn test_take_c_command() {
             expr: "M+1".to_string(),
             dest: Some("M".to_string()),
             jump: Some("JGT".to_string())
+        }
+    );
+
+    let str = "AMD=A|D;JLT";
+    let mut chars = str.chars().peekable();
+    let c_command = take_c_command(&mut chars);
+    assert_eq!(
+        c_command,
+        Command::CCommand {
+            expr: "A|D".to_string(),
+            dest: Some("AMD".to_string()),
+            jump: Some("JLT".to_string())
+        }
+    );
+
+    let str = "M+1";
+    let mut chars = str.chars().peekable();
+    let c_command = take_c_command(&mut chars);
+    assert_eq!(
+        c_command,
+        Command::CCommand {
+            expr: "M+1".to_string(),
+            dest: None,
+            jump: None
+        }
+    );
+
+    let str = "D&M;JGT";
+    let mut chars = str.chars().peekable();
+    let c_command = take_c_command(&mut chars);
+    assert_eq!(
+        c_command,
+        Command::CCommand {
+            expr: "D&M".to_string(),
+            dest: None,
+            jump: Some("JGT".to_string()),
+        }
+    );
+
+    let str = "!M;JGT";
+    let mut chars = str.chars().peekable();
+    let c_command = take_c_command(&mut chars);
+    assert_eq!(
+        c_command,
+        Command::CCommand {
+            expr: "!M".to_string(),
+            dest: None,
+            jump: Some("JGT".to_string()),
+        }
+    );
+
+    let str = "MD=-A";
+    let mut chars = str.chars().peekable();
+    let c_command = take_c_command(&mut chars);
+    assert_eq!(
+        c_command,
+        Command::CCommand {
+            expr: "-A".to_string(),
+            dest: Some("MD".to_string()),
+            jump: None,
         }
     );
 }

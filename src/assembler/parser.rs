@@ -296,9 +296,6 @@ fn take_c_command(chars: &mut Peekable<impl Iterator<Item = char>>) -> Command {
             ));
         }
 
-        let peek = chars.peek();
-        println!("now peek in caller: {:?}", peek);
-
         let expr = take_expression(chars);
 
         skip_optional_whitespace(chars);

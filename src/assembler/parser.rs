@@ -243,7 +243,7 @@ fn take_command(chars: &mut Peekable<impl Iterator<Item = char>>) -> Command {
     }
 }
 
-fn parse(line: &str) -> Result<Option<Command>, ()> {
+fn parse_line(line: &str) -> Result<Option<Command>, ()> {
     let mut chars = line.chars().peekable();
     skip_optional_whitespace(&mut chars);
     skip_optional_comment(&mut chars);
@@ -435,30 +435,30 @@ mod tests {
     #[test]
     fn test_parse() {
         let line = "";
-        let result = parse(line);
+        let result = parse_line(line);
         assert_eq!(result, Ok(None));
 
         let line = "     ";
-        let result = parse(line);
+        let result = parse_line(line);
         assert_eq!(result, Ok(None));
 
         let line = "  // hello this is a comment   ";
-        let result = parse(line);
+        let result = parse_line(line);
         assert_eq!(result, Ok(None));
 
         let line = "// hello this is a comment";
-        let result = parse(line);
+        let result = parse_line(line);
         assert_eq!(result, Ok(None));
 
         let line = "@1234";
-        let result = parse(line);
+        let result = parse_line(line);
         assert_eq!(
             result,
             Ok(Some(Command::ACommand(AValue::Numeric("1234".to_string()))))
         );
 
         let line = "   @1234  // here is a comment  ";
-        let result = parse(line);
+        let result = parse_line(line);
         assert_eq!(
             result,
             Ok(Some(Command::ACommand(AValue::Numeric("1234".to_string()))))
@@ -469,7 +469,7 @@ mod tests {
     #[should_panic(expected = "unexpected character \"b\" instead of end of line")]
     fn test_parse_panic() {
         let line = "   @1234 blah blah blah";
-        let result = parse(line);
+        let result = parse_line(line);
         assert_eq!(
             result,
             Ok(Some(Command::ACommand(AValue::Numeric("1234".to_string()))))

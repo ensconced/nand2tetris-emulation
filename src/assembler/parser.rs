@@ -402,6 +402,26 @@ mod tests {
                 identifier: "TEST".to_string()
             }
         );
+
+        let str = "(_TEST)";
+        let mut chars = str.chars().peekable();
+        let a_command = take_l_command(&mut chars);
+        assert_eq!(
+            a_command,
+            Command::LCommand {
+                identifier: "_TEST".to_string()
+            }
+        );
+
+        let str = "(T:E$S.T)";
+        let mut chars = str.chars().peekable();
+        let a_command = take_l_command(&mut chars);
+        assert_eq!(
+            a_command,
+            Command::LCommand {
+                identifier: "T:E$S.T".to_string()
+            }
+        );
     }
 
     #[test]

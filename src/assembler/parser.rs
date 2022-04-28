@@ -389,6 +389,14 @@ mod tests {
             a_command,
             Command::ACommand(AValue::Numeric("1234".to_string()))
         );
+
+        let str = "@FOOBAR";
+        let mut chars = str.chars().peekable();
+        let a_command = take_a_command(&mut chars);
+        assert_eq!(
+            a_command,
+            Command::ACommand(AValue::Symbolic("FOOBAR".to_string()))
+        );
     }
 
     #[test]

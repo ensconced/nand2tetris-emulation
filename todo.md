@@ -1,0 +1,1 @@
+- add initial lexer stage to assembler to greatly simplify parsing

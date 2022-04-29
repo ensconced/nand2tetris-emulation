@@ -1,13 +1,13 @@
 use std::iter::Peekable;
 
 #[derive(PartialEq, Debug)]
-enum AValue {
+pub enum AValue {
     Numeric(String),
     Symbolic(String),
 }
 
 #[derive(PartialEq, Debug)]
-enum Command {
+pub enum Command {
     ACommand(AValue),
     CCommand {
         expr: String,
@@ -243,13 +243,13 @@ fn take_command(chars: &mut Peekable<impl Iterator<Item = char>>) -> Command {
     }
 }
 
-fn parse_line(line: &str) -> Result<Option<Command>, ()> {
+fn parse_line(line: &str) -> Option<Command> {
     let mut chars = line.chars().peekable();
     skip_optional_whitespace(&mut chars);
     skip_optional_comment(&mut chars);
     if chars.peek().is_none() {
         // There is no command on this line.
-        return Ok(None);
+        return None;
     }
     let command = take_command(&mut chars);
 
@@ -264,7 +264,13 @@ fn parse_line(line: &str) -> Result<Option<Command>, ()> {
         );
     }
 
-    Ok(Some(command))
+    Some(command)
+}
+
+pub fn parse_lines<'a>(
+    lines: impl Iterator<Item = &'a str> + 'a,
+) -> impl Iterator<Item = Command> + 'a {
+    lines.filter_map(|line| parse_line(line)).into_iter()
 }
 
 #[cfg(test)]
@@ -436,32 +442,32 @@ mod tests {
     fn test_parse() {
         let line = "";
         let result = parse_line(line);
-        assert_eq!(result, Ok(None));
+        assert_eq!(result, None);
 
         let line = "     ";
         let result = parse_line(line);
-        assert_eq!(result, Ok(None));
+        assert_eq!(result, None);
 
         let line = "  // hello this is a comment   ";
         let result = parse_line(line);
-        assert_eq!(result, Ok(None));
+        assert_eq!(result, None);
 
         let line = "// hello this is a comment";
         let result = parse_line(line);
-        assert_eq!(result, Ok(None));
+        assert_eq!(result, None);
 
         let line = "@1234";
         let result = parse_line(line);
         assert_eq!(
             result,
-            Ok(Some(Command::ACommand(AValue::Numeric("1234".to_string()))))
+            Some(Command::ACommand(AValue::Numeric("1234".to_string())))
         );
 
         let line = "   @1234  // here is a comment  ";
         let result = parse_line(line);
         assert_eq!(
             result,
-            Ok(Some(Command::ACommand(AValue::Numeric("1234".to_string()))))
+            Some(Command::ACommand(AValue::Numeric("1234".to_string())))
         );
     }
 
@@ -472,7 +478,33 @@ mod tests {
         let result = parse_line(line);
         assert_eq!(
             result,
-            Ok(Some(Command::ACommand(AValue::Numeric("1234".to_string()))))
+            Some(Command::ACommand(AValue::Numeric("1234".to_string())))
+        );
+    }
+
+    #[test]
+    fn test_parse_lines() {
+        let source = "
+            @1234
+            AMD=M+1;JGT
+            (FOOBAR)
+            @FOOBAR
+            ";
+        let result: Vec<Command> = parse_lines(source.lines()).collect();
+        assert_eq!(
+            result,
+            vec![
+                Command::ACommand(AValue::Numeric("1234".to_string())),
+                Command::CCommand {
+                    expr: "M+1".to_string(),
+                    dest: Some("AMD".to_string()),
+                    jump: Some("JGT".to_string())
+                },
+                Command::LCommand {
+                    identifier: "FOOBAR".to_string()
+                },
+                Command::ACommand(AValue::Symbolic("FOOBAR".to_string())),
+            ]
         );
     }
 }

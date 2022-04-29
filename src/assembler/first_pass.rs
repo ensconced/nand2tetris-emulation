@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use super::parser::Command;
 
-struct FirstPassResult {
-    resolved_symbols: HashMap<String, usize>,
-    commands_without_labels: Vec<Command>,
+pub struct FirstPassResult {
+    pub resolved_symbols: HashMap<String, usize>,
+    pub commands_without_labels: Vec<Command>,
 }
 
 fn first_pass(mut commands: impl Iterator<Item = Command>) -> FirstPassResult {

@@ -7,7 +7,7 @@ pub struct FirstPassResult {
     pub commands_without_labels: Vec<Command>,
 }
 
-fn first_pass(mut commands: impl Iterator<Item = Command>) -> FirstPassResult {
+pub fn first_pass(mut commands: impl Iterator<Item = Command>) -> FirstPassResult {
     let mut resolved_symbols = HashMap::new();
     let mut commands_without_labels = Vec::new();
     let mut index = 0;

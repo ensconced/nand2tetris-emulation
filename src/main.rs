@@ -10,7 +10,6 @@ use assembler::assemble_file;
 use clap::{Parser, Subcommand};
 use run::run;
 
-/// Simple program to greet a person
 #[derive(Parser, Debug)]
 #[clap()]
 struct Args {

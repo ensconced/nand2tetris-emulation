@@ -2,6 +2,35 @@ use super::first_pass::FirstPassResult;
 use super::parser::{AValue, Command};
 use std::collections::HashMap;
 
+fn predefined_symbol_code(sym: &String) -> Option<usize> {
+    match sym.as_str() {
+        "SP" => Some(0),
+        "LCL" => Some(1),
+        "ARG" => Some(2),
+        "THIS" => Some(3),
+        "THAT" => Some(4),
+        "R0" => Some(0),
+        "R1" => Some(1),
+        "R2" => Some(2),
+        "R3" => Some(3),
+        "R4" => Some(4),
+        "R5" => Some(5),
+        "R6" => Some(6),
+        "R7" => Some(7),
+        "R8" => Some(8),
+        "R9" => Some(9),
+        "R10" => Some(10),
+        "R11" => Some(11),
+        "R12" => Some(12),
+        "R13" => Some(13),
+        "R14" => Some(14),
+        "R15" => Some(15),
+        "SCREEN" => Some(16384),
+        "KBD" => Some(24576),
+        _ => None,
+    }
+}
+
 fn expression_code(expr: &String) -> &'static str {
     match expr.as_str() {
         "0" => "0101010",
@@ -110,10 +139,10 @@ fn numeric_a_command_code(num_string: &String) -> String {
 }
 
 fn symbolic_a_command_code(sym: &String, resolved_symbols: &HashMap<String, usize>) -> String {
-    let num = resolved_symbols
-        .get(sym)
+    let index = predefined_symbol_code(sym)
+        .or_else(|| resolved_symbols.get(sym).map(|&num| num))
         .expect("symbol not present in resolved_symbols");
-    if let Ok(num_16) = i16::try_from(*num) {
+    if let Ok(num_16) = i16::try_from(index) {
         format!("{:016b}", num_16)
     } else {
         panic!("failed to resolve symbolic a-command to valid index");
@@ -181,6 +210,10 @@ mod tests {
         let resolved_symbols = HashMap::from([("foo".to_string(), 32)]);
         let code = symbolic_a_command_code(&"foo".to_string(), &resolved_symbols);
         assert_eq!(code, "0000000000100000");
+
+        let resolved_symbols = HashMap::from([("foo".to_string(), 32)]);
+        let code = symbolic_a_command_code(&"SCREEN".to_string(), &resolved_symbols);
+        assert_eq!(code, "010000000000000");
     }
 
     #[test]

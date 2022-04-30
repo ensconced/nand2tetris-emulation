@@ -2,25 +2,48 @@ mod assembler;
 mod computer;
 mod display;
 mod programmer;
+mod run;
 
-use computer::Computer;
-use display::Display;
-use programmer::get_rom;
-use std::time::SystemTime;
+use assembler::assemble_file;
+use clap::{Parser, Subcommand};
+use run::run;
+
+/// Simple program to greet a person
+#[derive(Parser, Debug)]
+#[clap()]
+struct Args {
+    #[clap(subcommand)]
+    command: Commands,
+}
+
+#[derive(Subcommand, Debug)]
+enum Commands {
+    /// Compile assembly to machine code
+    Assemble {
+        source_path_maybe: Option<String>,
+        dest_path_maybe: Option<String>,
+    },
+    /// Run machine code on emulator
+    Run { file_path_maybe: Option<String> },
+}
 
 fn main() {
-    let mut display = Display::new();
-    let mut computer = Computer::new(get_rom("./programs/blinky"));
+    let args = Args::parse();
 
-    let mut last_draw_time = SystemTime::now();
-    loop {
-        computer.tick();
-        let time = SystemTime::now();
-        if let Ok(t) = time.duration_since(last_draw_time) {
-            if t.as_millis() >= 16 {
-                display.refresh(computer.led_output());
-                last_draw_time = time;
-            }
+    match &args.command {
+        Commands::Assemble {
+            source_path_maybe,
+            dest_path_maybe,
+        } => {
+            let source_path = source_path_maybe.as_ref().expect("source path is required");
+            let dest_path = dest_path_maybe.as_ref().expect("dest path is required");
+            println!("assembling {} to {}", source_path, dest_path);
+            assemble_file(source_path, dest_path, rom_depth);
+        }
+        Commands::Run { file_path_maybe } => {
+            let file_path = file_path_maybe.as_ref().expect("path is required");
+            println!("running {}", file_path);
+            run(file_path);
         }
     }
 }

@@ -19,14 +19,14 @@ pub enum Command {
     },
 }
 
-fn skip_optional_comment(chars: &mut Peekable<impl Iterator<Item = char>>) {
+fn skip_optional_comment(chars: &mut Peekable<impl Iterator<Item = char>>, line_number: usize) {
     let mut slash_count = 0;
     while let Some(next_ch) = chars.peek() {
         if *next_ch == '/' || slash_count >= 2 {
             slash_count = slash_count + 1;
             chars.next();
         } else if slash_count > 0 {
-            panic!("failed to parse comment");
+            panic!("failed to parse comment on line {}", line_number);
         } else {
             break;
         }
@@ -51,14 +51,13 @@ fn is_valid_first_place_identifier_char(ch: char) -> bool {
     is_valid_identifier_char(ch) && !ch.is_ascii_digit()
 }
 
-fn take_identifier(chars: &mut Peekable<impl Iterator<Item = char>>) -> String {
+fn take_identifier(chars: &mut Peekable<impl Iterator<Item = char>>, line_number: usize) -> String {
     let mut result = String::new();
     if let Some(first_char) = chars.next() {
-        dbg!(first_char);
         if is_valid_first_place_identifier_char(first_char) {
             result.push(first_char);
         } else {
-            panic!("failed to parse identifier");
+            panic!("failed to parse identifier: line {}", line_number);
         }
     } else {
         panic!("failed to parse identifier - unexpected end of input");
@@ -86,27 +85,27 @@ fn take_number(chars: &mut Peekable<impl Iterator<Item = char>>) -> String {
     result
 }
 
-fn take_a_value(chars: &mut Peekable<impl Iterator<Item = char>>) -> AValue {
+fn take_a_value(chars: &mut Peekable<impl Iterator<Item = char>>, line_number: usize) -> AValue {
     if let Some(next_ch) = chars.peek() {
         if next_ch.is_ascii_digit() {
             AValue::Numeric(take_number(chars))
         } else {
-            AValue::Symbolic(take_identifier(chars))
+            AValue::Symbolic(take_identifier(chars, line_number))
         }
     } else {
         panic!("failed to parse a_value");
     }
 }
 
-fn take_a_command(chars: &mut Peekable<impl Iterator<Item = char>>) -> Command {
+fn take_a_command(chars: &mut Peekable<impl Iterator<Item = char>>, line_number: usize) -> Command {
     chars.next(); // @
-    let a_value = take_a_value(chars);
+    let a_value = take_a_value(chars, line_number);
     Command::ACommand(a_value)
 }
 
-fn take_l_command(chars: &mut Peekable<impl Iterator<Item = char>>) -> Command {
+fn take_l_command(chars: &mut Peekable<impl Iterator<Item = char>>, line_number: usize) -> Command {
     chars.next();
-    let identifier = take_identifier(chars);
+    let identifier = take_identifier(chars, line_number);
     if let Some(ch) = chars.next() {
         if ch == ')' {
             Command::LCommand { identifier }
@@ -137,6 +136,7 @@ fn take_remainder_of_destination(chars: &mut Peekable<impl Iterator<Item = char>
 fn take_expression(
     chars: &mut Peekable<impl Iterator<Item = char>>,
     first_ch_maybe: Option<char>,
+    line_number: usize,
 ) -> String {
     let first_ch = first_ch_maybe.unwrap_or_else(|| {
         chars
@@ -159,11 +159,11 @@ fn take_expression(
         }
         result
     } else if "-!".contains(first_ch) {
-        format!("{}{}", first_ch, take_identifier(chars))
+        format!("{}{}", first_ch, take_identifier(chars, line_number))
     } else {
         panic!(
-            "failed to parse expression - invalid first character {:?}",
-            first_ch
+            "failed to parse expression - invalid first character {:?}: line {}",
+            first_ch, line_number
         );
     }
 }
@@ -175,13 +175,13 @@ fn take_optional_jump(chars: &mut Peekable<impl Iterator<Item = char>>) -> Optio
         .collect();
     if let Some(first_ch) = chars.peek() {
         if *first_ch == ';' {
-            chars.next(); // ;
+            chars.next(); // pop semicolon
             skip_optional_whitespace(chars);
             let jump: String = chars.take(3).collect();
             if valid_jumps.contains(&jump) {
                 Some(jump)
             } else {
-                None
+                panic!("bad jump");
             }
         } else {
             None
@@ -191,7 +191,7 @@ fn take_optional_jump(chars: &mut Peekable<impl Iterator<Item = char>>) -> Optio
     }
 }
 
-fn take_c_command(chars: &mut Peekable<impl Iterator<Item = char>>) -> Command {
+fn take_c_command(chars: &mut Peekable<impl Iterator<Item = char>>, line_number: usize) -> Command {
     if let Some(first_ch) = chars.next() {
         let mut has_destination = false;
         let mut dest = None;
@@ -214,7 +214,6 @@ fn take_c_command(chars: &mut Peekable<impl Iterator<Item = char>>) -> Command {
                 take_remainder_of_destination(chars)
             ));
         }
-
         let expr = take_expression(
             chars,
             if has_destination {
@@ -222,6 +221,7 @@ fn take_c_command(chars: &mut Peekable<impl Iterator<Item = char>>) -> Command {
             } else {
                 Some(first_ch)
             },
+            line_number,
         );
 
         skip_optional_whitespace(chars);
@@ -234,33 +234,32 @@ fn take_c_command(chars: &mut Peekable<impl Iterator<Item = char>>) -> Command {
     }
 }
 
-fn take_command(chars: &mut Peekable<impl Iterator<Item = char>>) -> Command {
+fn take_command(chars: &mut Peekable<impl Iterator<Item = char>>, line_number: usize) -> Command {
     match chars.peek() {
-        Some('@') => take_a_command(chars),
-        Some('(') => take_l_command(chars),
-        Some(_) => take_c_command(chars),
-        None => panic!("failed to parse command"),
+        Some('@') => take_a_command(chars, line_number),
+        Some('(') => take_l_command(chars, line_number),
+        Some(_) => take_c_command(chars, line_number),
+        None => panic!("failed to parse command: line {}", line_number),
     }
 }
 
-fn parse_line(line: &str) -> Option<Command> {
+fn parse_line(line: &str, line_number: usize) -> Option<Command> {
     let mut chars = line.chars().peekable();
     skip_optional_whitespace(&mut chars);
-    skip_optional_comment(&mut chars);
+    skip_optional_comment(&mut chars, line_number);
     if chars.peek().is_none() {
         // There is no command on this line.
         return None;
     }
-    let command = take_command(&mut chars);
-
+    let command = take_command(&mut chars, line_number);
     // We could get away with not parsing the rest of the line, but it's good to
     // do, because there could be any kind of syntax errors lurking there...
     skip_optional_whitespace(&mut chars);
-    skip_optional_comment(&mut chars);
+    skip_optional_comment(&mut chars, line_number);
     if let Some(remaining_char) = chars.next() {
         panic!(
-            "unexpected character \"{}\" instead of end of line",
-            remaining_char
+            "unexpected character \"{}\" instead of end of line:line {}",
+            remaining_char, line_number
         );
     }
 
@@ -270,7 +269,10 @@ fn parse_line(line: &str) -> Option<Command> {
 pub fn parse_lines<'a>(
     lines: impl Iterator<Item = &'a str> + 'a,
 ) -> impl Iterator<Item = Command> + 'a {
-    lines.filter_map(|line| parse_line(line)).into_iter()
+    lines
+        .enumerate()
+        .filter_map(|(line_idx, line)| parse_line(line, line_idx + 1))
+        .into_iter()
 }
 
 #[cfg(test)]
@@ -281,7 +283,7 @@ mod tests {
     fn test_take_c_command() {
         let str = "M=M+1;JGT";
         let mut chars = str.chars().peekable();
-        let c_command = take_c_command(&mut chars);
+        let c_command = take_c_command(&mut chars, 1);
         assert_eq!(
             c_command,
             Command::CCommand {
@@ -293,7 +295,7 @@ mod tests {
 
         let str = "AMD=A|D;JLT";
         let mut chars = str.chars().peekable();
-        let c_command = take_c_command(&mut chars);
+        let c_command = take_c_command(&mut chars, 1);
         assert_eq!(
             c_command,
             Command::CCommand {
@@ -305,7 +307,7 @@ mod tests {
 
         let str = "M+1";
         let mut chars = str.chars().peekable();
-        let c_command = take_c_command(&mut chars);
+        let c_command = take_c_command(&mut chars, 1);
         assert_eq!(
             c_command,
             Command::CCommand {
@@ -317,7 +319,7 @@ mod tests {
 
         let str = "D&M;JGT";
         let mut chars = str.chars().peekable();
-        let c_command = take_c_command(&mut chars);
+        let c_command = take_c_command(&mut chars, 1);
         assert_eq!(
             c_command,
             Command::CCommand {
@@ -329,7 +331,7 @@ mod tests {
 
         let str = "!M;JGT";
         let mut chars = str.chars().peekable();
-        let c_command = take_c_command(&mut chars);
+        let c_command = take_c_command(&mut chars, 1);
         assert_eq!(
             c_command,
             Command::CCommand {
@@ -341,7 +343,7 @@ mod tests {
 
         let str = "MD=-A";
         let mut chars = str.chars().peekable();
-        let c_command = take_c_command(&mut chars);
+        let c_command = take_c_command(&mut chars, 1);
         assert_eq!(
             c_command,
             Command::CCommand {
@@ -356,13 +358,13 @@ mod tests {
     fn test_skip_optional_comment() {
         let str = "// hey there";
         let mut chars = str.chars().peekable();
-        skip_optional_comment(&mut chars);
+        skip_optional_comment(&mut chars, 1);
         let result: String = chars.collect();
         assert_eq!(result, "");
 
         let str = "not a comment";
         let mut chars = str.chars().peekable();
-        skip_optional_comment(&mut chars);
+        skip_optional_comment(&mut chars, 1);
         let result: String = chars.collect();
         assert_eq!(result, "not a comment");
     }
@@ -381,7 +383,7 @@ mod tests {
         let str = "      // this is a comment";
         let mut chars = str.chars().peekable();
         skip_optional_whitespace(&mut chars);
-        skip_optional_comment(&mut chars);
+        skip_optional_comment(&mut chars, 1);
         let result: String = chars.collect();
         assert_eq!(result, "");
     }
@@ -390,7 +392,7 @@ mod tests {
     fn test_take_a_command() {
         let str = "@1234";
         let mut chars = str.chars().peekable();
-        let a_command = take_a_command(&mut chars);
+        let a_command = take_a_command(&mut chars, 1);
         assert_eq!(
             a_command,
             Command::ACommand(AValue::Numeric("1234".to_string()))
@@ -398,7 +400,7 @@ mod tests {
 
         let str = "@FOOBAR";
         let mut chars = str.chars().peekable();
-        let a_command = take_a_command(&mut chars);
+        let a_command = take_a_command(&mut chars, 1);
         assert_eq!(
             a_command,
             Command::ACommand(AValue::Symbolic("FOOBAR".to_string()))
@@ -409,7 +411,7 @@ mod tests {
     fn test_take_l_command() {
         let str = "(TEST)";
         let mut chars = str.chars().peekable();
-        let a_command = take_l_command(&mut chars);
+        let a_command = take_l_command(&mut chars, 1);
         assert_eq!(
             a_command,
             Command::LCommand {
@@ -419,7 +421,7 @@ mod tests {
 
         let str = "(_TEST)";
         let mut chars = str.chars().peekable();
-        let a_command = take_l_command(&mut chars);
+        let a_command = take_l_command(&mut chars, 1);
         assert_eq!(
             a_command,
             Command::LCommand {
@@ -429,7 +431,7 @@ mod tests {
 
         let str = "(T:E$S.T)";
         let mut chars = str.chars().peekable();
-        let a_command = take_l_command(&mut chars);
+        let a_command = take_l_command(&mut chars, 1);
         assert_eq!(
             a_command,
             Command::LCommand {
@@ -441,30 +443,30 @@ mod tests {
     #[test]
     fn test_parse() {
         let line = "";
-        let result = parse_line(line);
+        let result = parse_line(line, 1);
         assert_eq!(result, None);
 
         let line = "     ";
-        let result = parse_line(line);
+        let result = parse_line(line, 1);
         assert_eq!(result, None);
 
         let line = "  // hello this is a comment   ";
-        let result = parse_line(line);
+        let result = parse_line(line, 1);
         assert_eq!(result, None);
 
         let line = "// hello this is a comment";
-        let result = parse_line(line);
+        let result = parse_line(line, 1);
         assert_eq!(result, None);
 
         let line = "@1234";
-        let result = parse_line(line);
+        let result = parse_line(line, 1);
         assert_eq!(
             result,
             Some(Command::ACommand(AValue::Numeric("1234".to_string())))
         );
 
         let line = "   @1234  // here is a comment  ";
-        let result = parse_line(line);
+        let result = parse_line(line, 1);
         assert_eq!(
             result,
             Some(Command::ACommand(AValue::Numeric("1234".to_string())))
@@ -475,7 +477,7 @@ mod tests {
     #[should_panic(expected = "unexpected character \"b\" instead of end of line")]
     fn test_parse_panic() {
         let line = "   @1234 blah blah blah";
-        let result = parse_line(line);
+        let result = parse_line(line, 1);
         assert_eq!(
             result,
             Some(Command::ACommand(AValue::Numeric("1234".to_string())))

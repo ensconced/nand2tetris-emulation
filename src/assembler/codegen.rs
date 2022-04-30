@@ -2,7 +2,7 @@ use super::first_pass::FirstPassResult;
 use super::parser::{AValue, Command};
 use std::collections::HashMap;
 
-fn expression_code(expr: String) -> &'static str {
+fn expression_code(expr: &String) -> &'static str {
     match expr.as_str() {
         "0" => "0101010",
         "1" => "0111111",
@@ -44,7 +44,7 @@ fn expression_code(expr: String) -> &'static str {
     }
 }
 
-fn dest_code(dest_opt: Option<String>) -> &'static str {
+fn dest_code(dest_opt: Option<&String>) -> &'static str {
     match dest_opt {
         None => "000",
         Some(string) => {
@@ -71,7 +71,7 @@ fn dest_code(dest_opt: Option<String>) -> &'static str {
     }
 }
 
-fn jump_code(jump_opt: Option<String>) -> &'static str {
+fn jump_code(jump_opt: Option<&String>) -> &'static str {
     match jump_opt {
         None => "000",
         Some(string) => match string.as_str() {
@@ -87,7 +87,7 @@ fn jump_code(jump_opt: Option<String>) -> &'static str {
     }
 }
 
-fn c_command_code(expr: String, dest: Option<String>, jump: Option<String>) -> String {
+fn c_command_code(expr: &String, dest: Option<&String>, jump: Option<&String>) -> String {
     format!(
         "111{}{}{}",
         expression_code(expr),
@@ -96,30 +96,32 @@ fn c_command_code(expr: String, dest: Option<String>, jump: Option<String>) -> S
     )
 }
 
-fn numeric_a_command_code(num: String) -> String {
+fn numeric_a_command_code(num: &String) -> String {
     todo!()
 }
 
-fn symbolic_a_command_code(num: String) -> String {
+fn symbolic_a_command_code(num: &String) -> String {
     todo!()
 }
 
-fn l_command_code(identifier: String) -> String {
+fn l_command_code(identifier: &String) -> String {
     todo!()
 }
 
-fn machine_code(command: Command, resolved_symbols: &HashMap<String, usize>) -> String {
+fn machine_code(command: &Command, resolved_symbols: &HashMap<String, usize>) -> String {
     match command {
-        Command::CCommand { expr, dest, jump } => c_command_code(expr, dest, jump),
+        Command::CCommand { expr, dest, jump } => {
+            c_command_code(expr, dest.as_ref(), jump.as_ref())
+        }
         Command::ACommand(AValue::Numeric(num)) => numeric_a_command_code(num),
         Command::ACommand(AValue::Symbolic(sym)) => symbolic_a_command_code(sym),
         Command::LCommand { identifier } => l_command_code(identifier),
     }
 }
 
-fn machine_codes(first_pass_result: &FirstPassResult) -> impl Iterator<Item = String> {
+fn machine_codes<'a>(first_pass_result: &'a FirstPassResult) -> impl Iterator<Item = String> + 'a {
     first_pass_result
         .commands_without_labels
-        .into_iter()
+        .iter()
         .map(|command| machine_code(command, &first_pass_result.resolved_symbols))
 }

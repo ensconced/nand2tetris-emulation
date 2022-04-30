@@ -29,6 +29,7 @@ fn expression_code(expr: &String) -> &'static str {
         "A|D" => "0010101",
         "M" => "1110000",
         "!M" => "1110001",
+        "-M" => "1110011",
         "M+1" => "1110111",
         "1+M" => "1110111",
         "M-1" => "1110010",
@@ -96,16 +97,27 @@ fn c_command_code(expr: &String, dest: Option<&String>, jump: Option<&String>) -
     )
 }
 
-fn numeric_a_command_code(num: &String) -> String {
-    todo!()
+fn numeric_a_command_code(num_string: &String) -> String {
+    let num = i16::from_str_radix(num_string, 10).expect("failed to parse numeric a-command");
+    if num < 0 {
+        // The most significant bit (msb) is reserved for distinguishing between
+        // A-commands and C-commands. This means the msb is always 0 for
+        // A-commands and therefore you can't use negative numbers in
+        // A-commands.
+        panic!("negative numbers are not allowed in a-commands");
+    }
+    format!("{:016b}", num)
 }
 
-fn symbolic_a_command_code(num: &String) -> String {
-    todo!()
-}
-
-fn l_command_code(identifier: &String) -> String {
-    todo!()
+fn symbolic_a_command_code(sym: &String, resolved_symbols: &HashMap<String, usize>) -> String {
+    let num = resolved_symbols
+        .get(sym)
+        .expect("symbol not present in resolved_symbols");
+    if let Ok(num_16) = i16::try_from(*num) {
+        format!("{:016b}", num_16)
+    } else {
+        panic!("failed to resolve symbolic a-command to valid index");
+    }
 }
 
 fn machine_code(command: &Command, resolved_symbols: &HashMap<String, usize>) -> String {
@@ -114,14 +126,68 @@ fn machine_code(command: &Command, resolved_symbols: &HashMap<String, usize>) ->
             c_command_code(expr, dest.as_ref(), jump.as_ref())
         }
         Command::ACommand(AValue::Numeric(num)) => numeric_a_command_code(num),
-        Command::ACommand(AValue::Symbolic(sym)) => symbolic_a_command_code(sym),
-        Command::LCommand { identifier } => l_command_code(identifier),
+        Command::ACommand(AValue::Symbolic(sym)) => symbolic_a_command_code(sym, resolved_symbols),
+        _ => panic!("unexpected l_command remaining after first pass"),
     }
 }
 
-fn machine_codes<'a>(first_pass_result: &'a FirstPassResult) -> impl Iterator<Item = String> + 'a {
+pub fn machine_codes<'a>(
+    first_pass_result: &'a FirstPassResult,
+) -> impl Iterator<Item = String> + 'a {
     first_pass_result
         .commands_without_labels
         .iter()
         .map(|command| machine_code(command, &first_pass_result.resolved_symbols))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_c_command_code() {
+        assert_eq!(
+            c_command_code(
+                &"M+1".to_string(),
+                Some(&"A".to_string()),
+                Some(&"JGT".to_string()),
+            ),
+            "1111110111100001".to_string()
+        );
+    }
+    #[test]
+    fn test_numeric_a_command_code() {
+        assert_eq!(numeric_a_command_code(&"1".to_string()), "0000000000000001");
+        assert_eq!(
+            numeric_a_command_code(&"1234".to_string()),
+            "0000010011010010"
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "negative numbers are not allowed in a-commands")]
+    fn test_negative_numeric_a_command_code() {
+        assert_eq!(numeric_a_command_code(&"-1234".to_string()), "whatever");
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_too_big_numeric_a_command_code() {
+        assert_eq!(numeric_a_command_code(&"100000".to_string()), "whatever");
+    }
+
+    #[test]
+    fn test_symbolic_a_command_code() {
+        let resolved_symbols = HashMap::from([("foo".to_string(), 32)]);
+        let code = symbolic_a_command_code(&"foo".to_string(), &resolved_symbols);
+        assert_eq!(code, "0000000000100000");
+    }
+
+    #[test]
+    #[should_panic(expected = "failed to resolve symbolic a-command to valid index")]
+    fn test_too_big_symbolic_a_command_code() {
+        let resolved_symbols = HashMap::from([("foo".to_string(), 1000000)]);
+        let code = symbolic_a_command_code(&"foo".to_string(), &resolved_symbols);
+        assert_eq!(code, "whatever");
+    }
 }

@@ -4,6 +4,8 @@ mod display;
 mod programmer;
 mod run;
 
+use std::path::Path;
+
 use assembler::assemble_file;
 use clap::{Parser, Subcommand};
 use run::run;
@@ -27,6 +29,8 @@ enum Commands {
     Run { file_path_maybe: Option<String> },
 }
 
+const ROM_DEPTH: usize = 32768;
+
 fn main() {
     let args = Args::parse();
 
@@ -38,7 +42,7 @@ fn main() {
             let source_path = source_path_maybe.as_ref().expect("source path is required");
             let dest_path = dest_path_maybe.as_ref().expect("dest path is required");
             println!("assembling {} to {}", source_path, dest_path);
-            assemble_file(source_path, dest_path, rom_depth);
+            assemble_file(Path::new(source_path), Path::new(dest_path), ROM_DEPTH);
         }
         Commands::Run { file_path_maybe } => {
             let file_path = file_path_maybe.as_ref().expect("path is required");

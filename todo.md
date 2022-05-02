@@ -1,6 +1,5 @@
 ### emulator
 
-- add screen output
 - add keyboard input
 
 ### main program

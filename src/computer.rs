@@ -79,7 +79,7 @@ impl Cpu {
 }
 pub struct Computer {
     rom: [i16; 32768],
-    ram: [i16; 32768],
+    pub ram: [i16; 32768],
     cpu: Cpu,
 }
 
@@ -113,6 +113,9 @@ impl Computer {
     }
     pub fn screen_output(&self) -> &[i16] {
         &self.ram[16384..24576]
+    }
+    pub fn kbd_output(&mut self) -> &mut i16 {
+        &mut self.ram[24576]
     }
 }
 

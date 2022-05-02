@@ -1,6 +1,6 @@
 mod assembler;
 mod computer;
-mod display;
+mod io;
 mod programmer;
 mod run;
 

@@ -1,9 +1,8 @@
 use super::computer::Computer;
-use super::display::Display;
+use super::io::IO;
 use super::programmer::get_rom;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::SystemTime;
 
 pub fn run(file_path: &String) {
     let computer = Arc::new(Mutex::new(Computer::new(get_rom(file_path.as_str()))));
@@ -13,15 +12,9 @@ pub fn run(file_path: &String) {
         comp_clone.lock().unwrap().tick();
     });
 
-    let mut display = Display::new();
-    let mut last_draw_time = SystemTime::now();
+    let mut io = IO::new();
+    let mut cmp = computer.lock().unwrap();
     loop {
-        let time = SystemTime::now();
-        if let Ok(t) = time.duration_since(last_draw_time) {
-            if t.as_millis() >= 16 {
-                display.refresh(computer.lock().unwrap().screen_output());
-                last_draw_time = time;
-            }
-        }
+        io.refresh(&mut cmp.ram);
     }
 }

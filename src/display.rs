@@ -12,7 +12,7 @@ pub struct Display {
 
 impl Display {
     pub fn new() -> Self {
-        let mut window = Window::new(
+        let window = Window::new(
             "Display",
             WIDTH,
             HEIGHT,
@@ -28,9 +28,6 @@ impl Display {
         .unwrap_or_else(|e| {
             panic!("{}", e);
         });
-
-        // Limit to max ~60 fps update rate
-        window.limit_update_rate(Some(std::time::Duration::from_micros(16600)));
 
         Self {
             window,
@@ -54,29 +51,5 @@ impl Display {
         self.window
             .update_with_buffer(&self.buffer, WIDTH, HEIGHT)
             .unwrap();
-
-        // // let size = self.window.get_size();
-
-        // let mut image_data: [u32; 131072] = [0; 131072];
-
-        // let black: u32 = 0xff000000;
-        // let white: u32 = 0xffffffff;
-
-        // for image_data_idx in 0..131072 {
-        //     image_data[image_data_idx] = if (image_data_idx % 10) % 2 == 0 {
-        //         black
-        //     } else {
-        //         white
-        //     };
-        // }
-        // for row_idx in 0..HEIGHT {
-        //     for col_idx in 0..WIDTH {
-        //         let word_idx = (col_idx + row_idx * WIDTH) / WORD_SIZE;
-        //         let word = screen_mem[word_idx];
-        //         let is_black = row_idx % 16 == 0; // bit(word, col_idx as u32 % WORD_SIZE as u32) == 0;
-        //         image_data[image_data_idx] = if is_black { black } else { white };
-        //         image_data_idx = image_data_idx + 1;
-        //     }
-        // }
     }
 }

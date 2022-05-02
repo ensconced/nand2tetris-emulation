@@ -213,7 +213,7 @@ mod tests {
 
         let resolved_symbols = HashMap::from([("foo".to_string(), 32)]);
         let code = symbolic_a_command_code(&"SCREEN".to_string(), &resolved_symbols);
-        assert_eq!(code, "010000000000000");
+        assert_eq!(code, "0100000000000000");
     }
 
     #[test]

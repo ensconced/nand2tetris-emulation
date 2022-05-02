@@ -74,7 +74,7 @@ impl Cpu {
 }
 pub struct Computer {
     rom: [i16; 32768],
-    ram: [i16; 32678],
+    ram: [i16; 32768],
     cpu: Cpu,
 }
 
@@ -82,7 +82,7 @@ impl Computer {
     pub fn new(rom: [i16; 32768]) -> Self {
         Self {
             rom,
-            ram: [0; 32678],
+            ram: [0; 32768],
             cpu: Cpu {
                 reg_a: 0,
                 reg_d: 0,
@@ -100,8 +100,8 @@ impl Computer {
             self.ram[self.cpu.reg_a as usize] = self.cpu.out_m;
         }
     }
-    pub fn led_output(&self) -> i16 {
-        self.ram[16384]
+    pub fn screen_output(&self) -> &[i16] {
+        &self.ram[16384..24576]
     }
 }
 

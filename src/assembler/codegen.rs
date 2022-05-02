@@ -141,7 +141,7 @@ fn numeric_a_command_code(num_string: &String) -> String {
 fn symbolic_a_command_code(sym: &String, resolved_symbols: &HashMap<String, usize>) -> String {
     let index = predefined_symbol_code(sym)
         .or_else(|| resolved_symbols.get(sym).map(|&num| num))
-        .expect("symbol not present in resolved_symbols");
+        .expect(&format!("symbol {} not present in resolved_symbols", sym));
     if let Ok(num_16) = i16::try_from(index) {
         format!("{:016b}", num_16)
     } else {

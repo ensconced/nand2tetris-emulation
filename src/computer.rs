@@ -1,3 +1,5 @@
+const DEBUG: bool = false;
+
 pub fn bit(instruction: i16, idx: u32) -> u16 {
     (instruction as u16 & (2u16).pow(idx)) >> idx
 }
@@ -20,6 +22,7 @@ impl Cpu {
             // A Instruction
             self.reg_a = instruction;
             self.pc = self.pc + 1;
+            self.memory_load = false;
         } else {
             // C Instruction
             let alu_out = match comp_bits(instruction) {
@@ -28,8 +31,10 @@ impl Cpu {
                 0b0_111010 => -1,
                 0b0_001100 => self.reg_d,
                 0b0_110000 => self.reg_a,
-                0b0_001101 => -self.reg_d,
-                0b0_110001 => -self.reg_a,
+                0b0_001101 => !self.reg_d,
+                0b0_110001 => !self.reg_a,
+                0b0_001111 => -self.reg_d,
+                0b0_110011 => -self.reg_a,
                 0b0_011111 => self.reg_d + 1,
                 0b0_110111 => self.reg_a + 1,
                 0b0_001110 => self.reg_d - 1,
@@ -94,8 +99,14 @@ impl Computer {
     }
     pub fn tick(&mut self) {
         let instruction = self.rom[self.cpu.pc as usize];
-        self.cpu
-            .execute(instruction, self.ram[self.cpu.reg_a as usize]);
+        if DEBUG {
+            println!(
+                "pc: {}, instruction: {:016b}, reg_a: {}, reg_d: {}, R0: {}, R1: {}",
+                self.cpu.pc, instruction, self.cpu.reg_a, self.cpu.reg_d, self.ram[0], self.ram[1]
+            );
+        }
+        let in_m = self.ram[self.cpu.reg_a as usize % self.ram.len()];
+        self.cpu.execute(instruction, in_m);
         if self.cpu.memory_load {
             self.ram[self.cpu.reg_a as usize] = self.cpu.out_m;
         }

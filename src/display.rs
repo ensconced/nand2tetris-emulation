@@ -12,7 +12,7 @@ pub struct Display {
 
 impl Display {
     pub fn new() -> Self {
-        let window = Window::new(
+        let mut window = Window::new(
             "Display",
             WIDTH,
             HEIGHT,
@@ -28,6 +28,7 @@ impl Display {
         .unwrap_or_else(|e| {
             panic!("{}", e);
         });
+        window.set_background_color(0xdb, 0xdb, 0xdb);
 
         Self {
             window,

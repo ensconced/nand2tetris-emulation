@@ -137,7 +137,6 @@ impl IO {
             }
         }
 
-        // We unwrap here as we want this code to exit if it fails. Real applications may want to handle this in a different way
         self.window
             .update_with_buffer(&self.buffer, WIDTH, HEIGHT)
             .unwrap();

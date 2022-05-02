@@ -13,7 +13,7 @@ pub fn run(file_path: &String) {
         let time = SystemTime::now();
         if let Ok(t) = time.duration_since(last_draw_time) {
             if t.as_millis() >= 16 {
-                display.refresh(computer.led_output());
+                display.refresh(computer.screen_output());
                 last_draw_time = time;
             }
         }

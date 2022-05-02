@@ -1,7 +1,5 @@
 ### emulator
 
-- add keyboard input
-
 ### main program
 
 - maybe get rid of clap and parse cli args myself

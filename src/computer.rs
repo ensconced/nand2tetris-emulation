@@ -101,8 +101,8 @@ impl Computer {
         let instruction = self.rom[self.cpu.pc as usize];
         if DEBUG {
             println!(
-                "pc: {}, instruction: {:016b}, reg_a: {}, reg_d: {}, R0: {}, R1: {}",
-                self.cpu.pc, instruction, self.cpu.reg_a, self.cpu.reg_d, self.ram[0], self.ram[1]
+                "pc: {}, instruction: {:016b}, reg_a: {}, reg_d: {}, R0: {}, R1: {}, R2: {}, R3: {}, R4: {}, R5: {}, R6: {}",
+                self.cpu.pc, instruction, self.cpu.reg_a, self.cpu.reg_d, self.ram[0], self.ram[1], self.ram[2], self.ram[3], self.ram[4], self.ram[5], self.ram[6]
             );
         }
         let in_m = self.ram[self.cpu.reg_a as usize % self.ram.len()];
@@ -110,12 +110,6 @@ impl Computer {
         if self.cpu.memory_load {
             self.ram[self.cpu.reg_a as usize] = self.cpu.out_m;
         }
-    }
-    pub fn screen_output(&self) -> &[i16] {
-        &self.ram[16384..24576]
-    }
-    pub fn kbd_output(&mut self) -> &mut i16 {
-        &mut self.ram[24576]
     }
 }
 

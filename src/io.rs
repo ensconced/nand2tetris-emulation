@@ -1,5 +1,6 @@
 use crate::computer::bit;
 use minifb::{Key, Scale, ScaleMode, Window, WindowOptions};
+use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
 
 const WORD_SIZE: usize = 16;
@@ -119,13 +120,13 @@ impl IO {
         }
     }
 
-    pub fn refresh(&mut self, ram: &mut [i16]) {
+    pub fn refresh(&mut self, ram: &Arc<Mutex<[i16; 32768]>>) {
         let time = SystemTime::now();
         if let Ok(t) = time.duration_since(self.last_draw_time) {
             if t.as_millis() >= 16 {
                 for (pixel_idx, pixel) in self.buffer.iter_mut().enumerate() {
                     let word_idx = pixel_idx / WORD_SIZE;
-                    let word = ram[word_idx + 16384];
+                    let word = ram.lock().unwrap()[word_idx + 16384];
                     let bit_position_in_word = pixel_idx % 16;
                     *pixel = if bit(word, bit_position_in_word as u32) == 0 {
                         0xff000000
@@ -135,11 +136,10 @@ impl IO {
                 }
                 self.last_draw_time = time;
             }
+            ram.lock().unwrap()[24575] = kbd_output(self.window.get_keys());
+            self.window
+                .update_with_buffer(&self.buffer, WIDTH, HEIGHT)
+                .unwrap();
         }
-
-        self.window
-            .update_with_buffer(&self.buffer, WIDTH, HEIGHT)
-            .unwrap();
-        ram[24575] = kbd_output(self.window.get_keys());
     }
 }

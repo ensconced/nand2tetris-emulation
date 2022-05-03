@@ -19,7 +19,7 @@ M=0
     @R3
     M=0
     (BEGIN_INNER_KILL_TIME_LOOP)
-    @2
+    @5
     D=A
     @R3
     D=D-M

@@ -5,6 +5,41 @@ M=0
   @R1 // word_idx
   M=0
 
+  // kill some time
+  @R2
+  M=0
+  (BEGIN_KILL_TIME_LOOP)
+  @32767
+  D=A
+  @R2
+  D=D-M
+  @END_KILL_TIME_LOOP
+  D;JEQ
+
+    @R3
+    M=0
+    (BEGIN_INNER_KILL_TIME_LOOP)
+    @2
+    D=A
+    @R3
+    D=D-M
+    @END_INNER_KILL_TIME_LOOP
+    D;JEQ
+
+      @R3
+      M=M+1
+
+    @BEGIN_INNER_KILL_TIME_LOOP
+    0;JMP
+    (END_INNER_KILL_TIME_LOOP)
+
+    @R2
+    M=M+1
+  @BEGIN_KILL_TIME_LOOP
+  0;JMP
+  (END_KILL_TIME_LOOP)
+
+
   (BEGIN_CLEAR_LOOP)
    @8192
    D=A

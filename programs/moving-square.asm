@@ -1,13 +1,13 @@
-@R0
+@R0 // word_offset
 M=0
 
 (BEGIN_MAIN_LOOP)
-  @R1
+  @R1 // word_idx
   M=0
 
   (BEGIN_CLEAR_LOOP)
-  @8192
-  D=A
+   @8192
+   D=A
   @R1
   D=D-M
   @END_CLEAR_LOOP
@@ -48,10 +48,10 @@ M=0
     M=0
     M=!M
 
-    @R1
-    D=M
     @32
-    D=D+A
+    D=A
+    @R1
+    M=M+D
 
   @BEGIN_DRAW_LOOP
   0;JMP

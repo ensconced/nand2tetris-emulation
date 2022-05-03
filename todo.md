@@ -1,5 +1,3 @@
-### emulator
-
 ### main program
 
 - maybe get rid of clap and parse cli args myself
@@ -11,5 +9,4 @@
 
 ### programs
 
-- write assembly program to draw rectangle
 - write pong in assembly?

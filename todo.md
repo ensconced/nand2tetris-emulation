@@ -9,4 +9,13 @@
 
 ### programs
 
-- write pong in assembly?
+- pong in asm
+- mandelbrot in asm
+
+### better graphics
+
+- fix flickering by assigning a "don't draw" register which programs can use to flag when frame buffer is in an inconsistent state, and which the computer will read to decide whether or not to actually refresh the screen. will need to figure out how to make this work on the fpga too!
+
+### hardware
+
+- add timer in hardware?

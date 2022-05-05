@@ -1,5 +1,6 @@
 mod codegen;
 mod first_pass;
+mod lexer;
 mod parser;
 
 use codegen::machine_codes;

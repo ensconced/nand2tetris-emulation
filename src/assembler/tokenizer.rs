@@ -2,9 +2,9 @@ use regex::Regex;
 use std::iter;
 
 #[derive(Debug, PartialEq)]
-struct Token {
-    length: usize,
-    kind: TokenKind,
+pub struct Token {
+    pub length: usize,
+    pub kind: TokenKind,
 }
 
 impl Token {
@@ -14,7 +14,7 @@ impl Token {
 }
 
 #[derive(Debug, PartialEq)]
-enum TokenKind {
+pub enum TokenKind {
     Comment,
     Whitespace,
     Identifier(String),
@@ -92,6 +92,11 @@ fn tokenize(string: String, token_defs: &Vec<TokenDef>) -> Box<dyn Iterator<Item
     } else {
         Box::new(iter::empty())
     }
+}
+
+pub fn tokenize_asm_line(line: String) -> Box<dyn Iterator<Item = Token>> {
+    let token_defs = assembly_token_defs();
+    tokenize(line, &token_defs)
 }
 
 #[cfg(test)]

@@ -15,15 +15,15 @@ impl Token {
 
 #[derive(Debug, PartialEq)]
 pub enum TokenKind {
-    Comment,
-    Whitespace,
+    Destination(String),
     Identifier(String),
     Number(String),
     Operator(String),
+    Comment,
+    Whitespace,
     At,
     LParen,
     RParen,
-    Equals,
     Semicolon,
 }
 
@@ -57,8 +57,12 @@ impl TokenDef {
 fn assembly_token_defs() -> Vec<TokenDef> {
     vec![
         TokenDef::new(r"^//.*", |_| TokenKind::Comment),
+        TokenDef::new(r"^[AMD]{1,3}=", |src| {
+            TokenKind::Destination(src[0..src.len() - 1].to_string())
+        }),
         TokenDef::new(r"^\s+", |_| TokenKind::Whitespace),
-        TokenDef::new(r"^(\+|-|\|&|!)", |src| TokenKind::Operator(src)),
+        // TODO - is this causing a stack overflow?...
+        TokenDef::new(r"^(\+|-||&|!)", |src| TokenKind::Operator(src)),
         TokenDef::new(r"^[a-zA-Z:$_.][0-9a-zA-Z:$_.]*", |src| {
             TokenKind::Identifier(src)
         }),
@@ -66,7 +70,6 @@ fn assembly_token_defs() -> Vec<TokenDef> {
         TokenDef::new(r"^@", |_| TokenKind::At),
         TokenDef::new(r"^\(", |_| TokenKind::LParen),
         TokenDef::new(r"^\)", |_| TokenKind::RParen),
-        TokenDef::new(r"^=", |_| TokenKind::Equals),
         TokenDef::new(r"^;", |_| TokenKind::Semicolon),
     ]
 }
@@ -80,6 +83,7 @@ fn get_first_token(string: &str, token_defs: &Vec<TokenDef>) -> Option<Token> {
     {
         Some(token)
     } else {
+        dbg!(string);
         panic!("failed to tokenize");
     }
 }
@@ -107,11 +111,12 @@ mod tests {
     fn test_get_token() {
         let lexeme_defs = assembly_token_defs();
         let tokens: Vec<Token> = tokenize(
-            "(@FOO+_bar) ; JMP=1234 // whatever".to_string(),
+            "AMD=(@FOO+_bar) ; JMP 1234 // whatever".to_string(),
             &lexeme_defs,
         )
         .collect();
         let expected_tokens = vec![
+            Token::new(4, TokenKind::Destination("AMD".to_string())),
             Token::new(1, TokenKind::LParen),
             Token::new(1, TokenKind::At),
             Token::new(3, TokenKind::Identifier("FOO".to_string())),
@@ -122,7 +127,7 @@ mod tests {
             Token::new(1, TokenKind::Semicolon),
             Token::new(1, TokenKind::Whitespace),
             Token::new(3, TokenKind::Identifier("JMP".to_string())),
-            Token::new(1, TokenKind::Equals),
+            Token::new(1, TokenKind::Whitespace),
             Token::new(4, TokenKind::Number("1234".to_string())),
             Token::new(1, TokenKind::Whitespace),
             Token::new(11, TokenKind::Comment),

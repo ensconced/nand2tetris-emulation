@@ -41,7 +41,7 @@ fn skip_optional_whitespace(tokens: &mut Peekable<impl Iterator<Item = Token>>) 
 }
 
 fn take_a_value(tokens: &mut Peekable<impl Iterator<Item = Token>>, line_number: usize) -> AValue {
-    match tokens.peek() {
+    match tokens.next() {
         Some(Token { kind, .. }) => match kind {
             TokenKind::Number(numeric_string) => AValue::Numeric(numeric_string.to_string()),
             TokenKind::Identifier(identifier_string) => {
@@ -124,51 +124,108 @@ fn take_optional_jump(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Opt
     }
 }
 
-fn take_dest_and_expr(
+fn take_optional_destination(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Option<String> {
+    if let Some(Token {
+        kind: TokenKind::Destination(dest_string),
+        ..
+    }) = tokens.peek()
+    {
+        let string = dest_string.to_string();
+        tokens.next();
+        Some(string)
+    } else {
+        None
+    }
+}
+
+fn take_optional_unary_expression(
     tokens: &mut Peekable<impl Iterator<Item = Token>>,
     line_number: usize,
-) -> (Option<String>, String) {
-    let mut destination = None;
-    let expression = if let Some(Token {
-        kind: TokenKind::Identifier(first_ident_string),
+) -> Option<String> {
+    if let Some(Token {
+        kind: TokenKind::Operator(_),
         ..
-    }) = tokens.next()
+    }) = tokens.peek()
     {
-        let expr = if let Some(Token {
-            kind: TokenKind::Equals,
+        if let Some(Token {
+            kind: TokenKind::Operator(mut op_string),
             ..
-        }) = tokens.peek()
+        }) = tokens.next()
         {
-            destination = Some(first_ident_string);
-            tokens.next(); // =
-
-            if let Some(Token {
-                kind: TokenKind::Identifier(expr_ident_string),
-                ..
-            }) = tokens.next()
-            {
-                expr_ident_string
-            } else {
-                panic!("failed to find expression")
-            }
+            let operand = take_single_expression_term(tokens, line_number);
+            op_string.extend(operand.chars());
+            Some(op_string)
         } else {
-            first_ident_string
-        };
-        expr
+            None
+        }
     } else {
-        panic!(
-            "failed to parse c-command - expected first token to be identifier. line: {}",
+        None
+    }
+}
+
+fn take_single_expression_term(
+    tokens: &mut Peekable<impl Iterator<Item = Token>>,
+    line_number: usize,
+) -> String {
+    match tokens.next() {
+        Some(Token { kind, .. }) => match kind {
+            TokenKind::Number(num_string) => num_string,
+            TokenKind::Identifier(ident_string) => ident_string,
+            _ => panic!(
+                "expected number or identifier as single expression term. line: {}",
+                line_number
+            ),
+        },
+        _ => panic!("unexpected end of input. line: {}", line_number),
+    }
+}
+
+fn take_binary_or_single_term_expression(
+    tokens: &mut Peekable<impl Iterator<Item = Token>>,
+    line_number: usize,
+) -> String {
+    let mut result = take_single_expression_term(tokens, line_number);
+    if let Some(remainder_string) = take_optional_unary_expression(tokens, line_number) {
+        result.extend(remainder_string.chars());
+    }
+    result
+}
+
+fn take_unary_expression(
+    tokens: &mut Peekable<impl Iterator<Item = Token>>,
+    line_number: usize,
+) -> String {
+    take_optional_unary_expression(tokens, line_number).expect("expected unary expression.")
+}
+
+fn take_expression(
+    tokens: &mut Peekable<impl Iterator<Item = Token>>,
+    line_number: usize,
+) -> String {
+    match tokens.peek() {
+        Some(Token { kind, .. }) => match kind {
+            TokenKind::Operator(_) => take_unary_expression(tokens, line_number),
+            TokenKind::Identifier(_) | TokenKind::Number(_) => {
+                take_binary_or_single_term_expression(tokens, line_number)
+            }
+            _ => panic!(
+                "unexpected token type while parsing expression. line: {}",
+                line_number
+            ),
+        },
+        None => panic!(
+            "unexpected end of line while parsing expression. line: {}",
             line_number
-        );
-    };
-    (destination, expression)
+        ),
+    }
 }
 
 fn take_c_command(
     tokens: &mut Peekable<impl Iterator<Item = Token>>,
     line_number: usize,
 ) -> Command {
-    let (dest, expr) = take_dest_and_expr(tokens, line_number);
+    let dest = take_optional_destination(tokens);
+    let expr = take_expression(tokens, line_number);
     skip_optional_whitespace(tokens);
     Command::CCommand {
         expr,
@@ -416,7 +473,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "unexpected character \"b\" instead of end of line")]
+    #[should_panic(expected = "expected end of line. instead found another token")]
     fn test_parse_panic() {
         let line = "   @1234 blah blah blah";
         let result = parse_line(line, 1);

@@ -61,8 +61,7 @@ fn assembly_token_defs() -> Vec<TokenDef> {
             TokenKind::Destination(src[0..src.len() - 1].to_string())
         }),
         TokenDef::new(r"^\s+", |_| TokenKind::Whitespace),
-        // TODO - is this causing a stack overflow?...
-        TokenDef::new(r"^(\+|-||&|!)", |src| TokenKind::Operator(src)),
+        TokenDef::new(r"^(\||\+|-|&|!)", |src| TokenKind::Operator(src)),
         TokenDef::new(r"^[a-zA-Z:$_.][0-9a-zA-Z:$_.]*", |src| {
             TokenKind::Identifier(src)
         }),
@@ -83,7 +82,6 @@ fn get_first_token(string: &str, token_defs: &Vec<TokenDef>) -> Option<Token> {
     {
         Some(token)
     } else {
-        dbg!(string);
         panic!("failed to tokenize");
     }
 }

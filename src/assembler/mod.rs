@@ -1,7 +1,7 @@
 mod codegen;
 mod first_pass;
-mod lexer;
 mod parser;
+mod tokenizer;
 
 use codegen::machine_codes;
 use first_pass::first_pass;

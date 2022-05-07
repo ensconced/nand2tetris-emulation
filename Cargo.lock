@@ -354,7 +354,6 @@ name = "nand2tetris-emulation"
 version = "0.1.0"
 dependencies = [
  "clap",
- "lazy_static",
  "minifb",
  "regex",
 ]

@@ -112,7 +112,7 @@ fn jump_code(jump_opt: Option<&String>) -> &'static str {
             "JNE" => "101",
             "JLE" => "110",
             "JMP" => "111",
-            _ => panic!("unrecognized jump"),
+            _ => panic!("unrecognized jump \"{}\"", string),
         },
     }
 }

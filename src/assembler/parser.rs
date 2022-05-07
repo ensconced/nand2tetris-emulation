@@ -98,11 +98,6 @@ fn take_l_command(
 }
 
 fn take_optional_jump(tokens: &mut Peekable<impl Iterator<Item = Token>>) -> Option<String> {
-    // TODO - validation should be done later, to be more consistent with other identifiers
-    // let valid_jumps: Vec<String> = vec!["JGT", "JEQ", "JGE", "JLT", "JNE", "JLE", "JMP"]
-    //     .into_iter()
-    //     .map(String::from)
-    //     .collect();
     if let Some(Token {
         kind: TokenKind::Semicolon,
         ..

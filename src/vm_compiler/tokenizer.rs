@@ -1,4 +1,4 @@
-use crate::tokenizer::{tokenize, Token, TokenDef};
+use crate::tokenizer::{Token, TokenDef};
 
 enum ArithmeticCommand {
     Add,

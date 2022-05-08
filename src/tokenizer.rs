@@ -1,8 +1,31 @@
 use regex::Regex;
 use std::iter;
 
+pub struct Tokenizer<LangTokenKind> {
+    token_defs: Vec<TokenDef<LangTokenKind>>,
+}
+
+impl<LangTokenKind> Tokenizer<LangTokenKind> {
+    pub fn new(token_defs: Vec<TokenDef<LangTokenKind>>) -> Self {
+        Self { token_defs }
+    }
+
+    pub fn tokenize(&self, source: &str) -> Box<dyn Iterator<Item = Token<LangTokenKind>>> {
+        if let Some(first_token) = get_first_token(source, &self.token_defs) {
+            let len = first_token.length;
+            let remainder: String = source.chars().skip(len).collect();
+            Box::new(iter::once(first_token).chain(self.tokenize(&remainder)))
+        } else {
+            Box::new(iter::empty())
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
-pub struct Token<LangTokenKind> {
+pub struct Token<LangTokenKind>
+where
+    LangTokenKind: 'static,
+{
     pub length: usize,
     pub kind: LangTokenKind,
 }
@@ -65,22 +88,6 @@ fn get_first_token<LangTokenKind>(
     }
 }
 
-pub fn tokenize<LangTokenKind>(
-    string: String,
-    token_defs: &Vec<TokenDef<LangTokenKind>>,
-) -> Box<dyn Iterator<Item = Token<LangTokenKind>>>
-where
-    LangTokenKind: 'static,
-{
-    if let Some(first_token) = get_first_token(&string, token_defs) {
-        let len = first_token.length;
-        let remainder = string.chars().skip(len).collect();
-        Box::new(iter::once(first_token).chain(tokenize(remainder, token_defs)))
-    } else {
-        Box::new(iter::empty())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -88,13 +95,11 @@ mod tests {
 
     #[test]
     fn test_get_token() {
-        let token_defs = assembly_token_defs();
+        let tokenizer = Tokenizer::new(assembly_token_defs());
 
-        let tokens: Vec<Token<AsmTokenKind>> = tokenize(
-            "AMD=(@FOO+_bar) ; JMP 1234 // whatever".to_string(),
-            &token_defs,
-        )
-        .collect();
+        let tokens: Vec<Token<AsmTokenKind>> = tokenizer
+            .tokenize("AMD=(@FOO+_bar) ; JMP 1234 // whatever")
+            .collect();
         let expected_tokens = vec![
             Token::new(4, AsmTokenKind::Destination("AMD".to_string())),
             Token::new(1, AsmTokenKind::LParen),

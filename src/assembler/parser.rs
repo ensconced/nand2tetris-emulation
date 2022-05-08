@@ -291,7 +291,7 @@ mod tests {
 
     #[test]
     fn test_take_c_command() {
-        let mut tokens = tokenize_single_line("M=M+1;JGT".to_string());
+        let mut tokens = tokenize_single_line("M=M+1;JGT");
         let c_command = take_c_command(&mut tokens, 1);
         assert_eq!(
             c_command,
@@ -302,7 +302,7 @@ mod tests {
             }
         );
 
-        let mut tokens = tokenize_single_line("AMD=A|D;JLT".to_string());
+        let mut tokens = tokenize_single_line("AMD=A|D;JLT");
         let c_command = take_c_command(&mut tokens, 1);
         assert_eq!(
             c_command,
@@ -313,7 +313,7 @@ mod tests {
             }
         );
 
-        let mut tokens = tokenize_single_line("M+1".to_string());
+        let mut tokens = tokenize_single_line("M+1");
         let c_command = take_c_command(&mut tokens, 1);
         assert_eq!(
             c_command,
@@ -324,7 +324,7 @@ mod tests {
             }
         );
 
-        let mut tokens = tokenize_single_line("D&M;JGT".to_string());
+        let mut tokens = tokenize_single_line("D&M;JGT");
         let c_command = take_c_command(&mut tokens, 1);
         assert_eq!(
             c_command,
@@ -335,7 +335,7 @@ mod tests {
             }
         );
 
-        let mut tokens = tokenize_single_line("!M;JGT".to_string());
+        let mut tokens = tokenize_single_line("!M;JGT");
         let c_command = take_c_command(&mut tokens, 1);
         assert_eq!(
             c_command,
@@ -346,7 +346,7 @@ mod tests {
             }
         );
 
-        let mut chars = tokenize_single_line("MD=-A".to_string());
+        let mut chars = tokenize_single_line("MD=-A");
         let c_command = take_c_command(&mut chars, 1);
         assert_eq!(
             c_command,
@@ -360,12 +360,12 @@ mod tests {
 
     #[test]
     fn test_skip_optional_comment() {
-        let mut tokens = tokenize_single_line("// hey there".to_string());
+        let mut tokens = tokenize_single_line("// hey there");
         skip_optional_comment(&mut tokens);
         let remaining = tokens.next();
         assert_eq!(remaining, None);
 
-        let mut tokens = tokenize_single_line("not a comment".to_string());
+        let mut tokens = tokenize_single_line("not a comment");
         skip_optional_comment(&mut tokens);
         let result = tokens.next();
         assert_eq!(
@@ -379,7 +379,7 @@ mod tests {
 
     #[test]
     fn test_skip_optional_whitespace() {
-        let mut tokens = tokenize_single_line("      hello".to_string());
+        let mut tokens = tokenize_single_line("      hello");
         skip_optional_whitespace(&mut tokens);
         let remaining = tokens.next();
         assert_eq!(
@@ -393,7 +393,7 @@ mod tests {
 
     #[test]
     fn test_skip_optional_whitespace_and_comment() {
-        let mut tokens = tokenize_single_line("      // this is a comment".to_string());
+        let mut tokens = tokenize_single_line("      // this is a comment");
         skip_optional_whitespace(&mut tokens);
         skip_optional_comment(&mut tokens);
         let remaining = tokens.next();
@@ -402,14 +402,14 @@ mod tests {
 
     #[test]
     fn test_take_a_command() {
-        let mut tokens = tokenize_single_line("@1234".to_string());
+        let mut tokens = tokenize_single_line("@1234");
         let a_command = take_a_command(&mut tokens, 1);
         assert_eq!(
             a_command,
             Command::ACommand(AValue::Numeric("1234".to_string()))
         );
 
-        let mut tokens = tokenize_single_line("@FOOBAR".to_string());
+        let mut tokens = tokenize_single_line("@FOOBAR");
         let a_command = take_a_command(&mut tokens, 1);
         assert_eq!(
             a_command,
@@ -419,7 +419,7 @@ mod tests {
 
     #[test]
     fn test_take_l_command() {
-        let mut tokens = tokenize_single_line("(TEST)".to_string());
+        let mut tokens = tokenize_single_line("(TEST)");
         let a_command = take_l_command(&mut tokens, 1);
         assert_eq!(
             a_command,
@@ -428,7 +428,7 @@ mod tests {
             }
         );
 
-        let mut tokens = tokenize_single_line("(_TEST)".to_string());
+        let mut tokens = tokenize_single_line("(_TEST)");
         let a_command = take_l_command(&mut tokens, 1);
         assert_eq!(
             a_command,
@@ -437,7 +437,7 @@ mod tests {
             }
         );
 
-        let mut tokens = tokenize_single_line("(T:E$S.T)".to_string());
+        let mut tokens = tokenize_single_line("(T:E$S.T)");
         let a_command = take_l_command(&mut tokens, 1);
         assert_eq!(
             a_command,
@@ -450,30 +450,30 @@ mod tests {
     #[test]
     fn test_parse() {
         let line = "";
-        let result = parse_line(tokenize_single_line(line.to_string()), 1);
+        let result = parse_line(tokenize_single_line(line), 1);
         assert_eq!(result, None);
 
         let line = "     ";
-        let result = parse_line(tokenize_single_line(line.to_string()), 1);
+        let result = parse_line(tokenize_single_line(line), 1);
         assert_eq!(result, None);
 
         let line = "  // hello this is a comment   ";
-        let result = parse_line(tokenize_single_line(line.to_string()), 1);
+        let result = parse_line(tokenize_single_line(line), 1);
         assert_eq!(result, None);
 
         let line = "// hello this is a comment";
-        let result = parse_line(tokenize_single_line(line.to_string()), 1);
+        let result = parse_line(tokenize_single_line(line), 1);
         assert_eq!(result, None);
 
         let line = "@1234";
-        let result = parse_line(tokenize_single_line(line.to_string()), 1);
+        let result = parse_line(tokenize_single_line(line), 1);
         assert_eq!(
             result,
             Some(Command::ACommand(AValue::Numeric("1234".to_string())))
         );
 
         let line = "   @1234  // here is a comment  ";
-        let result = parse_line(tokenize_single_line(line.to_string()), 1);
+        let result = parse_line(tokenize_single_line(line), 1);
         assert_eq!(
             result,
             Some(Command::ACommand(AValue::Numeric("1234".to_string())))
@@ -484,7 +484,7 @@ mod tests {
     #[should_panic(expected = "expected end of line. instead found another token")]
     fn test_parse_panic() {
         let line = "   @1234 blah blah blah";
-        let result = parse_line(tokenize_single_line(line.to_string()), 1);
+        let result = parse_line(tokenize_single_line(line), 1);
         assert_eq!(
             result,
             Some(Command::ACommand(AValue::Numeric("1234".to_string())))

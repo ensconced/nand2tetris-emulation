@@ -1,4 +1,4 @@
-use crate::tokenizer::{tokenize, Token, TokenDef};
+use crate::tokenizer::{Token, TokenDef, Tokenizer};
 use std::iter::Peekable;
 
 #[derive(Debug, PartialEq)]
@@ -38,14 +38,14 @@ pub fn assembly_token_defs() -> Vec<TokenDef<AsmTokenKind>> {
  *  This re-compiles the token regexes for each line so is less efficient than tokenize_lines.
  *  It is useful for testing, though.
 */
-pub fn tokenize_single_line(line: String) -> Peekable<impl Iterator<Item = Token<AsmTokenKind>>> {
-    let token_defs = assembly_token_defs();
-    tokenize(line, &token_defs).peekable()
+pub fn tokenize_single_line(line: &str) -> Peekable<impl Iterator<Item = Token<AsmTokenKind>>> {
+    let tokenizer = Tokenizer::new(assembly_token_defs());
+    tokenizer.tokenize(line).peekable()
 }
 
 pub fn tokenize_lines<'a>(
     lines: impl Iterator<Item = String>,
 ) -> impl Iterator<Item = Peekable<impl Iterator<Item = Token<AsmTokenKind>>>> {
-    let token_defs = assembly_token_defs();
-    lines.map(move |line| tokenize(line, &token_defs).peekable())
+    let tokenizer = Tokenizer::new(assembly_token_defs());
+    lines.map(move |line| tokenizer.tokenize(&line).peekable())
 }

@@ -28,7 +28,7 @@ pub fn first_pass(mut commands: impl Iterator<Item = Command>) -> FirstPassResul
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::assembler::parser::{parse_lines, AValue};
+    use crate::compilers::assembler::parser::{parse_lines, AValue};
 
     #[test]
     fn test_first_pass() {

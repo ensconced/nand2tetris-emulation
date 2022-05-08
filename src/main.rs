@@ -1,15 +1,14 @@
-mod assembler;
+mod compilers;
 mod computer;
 mod io;
 mod programmer;
 mod run;
 mod tokenizer;
-mod vm_compiler;
 
 use std::path::Path;
 
-use assembler::assemble_file;
 use clap::{Parser, Subcommand};
+use compilers::assembler::assemble_file;
 use run::run;
 
 #[derive(Parser, Debug)]

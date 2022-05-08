@@ -278,8 +278,8 @@ fn parse_line(
 
 pub fn parse_lines<'a>(source: &'a str) -> impl Iterator<Item = Command> + 'a {
     let lines = source.lines().map(|line| line.to_string());
-    lines.enumerate().filter_map(|(line_idx, line)| {
-        let tokenizer = Tokenizer::new(assembly_token_defs());
+    let tokenizer = Tokenizer::new(assembly_token_defs());
+    lines.enumerate().filter_map(move |(line_idx, line)| {
         let tokens = tokenizer.tokenize(&line).peekable();
         parse_line(tokens, line_idx + 1)
     })

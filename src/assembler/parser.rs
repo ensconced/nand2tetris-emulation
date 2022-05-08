@@ -21,23 +21,14 @@ pub enum Command {
     },
 }
 
-fn skip_optional_comment(tokens: &mut Peekable<impl Iterator<Item = Token<AsmTokenKind>>>) {
-    if let Some(Token {
-        kind: AsmTokenKind::Comment,
-        ..
-    }) = tokens.peek()
-    {
-        tokens.next();
-    }
-}
-
-fn skip_optional_whitespace(tokens: &mut Peekable<impl Iterator<Item = Token<AsmTokenKind>>>) {
-    if let Some(Token {
-        kind: AsmTokenKind::Whitespace,
-        ..
-    }) = tokens.peek()
-    {
-        tokens.next();
+fn skip_optional(
+    tokens: &mut Peekable<impl Iterator<Item = Token<AsmTokenKind>>>,
+    token_kind: AsmTokenKind,
+) {
+    if let Some(token) = tokens.peek() {
+        if token.kind == token_kind {
+            tokens.next();
+        }
     }
 }
 
@@ -110,7 +101,7 @@ fn take_optional_jump(
     }) = tokens.peek()
     {
         tokens.next(); // pop semicolon
-        skip_optional_whitespace(tokens);
+        skip_optional(tokens, AsmTokenKind::Whitespace);
         if let Some(Token {
             kind: AsmTokenKind::Identifier(identifier_string),
             ..
@@ -229,7 +220,7 @@ fn take_c_command(
 ) -> Command {
     let dest = take_optional_destination(tokens);
     let expr = take_expression(tokens, line_number);
-    skip_optional_whitespace(tokens);
+    skip_optional(tokens, AsmTokenKind::Whitespace);
     Command::CCommand {
         expr,
         dest,
@@ -255,8 +246,8 @@ fn parse_line(
     mut line_tokens: Peekable<impl Iterator<Item = Token<AsmTokenKind>>>,
     line_number: usize,
 ) -> Option<Command> {
-    skip_optional_whitespace(&mut line_tokens);
-    skip_optional_comment(&mut line_tokens);
+    skip_optional(&mut line_tokens, AsmTokenKind::Whitespace);
+    skip_optional(&mut line_tokens, AsmTokenKind::Comment);
     if line_tokens.peek().is_none() {
         // There is no command on this line.
         return None;
@@ -264,8 +255,8 @@ fn parse_line(
     let command = take_command(&mut line_tokens, line_number);
     // We could get away with not parsing the rest of the line, but it's good to
     // do, because there could be any kind of syntax errors lurking there...
-    skip_optional_whitespace(&mut line_tokens);
-    skip_optional_comment(&mut line_tokens);
+    skip_optional(&mut line_tokens, AsmTokenKind::Whitespace);
+    skip_optional(&mut line_tokens, AsmTokenKind::Comment);
     if let Some(_) = line_tokens.next() {
         panic!(
             "expected end of line. instead found another token. line: {}",
@@ -363,12 +354,12 @@ mod tests {
     fn test_skip_optional_comment() {
         let tokenizer = Tokenizer::new(assembly_token_defs());
         let mut tokens = tokenizer.tokenize("// hey there").peekable();
-        skip_optional_comment(&mut tokens);
+        skip_optional(&mut tokens, AsmTokenKind::Comment);
         let remaining = tokens.next();
         assert_eq!(remaining, None);
 
         let mut tokens = tokenizer.tokenize("not a comment").peekable();
-        skip_optional_comment(&mut tokens);
+        skip_optional(&mut tokens, AsmTokenKind::Comment);
         let result = tokens.next();
         assert_eq!(
             result,
@@ -383,7 +374,7 @@ mod tests {
     fn test_skip_optional_whitespace() {
         let tokenizer = Tokenizer::new(assembly_token_defs());
         let mut tokens = tokenizer.tokenize("      hello").peekable();
-        skip_optional_whitespace(&mut tokens);
+        skip_optional(&mut tokens, AsmTokenKind::Whitespace);
         let remaining = tokens.next();
         assert_eq!(
             remaining,
@@ -398,8 +389,8 @@ mod tests {
     fn test_skip_optional_whitespace_and_comment() {
         let tokenizer = Tokenizer::new(assembly_token_defs());
         let mut tokens = tokenizer.tokenize("      // this is a comment").peekable();
-        skip_optional_whitespace(&mut tokens);
-        skip_optional_comment(&mut tokens);
+        skip_optional(&mut tokens, AsmTokenKind::Whitespace);
+        skip_optional(&mut tokens, AsmTokenKind::Comment);
         let remaining = tokens.next();
         assert_eq!(remaining, None);
     }

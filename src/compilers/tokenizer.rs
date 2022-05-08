@@ -72,7 +72,7 @@ fn get_first_token<LangTokenKind>(
         return None;
     }
 
-    // It's not the most efficient way from implementing maximal munch but it
+    // It's not the most efficient way of implementing maximal munch but it
     // does the job.
     let token_alternatives = token_defs
         .iter()

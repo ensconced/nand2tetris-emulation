@@ -1,3 +1,4 @@
+use super::super::parser_utils::skip_optional;
 use super::super::tokenizer::{Token, Tokenizer};
 use super::tokenizer::{assembly_token_defs, AsmTokenKind};
 use std::iter::Peekable;
@@ -19,17 +20,6 @@ pub enum Command {
     LCommand {
         identifier: String,
     },
-}
-
-fn skip_optional(
-    tokens: &mut Peekable<impl Iterator<Item = Token<AsmTokenKind>>>,
-    token_kind: AsmTokenKind,
-) {
-    if let Some(token) = tokens.peek() {
-        if token.kind == token_kind {
-            tokens.next();
-        }
-    }
 }
 
 fn take_a_value(

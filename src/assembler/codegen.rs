@@ -200,7 +200,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "asdf")]
+    #[should_panic]
     fn test_too_big_numeric_a_command_code() {
         assert_eq!(numeric_a_command_code(&"100000".to_string()), "whatever");
     }

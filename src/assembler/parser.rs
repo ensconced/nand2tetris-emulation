@@ -276,12 +276,12 @@ fn parse_line(
     Some(command)
 }
 
-pub fn parse_lines<'a>(lines: impl Iterator<Item = String> + 'a) -> Vec<Command> {
+pub fn parse_lines<'a>(source: &'a str) -> impl Iterator<Item = Command> + 'a {
+    let lines = source.lines().map(|line| line.to_string());
     let tokenized_lines = tokenize_lines(lines);
     tokenized_lines
         .enumerate()
         .filter_map(|(line_idx, line)| parse_line(line, line_idx + 1))
-        .collect()
 }
 
 #[cfg(test)]
@@ -499,7 +499,7 @@ mod tests {
             (FOOBAR)
             @FOOBAR
             ";
-        let result: Vec<Command> = parse_lines(source.lines().map(|line| line.to_string()));
+        let result: Vec<Command> = parse_lines(source).collect();
         assert_eq!(
             result,
             vec![

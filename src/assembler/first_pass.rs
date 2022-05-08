@@ -33,11 +33,15 @@ mod tests {
     #[test]
     fn test_first_pass() {
         let commands = parse_lines(
-            vec![
-                "(foo)", "A=A+1", "M=M|A", "(bar)", "@foo", "@bar", "(baz)", "@1234",
-            ]
-            .into_iter()
-            .map(|line| line.to_string()),
+            "
+            (foo)
+             A=A+1
+             M=M|A
+             (bar)
+             @foo
+             @bar
+             (baz)
+             @1234",
         );
         let FirstPassResult {
             resolved_symbols,

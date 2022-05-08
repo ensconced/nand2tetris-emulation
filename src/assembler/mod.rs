@@ -9,8 +9,7 @@ use parser::parse_lines;
 use std::{fs, path::Path};
 
 fn assemble(source: String, rom_depth: usize) -> String {
-    let first_pass_result =
-        first_pass(parse_lines(source.lines().map(|line| line.to_string())).into_iter());
+    let first_pass_result = first_pass(parse_lines(&source));
     let mut machine_codes = machine_codes(&first_pass_result);
     let mut result = String::new();
     for _ in 0..rom_depth {

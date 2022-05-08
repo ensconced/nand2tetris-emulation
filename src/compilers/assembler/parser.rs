@@ -1,4 +1,4 @@
-use super::super::parser_utils::skip_optional;
+use super::super::parser_utils::take_optional;
 use super::super::tokenizer::{Token, Tokenizer};
 use super::tokenizer::{
     assembly_token_defs,
@@ -85,8 +85,8 @@ fn take_l_command(
 fn take_optional_jump(
     tokens: &mut Peekable<impl Iterator<Item = Token<AsmTokenKind>>>,
 ) -> Option<String> {
-    if skip_optional(tokens, Semicolon) {
-        skip_optional(tokens, Whitespace);
+    if take_optional(tokens, Semicolon).is_some() {
+        take_optional(tokens, Whitespace);
         if let Some(Token {
             kind: Identifier(identifier_string),
             ..
@@ -202,7 +202,7 @@ fn take_c_command(
 ) -> Command {
     let dest = take_optional_destination(tokens);
     let expr = take_expression(tokens, line_number);
-    skip_optional(tokens, Whitespace);
+    take_optional(tokens, Whitespace);
     CCommand {
         expr,
         dest,
@@ -228,8 +228,8 @@ fn parse_line(
     mut line_tokens: Peekable<impl Iterator<Item = Token<AsmTokenKind>>>,
     line_number: usize,
 ) -> Option<Command> {
-    skip_optional(&mut line_tokens, AsmTokenKind::Whitespace);
-    skip_optional(&mut line_tokens, AsmTokenKind::Comment);
+    take_optional(&mut line_tokens, AsmTokenKind::Whitespace);
+    take_optional(&mut line_tokens, AsmTokenKind::Comment);
     if line_tokens.peek().is_none() {
         // There is no command on this line.
         return None;
@@ -237,8 +237,8 @@ fn parse_line(
     let command = take_command(&mut line_tokens, line_number);
     // We could get away with not parsing the rest of the line, but it's good to
     // do, because there could be any kind of syntax errors lurking there...
-    skip_optional(&mut line_tokens, AsmTokenKind::Whitespace);
-    skip_optional(&mut line_tokens, AsmTokenKind::Comment);
+    take_optional(&mut line_tokens, AsmTokenKind::Whitespace);
+    take_optional(&mut line_tokens, AsmTokenKind::Comment);
     if let Some(_) = line_tokens.next() {
         panic!(
             "expected end of line. instead found another token. line: {}",
@@ -336,12 +336,12 @@ mod tests {
     fn test_skip_optional_comment() {
         let tokenizer = Tokenizer::new(assembly_token_defs());
         let mut tokens = tokenizer.tokenize("// hey there").peekable();
-        skip_optional(&mut tokens, Comment);
+        take_optional(&mut tokens, Comment);
         let remaining = tokens.next();
         assert_eq!(remaining, None);
 
         let mut tokens = tokenizer.tokenize("not a comment").peekable();
-        skip_optional(&mut tokens, Comment);
+        take_optional(&mut tokens, Comment);
         let result = tokens.next();
         assert_eq!(
             result,
@@ -356,7 +356,7 @@ mod tests {
     fn test_skip_optional_whitespace() {
         let tokenizer = Tokenizer::new(assembly_token_defs());
         let mut tokens = tokenizer.tokenize("      hello").peekable();
-        skip_optional(&mut tokens, Whitespace);
+        take_optional(&mut tokens, Whitespace);
         let remaining = tokens.next();
         assert_eq!(
             remaining,
@@ -371,8 +371,8 @@ mod tests {
     fn test_skip_optional_whitespace_and_comment() {
         let tokenizer = Tokenizer::new(assembly_token_defs());
         let mut tokens = tokenizer.tokenize("      // this is a comment").peekable();
-        skip_optional(&mut tokens, Whitespace);
-        skip_optional(&mut tokens, Comment);
+        take_optional(&mut tokens, Whitespace);
+        take_optional(&mut tokens, Comment);
         let remaining = tokens.next();
         assert_eq!(remaining, None);
     }

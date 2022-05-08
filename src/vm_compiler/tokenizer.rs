@@ -28,13 +28,21 @@ enum MemorySegment {
     Temp,
 }
 
-enum Keyword {
-    Label,
+enum ProgramFlowCommand {
     GoTo,
+    Label,
     IfGoTo,
-    Function,
+}
+
+enum FunctionCommand {
+    Define,
     Call,
     Return,
+}
+
+enum Keyword {
+    FunctionCommand(FunctionCommand),
+    ProgramFlowCommand(ProgramFlowCommand),
     ArithmeticCommand(ArithmeticCommand),
     MemoryCommand(MemoryCommand),
     MemorySegment(MemorySegment),

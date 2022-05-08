@@ -41,7 +41,7 @@ mod tests {
         let FirstPassResult {
             resolved_symbols,
             commands_without_labels,
-        } = first_pass(commands);
+        } = first_pass(commands.into_iter());
         let expected_resolved_symbols = HashMap::from([
             ("foo".to_string(), 0 as usize),
             ("bar".to_string(), 2 as usize),

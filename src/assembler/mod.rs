@@ -1,7 +1,6 @@
 mod codegen;
 mod first_pass;
-mod parser;
-mod tokenizer;
+pub mod parser;
 
 use codegen::machine_codes;
 use first_pass::first_pass;
@@ -9,7 +8,7 @@ use parser::parse_lines;
 use std::{fs, path::Path};
 
 fn assemble(source: String, rom_depth: usize) -> String {
-    let first_pass_result = first_pass(parse_lines(source.lines()));
+    let first_pass_result = first_pass(parse_lines(source.lines()).into_iter());
     let mut machine_codes = machine_codes(&first_pass_result);
     let mut result = String::new();
     for _ in 0..rom_depth {

@@ -1,4 +1,4 @@
-use super::tokenizer::{tokenize_asm_line, Token, TokenKind};
+use crate::tokenizer::{tokenize, Token, TokenDef, TokenKind};
 use std::iter::Peekable;
 
 #[derive(PartialEq, Debug)]
@@ -240,8 +240,34 @@ fn take_command(tokens: &mut Peekable<impl Iterator<Item = Token>>, line_number:
     }
 }
 
-fn parse_line(line: &str, line_number: usize) -> Option<Command> {
-    let mut tokens = tokenize_asm_line(line.to_string()).peekable();
+pub fn assembly_token_defs() -> Vec<TokenDef> {
+    vec![
+        TokenDef::new(r"^//.*", |_| TokenKind::Comment),
+        TokenDef::new(r"^[AMD]{1,3}=", |src| {
+            TokenKind::Destination(src[0..src.len() - 1].to_string())
+        }),
+        TokenDef::new(r"^\s+", |_| TokenKind::Whitespace),
+        TokenDef::new(r"^(\||\+|-|&|!)", |src| TokenKind::Operator(src)),
+        TokenDef::new(r"^[a-zA-Z:$_.][0-9a-zA-Z:$_.]*", |src| {
+            TokenKind::Identifier(src)
+        }),
+        TokenDef::new(r"^[0-9]+", |src| TokenKind::Number(src)),
+        TokenDef::new(r"^@", |_| TokenKind::At),
+        TokenDef::new(r"^\(", |_| TokenKind::LParen),
+        TokenDef::new(r"^\)", |_| TokenKind::RParen),
+        TokenDef::new(r"^;", |_| TokenKind::Semicolon),
+    ]
+}
+
+fn get_peekable_tokens(
+    line: &str,
+    token_defs: &Vec<TokenDef>,
+) -> Peekable<impl Iterator<Item = Token>> {
+    tokenize(line.to_string(), token_defs).peekable()
+}
+
+fn parse_line(line: &str, line_number: usize, token_defs: &Vec<TokenDef>) -> Option<Command> {
+    let mut tokens = get_peekable_tokens(line, token_defs);
     skip_optional_whitespace(&mut tokens);
     skip_optional_comment(&mut tokens);
     if tokens.peek().is_none() {
@@ -263,22 +289,26 @@ fn parse_line(line: &str, line_number: usize) -> Option<Command> {
     Some(command)
 }
 
-pub fn parse_lines<'a>(
-    lines: impl Iterator<Item = &'a str> + 'a,
-) -> impl Iterator<Item = Command> + 'a {
+pub fn parse_lines<'a>(lines: impl Iterator<Item = &'a str> + 'a) -> Vec<Command> {
+    let token_defs = assembly_token_defs();
     lines
         .enumerate()
-        .filter_map(|(line_idx, line)| parse_line(line, line_idx + 1))
-        .into_iter()
+        .filter_map(|(line_idx, line)| parse_line(line, line_idx + 1, &token_defs))
+        .collect()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    fn get_peekable_asm_tokens(line: &str) -> Peekable<impl Iterator<Item = Token>> {
+        let token_defs = assembly_token_defs();
+        get_peekable_tokens(line, &token_defs)
+    }
+
     #[test]
     fn test_take_c_command() {
-        let mut tokens = tokenize_asm_line("M=M+1;JGT".to_string()).peekable();
+        let mut tokens = get_peekable_asm_tokens("M=M+1;JGT");
         let c_command = take_c_command(&mut tokens, 1);
         assert_eq!(
             c_command,
@@ -289,7 +319,7 @@ mod tests {
             }
         );
 
-        let mut tokens = tokenize_asm_line("AMD=A|D;JLT".to_string()).peekable();
+        let mut tokens = get_peekable_asm_tokens("AMD=A|D;JLT");
         let c_command = take_c_command(&mut tokens, 1);
         assert_eq!(
             c_command,
@@ -300,7 +330,7 @@ mod tests {
             }
         );
 
-        let mut tokens = tokenize_asm_line("M+1".to_string()).peekable();
+        let mut tokens = get_peekable_asm_tokens("M+1");
         let c_command = take_c_command(&mut tokens, 1);
         assert_eq!(
             c_command,
@@ -311,7 +341,7 @@ mod tests {
             }
         );
 
-        let mut tokens = tokenize_asm_line("D&M;JGT".to_string()).peekable();
+        let mut tokens = get_peekable_asm_tokens("D&M;JGT");
         let c_command = take_c_command(&mut tokens, 1);
         assert_eq!(
             c_command,
@@ -322,7 +352,7 @@ mod tests {
             }
         );
 
-        let mut tokens = tokenize_asm_line("!M;JGT".to_string()).peekable();
+        let mut tokens = get_peekable_asm_tokens("!M;JGT");
         let c_command = take_c_command(&mut tokens, 1);
         assert_eq!(
             c_command,
@@ -333,7 +363,7 @@ mod tests {
             }
         );
 
-        let mut chars = tokenize_asm_line("MD=-A".to_string()).peekable();
+        let mut chars = get_peekable_asm_tokens("MD=-A");
         let c_command = take_c_command(&mut chars, 1);
         assert_eq!(
             c_command,
@@ -347,12 +377,12 @@ mod tests {
 
     #[test]
     fn test_skip_optional_comment() {
-        let mut tokens = tokenize_asm_line("// hey there".to_string()).peekable();
+        let mut tokens = get_peekable_asm_tokens("// hey there");
         skip_optional_comment(&mut tokens);
         let remaining = tokens.next();
         assert_eq!(remaining, None);
 
-        let mut tokens = tokenize_asm_line("not a comment".to_string()).peekable();
+        let mut tokens = get_peekable_asm_tokens("not a comment");
         skip_optional_comment(&mut tokens);
         let result = tokens.next();
         assert_eq!(
@@ -366,7 +396,7 @@ mod tests {
 
     #[test]
     fn test_skip_optional_whitespace() {
-        let mut tokens = tokenize_asm_line("      hello".to_string()).peekable();
+        let mut tokens = get_peekable_asm_tokens("      hello");
         skip_optional_whitespace(&mut tokens);
         let remaining = tokens.next();
         assert_eq!(
@@ -380,7 +410,7 @@ mod tests {
 
     #[test]
     fn test_skip_optional_whitespace_and_comment() {
-        let mut tokens = tokenize_asm_line("      // this is a comment".to_string()).peekable();
+        let mut tokens = get_peekable_asm_tokens("      // this is a comment");
         skip_optional_whitespace(&mut tokens);
         skip_optional_comment(&mut tokens);
         let remaining = tokens.next();
@@ -389,14 +419,14 @@ mod tests {
 
     #[test]
     fn test_take_a_command() {
-        let mut tokens = tokenize_asm_line("@1234".to_string()).peekable();
+        let mut tokens = get_peekable_asm_tokens("@1234");
         let a_command = take_a_command(&mut tokens, 1);
         assert_eq!(
             a_command,
             Command::ACommand(AValue::Numeric("1234".to_string()))
         );
 
-        let mut tokens = tokenize_asm_line("@FOOBAR".to_string()).peekable();
+        let mut tokens = get_peekable_asm_tokens("@FOOBAR");
         let a_command = take_a_command(&mut tokens, 1);
         assert_eq!(
             a_command,
@@ -406,7 +436,7 @@ mod tests {
 
     #[test]
     fn test_take_l_command() {
-        let mut tokens = tokenize_asm_line("(TEST)".to_string()).peekable();
+        let mut tokens = get_peekable_asm_tokens("(TEST)");
         let a_command = take_l_command(&mut tokens, 1);
         assert_eq!(
             a_command,
@@ -415,7 +445,7 @@ mod tests {
             }
         );
 
-        let mut tokens = tokenize_asm_line("(_TEST)".to_string()).peekable();
+        let mut tokens = get_peekable_asm_tokens("(_TEST)");
         let a_command = take_l_command(&mut tokens, 1);
         assert_eq!(
             a_command,
@@ -424,7 +454,7 @@ mod tests {
             }
         );
 
-        let mut tokens = tokenize_asm_line("(T:E$S.T)".to_string()).peekable();
+        let mut tokens = get_peekable_asm_tokens("(T:E$S.T)");
         let a_command = take_l_command(&mut tokens, 1);
         assert_eq!(
             a_command,
@@ -436,31 +466,33 @@ mod tests {
 
     #[test]
     fn test_parse() {
+        let token_defs = assembly_token_defs();
+
         let line = "";
-        let result = parse_line(line, 1);
+        let result = parse_line(line, 1, &token_defs);
         assert_eq!(result, None);
 
         let line = "     ";
-        let result = parse_line(line, 1);
+        let result = parse_line(line, 1, &token_defs);
         assert_eq!(result, None);
 
         let line = "  // hello this is a comment   ";
-        let result = parse_line(line, 1);
+        let result = parse_line(line, 1, &token_defs);
         assert_eq!(result, None);
 
         let line = "// hello this is a comment";
-        let result = parse_line(line, 1);
+        let result = parse_line(line, 1, &token_defs);
         assert_eq!(result, None);
 
         let line = "@1234";
-        let result = parse_line(line, 1);
+        let result = parse_line(line, 1, &token_defs);
         assert_eq!(
             result,
             Some(Command::ACommand(AValue::Numeric("1234".to_string())))
         );
 
         let line = "   @1234  // here is a comment  ";
-        let result = parse_line(line, 1);
+        let result = parse_line(line, 1, &token_defs);
         assert_eq!(
             result,
             Some(Command::ACommand(AValue::Numeric("1234".to_string())))
@@ -470,8 +502,10 @@ mod tests {
     #[test]
     #[should_panic(expected = "expected end of line. instead found another token")]
     fn test_parse_panic() {
+        let token_defs = assembly_token_defs();
+
         let line = "   @1234 blah blah blah";
-        let result = parse_line(line, 1);
+        let result = parse_line(line, 1, &token_defs);
         assert_eq!(
             result,
             Some(Command::ACommand(AValue::Numeric("1234".to_string())))
@@ -481,12 +515,12 @@ mod tests {
     #[test]
     fn test_parse_lines() {
         let source = "
-            @1234
-            AMD=M+1;JGT
+        @1234
+        AMD=M+1;JGT
             (FOOBAR)
             @FOOBAR
             ";
-        let result: Vec<Command> = parse_lines(source.lines()).collect();
+        let result: Vec<Command> = parse_lines(source.lines());
         assert_eq!(
             result,
             vec![

@@ -3,6 +3,7 @@ mod computer;
 mod io;
 mod programmer;
 mod run;
+mod tokenizer;
 
 use std::path::Path;
 

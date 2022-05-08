@@ -1,5 +1,5 @@
+use super::super::tokenizer::{Token, Tokenizer};
 use super::tokenizer::{assembly_token_defs, AsmTokenKind};
-use crate::tokenizer::{Token, Tokenizer};
 use std::iter::Peekable;
 
 #[derive(PartialEq, Debug)]

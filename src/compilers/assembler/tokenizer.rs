@@ -1,5 +1,4 @@
-use crate::tokenizer::{Token, TokenDef, Tokenizer};
-use std::iter::Peekable;
+use super::super::tokenizer::TokenDef;
 
 #[derive(Debug, PartialEq)]
 pub enum AsmTokenKind {

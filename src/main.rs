@@ -4,6 +4,7 @@ mod io;
 mod programmer;
 mod run;
 mod tokenizer;
+mod vm_compiler;
 
 use std::path::Path;
 

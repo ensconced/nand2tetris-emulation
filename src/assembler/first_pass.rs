@@ -36,7 +36,8 @@ mod tests {
             vec![
                 "(foo)", "A=A+1", "M=M|A", "(bar)", "@foo", "@bar", "(baz)", "@1234",
             ]
-            .into_iter(),
+            .into_iter()
+            .map(|line| line.to_string()),
         );
         let FirstPassResult {
             resolved_symbols,

@@ -84,7 +84,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::assembler::parser::{assembly_token_defs, AsmTokenKind};
+    use crate::assembler::tokenizer::{assembly_token_defs, AsmTokenKind};
 
     #[test]
     fn test_get_token() {

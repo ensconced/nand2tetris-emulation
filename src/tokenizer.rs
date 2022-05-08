@@ -46,12 +46,20 @@ fn get_first_token<LangTokenKind>(
     token_defs: &Vec<TokenDef<LangTokenKind>>,
 ) -> Option<Token<LangTokenKind>> {
     if string.is_empty() {
-        None
-    } else if let Some(token) = token_defs
+        return None;
+    }
+
+    // It's not the most efficient way from implementing maximal munch but it
+    // does the job.
+    let token_alternatives = token_defs
         .iter()
-        .find_map(|matcher| matcher.get_token(string))
-    {
-        Some(token)
+        .map(|matcher| matcher.get_token(string))
+        .filter(|token| token.is_some())
+        .map(|some_token| some_token.unwrap());
+    let longest_token = token_alternatives.max_by_key(|token| token.length);
+
+    if longest_token.is_some() {
+        longest_token
     } else {
         panic!("failed to tokenize");
     }

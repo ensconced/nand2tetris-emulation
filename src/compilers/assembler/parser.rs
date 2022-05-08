@@ -1,6 +1,9 @@
 use super::super::parser_utils::skip_optional;
 use super::super::tokenizer::{Token, Tokenizer};
-use super::tokenizer::{assembly_token_defs, AsmTokenKind};
+use super::tokenizer::{
+    assembly_token_defs,
+    AsmTokenKind::{self, *},
+};
 use std::iter::Peekable;
 
 #[derive(PartialEq, Debug)]
@@ -22,16 +25,16 @@ pub enum Command {
     },
 }
 
+use Command::*;
+
 fn take_a_value(
     tokens: &mut Peekable<impl Iterator<Item = Token<AsmTokenKind>>>,
     line_number: usize,
 ) -> AValue {
     match tokens.next() {
         Some(Token { kind, .. }) => match kind {
-            AsmTokenKind::Number(numeric_string) => AValue::Numeric(numeric_string.to_string()),
-            AsmTokenKind::Identifier(identifier_string) => {
-                AValue::Symbolic(identifier_string.to_string())
-            }
+            Number(numeric_string) => AValue::Numeric(numeric_string.to_string()),
+            Identifier(identifier_string) => AValue::Symbolic(identifier_string.to_string()),
             _ => panic!(
                 "failed to parse a-command as either number or identifier. line: {}",
                 line_number
@@ -47,7 +50,7 @@ fn take_a_command(
 ) -> Command {
     tokens.next(); // pop @
     let a_value = take_a_value(tokens, line_number);
-    Command::ACommand(a_value)
+    ACommand(a_value)
 }
 
 fn take_l_command(
@@ -56,7 +59,7 @@ fn take_l_command(
 ) -> Command {
     tokens.next(); // pop (
     let identifier_string = if let Some(Token {
-        kind: AsmTokenKind::Identifier(identifier_string),
+        kind: Identifier(identifier_string),
         ..
     }) = tokens.next()
     {
@@ -68,10 +71,7 @@ fn take_l_command(
         )
     };
     match tokens.next() {
-        Some(Token {
-            kind: AsmTokenKind::RParen,
-            ..
-        }) => Command::LCommand {
+        Some(Token { kind: RParen, .. }) => LCommand {
             identifier: identifier_string,
         },
         Some(_) => panic!(
@@ -85,15 +85,10 @@ fn take_l_command(
 fn take_optional_jump(
     tokens: &mut Peekable<impl Iterator<Item = Token<AsmTokenKind>>>,
 ) -> Option<String> {
-    if let Some(Token {
-        kind: AsmTokenKind::Semicolon,
-        ..
-    }) = tokens.peek()
-    {
-        tokens.next(); // pop semicolon
-        skip_optional(tokens, AsmTokenKind::Whitespace);
+    if skip_optional(tokens, Semicolon) {
+        skip_optional(tokens, Whitespace);
         if let Some(Token {
-            kind: AsmTokenKind::Identifier(identifier_string),
+            kind: Identifier(identifier_string),
             ..
         }) = tokens.next()
         {
@@ -110,7 +105,7 @@ fn take_optional_destination(
     tokens: &mut Peekable<impl Iterator<Item = Token<AsmTokenKind>>>,
 ) -> Option<String> {
     if let Some(Token {
-        kind: AsmTokenKind::Destination(dest_string),
+        kind: Destination(dest_string),
         ..
     }) = tokens.peek()
     {
@@ -127,12 +122,11 @@ fn take_optional_unary_expression(
     line_number: usize,
 ) -> Option<String> {
     if let Some(Token {
-        kind: AsmTokenKind::Operator(_),
-        ..
+        kind: Operator(_), ..
     }) = tokens.peek()
     {
         if let Some(Token {
-            kind: AsmTokenKind::Operator(mut op_string),
+            kind: Operator(mut op_string),
             ..
         }) = tokens.next()
         {
@@ -153,8 +147,8 @@ fn take_single_expression_term(
 ) -> String {
     match tokens.next() {
         Some(Token { kind, .. }) => match kind {
-            AsmTokenKind::Number(num_string) => num_string,
-            AsmTokenKind::Identifier(ident_string) => ident_string,
+            Number(num_string) => num_string,
+            Identifier(ident_string) => ident_string,
             _ => panic!(
                 "expected number or identifier as single expression term. line: {}",
                 line_number
@@ -188,10 +182,8 @@ fn take_expression(
 ) -> String {
     match tokens.peek() {
         Some(Token { kind, .. }) => match kind {
-            AsmTokenKind::Operator(_) => take_unary_expression(tokens, line_number),
-            AsmTokenKind::Identifier(_) | AsmTokenKind::Number(_) => {
-                take_binary_or_single_term_expression(tokens, line_number)
-            }
+            Operator(_) => take_unary_expression(tokens, line_number),
+            Identifier(_) | Number(_) => take_binary_or_single_term_expression(tokens, line_number),
             _ => panic!(
                 "unexpected token type while parsing expression. line: {}",
                 line_number
@@ -210,8 +202,8 @@ fn take_c_command(
 ) -> Command {
     let dest = take_optional_destination(tokens);
     let expr = take_expression(tokens, line_number);
-    skip_optional(tokens, AsmTokenKind::Whitespace);
-    Command::CCommand {
+    skip_optional(tokens, Whitespace);
+    CCommand {
         expr,
         dest,
         jump: take_optional_jump(tokens),
@@ -277,7 +269,7 @@ mod tests {
         let c_command = take_c_command(&mut tokens, 1);
         assert_eq!(
             c_command,
-            Command::CCommand {
+            CCommand {
                 expr: "M+1".to_string(),
                 dest: Some("M".to_string()),
                 jump: Some("JGT".to_string())
@@ -288,7 +280,7 @@ mod tests {
         let c_command = take_c_command(&mut tokens, 1);
         assert_eq!(
             c_command,
-            Command::CCommand {
+            CCommand {
                 expr: "A|D".to_string(),
                 dest: Some("AMD".to_string()),
                 jump: Some("JLT".to_string())
@@ -299,7 +291,7 @@ mod tests {
         let c_command = take_c_command(&mut tokens, 1);
         assert_eq!(
             c_command,
-            Command::CCommand {
+            CCommand {
                 expr: "M+1".to_string(),
                 dest: None,
                 jump: None
@@ -310,7 +302,7 @@ mod tests {
         let c_command = take_c_command(&mut tokens, 1);
         assert_eq!(
             c_command,
-            Command::CCommand {
+            CCommand {
                 expr: "D&M".to_string(),
                 dest: None,
                 jump: Some("JGT".to_string()),
@@ -321,7 +313,7 @@ mod tests {
         let c_command = take_c_command(&mut tokens, 1);
         assert_eq!(
             c_command,
-            Command::CCommand {
+            CCommand {
                 expr: "!M".to_string(),
                 dest: None,
                 jump: Some("JGT".to_string()),
@@ -332,7 +324,7 @@ mod tests {
         let c_command = take_c_command(&mut chars, 1);
         assert_eq!(
             c_command,
-            Command::CCommand {
+            CCommand {
                 expr: "-A".to_string(),
                 dest: Some("MD".to_string()),
                 jump: None,
@@ -344,17 +336,17 @@ mod tests {
     fn test_skip_optional_comment() {
         let tokenizer = Tokenizer::new(assembly_token_defs());
         let mut tokens = tokenizer.tokenize("// hey there").peekable();
-        skip_optional(&mut tokens, AsmTokenKind::Comment);
+        skip_optional(&mut tokens, Comment);
         let remaining = tokens.next();
         assert_eq!(remaining, None);
 
         let mut tokens = tokenizer.tokenize("not a comment").peekable();
-        skip_optional(&mut tokens, AsmTokenKind::Comment);
+        skip_optional(&mut tokens, Comment);
         let result = tokens.next();
         assert_eq!(
             result,
             Some(Token {
-                kind: AsmTokenKind::Identifier("not".to_string()),
+                kind: Identifier("not".to_string()),
                 length: 3
             })
         );
@@ -364,12 +356,12 @@ mod tests {
     fn test_skip_optional_whitespace() {
         let tokenizer = Tokenizer::new(assembly_token_defs());
         let mut tokens = tokenizer.tokenize("      hello").peekable();
-        skip_optional(&mut tokens, AsmTokenKind::Whitespace);
+        skip_optional(&mut tokens, Whitespace);
         let remaining = tokens.next();
         assert_eq!(
             remaining,
             Some(Token {
-                kind: AsmTokenKind::Identifier("hello".to_string()),
+                kind: Identifier("hello".to_string()),
                 length: 5
             })
         );
@@ -379,8 +371,8 @@ mod tests {
     fn test_skip_optional_whitespace_and_comment() {
         let tokenizer = Tokenizer::new(assembly_token_defs());
         let mut tokens = tokenizer.tokenize("      // this is a comment").peekable();
-        skip_optional(&mut tokens, AsmTokenKind::Whitespace);
-        skip_optional(&mut tokens, AsmTokenKind::Comment);
+        skip_optional(&mut tokens, Whitespace);
+        skip_optional(&mut tokens, Comment);
         let remaining = tokens.next();
         assert_eq!(remaining, None);
     }
@@ -390,17 +382,11 @@ mod tests {
         let tokenizer = Tokenizer::new(assembly_token_defs());
         let mut tokens = tokenizer.tokenize("@1234").peekable();
         let a_command = take_a_command(&mut tokens, 1);
-        assert_eq!(
-            a_command,
-            Command::ACommand(AValue::Numeric("1234".to_string()))
-        );
+        assert_eq!(a_command, ACommand(AValue::Numeric("1234".to_string())));
 
         let mut tokens = tokenizer.tokenize("@FOOBAR").peekable();
         let a_command = take_a_command(&mut tokens, 1);
-        assert_eq!(
-            a_command,
-            Command::ACommand(AValue::Symbolic("FOOBAR".to_string()))
-        );
+        assert_eq!(a_command, ACommand(AValue::Symbolic("FOOBAR".to_string())));
     }
 
     #[test]
@@ -410,7 +396,7 @@ mod tests {
         let a_command = take_l_command(&mut tokens, 1);
         assert_eq!(
             a_command,
-            Command::LCommand {
+            LCommand {
                 identifier: "TEST".to_string()
             }
         );
@@ -419,7 +405,7 @@ mod tests {
         let a_command = take_l_command(&mut tokens, 1);
         assert_eq!(
             a_command,
-            Command::LCommand {
+            LCommand {
                 identifier: "_TEST".to_string()
             }
         );
@@ -428,7 +414,7 @@ mod tests {
         let a_command = take_l_command(&mut tokens, 1);
         assert_eq!(
             a_command,
-            Command::LCommand {
+            LCommand {
                 identifier: "T:E$S.T".to_string()
             }
         );
@@ -456,17 +442,11 @@ mod tests {
 
         let line = "@1234";
         let result = parse_line(tokenizer.tokenize(line).peekable(), 1);
-        assert_eq!(
-            result,
-            Some(Command::ACommand(AValue::Numeric("1234".to_string())))
-        );
+        assert_eq!(result, Some(ACommand(AValue::Numeric("1234".to_string()))));
 
         let line = "   @1234  // here is a comment  ";
         let result = parse_line(tokenizer.tokenize(line).peekable(), 1);
-        assert_eq!(
-            result,
-            Some(Command::ACommand(AValue::Numeric("1234".to_string())))
-        );
+        assert_eq!(result, Some(ACommand(AValue::Numeric("1234".to_string()))));
     }
 
     #[test]
@@ -476,10 +456,7 @@ mod tests {
 
         let line = "   @1234 blah blah blah";
         let result = parse_line(tokenizer.tokenize(line).peekable(), 1);
-        assert_eq!(
-            result,
-            Some(Command::ACommand(AValue::Numeric("1234".to_string())))
-        );
+        assert_eq!(result, Some(ACommand(AValue::Numeric("1234".to_string()))));
     }
 
     #[test]
@@ -494,16 +471,16 @@ mod tests {
         assert_eq!(
             result,
             vec![
-                Command::ACommand(AValue::Numeric("1234".to_string())),
-                Command::CCommand {
+                ACommand(AValue::Numeric("1234".to_string())),
+                CCommand {
                     expr: "M+1".to_string(),
                     dest: Some("AMD".to_string()),
                     jump: Some("JGT".to_string())
                 },
-                Command::LCommand {
+                LCommand {
                     identifier: "FOOBAR".to_string()
                 },
-                Command::ACommand(AValue::Symbolic("FOOBAR".to_string())),
+                ACommand(AValue::Symbolic("FOOBAR".to_string())),
             ]
         );
     }

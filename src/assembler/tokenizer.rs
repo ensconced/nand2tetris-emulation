@@ -33,19 +33,3 @@ pub fn assembly_token_defs() -> Vec<TokenDef<AsmTokenKind>> {
         TokenDef::new(r";", |_| AsmTokenKind::Semicolon),
     ]
 }
-
-/**
- *  This re-compiles the token regexes for each line so is less efficient than tokenize_lines.
- *  It is useful for testing, though.
-*/
-pub fn tokenize_single_line(line: &str) -> Peekable<impl Iterator<Item = Token<AsmTokenKind>>> {
-    let tokenizer = Tokenizer::new(assembly_token_defs());
-    tokenizer.tokenize(line).peekable()
-}
-
-pub fn tokenize_lines<'a>(
-    lines: impl Iterator<Item = String>,
-) -> impl Iterator<Item = Peekable<impl Iterator<Item = Token<AsmTokenKind>>>> {
-    let tokenizer = Tokenizer::new(assembly_token_defs());
-    lines.map(move |line| tokenizer.tokenize(&line).peekable())
-}

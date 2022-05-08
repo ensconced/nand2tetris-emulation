@@ -1,4 +1,4 @@
-use super::super::parser_utils::take_optional;
+use super::super::parser_utils::maybe_take;
 use super::super::tokenizer::{Token, Tokenizer};
 use super::tokenizer::{
     assembly_token_defs,
@@ -49,8 +49,7 @@ fn take_a_command(
     line_number: usize,
 ) -> Command {
     tokens.next(); // pop @
-    let a_value = take_a_value(tokens, line_number);
-    ACommand(a_value)
+    ACommand(take_a_value(tokens, line_number))
 }
 
 fn take_l_command(
@@ -82,11 +81,11 @@ fn take_l_command(
     }
 }
 
-fn take_optional_jump(
+fn maybe_take_jump(
     tokens: &mut Peekable<impl Iterator<Item = Token<AsmTokenKind>>>,
 ) -> Option<String> {
-    if take_optional(tokens, Semicolon).is_some() {
-        take_optional(tokens, Whitespace);
+    if maybe_take(tokens, Semicolon).is_some() {
+        maybe_take(tokens, Whitespace);
         if let Some(Token {
             kind: Identifier(identifier_string),
             ..
@@ -101,7 +100,7 @@ fn take_optional_jump(
     }
 }
 
-fn take_optional_destination(
+fn maybe_take_destination(
     tokens: &mut Peekable<impl Iterator<Item = Token<AsmTokenKind>>>,
 ) -> Option<String> {
     if let Some(Token {
@@ -117,7 +116,7 @@ fn take_optional_destination(
     }
 }
 
-fn take_optional_unary_expression(
+fn maybe_take_unary_expression(
     tokens: &mut Peekable<impl Iterator<Item = Token<AsmTokenKind>>>,
     line_number: usize,
 ) -> Option<String> {
@@ -163,7 +162,7 @@ fn take_binary_or_single_term_expression(
     line_number: usize,
 ) -> String {
     let mut result = take_single_expression_term(tokens, line_number);
-    if let Some(remainder_string) = take_optional_unary_expression(tokens, line_number) {
+    if let Some(remainder_string) = maybe_take_unary_expression(tokens, line_number) {
         result.extend(remainder_string.chars());
     }
     result
@@ -173,7 +172,7 @@ fn take_unary_expression(
     tokens: &mut Peekable<impl Iterator<Item = Token<AsmTokenKind>>>,
     line_number: usize,
 ) -> String {
-    take_optional_unary_expression(tokens, line_number).expect("expected unary expression.")
+    maybe_take_unary_expression(tokens, line_number).expect("expected unary expression.")
 }
 
 fn take_expression(
@@ -200,13 +199,13 @@ fn take_c_command(
     tokens: &mut Peekable<impl Iterator<Item = Token<AsmTokenKind>>>,
     line_number: usize,
 ) -> Command {
-    let dest = take_optional_destination(tokens);
+    let dest = maybe_take_destination(tokens);
     let expr = take_expression(tokens, line_number);
-    take_optional(tokens, Whitespace);
+    maybe_take(tokens, Whitespace);
     CCommand {
         expr,
         dest,
-        jump: take_optional_jump(tokens),
+        jump: maybe_take_jump(tokens),
     }
 }
 
@@ -228,8 +227,8 @@ fn parse_line(
     mut line_tokens: Peekable<impl Iterator<Item = Token<AsmTokenKind>>>,
     line_number: usize,
 ) -> Option<Command> {
-    take_optional(&mut line_tokens, AsmTokenKind::Whitespace);
-    take_optional(&mut line_tokens, AsmTokenKind::Comment);
+    maybe_take(&mut line_tokens, AsmTokenKind::Whitespace);
+    maybe_take(&mut line_tokens, AsmTokenKind::Comment);
     if line_tokens.peek().is_none() {
         // There is no command on this line.
         return None;
@@ -237,8 +236,8 @@ fn parse_line(
     let command = take_command(&mut line_tokens, line_number);
     // We could get away with not parsing the rest of the line, but it's good to
     // do, because there could be any kind of syntax errors lurking there...
-    take_optional(&mut line_tokens, AsmTokenKind::Whitespace);
-    take_optional(&mut line_tokens, AsmTokenKind::Comment);
+    maybe_take(&mut line_tokens, AsmTokenKind::Whitespace);
+    maybe_take(&mut line_tokens, AsmTokenKind::Comment);
     if let Some(_) = line_tokens.next() {
         panic!(
             "expected end of line. instead found another token. line: {}",
@@ -336,12 +335,12 @@ mod tests {
     fn test_skip_optional_comment() {
         let tokenizer = Tokenizer::new(assembly_token_defs());
         let mut tokens = tokenizer.tokenize("// hey there").peekable();
-        take_optional(&mut tokens, Comment);
+        maybe_take(&mut tokens, Comment);
         let remaining = tokens.next();
         assert_eq!(remaining, None);
 
         let mut tokens = tokenizer.tokenize("not a comment").peekable();
-        take_optional(&mut tokens, Comment);
+        maybe_take(&mut tokens, Comment);
         let result = tokens.next();
         assert_eq!(
             result,
@@ -356,7 +355,7 @@ mod tests {
     fn test_skip_optional_whitespace() {
         let tokenizer = Tokenizer::new(assembly_token_defs());
         let mut tokens = tokenizer.tokenize("      hello").peekable();
-        take_optional(&mut tokens, Whitespace);
+        maybe_take(&mut tokens, Whitespace);
         let remaining = tokens.next();
         assert_eq!(
             remaining,
@@ -371,8 +370,8 @@ mod tests {
     fn test_skip_optional_whitespace_and_comment() {
         let tokenizer = Tokenizer::new(assembly_token_defs());
         let mut tokens = tokenizer.tokenize("      // this is a comment").peekable();
-        take_optional(&mut tokens, Whitespace);
-        take_optional(&mut tokens, Comment);
+        maybe_take(&mut tokens, Whitespace);
+        maybe_take(&mut tokens, Comment);
         let remaining = tokens.next();
         assert_eq!(remaining, None);
     }

@@ -1,7 +1,7 @@
 use super::tokenizer::Token;
 use std::iter::Peekable;
 
-pub fn take_optional<TokenKind>(
+pub fn maybe_take<TokenKind>(
     tokens: &mut Peekable<impl Iterator<Item = Token<TokenKind>>>,
     token_kind: TokenKind,
 ) -> Option<Token<TokenKind>>

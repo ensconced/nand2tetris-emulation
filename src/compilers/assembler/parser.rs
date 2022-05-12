@@ -255,6 +255,7 @@ pub fn parse_lines<'a>(source: &'a str) -> impl Iterator<Item = Command> + 'a {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::compilers::tokenizer::Tokenizer;
 
     #[test]
     fn test_take_c_command() {

@@ -1,5 +1,5 @@
 use super::super::parser_utils::maybe_take;
-use super::super::tokenizer::{Token, Tokenizer};
+use super::super::tokenizer::{Token, TokenDef, Tokenizer};
 use super::tokenizer::{
     assembly_token_defs,
     AsmTokenKind::{self, *},
@@ -249,21 +249,24 @@ fn parse_line(
 }
 
 pub fn parse_lines<'a>(source: &'a str) -> impl Iterator<Item = Command> + 'a {
-    parse_by_line(source, parse_line)
+    parse_by_line(source, parse_line, assembly_token_defs())
 }
 
-type PeekableTokens = Peekable<Box<dyn Iterator<Item = Token<AsmTokenKind>>>>;
-type LineParser<ParsedLine> = fn(tokens: PeekableTokens, line_number: usize) -> Option<ParsedLine>;
+type PeekableTokens<TokenKind> = Peekable<Box<dyn Iterator<Item = Token<TokenKind>>>>;
+type LineParser<ParsedLine, TokenKind> =
+    fn(tokens: PeekableTokens<TokenKind>, line_number: usize) -> Option<ParsedLine>;
+type TokenDefs<TokenKind> = Vec<TokenDef<TokenKind>>;
 
-fn parse_by_line<'a, ParsedLine>(
+fn parse_by_line<'a, ParsedLine, TokenKind>(
     source: &'a str,
-    line_parser: LineParser<ParsedLine>,
+    line_parser: LineParser<ParsedLine, TokenKind>,
+    token_defs: TokenDefs<TokenKind>,
 ) -> impl Iterator<Item = ParsedLine> + 'a
 where
     ParsedLine: 'static,
 {
     let lines = source.lines().map(|line| line.to_string());
-    let tokenizer = Tokenizer::new(assembly_token_defs());
+    let tokenizer = Tokenizer::new(token_defs);
     lines.enumerate().filter_map(move |(line_idx, line)| {
         let tokens = tokenizer.tokenize(&line).peekable();
         line_parser(tokens, line_idx + 1)

@@ -249,11 +249,24 @@ fn parse_line(
 }
 
 pub fn parse_lines<'a>(source: &'a str) -> impl Iterator<Item = Command> + 'a {
+    parse_by_line(source, parse_line)
+}
+
+type PeekableTokens = Peekable<Box<dyn Iterator<Item = Token<AsmTokenKind>>>>;
+type LineParser<ParsedLine> = fn(tokens: PeekableTokens, line_number: usize) -> Option<ParsedLine>;
+
+fn parse_by_line<'a, ParsedLine>(
+    source: &'a str,
+    line_parser: LineParser<ParsedLine>,
+) -> impl Iterator<Item = ParsedLine> + 'a
+where
+    ParsedLine: 'static,
+{
     let lines = source.lines().map(|line| line.to_string());
     let tokenizer = Tokenizer::new(assembly_token_defs());
     lines.enumerate().filter_map(move |(line_idx, line)| {
         let tokens = tokenizer.tokenize(&line).peekable();
-        parse_line(tokens, line_idx + 1)
+        line_parser(tokens, line_idx + 1)
     })
 }
 

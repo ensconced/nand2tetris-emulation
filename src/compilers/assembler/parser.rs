@@ -1,4 +1,6 @@
-use super::super::parser_utils::{maybe_take, parse_by_line};
+use super::super::parser_utils::{
+    maybe_take, maybe_take_command_with_optional_comment_and_whitespace, parse_by_line,
+};
 use super::super::tokenizer::Token;
 use super::tokenizer::{
     assembly_token_defs,
@@ -84,8 +86,8 @@ fn take_l_command(
 fn maybe_take_jump(
     tokens: &mut Peekable<impl Iterator<Item = Token<AsmTokenKind>>>,
 ) -> Option<String> {
-    if maybe_take(tokens, Semicolon).is_some() {
-        maybe_take(tokens, Whitespace);
+    if maybe_take(tokens, &Semicolon).is_some() {
+        maybe_take(tokens, &Whitespace);
         if let Some(Token {
             kind: Identifier(identifier_string),
             ..
@@ -201,7 +203,7 @@ fn take_c_command(
 ) -> Command {
     let dest = maybe_take_destination(tokens);
     let expr = take_expression(tokens, line_number);
-    maybe_take(tokens, Whitespace);
+    maybe_take(tokens, &Whitespace);
     CCommand {
         expr,
         dest,
@@ -224,28 +226,16 @@ fn take_command(
 }
 
 fn parse_line(
-    mut line_tokens: Peekable<impl Iterator<Item = Token<AsmTokenKind>>>,
+    line_tokens: Peekable<Box<dyn Iterator<Item = Token<AsmTokenKind>>>>,
     line_number: usize,
 ) -> Option<Command> {
-    maybe_take(&mut line_tokens, AsmTokenKind::Whitespace);
-    maybe_take(&mut line_tokens, AsmTokenKind::Comment);
-    if line_tokens.peek().is_none() {
-        // There is no command on this line.
-        return None;
-    }
-    let command = take_command(&mut line_tokens, line_number);
-    // We could get away with not parsing the rest of the line, but it's good to
-    // do, because there could be any kind of syntax errors lurking there...
-    maybe_take(&mut line_tokens, AsmTokenKind::Whitespace);
-    maybe_take(&mut line_tokens, AsmTokenKind::Comment);
-    if let Some(_) = line_tokens.next() {
-        panic!(
-            "expected end of line. instead found another token. line: {}",
-            line_number
-        );
-    }
-
-    Some(command)
+    maybe_take_command_with_optional_comment_and_whitespace(
+        line_tokens,
+        take_command,
+        line_number,
+        &Whitespace,
+        &Comment,
+    )
 }
 
 pub fn parse_lines<'a>(source: &'a str) -> impl Iterator<Item = Command> + 'a {
@@ -331,12 +321,12 @@ mod tests {
     fn test_skip_optional_comment() {
         let tokenizer = Tokenizer::new(assembly_token_defs());
         let mut tokens = tokenizer.tokenize("// hey there").peekable();
-        maybe_take(&mut tokens, Comment);
+        maybe_take(&mut tokens, &Comment);
         let remaining = tokens.next();
         assert_eq!(remaining, None);
 
         let mut tokens = tokenizer.tokenize("not a comment").peekable();
-        maybe_take(&mut tokens, Comment);
+        maybe_take(&mut tokens, &Comment);
         let result = tokens.next();
         assert_eq!(
             result,
@@ -351,7 +341,7 @@ mod tests {
     fn test_skip_optional_whitespace() {
         let tokenizer = Tokenizer::new(assembly_token_defs());
         let mut tokens = tokenizer.tokenize("      hello").peekable();
-        maybe_take(&mut tokens, Whitespace);
+        maybe_take(&mut tokens, &Whitespace);
         let remaining = tokens.next();
         assert_eq!(
             remaining,
@@ -366,8 +356,8 @@ mod tests {
     fn test_skip_optional_whitespace_and_comment() {
         let tokenizer = Tokenizer::new(assembly_token_defs());
         let mut tokens = tokenizer.tokenize("      // this is a comment").peekable();
-        maybe_take(&mut tokens, Whitespace);
-        maybe_take(&mut tokens, Comment);
+        maybe_take(&mut tokens, &Whitespace);
+        maybe_take(&mut tokens, &Comment);
         let remaining = tokens.next();
         assert_eq!(remaining, None);
     }

@@ -1,5 +1,7 @@
 use super::tokenizer::{token_defs, TokenKind};
-use crate::compilers::parser_utils::{maybe_take, parse_by_line};
+use crate::compilers::parser_utils::{
+    maybe_take_command_with_optional_comment_and_whitespace, parse_by_line,
+};
 use crate::compilers::tokenizer::Token;
 use std::iter::Peekable;
 
@@ -57,31 +59,10 @@ fn take_command(
     todo!()
 }
 
-fn parse_line(
-    mut line_tokens: Peekable<impl Iterator<Item = Token<TokenKind>>>,
-    line_number: usize,
-) -> Option<Command> {
-    maybe_take(&mut line_tokens, TokenKind::Whitespace);
-    maybe_take(&mut line_tokens, TokenKind::Comment);
-    if line_tokens.peek().is_none() {
-        // There is no command on this line.
-        return None;
-    }
-    let command = take_command(&mut line_tokens, line_number);
-    // We could get away with not parsing the rest of the line, but it's good to
-    // do, because there could be any kind of syntax errors lurking there...
-    maybe_take(&mut line_tokens, TokenKind::Whitespace);
-    maybe_take(&mut line_tokens, TokenKind::Comment);
-    if let Some(_) = line_tokens.next() {
-        panic!(
-            "expected end of line. instead found another token. line: {}",
-            line_number
-        );
-    }
+// fn parse_line() {
+//     todo!()
+// }
 
-    Some(command)
-}
-
-pub fn parse_lines<'a>(source: &'a str) -> impl Iterator<Item = Command> + 'a {
-    parse_by_line(source, parse_line, token_defs())
-}
+// pub fn parse_lines<'a>(source: &'a str) -> impl Iterator<Item = Command> + 'a {
+//     parse_by_line(source, parse_line, token_defs())
+// }

@@ -1,16 +1,18 @@
 ### main program
 
+- tests for vm parser
+- vm codegen!
+- fix compile warnings
 - maybe get rid of clap and parse cli args myself
 
 ### parser
 
-- add initial lexer stage to assembler to greatly simplify parsing
 - make error handling and reporting more consistent
 
 ### programs
 
-- pong in asm
-- mandelbrot in asm
+- pong
+- mandelbrot
 
 ### better graphics
 
@@ -19,3 +21,4 @@
 ### hardware
 
 - add timer in hardware?
+- ethernet...

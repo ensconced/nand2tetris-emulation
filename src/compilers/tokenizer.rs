@@ -91,31 +91,31 @@ fn get_first_token<LangTokenKind>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::compilers::assembler::tokenizer::{assembly_token_defs, AsmTokenKind};
+    use crate::compilers::assembler::tokenizer::{token_defs, TokenKind};
 
     #[test]
     fn test_get_token() {
-        let tokenizer = Tokenizer::new(assembly_token_defs());
+        let tokenizer = Tokenizer::new(token_defs());
 
-        let tokens: Vec<Token<AsmTokenKind>> = tokenizer
+        let tokens: Vec<Token<TokenKind>> = tokenizer
             .tokenize("AMD=(@FOO+_bar) ; JMP 1234 // whatever")
             .collect();
         let expected_tokens = vec![
-            Token::new(4, AsmTokenKind::Destination("AMD".to_string())),
-            Token::new(1, AsmTokenKind::LParen),
-            Token::new(1, AsmTokenKind::At),
-            Token::new(3, AsmTokenKind::Identifier("FOO".to_string())),
-            Token::new(1, AsmTokenKind::Operator("+".to_string())),
-            Token::new(4, AsmTokenKind::Identifier("_bar".to_string())),
-            Token::new(1, AsmTokenKind::RParen),
-            Token::new(1, AsmTokenKind::Whitespace),
-            Token::new(1, AsmTokenKind::Semicolon),
-            Token::new(1, AsmTokenKind::Whitespace),
-            Token::new(3, AsmTokenKind::Identifier("JMP".to_string())),
-            Token::new(1, AsmTokenKind::Whitespace),
-            Token::new(4, AsmTokenKind::Number("1234".to_string())),
-            Token::new(1, AsmTokenKind::Whitespace),
-            Token::new(11, AsmTokenKind::Comment),
+            Token::new(4, TokenKind::Destination("AMD".to_string())),
+            Token::new(1, TokenKind::LParen),
+            Token::new(1, TokenKind::At),
+            Token::new(3, TokenKind::Identifier("FOO".to_string())),
+            Token::new(1, TokenKind::Operator("+".to_string())),
+            Token::new(4, TokenKind::Identifier("_bar".to_string())),
+            Token::new(1, TokenKind::RParen),
+            Token::new(1, TokenKind::Whitespace),
+            Token::new(1, TokenKind::Semicolon),
+            Token::new(1, TokenKind::Whitespace),
+            Token::new(3, TokenKind::Identifier("JMP".to_string())),
+            Token::new(1, TokenKind::Whitespace),
+            Token::new(4, TokenKind::Number("1234".to_string())),
+            Token::new(1, TokenKind::Whitespace),
+            Token::new(11, TokenKind::Comment),
         ];
         assert_eq!(tokens, expected_tokens)
     }

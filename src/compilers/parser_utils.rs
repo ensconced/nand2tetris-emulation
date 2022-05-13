@@ -16,7 +16,7 @@ where
     None
 }
 
-type PeekableTokens<TokenKind> = Peekable<Box<dyn Iterator<Item = Token<TokenKind>>>>;
+pub type PeekableTokens<TokenKind> = Peekable<Box<dyn Iterator<Item = Token<TokenKind>>>>;
 type LineParser<ParsedLine, TokenKind> =
     fn(tokens: PeekableTokens<TokenKind>, line_number: usize) -> Option<ParsedLine>;
 type TokenDefs<TokenKind> = Vec<TokenDef<TokenKind>>;

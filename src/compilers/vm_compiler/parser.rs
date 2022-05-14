@@ -3,14 +3,13 @@ use super::tokenizer::{
     ProgramFlowCmdToken, TokenKind,
 };
 use crate::compilers::parser_utils::{
-    maybe_take, maybe_take_command_with_optional_comment_and_whitespace, parse_by_line,
-    PeekableTokens,
+    maybe_take_command_with_optional_comment_and_whitespace, parse_by_line, PeekableTokens,
 };
 use crate::compilers::tokenizer::Token;
 use std::iter::Peekable;
 
 #[derive(PartialEq, Debug)]
-enum ArithmeticCommandVariant {
+pub enum ArithmeticCommandVariant {
     Add,
     Sub,
     Neg,
@@ -23,13 +22,13 @@ enum ArithmeticCommandVariant {
 }
 
 #[derive(PartialEq, Debug)]
-enum MemoryCommandVariant {
+pub enum MemoryCommandVariant {
     Push(MemorySegmentVariant, u16),
     Pop(MemorySegmentVariant, u16),
 }
 
 #[derive(PartialEq, Debug)]
-enum MemorySegmentVariant {
+pub enum MemorySegmentVariant {
     Argument,
     Local,
     Static,
@@ -41,21 +40,21 @@ enum MemorySegmentVariant {
 }
 
 #[derive(PartialEq, Debug)]
-enum FlowCommandVariant {
+pub enum FlowCommandVariant {
     GoTo(String),
     Label(String),
     IfGoTo(String),
 }
 
 #[derive(PartialEq, Debug)]
-enum FunctionCommandVariant {
+pub enum FunctionCommandVariant {
     Define(String, u16),
     Call(String, u16),
     ReturnFrom,
 }
 
 #[derive(PartialEq, Debug)]
-enum Command {
+pub enum Command {
     FunctionCommand(FunctionCommandVariant),
     FlowCommand(FlowCommandVariant),
     ArithmeticCommand(ArithmeticCommandVariant),
@@ -64,6 +63,10 @@ enum Command {
 
 use ArithmeticCommandVariant::*;
 use Command::*;
+use FlowCommandVariant::*;
+use FunctionCommandVariant::*;
+use MemoryCommandVariant::*;
+use MemorySegmentVariant::*;
 
 fn take_arithmetic_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> Command {
     match tokens.next() {
@@ -81,7 +84,7 @@ fn take_arithmetic_command(tokens: &mut PeekableTokens<TokenKind>, line_number: 
             ArithmeticCmdToken::Or => ArithmeticCommand(Or),
             ArithmeticCmdToken::Not => ArithmeticCommand(Not),
         },
-        _ => panic!("expected arithmetic command token"),
+        _ => panic!("expected arithmetic command token. line: {}", line_number),
     }
 }
 
@@ -94,14 +97,14 @@ fn take_mem_segment(
             kind: TokenKind::MemorySegmentToken(kind),
             ..
         }) => match kind {
-            MemorySegmentToken::Argument => MemorySegmentVariant::Argument,
-            MemorySegmentToken::Constant => MemorySegmentVariant::Constant,
-            MemorySegmentToken::Local => MemorySegmentVariant::Local,
-            MemorySegmentToken::Pointer => MemorySegmentVariant::Pointer,
-            MemorySegmentToken::Static => MemorySegmentVariant::Static,
-            MemorySegmentToken::Temp => MemorySegmentVariant::Temp,
-            MemorySegmentToken::That => MemorySegmentVariant::That,
-            MemorySegmentToken::This => MemorySegmentVariant::This,
+            MemorySegmentToken::Argument => Argument,
+            MemorySegmentToken::Constant => Constant,
+            MemorySegmentToken::Local => Local,
+            MemorySegmentToken::Pointer => Pointer,
+            MemorySegmentToken::Static => Static,
+            MemorySegmentToken::Temp => Temp,
+            MemorySegmentToken::That => That,
+            MemorySegmentToken::This => This,
         },
         _ => panic!("expected memory segment token. line: {}", line_number),
     }
@@ -142,12 +145,8 @@ fn take_mem_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) 
         take_whitespace(tokens, line_number);
         let index = take_number(tokens, line_number);
         match mem_cmd {
-            MemoryCmdToken::Pop => {
-                Command::MemoryCommand(MemoryCommandVariant::Pop(segment, index))
-            }
-            MemoryCmdToken::Push => {
-                Command::MemoryCommand(MemoryCommandVariant::Push(segment, index))
-            }
+            MemoryCmdToken::Pop => MemoryCommand(Pop(segment, index)),
+            MemoryCmdToken::Push => MemoryCommand(Push(segment, index)),
         }
     } else {
         panic!("expected memory command. line: {}", line_number)
@@ -170,18 +169,16 @@ fn take_fn_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -
             kind: TokenKind::FunctionCmdToken(fn_cmd_token),
             ..
         }) => match fn_cmd_token {
-            FunctionCmdToken::Return => {
-                Command::FunctionCommand(FunctionCommandVariant::ReturnFrom)
-            }
+            FunctionCmdToken::Return => FunctionCommand(ReturnFrom),
             FunctionCmdToken::Define | FunctionCmdToken::Call => {
                 take_whitespace(tokens, line_number);
                 let label = take_label(tokens, line_number);
                 take_whitespace(tokens, line_number);
                 let arg_count = take_number(tokens, line_number);
                 if fn_cmd_token == FunctionCmdToken::Define {
-                    Command::FunctionCommand(FunctionCommandVariant::Define(label, arg_count))
+                    FunctionCommand(Define(label, arg_count))
                 } else {
-                    Command::FunctionCommand(FunctionCommandVariant::Call(label, arg_count))
+                    FunctionCommand(Call(label, arg_count))
                 }
             }
         },
@@ -198,13 +195,9 @@ fn take_flow_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize)
             take_whitespace(tokens, line_number);
             let label = take_label(tokens, line_number);
             match flow_cmd_token {
-                ProgramFlowCmdToken::GoTo => Command::FlowCommand(FlowCommandVariant::GoTo(label)),
-                ProgramFlowCmdToken::IfGoTo => {
-                    Command::FlowCommand(FlowCommandVariant::IfGoTo(label))
-                }
-                ProgramFlowCmdToken::Label => {
-                    Command::FlowCommand(FlowCommandVariant::Label(label))
-                }
+                ProgramFlowCmdToken::GoTo => FlowCommand(GoTo(label)),
+                ProgramFlowCmdToken::IfGoTo => FlowCommand(IfGoTo(label)),
+                ProgramFlowCmdToken::Label => FlowCommand(Label(label)),
             }
         }
         _ => panic!("expected flow command. line: {}", line_number),
@@ -283,35 +276,29 @@ mod tests {
 
         let commands: Vec<Command> = parse_lines(source).collect();
         let expected = vec![
-            Command::ArithmeticCommand(Add),
-            Command::ArithmeticCommand(Sub),
-            Command::ArithmeticCommand(Neg),
-            Command::ArithmeticCommand(Eq),
-            Command::ArithmeticCommand(Gt),
-            Command::ArithmeticCommand(Lt),
-            Command::ArithmeticCommand(And),
-            Command::ArithmeticCommand(Or),
-            Command::ArithmeticCommand(Not),
-            Command::MemoryCommand(MemoryCommandVariant::Push(
-                MemorySegmentVariant::Argument,
-                1,
-            )),
-            Command::MemoryCommand(MemoryCommandVariant::Push(MemorySegmentVariant::Local, 2)),
-            Command::MemoryCommand(MemoryCommandVariant::Push(MemorySegmentVariant::Static, 3)),
-            Command::MemoryCommand(MemoryCommandVariant::Push(
-                MemorySegmentVariant::Constant,
-                4,
-            )),
-            Command::MemoryCommand(MemoryCommandVariant::Pop(MemorySegmentVariant::This, 5)),
-            Command::MemoryCommand(MemoryCommandVariant::Pop(MemorySegmentVariant::That, 6)),
-            Command::MemoryCommand(MemoryCommandVariant::Pop(MemorySegmentVariant::Pointer, 7)),
-            Command::MemoryCommand(MemoryCommandVariant::Pop(MemorySegmentVariant::Temp, 8)),
-            Command::FlowCommand(FlowCommandVariant::GoTo("foobar".to_string())),
-            Command::FlowCommand(FlowCommandVariant::Label("f12.3oo_bA:r".to_string())),
-            Command::FlowCommand(FlowCommandVariant::IfGoTo("foo:bar".to_string())),
-            Command::FunctionCommand(FunctionCommandVariant::Define("do_thing".to_string(), 3)),
-            Command::FunctionCommand(FunctionCommandVariant::Call("do_thing".to_string(), 3)),
-            Command::FunctionCommand(FunctionCommandVariant::ReturnFrom),
+            ArithmeticCommand(Add),
+            ArithmeticCommand(Sub),
+            ArithmeticCommand(Neg),
+            ArithmeticCommand(Eq),
+            ArithmeticCommand(Gt),
+            ArithmeticCommand(Lt),
+            ArithmeticCommand(And),
+            ArithmeticCommand(Or),
+            ArithmeticCommand(Not),
+            MemoryCommand(Push(Argument, 1)),
+            MemoryCommand(Push(Local, 2)),
+            MemoryCommand(Push(Static, 3)),
+            MemoryCommand(Push(Constant, 4)),
+            MemoryCommand(Pop(This, 5)),
+            MemoryCommand(Pop(That, 6)),
+            MemoryCommand(Pop(Pointer, 7)),
+            MemoryCommand(Pop(Temp, 8)),
+            FlowCommand(GoTo("foobar".to_string())),
+            FlowCommand(Label("f12.3oo_bA:r".to_string())),
+            FlowCommand(IfGoTo("foo:bar".to_string())),
+            FunctionCommand(Define("do_thing".to_string(), 3)),
+            FunctionCommand(Call("do_thing".to_string(), 3)),
+            FunctionCommand(ReturnFrom),
         ];
         assert_eq!(commands, expected)
     }

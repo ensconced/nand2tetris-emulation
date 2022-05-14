@@ -138,28 +138,6 @@ fn numeric_a_command_code(num_string: &String) -> String {
     format!("{:016b}", num)
 }
 
-fn symbolic_a_command_code(sym: &String, resolved_symbols: &HashMap<String, usize>) -> String {
-    let index = predefined_symbol_code(sym)
-        .or_else(|| resolved_symbols.get(sym).map(|&num| num))
-        .expect(&format!("symbol {} not present in resolved_symbols", sym));
-    if let Ok(num_16) = i16::try_from(index) {
-        format!("{:016b}", num_16)
-    } else {
-        panic!("failed to resolve symbolic a-command to valid index");
-    }
-}
-
-fn machine_code(command: &Command, resolved_symbols: &HashMap<String, usize>) -> String {
-    match command {
-        Command::CCommand { expr, dest, jump } => {
-            c_command_code(expr, dest.as_ref(), jump.as_ref())
-        }
-        Command::ACommand(AValue::Numeric(num)) => numeric_a_command_code(num),
-        Command::ACommand(AValue::Symbolic(sym)) => symbolic_a_command_code(sym, resolved_symbols),
-        _ => panic!("unexpected l_command remaining after first pass"),
-    }
-}
-
 pub struct CodeGenerator {
     first_pass_result: FirstPassResult,
     static_variable_count: u8,
@@ -173,11 +151,39 @@ impl CodeGenerator {
         }
     }
 
+    fn symbolic_a_command_code(
+        &self,
+        sym: &String,
+        resolved_symbols: &HashMap<String, usize>,
+    ) -> String {
+        let index = predefined_symbol_code(sym)
+            .or_else(|| resolved_symbols.get(sym).map(|&num| num))
+            .expect(&format!("symbol {} not present in resolved_symbols", sym));
+        if let Ok(num_16) = i16::try_from(index) {
+            format!("{:016b}", num_16)
+        } else {
+            panic!("failed to resolve symbolic a-command to valid index");
+        }
+    }
+
+    fn machine_code(&self, command: &Command, resolved_symbols: &HashMap<String, usize>) -> String {
+        match command {
+            Command::CCommand { expr, dest, jump } => {
+                c_command_code(expr, dest.as_ref(), jump.as_ref())
+            }
+            Command::ACommand(AValue::Numeric(num)) => numeric_a_command_code(num),
+            Command::ACommand(AValue::Symbolic(sym)) => {
+                self.symbolic_a_command_code(sym, resolved_symbols)
+            }
+            _ => panic!("unexpected l_command remaining after first pass"),
+        }
+    }
+
     pub fn generate(&self) -> impl Iterator<Item = String> + '_ {
         self.first_pass_result
             .commands_without_labels
             .iter()
-            .map(|command| machine_code(command, &self.first_pass_result.resolved_symbols))
+            .map(|command| self.machine_code(command, &self.first_pass_result.resolved_symbols))
     }
 }
 
@@ -219,20 +225,33 @@ mod tests {
 
     #[test]
     fn test_symbolic_a_command_code() {
-        let resolved_symbols = HashMap::from([("foo".to_string(), 32)]);
-        let code = symbolic_a_command_code(&"foo".to_string(), &resolved_symbols);
-        assert_eq!(code, "0000000000100000");
+        let first_pass_result = FirstPassResult {
+            resolved_symbols: HashMap::from([("foo".to_string(), 32)]),
+            commands_without_labels: vec![Command::ACommand(AValue::Symbolic("foo".to_string()))],
+        };
+        let code_generator = CodeGenerator::new(first_pass_result);
+        let instruction = code_generator.generate().next().unwrap();
+        assert_eq!(instruction, "0000000000100000");
 
-        let resolved_symbols = HashMap::from([("foo".to_string(), 32)]);
-        let code = symbolic_a_command_code(&"SCREEN".to_string(), &resolved_symbols);
-        assert_eq!(code, "0100000000000000");
+        let first_pass_result = FirstPassResult {
+            resolved_symbols: HashMap::from([("foo".to_string(), 32)]),
+            commands_without_labels: vec![Command::ACommand(AValue::Symbolic(
+                "SCREEN".to_string(),
+            ))],
+        };
+        let code_generator = CodeGenerator::new(first_pass_result);
+        let instruction = code_generator.generate().next().unwrap();
+        assert_eq!(instruction, "0100000000000000");
     }
 
     #[test]
     #[should_panic(expected = "failed to resolve symbolic a-command to valid index")]
     fn test_too_big_symbolic_a_command_code() {
-        let resolved_symbols = HashMap::from([("foo".to_string(), 1000000)]);
-        let code = symbolic_a_command_code(&"foo".to_string(), &resolved_symbols);
-        assert_eq!(code, "whatever");
+        let first_pass_result = FirstPassResult {
+            resolved_symbols: HashMap::from([("foo".to_string(), 1000000)]),
+            commands_without_labels: vec![Command::ACommand(AValue::Symbolic("foo".to_string()))],
+        };
+        let code_generator = CodeGenerator::new(first_pass_result);
+        code_generator.generate().count(); // .count() is just to consume the iterator
     }
 }

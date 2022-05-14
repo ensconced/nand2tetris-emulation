@@ -160,13 +160,25 @@ fn machine_code(command: &Command, resolved_symbols: &HashMap<String, usize>) ->
     }
 }
 
-pub fn machine_codes<'a>(
-    first_pass_result: &'a FirstPassResult,
-) -> impl Iterator<Item = String> + 'a {
-    first_pass_result
-        .commands_without_labels
-        .iter()
-        .map(|command| machine_code(command, &first_pass_result.resolved_symbols))
+pub struct CodeGenerator {
+    first_pass_result: FirstPassResult,
+    static_variable_count: u8,
+}
+
+impl CodeGenerator {
+    pub fn new(first_pass_result: FirstPassResult) -> Self {
+        Self {
+            first_pass_result,
+            static_variable_count: 0,
+        }
+    }
+
+    pub fn generate(&self) -> impl Iterator<Item = String> + '_ {
+        self.first_pass_result
+            .commands_without_labels
+            .iter()
+            .map(|command| machine_code(command, &self.first_pass_result.resolved_symbols))
+    }
 }
 
 #[cfg(test)]

@@ -3,14 +3,15 @@ mod first_pass;
 pub mod parser;
 pub mod tokenizer;
 
-use codegen::machine_codes;
+use codegen::CodeGenerator;
 use first_pass::first_pass;
 use parser::parse_lines;
 use std::{fs, path::Path};
 
 fn assemble(source: String, rom_depth: usize) -> String {
     let first_pass_result = first_pass(parse_lines(&source));
-    let mut machine_codes = machine_codes(&first_pass_result);
+    let code_generator = CodeGenerator::new(first_pass_result);
+    let mut machine_codes = code_generator.generate();
     let mut result = String::new();
     for _ in 0..rom_depth {
         if let Some(machine_code) = machine_codes.next() {

@@ -140,25 +140,32 @@ fn numeric_a_command_code(num_string: &String) -> String {
 
 pub struct CodeGenerator {
     first_pass_result: FirstPassResult,
-    static_variable_count: u8,
+    address_next_static_variable: usize,
 }
 
 impl CodeGenerator {
     pub fn new(first_pass_result: FirstPassResult) -> Self {
         Self {
             first_pass_result,
-            static_variable_count: 0,
+            address_next_static_variable: 16,
         }
     }
 
     fn symbolic_a_command_code(
-        &self,
+        &mut self,
         sym: &String,
         resolved_symbols: &HashMap<String, usize>,
     ) -> String {
         let index = predefined_symbol_code(sym)
             .or_else(|| resolved_symbols.get(sym).map(|&num| num))
-            .expect(&format!("symbol {} not present in resolved_symbols", sym));
+            .unwrap_or_else(|| {
+                let address = self.address_next_static_variable;
+                if address > 255 {
+                    panic!("too many static variables")
+                }
+                self.address_next_static_variable = self.address_next_static_variable + 1;
+                address
+            });
         if let Ok(num_16) = i16::try_from(index) {
             format!("{:016b}", num_16)
         } else {
@@ -166,7 +173,11 @@ impl CodeGenerator {
         }
     }
 
-    fn machine_code(&self, command: &Command, resolved_symbols: &HashMap<String, usize>) -> String {
+    fn machine_code(
+        &mut self,
+        command: &Command,
+        resolved_symbols: &HashMap<String, usize>,
+    ) -> String {
         match command {
             Command::CCommand { expr, dest, jump } => {
                 c_command_code(expr, dest.as_ref(), jump.as_ref())
@@ -179,7 +190,7 @@ impl CodeGenerator {
         }
     }
 
-    pub fn generate(&self) -> impl Iterator<Item = String> + '_ {
+    pub fn generate(&mut self) -> impl Iterator<Item = String> + '_ {
         self.first_pass_result
             .commands_without_labels
             .iter()

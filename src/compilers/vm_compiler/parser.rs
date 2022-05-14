@@ -1,6 +1,6 @@
 use super::tokenizer::{
-    token_defs, ArithmeticCmdToken, FunctionCmdToken, MemoryCmdToken, MemorySegmentToken,
-    ProgramFlowCmdToken, TokenKind,
+    token_defs, ArithmeticCmdTokenVariant, FunctionCmdTokenVariant, MemoryCmdTokenVariant,
+    MemorySegmentTokenVariant, ProgramFlowCmdTokenVariant, TokenKind,
 };
 use crate::compilers::parser_utils::{
     maybe_take_command_with_optional_comment_and_whitespace, parse_by_line, PeekableTokens,
@@ -74,15 +74,15 @@ fn take_arithmetic_command(tokens: &mut PeekableTokens<TokenKind>, line_number: 
             kind: TokenKind::ArithmeticCmdToken(kind),
             ..
         }) => match kind {
-            ArithmeticCmdToken::Add => ArithmeticCommand(Add),
-            ArithmeticCmdToken::Sub => ArithmeticCommand(Sub),
-            ArithmeticCmdToken::Neg => ArithmeticCommand(Neg),
-            ArithmeticCmdToken::Eq => ArithmeticCommand(Eq),
-            ArithmeticCmdToken::Gt => ArithmeticCommand(Gt),
-            ArithmeticCmdToken::Lt => ArithmeticCommand(Lt),
-            ArithmeticCmdToken::And => ArithmeticCommand(And),
-            ArithmeticCmdToken::Or => ArithmeticCommand(Or),
-            ArithmeticCmdToken::Not => ArithmeticCommand(Not),
+            ArithmeticCmdTokenVariant::Add => ArithmeticCommand(Add),
+            ArithmeticCmdTokenVariant::Sub => ArithmeticCommand(Sub),
+            ArithmeticCmdTokenVariant::Neg => ArithmeticCommand(Neg),
+            ArithmeticCmdTokenVariant::Eq => ArithmeticCommand(Eq),
+            ArithmeticCmdTokenVariant::Gt => ArithmeticCommand(Gt),
+            ArithmeticCmdTokenVariant::Lt => ArithmeticCommand(Lt),
+            ArithmeticCmdTokenVariant::And => ArithmeticCommand(And),
+            ArithmeticCmdTokenVariant::Or => ArithmeticCommand(Or),
+            ArithmeticCmdTokenVariant::Not => ArithmeticCommand(Not),
         },
         _ => panic!("expected arithmetic command token. line: {}", line_number),
     }
@@ -97,14 +97,14 @@ fn take_mem_segment(
             kind: TokenKind::MemorySegmentToken(kind),
             ..
         }) => match kind {
-            MemorySegmentToken::Argument => Argument,
-            MemorySegmentToken::Constant => Constant,
-            MemorySegmentToken::Local => Local,
-            MemorySegmentToken::Pointer => Pointer,
-            MemorySegmentToken::Static => Static,
-            MemorySegmentToken::Temp => Temp,
-            MemorySegmentToken::That => That,
-            MemorySegmentToken::This => This,
+            MemorySegmentTokenVariant::Argument => Argument,
+            MemorySegmentTokenVariant::Constant => Constant,
+            MemorySegmentTokenVariant::Local => Local,
+            MemorySegmentTokenVariant::Pointer => Pointer,
+            MemorySegmentTokenVariant::Static => Static,
+            MemorySegmentTokenVariant::Temp => Temp,
+            MemorySegmentTokenVariant::That => That,
+            MemorySegmentTokenVariant::This => This,
         },
         _ => panic!("expected memory segment token. line: {}", line_number),
     }
@@ -145,8 +145,8 @@ fn take_mem_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) 
         take_whitespace(tokens, line_number);
         let index = take_number(tokens, line_number);
         match mem_cmd {
-            MemoryCmdToken::Pop => MemoryCommand(Pop(segment, index)),
-            MemoryCmdToken::Push => MemoryCommand(Push(segment, index)),
+            MemoryCmdTokenVariant::Pop => MemoryCommand(Pop(segment, index)),
+            MemoryCmdTokenVariant::Push => MemoryCommand(Push(segment, index)),
         }
     } else {
         panic!("expected memory command. line: {}", line_number)
@@ -156,7 +156,7 @@ fn take_mem_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) 
 fn take_label(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> String {
     match tokens.next() {
         Some(Token {
-            kind: TokenKind::Label(string),
+            kind: TokenKind::LabelIdentifier(string),
             ..
         }) => string,
         _ => panic!("expected label. line: {}", line_number),
@@ -169,13 +169,13 @@ fn take_fn_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -
             kind: TokenKind::FunctionCmdToken(fn_cmd_token),
             ..
         }) => match fn_cmd_token {
-            FunctionCmdToken::Return => FunctionCommand(ReturnFrom),
-            FunctionCmdToken::Define | FunctionCmdToken::Call => {
+            FunctionCmdTokenVariant::Return => FunctionCommand(ReturnFrom),
+            FunctionCmdTokenVariant::Define | FunctionCmdTokenVariant::Call => {
                 take_whitespace(tokens, line_number);
                 let label = take_label(tokens, line_number);
                 take_whitespace(tokens, line_number);
                 let arg_count = take_number(tokens, line_number);
-                if fn_cmd_token == FunctionCmdToken::Define {
+                if fn_cmd_token == FunctionCmdTokenVariant::Define {
                     FunctionCommand(Define(label, arg_count))
                 } else {
                     FunctionCommand(Call(label, arg_count))
@@ -195,9 +195,9 @@ fn take_flow_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize)
             take_whitespace(tokens, line_number);
             let label = take_label(tokens, line_number);
             match flow_cmd_token {
-                ProgramFlowCmdToken::GoTo => FlowCommand(GoTo(label)),
-                ProgramFlowCmdToken::IfGoTo => FlowCommand(IfGoTo(label)),
-                ProgramFlowCmdToken::Label => FlowCommand(Label(label)),
+                ProgramFlowCmdTokenVariant::GoTo => FlowCommand(GoTo(label)),
+                ProgramFlowCmdTokenVariant::IfGoTo => FlowCommand(IfGoTo(label)),
+                ProgramFlowCmdTokenVariant::Label => FlowCommand(Label(label)),
             }
         }
         _ => panic!("expected flow command. line: {}", line_number),

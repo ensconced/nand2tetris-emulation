@@ -1,7 +1,8 @@
 ### main program
 
-- better organise token/command enums
-- fix compile warnings
+- add missing support for variable symbols in assembler!
+- use variable symbols in falling-square
+- vm - enable parsing of whole files/directories, and prepending filenames to function names etc correctly
 - vm codegen!
 - maybe get rid of clap and parse cli args myself
 

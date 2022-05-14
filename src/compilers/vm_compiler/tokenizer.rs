@@ -1,7 +1,7 @@
 use crate::compilers::tokenizer::TokenDef;
 
 #[derive(PartialEq, Debug)]
-pub enum ArithmeticCmdToken {
+pub enum ArithmeticCmdTokenVariant {
     Add,
     Sub,
     Neg,
@@ -14,13 +14,13 @@ pub enum ArithmeticCmdToken {
 }
 
 #[derive(PartialEq, Debug)]
-pub enum MemoryCmdToken {
+pub enum MemoryCmdTokenVariant {
     Push,
     Pop,
 }
 
 #[derive(PartialEq, Debug)]
-pub enum MemorySegmentToken {
+pub enum MemorySegmentTokenVariant {
     Argument,
     Local,
     Static,
@@ -32,14 +32,14 @@ pub enum MemorySegmentToken {
 }
 
 #[derive(PartialEq, Debug)]
-pub enum ProgramFlowCmdToken {
+pub enum ProgramFlowCmdTokenVariant {
     GoTo,
     Label,
     IfGoTo,
 }
 
 #[derive(PartialEq, Debug)]
-pub enum FunctionCmdToken {
+pub enum FunctionCmdTokenVariant {
     Define,
     Call,
     Return,
@@ -49,51 +49,52 @@ pub enum FunctionCmdToken {
 pub enum TokenKind {
     Comment,
     Whitespace,
-    Label(String),
+    LabelIdentifier(String),
     Number(String),
-    FunctionCmdToken(FunctionCmdToken),
-    FlowCmdToken(ProgramFlowCmdToken),
-    ArithmeticCmdToken(ArithmeticCmdToken),
-    MemoryCmdToken(MemoryCmdToken),
-    MemorySegmentToken(MemorySegmentToken),
+    FunctionCmdToken(FunctionCmdTokenVariant),
+    FlowCmdToken(ProgramFlowCmdTokenVariant),
+    ArithmeticCmdToken(ArithmeticCmdTokenVariant),
+    MemoryCmdToken(MemoryCmdTokenVariant),
+    MemorySegmentToken(MemorySegmentTokenVariant),
 }
 
-use ArithmeticCmdToken::*;
-use FunctionCmdToken::*;
-use MemoryCmdToken::*;
-use MemorySegmentToken::*;
-use ProgramFlowCmdToken::*;
+use ArithmeticCmdTokenVariant::*;
+use FunctionCmdTokenVariant::*;
+use MemoryCmdTokenVariant::*;
+use MemorySegmentTokenVariant::*;
+use ProgramFlowCmdTokenVariant::*;
+use TokenKind::*;
 
 pub fn token_defs() -> Vec<TokenDef<TokenKind>> {
     vec![
-        TokenDef::new(r"//.*", |_| TokenKind::Comment),
-        TokenDef::new(r"\s+", |_| TokenKind::Whitespace),
-        TokenDef::new(r"[a-zA-Z:_.][0-9a-zA-Z:_.]*", |src| TokenKind::Label(src)),
-        TokenDef::new(r"[0-9]+", |src| TokenKind::Number(src)),
-        TokenDef::new(r"label", |_| TokenKind::FlowCmdToken(Label)),
-        TokenDef::new(r"goto", |_| TokenKind::FlowCmdToken(GoTo)),
-        TokenDef::new(r"if-goto", |_| TokenKind::FlowCmdToken(IfGoTo)),
-        TokenDef::new(r"function", |_| TokenKind::FunctionCmdToken(Define)),
-        TokenDef::new(r"call", |_| TokenKind::FunctionCmdToken(Call)),
-        TokenDef::new(r"return", |_| TokenKind::FunctionCmdToken(Return)),
-        TokenDef::new(r"add", |_| TokenKind::ArithmeticCmdToken(Add)),
-        TokenDef::new(r"sub", |_| TokenKind::ArithmeticCmdToken(Sub)),
-        TokenDef::new(r"neg", |_| TokenKind::ArithmeticCmdToken(Neg)),
-        TokenDef::new(r"eq", |_| TokenKind::ArithmeticCmdToken(Eq)),
-        TokenDef::new(r"gt", |_| TokenKind::ArithmeticCmdToken(Gt)),
-        TokenDef::new(r"lt", |_| TokenKind::ArithmeticCmdToken(Lt)),
-        TokenDef::new(r"and", |_| TokenKind::ArithmeticCmdToken(And)),
-        TokenDef::new(r"or", |_| TokenKind::ArithmeticCmdToken(Or)),
-        TokenDef::new(r"not", |_| TokenKind::ArithmeticCmdToken(Not)),
-        TokenDef::new(r"push", |_| TokenKind::MemoryCmdToken(Push)),
-        TokenDef::new(r"pop", |_| TokenKind::MemoryCmdToken(Pop)),
-        TokenDef::new(r"argument", |_| TokenKind::MemorySegmentToken(Argument)),
-        TokenDef::new(r"local", |_| TokenKind::MemorySegmentToken(Local)),
-        TokenDef::new(r"static", |_| TokenKind::MemorySegmentToken(Static)),
-        TokenDef::new(r"constant", |_| TokenKind::MemorySegmentToken(Constant)),
-        TokenDef::new(r"this", |_| TokenKind::MemorySegmentToken(This)),
-        TokenDef::new(r"that", |_| TokenKind::MemorySegmentToken(That)),
-        TokenDef::new(r"pointer", |_| TokenKind::MemorySegmentToken(Pointer)),
-        TokenDef::new(r"temp", |_| TokenKind::MemorySegmentToken(Temp)),
+        TokenDef::new(r"//.*", |_| Comment),
+        TokenDef::new(r"\s+", |_| Whitespace),
+        TokenDef::new(r"[a-zA-Z:_.][0-9a-zA-Z:_.]*", |src| LabelIdentifier(src)),
+        TokenDef::new(r"[0-9]+", |src| Number(src)),
+        TokenDef::new(r"label", |_| FlowCmdToken(Label)),
+        TokenDef::new(r"goto", |_| FlowCmdToken(GoTo)),
+        TokenDef::new(r"if-goto", |_| FlowCmdToken(IfGoTo)),
+        TokenDef::new(r"function", |_| FunctionCmdToken(Define)),
+        TokenDef::new(r"call", |_| FunctionCmdToken(Call)),
+        TokenDef::new(r"return", |_| FunctionCmdToken(Return)),
+        TokenDef::new(r"add", |_| ArithmeticCmdToken(Add)),
+        TokenDef::new(r"sub", |_| ArithmeticCmdToken(Sub)),
+        TokenDef::new(r"neg", |_| ArithmeticCmdToken(Neg)),
+        TokenDef::new(r"eq", |_| ArithmeticCmdToken(Eq)),
+        TokenDef::new(r"gt", |_| ArithmeticCmdToken(Gt)),
+        TokenDef::new(r"lt", |_| ArithmeticCmdToken(Lt)),
+        TokenDef::new(r"and", |_| ArithmeticCmdToken(And)),
+        TokenDef::new(r"or", |_| ArithmeticCmdToken(Or)),
+        TokenDef::new(r"not", |_| ArithmeticCmdToken(Not)),
+        TokenDef::new(r"push", |_| MemoryCmdToken(Push)),
+        TokenDef::new(r"pop", |_| MemoryCmdToken(Pop)),
+        TokenDef::new(r"argument", |_| MemorySegmentToken(Argument)),
+        TokenDef::new(r"local", |_| MemorySegmentToken(Local)),
+        TokenDef::new(r"static", |_| MemorySegmentToken(Static)),
+        TokenDef::new(r"constant", |_| MemorySegmentToken(Constant)),
+        TokenDef::new(r"this", |_| MemorySegmentToken(This)),
+        TokenDef::new(r"that", |_| MemorySegmentToken(That)),
+        TokenDef::new(r"pointer", |_| MemorySegmentToken(Pointer)),
+        TokenDef::new(r"temp", |_| MemorySegmentToken(Temp)),
     ]
 }

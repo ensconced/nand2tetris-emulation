@@ -66,7 +66,7 @@ impl<LangTokenKind> TokenDef<LangTokenKind> {
 
 fn get_first_token<LangTokenKind>(
     string: &str,
-    token_defs: &Vec<TokenDef<LangTokenKind>>,
+    token_defs: &[TokenDef<LangTokenKind>],
 ) -> Option<Token<LangTokenKind>> {
     if string.is_empty() {
         return None;
@@ -76,9 +76,7 @@ fn get_first_token<LangTokenKind>(
     // does the job.
     let token_alternatives = token_defs
         .iter()
-        .map(|matcher| matcher.get_token(string))
-        .filter(|token| token.is_some())
-        .map(|some_token| some_token.unwrap());
+        .filter_map(|matcher| matcher.get_token(string));
     let longest_token = token_alternatives.max_by_key(|token| token.length);
 
     if longest_token.is_some() {

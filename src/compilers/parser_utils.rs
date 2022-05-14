@@ -58,7 +58,7 @@ where
     // do, because there could be any kind of syntax errors lurking there...
     maybe_take(&mut line_tokens, whitespace);
     maybe_take(&mut line_tokens, comment);
-    if let Some(_) = line_tokens.next() {
+    if line_tokens.next().is_some() {
         panic!(
             "expected end of line. instead found another token. line: {}",
             line_number

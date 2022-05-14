@@ -224,7 +224,7 @@ mod tests {
     }
 
     #[test]
-    fn test_symbolic_a_command_code() {
+    fn test_label_symbol_a_command_code() {
         let first_pass_result = FirstPassResult {
             resolved_symbols: HashMap::from([("foo".to_string(), 32)]),
             commands_without_labels: vec![Command::ACommand(AValue::Symbolic("foo".to_string()))],
@@ -232,7 +232,34 @@ mod tests {
         let code_generator = CodeGenerator::new(first_pass_result);
         let instruction = code_generator.generate().next().unwrap();
         assert_eq!(instruction, "0000000000100000");
+    }
 
+    #[test]
+    fn test_variable_symbol_a_command_code() {
+        let first_pass_result = FirstPassResult {
+            resolved_symbols: HashMap::from([("i_am_a_label_symbol".to_string(), 255)]),
+            commands_without_labels: vec![
+                Command::ACommand(AValue::Symbolic("foo".to_string())),
+                Command::ACommand(AValue::Symbolic("bar".to_string())),
+                Command::ACommand(AValue::Symbolic("i_am_a_label_symbol".to_string())),
+                Command::ACommand(AValue::Symbolic("baz".to_string())),
+            ],
+        };
+        let code_generator = CodeGenerator::new(first_pass_result);
+        let instructions: Vec<String> = code_generator.generate().collect();
+        assert_eq!(
+            instructions,
+            vec![
+                "0000000000010000",
+                "0000000000010001",
+                "0000000011111111",
+                "0000000000010010"
+            ]
+        );
+    }
+
+    #[test]
+    fn test_predefined_variable_symbol_a_command_code() {
         let first_pass_result = FirstPassResult {
             resolved_symbols: HashMap::from([("foo".to_string(), 32)]),
             commands_without_labels: vec![Command::ACommand(AValue::Symbolic(

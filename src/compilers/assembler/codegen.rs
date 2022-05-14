@@ -34,8 +34,8 @@ fn predefined_symbol_code(sym: &String) -> Option<usize> {
     }
 }
 
-fn expression_code(expr: &String) -> &'static str {
-    match expr.as_str() {
+fn expression_code(expr: &str) -> &'static str {
+    match expr {
         "0" => "0101010",
         "1" => "0111111",
         "-1" => "0111010",
@@ -129,7 +129,7 @@ fn c_command_code(expr: &String, dest: Option<&String>, jump: Option<&String>) -
     )
 }
 
-fn numeric_a_command_code(num_string: &String) -> String {
+fn numeric_a_command_code(num_string: &str) -> String {
     let num = num_string
         .parse::<i16>()
         .expect("failed to parse numeric a-command");

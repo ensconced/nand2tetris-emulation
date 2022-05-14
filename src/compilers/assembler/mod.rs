@@ -15,10 +15,10 @@ fn assemble(source: String, rom_depth: usize) -> String {
     let mut result = String::new();
     for _ in 0..rom_depth {
         if let Some(machine_code) = machine_codes.next() {
-            result.extend(machine_code.chars());
+            result.push_str(&machine_code);
             result.push('\n');
         } else {
-            result.extend("0000000000000000\n".chars());
+            result.push_str("0000000000000000\n");
         }
     }
     result

@@ -21,11 +21,11 @@ type LineParser<ParsedLine, TokenKind> =
     fn(tokens: PeekableTokens<TokenKind>, line_number: usize) -> Option<ParsedLine>;
 type TokenDefs<TokenKind> = Vec<TokenDef<TokenKind>>;
 
-pub fn parse_by_line<'a, ParsedLine, TokenKind>(
-    source: &'a str,
+pub fn parse_by_line<ParsedLine, TokenKind>(
+    source: &str,
     line_parser: LineParser<ParsedLine, TokenKind>,
     token_defs: TokenDefs<TokenKind>,
-) -> impl Iterator<Item = ParsedLine> + 'a
+) -> impl Iterator<Item = ParsedLine> + '_
 where
     ParsedLine: 'static,
 {
@@ -49,10 +49,7 @@ where
 {
     maybe_take(&mut line_tokens, whitespace);
     maybe_take(&mut line_tokens, comment);
-    if line_tokens.peek().is_none() {
-        // There is no command on this line.
-        return None;
-    }
+    line_tokens.peek()?;
     let command = take_command(&mut line_tokens, line_number);
     // We could get away with not parsing the rest of the line, but it's good to
     // do, because there could be any kind of syntax errors lurking there...

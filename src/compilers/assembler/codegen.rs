@@ -158,20 +158,21 @@ impl CodeGenerator {
 
     pub fn generate(&mut self) -> impl Iterator<Item = String> + '_ {
         self.commands_without_labels
-        .iter()
-        .map(|command| match command {
-            CCommand { expr, dest, jump } => c_command_code(expr, dest.as_ref(), jump.as_ref()),
-            ACommand(Numeric(num)) => numeric_a_command_code(num),
-            ACommand(Symbolic(sym)) => {
+            .iter()
+            .map(|command| match command {
+                CCommand { expr, dest, jump } => c_command_code(expr, dest.as_ref(), jump.as_ref()),
+                ACommand(Numeric(num)) => numeric_a_command_code(num),
+                ACommand(Symbolic(sym)) => {
                     let index = predefined_symbol_code(sym)
                         .or_else(|| self.resolved_symbols.get(sym).map(|&num| num))
                         .unwrap_or_else(|| {
                             let address = self.address_next_static_variable;
                             if address > 255 {
-                                panic!("too many static variables - ran out of space when trying to place symbol \"{}\"", sym)
+                                panic!("too many static variables - ran out of place while trying to place \"{}\"", sym)
                             }
                             self.resolved_symbols.insert(sym.to_string(), address);
-                            self.address_next_static_variable = self.address_next_static_variable + 1;
+                            self.address_next_static_variable =
+                                self.address_next_static_variable + 1;
                             address
                         });
                     if let Ok(num_16) = i16::try_from(index) {
@@ -179,9 +180,10 @@ impl CodeGenerator {
                     } else {
                         panic!("failed to resolve symbolic a-command to valid index");
                     }
-
-                },
-                _ => panic!("unexpected l_command remaining after first pass"),
+                }
+                LCommand { identifier: _ } => {
+                    panic!("unexpected l_command remaining after first pass")
+                }
             })
     }
 }

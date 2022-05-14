@@ -30,7 +30,7 @@ push|pop segment index
 
 - argument: stores the function's arguments. one set for each instance of a running function
 - local: stores the function's local variables. one set for each instance of a running function
-- static: stores static variables shared by all functions within the same .vm file. shared by all functions in the same .vm file
+- static: stores static variables shared by all functions within the same .vm file. shared by all functions in the same .vm file (is it really just that it's namespaced by file, using dots?? - JB)
 - this/that: general purpose segments on heap, pointed to by pointer 0 and pointer 1 respectively. one set for each instance of a running program
 - pointer: a two-entry segment that holds the base addresses of the this and that segments. one set for each instance of a running program.
 - temp: fixed eight-entry segment that holds temporary variables for general use. shared by all functions in the program.
@@ -58,11 +58,11 @@ When a VM function starts running, it assumes that:
 
 ## RAM layout
 
-0 : R0 / SP / stack pointer - points to the NEXT topmost location in the stack
-1 : R1 / LCL - points to the base of the current VM function's local segment
-2 : R2 / ARG - points to the base of the current VM function's argument segment
-3 : R3 / pointer 0 - points to the base of the current THIS segment within the heap
-4 : R4 / pointer 1 - points to the base of the current THAT segment within the heap
+0 : R0 / SP / stack pointer - POINTS TO the NEXT topmost location in the stack
+1 : R1 / LCL - POINTS TO the base of the current VM function's local segment
+2 : R2 / ARG - POINTS TO the base of the current VM function's argument segment
+3 : R3 / pointer 0 - POINTS TO the base of the current THIS segment within the heap
+4 : R4 / pointer 1 - POINTS TO the base of the current THAT segment within the heap
 5-12 : R5-R12 - holds the contents of the TEMP segment
 13-15 : R13-R15 - can be used by the VM implementation as general-purpose registers
 16-255 : static variables
@@ -74,4 +74,8 @@ When a VM function starts running, it assumes that:
 
 ### static variables
 
-when a new symbol is encountered for the first time in
+each static variable number j in a VM file f is turned into the assembly symbol f.j. for example, suppose that the file Xxx.vm contains the command `push static c`. This command can be translated to the Hack assembly commands @Xxx.3 and D=M, followed by additional assembly code that pushes D's value to the stack.
+
+### design of VM implementation
+
+the vm translator should accept a single command-line parameter, for either a file name of the form Xxx.vm, or a directory name containing one or more vm files. The result of the translation is always a single assembly file named Xxx.asm, created in the same directory as the input Xxx.

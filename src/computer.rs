@@ -7,7 +7,7 @@ pub fn bit(instruction: i16, idx: u32) -> u16 {
 }
 
 fn comp_bits(instruction: i16) -> i16 {
-    (instruction >> 6) & 0b1_111111
+    (instruction >> 6) & 0b1111111
 }
 
 struct Cpu {
@@ -28,34 +28,34 @@ impl Cpu {
         } else {
             // C Instruction
             let alu_out = match comp_bits(instruction) {
-                0b0_101010 => 0,
-                0b0_111111 => 1,
-                0b0_111010 => -1,
-                0b0_001100 => self.reg_d,
-                0b0_110000 => self.reg_a,
-                0b0_001101 => !self.reg_d,
-                0b0_110001 => !self.reg_a,
-                0b0_001111 => -self.reg_d,
-                0b0_110011 => -self.reg_a,
-                0b0_011111 => self.reg_d + 1,
-                0b0_110111 => self.reg_a + 1,
-                0b0_001110 => self.reg_d - 1,
-                0b0_110010 => self.reg_a - 1,
-                0b0_000010 => self.reg_d + self.reg_a,
-                0b0_010011 => self.reg_d - self.reg_a,
-                0b0_000111 => self.reg_a - self.reg_d,
-                0b0_000000 => self.reg_d & self.reg_a,
-                0b0_010101 => self.reg_d | self.reg_a,
-                0b1_110000 => in_m,
-                0b1_110001 => !in_m,
-                0b1_110011 => -in_m,
-                0b1_110111 => in_m + 1,
-                0b1_110010 => in_m - 1,
-                0b1_000010 => self.reg_d + in_m,
-                0b1_010011 => self.reg_d - in_m,
-                0b1_000111 => in_m - self.reg_d,
-                0b1_000000 => self.reg_d & in_m,
-                0b1_010101 => self.reg_d | in_m,
+                0b0101010 => 0,
+                0b0111111 => 1,
+                0b0111010 => -1,
+                0b0001100 => self.reg_d,
+                0b0110000 => self.reg_a,
+                0b0001101 => !self.reg_d,
+                0b0110001 => !self.reg_a,
+                0b0001111 => -self.reg_d,
+                0b0110011 => -self.reg_a,
+                0b0011111 => self.reg_d + 1,
+                0b0110111 => self.reg_a + 1,
+                0b0001110 => self.reg_d - 1,
+                0b0110010 => self.reg_a - 1,
+                0b0000010 => self.reg_d + self.reg_a,
+                0b0010011 => self.reg_d - self.reg_a,
+                0b0000111 => self.reg_a - self.reg_d,
+                0b0000000 => self.reg_d & self.reg_a,
+                0b0010101 => self.reg_d | self.reg_a,
+                0b1110000 => in_m,
+                0b1110001 => !in_m,
+                0b1110011 => -in_m,
+                0b1110111 => in_m + 1,
+                0b1110010 => in_m - 1,
+                0b1000010 => self.reg_d + in_m,
+                0b1010011 => self.reg_d - in_m,
+                0b1000111 => in_m - self.reg_d,
+                0b1000000 => self.reg_d & in_m,
+                0b1010101 => self.reg_d | in_m,
                 _ => panic!("bad instruction"),
             };
             if (bit(instruction, 0) == 1 && alu_out > 0)
@@ -136,7 +136,7 @@ mod tests {
 
     #[test]
     fn test_get_comp_bits() {
-        assert_eq!(comp_bits(0b1110_101010_010_111), 0b0_101010);
-        assert_eq!(comp_bits(0b1111_010101_111_010), 0b1_010101);
+        assert_eq!(comp_bits(0b1110101010010111), 0b0101010);
+        assert_eq!(comp_bits(0b1111010101111010), 0b1010101);
     }
 }

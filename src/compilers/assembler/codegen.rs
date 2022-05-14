@@ -5,8 +5,8 @@ use super::parser::{
 };
 use std::collections::HashMap;
 
-fn predefined_symbol_code(sym: &String) -> Option<usize> {
-    match sym.as_str() {
+fn predefined_symbol_code(sym: &str) -> Option<usize> {
+    match sym {
         "SP" => Some(0),
         "LCL" => Some(1),
         "ARG" => Some(2),
@@ -112,7 +112,7 @@ fn jump_code(jump_opt: Option<&String>) -> &'static str {
     }
 }
 
-fn c_command_code(expr: &String, dest: Option<&String>, jump: Option<&String>) -> String {
+fn c_command_code(expr: &str, dest: Option<&String>, jump: Option<&String>) -> String {
     format!(
         "111{}{}{}",
         expression_code(expr),
@@ -188,33 +188,26 @@ mod tests {
     #[test]
     fn test_c_command_code() {
         assert_eq!(
-            c_command_code(
-                &"M+1".to_string(),
-                Some(&"A".to_string()),
-                Some(&"JGT".to_string()),
-            ),
+            c_command_code("M+1", Some(&"A".to_string()), Some(&"JGT".to_string()),),
             "1111110111100001".to_string()
         );
     }
     #[test]
     fn test_numeric_a_command_code() {
-        assert_eq!(numeric_a_command_code(&"1".to_string()), "0000000000000001");
-        assert_eq!(
-            numeric_a_command_code(&"1234".to_string()),
-            "0000010011010010"
-        );
+        assert_eq!(numeric_a_command_code("1"), "0000000000000001");
+        assert_eq!(numeric_a_command_code("1234"), "0000010011010010");
     }
 
     #[test]
     #[should_panic(expected = "negative numbers are not allowed in a-commands")]
     fn test_negative_numeric_a_command_code() {
-        assert_eq!(numeric_a_command_code(&"-1234".to_string()), "whatever");
+        assert_eq!(numeric_a_command_code("-1234"), "whatever");
     }
 
     #[test]
     #[should_panic]
     fn test_too_big_numeric_a_command_code() {
-        assert_eq!(numeric_a_command_code(&"100000".to_string()), "whatever");
+        assert_eq!(numeric_a_command_code("100000"), "whatever");
     }
 
     #[test]

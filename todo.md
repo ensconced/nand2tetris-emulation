@@ -3,6 +3,7 @@
 - tests for vm parser
 - vm codegen!
 - fix compile warnings
+- better organise token/command enums
 - maybe get rid of clap and parse cli args myself
 
 ### parser

@@ -170,6 +170,7 @@ impl CodeGenerator {
                             if address > 255 {
                                 panic!("too many static variables - ran out of space when trying to place symbol \"{}\"", sym)
                             }
+                            self.resolved_symbols.insert(sym.to_string(), address);
                             self.address_next_static_variable = self.address_next_static_variable + 1;
                             address
                         });
@@ -241,6 +242,8 @@ mod tests {
                 ACommand(Symbolic("bar".to_string())),
                 ACommand(Symbolic("i_am_a_label_symbol".to_string())),
                 ACommand(Symbolic("baz".to_string())),
+                ACommand(Symbolic("foo".to_string())),
+                ACommand(Symbolic("bar".to_string())),
             ],
         };
         let mut code_generator = CodeGenerator::new(first_pass_result);
@@ -251,7 +254,9 @@ mod tests {
                 "0000000000010000",
                 "0000000000010001",
                 "0000000011111111",
-                "0000000000010010"
+                "0000000000010010",
+                "0000000000010000",
+                "0000000000010001",
             ]
         );
     }

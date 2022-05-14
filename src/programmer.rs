@@ -11,7 +11,7 @@ pub fn get_rom(file_path: &str) -> [i16; 32768] {
                 .collect();
             clean_line
         })
-        .filter(|line| line.len() > 0)
+        .filter(|line| !line.is_empty())
         .collect();
 
     let mut rom: [i16; 32768] = [0; 32768];

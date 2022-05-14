@@ -69,8 +69,8 @@ pub fn token_defs() -> Vec<TokenDef<TokenKind>> {
     vec![
         TokenDef::new(r"//.*", |_| Comment),
         TokenDef::new(r"\s+", |_| Whitespace),
-        TokenDef::new(r"[a-zA-Z:_.][0-9a-zA-Z:_.]*", |src| LabelIdentifier(src)),
-        TokenDef::new(r"[0-9]+", |src| Number(src)),
+        TokenDef::new(r"[a-zA-Z:_.][0-9a-zA-Z:_.]*", LabelIdentifier),
+        TokenDef::new(r"[0-9]+", Number),
         TokenDef::new(r"label", |_| FlowCmdToken(Label)),
         TokenDef::new(r"goto", |_| FlowCmdToken(GoTo)),
         TokenDef::new(r"if-goto", |_| FlowCmdToken(IfGoTo)),

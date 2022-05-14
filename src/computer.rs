@@ -23,7 +23,7 @@ impl Cpu {
         if bit(instruction, 15) == 0 {
             // A Instruction
             self.reg_a = instruction;
-            self.pc = self.pc + 1;
+            self.pc += 1;
             self.memory_load = false;
         } else {
             // C Instruction
@@ -64,7 +64,7 @@ impl Cpu {
             {
                 self.pc = self.reg_a;
             } else {
-                self.pc = self.pc + 1;
+                self.pc += 1;
             }
             self.memory_load = bit(instruction, 3) == 1;
             if self.memory_load {

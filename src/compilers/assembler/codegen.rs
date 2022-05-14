@@ -173,18 +173,14 @@ impl CodeGenerator {
         }
     }
 
-    fn machine_code(
-        &mut self,
-        command: &Command,
-        resolved_symbols: &HashMap<String, usize>,
-    ) -> String {
+    fn machine_code(&mut self, command: &Command) -> String {
         match command {
             Command::CCommand { expr, dest, jump } => {
                 c_command_code(expr, dest.as_ref(), jump.as_ref())
             }
             Command::ACommand(AValue::Numeric(num)) => numeric_a_command_code(num),
             Command::ACommand(AValue::Symbolic(sym)) => {
-                self.symbolic_a_command_code(sym, resolved_symbols)
+                self.symbolic_a_command_code(sym, &self.first_pass_result.resolved_symbols)
             }
             _ => panic!("unexpected l_command remaining after first pass"),
         }
@@ -194,7 +190,7 @@ impl CodeGenerator {
         self.first_pass_result
             .commands_without_labels
             .iter()
-            .map(|command| self.machine_code(command, &self.first_pass_result.resolved_symbols))
+            .map(|command| self.machine_code(command))
     }
 }
 

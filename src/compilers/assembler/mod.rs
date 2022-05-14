@@ -10,7 +10,7 @@ use std::{fs, path::Path};
 
 fn assemble(source: String, rom_depth: usize) -> String {
     let first_pass_result = first_pass(parse_lines(&source));
-    let code_generator = CodeGenerator::new(first_pass_result);
+    let mut code_generator = CodeGenerator::new(first_pass_result);
     let mut machine_codes = code_generator.generate();
     let mut result = String::new();
     for _ in 0..rom_depth {

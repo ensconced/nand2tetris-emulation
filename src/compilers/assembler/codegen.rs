@@ -1,5 +1,8 @@
 use super::first_pass::FirstPassResult;
-use super::parser::{AValue, Command};
+use super::parser::{
+    AValue::*,
+    Command::{self, *},
+};
 use std::collections::HashMap;
 
 fn predefined_symbol_code(sym: &String) -> Option<usize> {
@@ -139,58 +142,46 @@ fn numeric_a_command_code(num_string: &String) -> String {
 }
 
 pub struct CodeGenerator {
-    first_pass_result: FirstPassResult,
+    resolved_symbols: HashMap<String, usize>,
+    commands_without_labels: Vec<Command>,
     address_next_static_variable: usize,
 }
 
 impl CodeGenerator {
     pub fn new(first_pass_result: FirstPassResult) -> Self {
         Self {
-            first_pass_result,
             address_next_static_variable: 16,
-        }
-    }
-
-    fn symbolic_a_command_code(
-        &mut self,
-        sym: &String,
-        resolved_symbols: &HashMap<String, usize>,
-    ) -> String {
-        let index = predefined_symbol_code(sym)
-            .or_else(|| resolved_symbols.get(sym).map(|&num| num))
-            .unwrap_or_else(|| {
-                let address = self.address_next_static_variable;
-                if address > 255 {
-                    panic!("too many static variables")
-                }
-                self.address_next_static_variable = self.address_next_static_variable + 1;
-                address
-            });
-        if let Ok(num_16) = i16::try_from(index) {
-            format!("{:016b}", num_16)
-        } else {
-            panic!("failed to resolve symbolic a-command to valid index");
-        }
-    }
-
-    fn machine_code(&mut self, command: &Command) -> String {
-        match command {
-            Command::CCommand { expr, dest, jump } => {
-                c_command_code(expr, dest.as_ref(), jump.as_ref())
-            }
-            Command::ACommand(AValue::Numeric(num)) => numeric_a_command_code(num),
-            Command::ACommand(AValue::Symbolic(sym)) => {
-                self.symbolic_a_command_code(sym, &self.first_pass_result.resolved_symbols)
-            }
-            _ => panic!("unexpected l_command remaining after first pass"),
+            resolved_symbols: first_pass_result.resolved_symbols,
+            commands_without_labels: first_pass_result.commands_without_labels,
         }
     }
 
     pub fn generate(&mut self) -> impl Iterator<Item = String> + '_ {
-        self.first_pass_result
-            .commands_without_labels
-            .iter()
-            .map(|command| self.machine_code(command))
+        self.commands_without_labels
+        .iter()
+        .map(|command| match command {
+            CCommand { expr, dest, jump } => c_command_code(expr, dest.as_ref(), jump.as_ref()),
+            ACommand(Numeric(num)) => numeric_a_command_code(num),
+            ACommand(Symbolic(sym)) => {
+                    let index = predefined_symbol_code(sym)
+                        .or_else(|| self.resolved_symbols.get(sym).map(|&num| num))
+                        .unwrap_or_else(|| {
+                            let address = self.address_next_static_variable;
+                            if address > 255 {
+                                panic!("too many static variables - ran out of space when trying to place symbol \"{}\"", sym)
+                            }
+                            self.address_next_static_variable = self.address_next_static_variable + 1;
+                            address
+                        });
+                    if let Ok(num_16) = i16::try_from(index) {
+                        format!("{:016b}", num_16)
+                    } else {
+                        panic!("failed to resolve symbolic a-command to valid index");
+                    }
+
+                },
+                _ => panic!("unexpected l_command remaining after first pass"),
+            })
     }
 }
 
@@ -234,9 +225,9 @@ mod tests {
     fn test_label_symbol_a_command_code() {
         let first_pass_result = FirstPassResult {
             resolved_symbols: HashMap::from([("foo".to_string(), 32)]),
-            commands_without_labels: vec![Command::ACommand(AValue::Symbolic("foo".to_string()))],
+            commands_without_labels: vec![ACommand(Symbolic("foo".to_string()))],
         };
-        let code_generator = CodeGenerator::new(first_pass_result);
+        let mut code_generator = CodeGenerator::new(first_pass_result);
         let instruction = code_generator.generate().next().unwrap();
         assert_eq!(instruction, "0000000000100000");
     }
@@ -246,13 +237,13 @@ mod tests {
         let first_pass_result = FirstPassResult {
             resolved_symbols: HashMap::from([("i_am_a_label_symbol".to_string(), 255)]),
             commands_without_labels: vec![
-                Command::ACommand(AValue::Symbolic("foo".to_string())),
-                Command::ACommand(AValue::Symbolic("bar".to_string())),
-                Command::ACommand(AValue::Symbolic("i_am_a_label_symbol".to_string())),
-                Command::ACommand(AValue::Symbolic("baz".to_string())),
+                ACommand(Symbolic("foo".to_string())),
+                ACommand(Symbolic("bar".to_string())),
+                ACommand(Symbolic("i_am_a_label_symbol".to_string())),
+                ACommand(Symbolic("baz".to_string())),
             ],
         };
-        let code_generator = CodeGenerator::new(first_pass_result);
+        let mut code_generator = CodeGenerator::new(first_pass_result);
         let instructions: Vec<String> = code_generator.generate().collect();
         assert_eq!(
             instructions,
@@ -269,11 +260,9 @@ mod tests {
     fn test_predefined_variable_symbol_a_command_code() {
         let first_pass_result = FirstPassResult {
             resolved_symbols: HashMap::from([("foo".to_string(), 32)]),
-            commands_without_labels: vec![Command::ACommand(AValue::Symbolic(
-                "SCREEN".to_string(),
-            ))],
+            commands_without_labels: vec![ACommand(Symbolic("SCREEN".to_string()))],
         };
-        let code_generator = CodeGenerator::new(first_pass_result);
+        let mut code_generator = CodeGenerator::new(first_pass_result);
         let instruction = code_generator.generate().next().unwrap();
         assert_eq!(instruction, "0100000000000000");
     }
@@ -283,9 +272,9 @@ mod tests {
     fn test_too_big_symbolic_a_command_code() {
         let first_pass_result = FirstPassResult {
             resolved_symbols: HashMap::from([("foo".to_string(), 1000000)]),
-            commands_without_labels: vec![Command::ACommand(AValue::Symbolic("foo".to_string()))],
+            commands_without_labels: vec![ACommand(Symbolic("foo".to_string()))],
         };
-        let code_generator = CodeGenerator::new(first_pass_result);
+        let mut code_generator = CodeGenerator::new(first_pass_result);
         code_generator.generate().count(); // .count() is just to consume the iterator
     }
 }

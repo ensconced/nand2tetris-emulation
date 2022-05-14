@@ -130,7 +130,9 @@ fn c_command_code(expr: &String, dest: Option<&String>, jump: Option<&String>) -
 }
 
 fn numeric_a_command_code(num_string: &String) -> String {
-    let num = i16::from_str_radix(num_string, 10).expect("failed to parse numeric a-command");
+    let num = num_string
+        .parse::<i16>()
+        .expect("failed to parse numeric a-command");
     if num < 0 {
         // The most significant bit (msb) is reserved for distinguishing between
         // A-commands and C-commands. This means the msb is always 0 for
@@ -164,15 +166,14 @@ impl CodeGenerator {
                 A(Numeric(num)) => numeric_a_command_code(num),
                 A(Symbolic(sym)) => {
                     let index = predefined_symbol_code(sym)
-                        .or_else(|| self.resolved_symbols.get(sym).map(|&num| num))
+                        .or_else(|| self.resolved_symbols.get(sym).copied())
                         .unwrap_or_else(|| {
                             let address = self.address_next_static_variable;
                             if address > 255 {
                                 panic!("too many static variables - ran out of place while trying to place \"{}\"", sym)
                             }
                             self.resolved_symbols.insert(sym.to_string(), address);
-                            self.address_next_static_variable =
-                                self.address_next_static_variable + 1;
+                            self.address_next_static_variable += 1;
                             address
                         });
                     if let Ok(num_16) = i16::try_from(index) {

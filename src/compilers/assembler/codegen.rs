@@ -160,9 +160,9 @@ impl CodeGenerator {
         self.commands_without_labels
             .iter()
             .map(|command| match command {
-                CCommand { expr, dest, jump } => c_command_code(expr, dest.as_ref(), jump.as_ref()),
-                ACommand(Numeric(num)) => numeric_a_command_code(num),
-                ACommand(Symbolic(sym)) => {
+                C { expr, dest, jump } => c_command_code(expr, dest.as_ref(), jump.as_ref()),
+                A(Numeric(num)) => numeric_a_command_code(num),
+                A(Symbolic(sym)) => {
                     let index = predefined_symbol_code(sym)
                         .or_else(|| self.resolved_symbols.get(sym).map(|&num| num))
                         .unwrap_or_else(|| {
@@ -181,7 +181,7 @@ impl CodeGenerator {
                         panic!("failed to resolve symbolic a-command to valid index");
                     }
                 }
-                LCommand { identifier: _ } => {
+                L { identifier: _ } => {
                     panic!("unexpected l_command remaining after first pass")
                 }
             })
@@ -228,7 +228,7 @@ mod tests {
     fn test_label_symbol_a_command_code() {
         let first_pass_result = FirstPassResult {
             resolved_symbols: HashMap::from([("foo".to_string(), 32)]),
-            commands_without_labels: vec![ACommand(Symbolic("foo".to_string()))],
+            commands_without_labels: vec![A(Symbolic("foo".to_string()))],
         };
         let mut code_generator = CodeGenerator::new(first_pass_result);
         let instruction = code_generator.generate().next().unwrap();
@@ -240,12 +240,12 @@ mod tests {
         let first_pass_result = FirstPassResult {
             resolved_symbols: HashMap::from([("i_am_a_label_symbol".to_string(), 255)]),
             commands_without_labels: vec![
-                ACommand(Symbolic("foo".to_string())),
-                ACommand(Symbolic("bar".to_string())),
-                ACommand(Symbolic("i_am_a_label_symbol".to_string())),
-                ACommand(Symbolic("baz".to_string())),
-                ACommand(Symbolic("foo".to_string())),
-                ACommand(Symbolic("bar".to_string())),
+                A(Symbolic("foo".to_string())),
+                A(Symbolic("bar".to_string())),
+                A(Symbolic("i_am_a_label_symbol".to_string())),
+                A(Symbolic("baz".to_string())),
+                A(Symbolic("foo".to_string())),
+                A(Symbolic("bar".to_string())),
             ],
         };
         let mut code_generator = CodeGenerator::new(first_pass_result);
@@ -267,7 +267,7 @@ mod tests {
     fn test_predefined_variable_symbol_a_command_code() {
         let first_pass_result = FirstPassResult {
             resolved_symbols: HashMap::from([("foo".to_string(), 32)]),
-            commands_without_labels: vec![ACommand(Symbolic("SCREEN".to_string()))],
+            commands_without_labels: vec![A(Symbolic("SCREEN".to_string()))],
         };
         let mut code_generator = CodeGenerator::new(first_pass_result);
         let instruction = code_generator.generate().next().unwrap();
@@ -279,7 +279,7 @@ mod tests {
     fn test_too_big_symbolic_a_command_code() {
         let first_pass_result = FirstPassResult {
             resolved_symbols: HashMap::from([("foo".to_string(), 1000000)]),
-            commands_without_labels: vec![ACommand(Symbolic("foo".to_string()))],
+            commands_without_labels: vec![A(Symbolic("foo".to_string()))],
         };
         let mut code_generator = CodeGenerator::new(first_pass_result);
         code_generator.generate().count(); // .count() is just to consume the iterator

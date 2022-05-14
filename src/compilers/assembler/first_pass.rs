@@ -12,7 +12,7 @@ pub fn first_pass(mut commands: impl Iterator<Item = Command>) -> FirstPassResul
     let mut commands_without_labels = Vec::new();
     let mut index = 0;
     while let Some(command) = commands.next() {
-        if let Command::LCommand { identifier } = command {
+        if let Command::L { identifier } = command {
             resolved_symbols.insert(identifier, index);
         } else {
             index = index + 1;
@@ -55,19 +55,19 @@ mod tests {
         assert_eq!(resolved_symbols, expected_resolved_symbols);
 
         let expected_commands_without_labels = vec![
-            Command::CCommand {
+            Command::C {
                 expr: "A+1".to_string(),
                 dest: Some("A".to_string()),
                 jump: None,
             },
-            Command::CCommand {
+            Command::C {
                 expr: "M|A".to_string(),
                 dest: Some("M".to_string()),
                 jump: None,
             },
-            Command::ACommand(AValue::Symbolic("foo".to_string())),
-            Command::ACommand(AValue::Symbolic("bar".to_string())),
-            Command::ACommand(AValue::Numeric("1234".to_string())),
+            Command::A(AValue::Symbolic("foo".to_string())),
+            Command::A(AValue::Symbolic("bar".to_string())),
+            Command::A(AValue::Numeric("1234".to_string())),
         ];
         assert_eq!(commands_without_labels, expected_commands_without_labels);
     }

@@ -17,24 +17,22 @@ pub enum AValue {
 
 #[derive(PartialEq, Debug)]
 pub enum Command {
-    ACommand(AValue),
-    CCommand {
+    A(AValue),
+    C {
         expr: String,
         dest: Option<String>,
         jump: Option<String>,
     },
-    LCommand {
+    L {
         identifier: String,
     },
 }
 
-use Command::*;
-
 fn take_a_value(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> AValue {
     match tokens.next() {
         Some(Token { kind, .. }) => match kind {
-            Number(numeric_string) => AValue::Numeric(numeric_string.to_string()),
-            Identifier(identifier_string) => AValue::Symbolic(identifier_string.to_string()),
+            Number(numeric_string) => AValue::Numeric(numeric_string),
+            Identifier(identifier_string) => AValue::Symbolic(identifier_string),
             _ => panic!(
                 "failed to parse a-command as either number or identifier. line: {}",
                 line_number
@@ -46,7 +44,7 @@ fn take_a_value(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> A
 
 fn take_a_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> Command {
     tokens.next(); // pop @
-    ACommand(take_a_value(tokens, line_number))
+    Command::A(take_a_value(tokens, line_number))
 }
 
 fn take_l_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> Command {
@@ -64,7 +62,7 @@ fn take_l_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) ->
         )
     };
     match tokens.next() {
-        Some(Token { kind: RParen, .. }) => LCommand {
+        Some(Token { kind: RParen, .. }) => Command::L {
             identifier: identifier_string,
         },
         Some(_) => panic!(
@@ -183,7 +181,7 @@ fn take_c_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) ->
     let dest = maybe_take_destination(tokens);
     let expr = take_expression(tokens, line_number);
     maybe_take(tokens, &Whitespace);
-    CCommand {
+    Command::C {
         expr,
         dest,
         jump: maybe_take_jump(tokens),
@@ -227,7 +225,7 @@ mod tests {
         let c_command = take_c_command(&mut tokens, 1);
         assert_eq!(
             c_command,
-            CCommand {
+            Command::C {
                 expr: "M+1".to_string(),
                 dest: Some("M".to_string()),
                 jump: Some("JGT".to_string())
@@ -238,7 +236,7 @@ mod tests {
         let c_command = take_c_command(&mut tokens, 1);
         assert_eq!(
             c_command,
-            CCommand {
+            Command::C {
                 expr: "A|D".to_string(),
                 dest: Some("AMD".to_string()),
                 jump: Some("JLT".to_string())
@@ -249,7 +247,7 @@ mod tests {
         let c_command = take_c_command(&mut tokens, 1);
         assert_eq!(
             c_command,
-            CCommand {
+            Command::C {
                 expr: "M+1".to_string(),
                 dest: None,
                 jump: None
@@ -260,7 +258,7 @@ mod tests {
         let c_command = take_c_command(&mut tokens, 1);
         assert_eq!(
             c_command,
-            CCommand {
+            Command::C {
                 expr: "D&M".to_string(),
                 dest: None,
                 jump: Some("JGT".to_string()),
@@ -271,7 +269,7 @@ mod tests {
         let c_command = take_c_command(&mut tokens, 1);
         assert_eq!(
             c_command,
-            CCommand {
+            Command::C {
                 expr: "!M".to_string(),
                 dest: None,
                 jump: Some("JGT".to_string()),
@@ -282,7 +280,7 @@ mod tests {
         let c_command = take_c_command(&mut chars, 1);
         assert_eq!(
             c_command,
-            CCommand {
+            Command::C {
                 expr: "-A".to_string(),
                 dest: Some("MD".to_string()),
                 jump: None,
@@ -340,11 +338,14 @@ mod tests {
         let tokenizer = Tokenizer::new(token_defs());
         let mut tokens = tokenizer.tokenize("@1234").peekable();
         let a_command = take_a_command(&mut tokens, 1);
-        assert_eq!(a_command, ACommand(AValue::Numeric("1234".to_string())));
+        assert_eq!(a_command, Command::A(AValue::Numeric("1234".to_string())));
 
         let mut tokens = tokenizer.tokenize("@FOOBAR").peekable();
         let a_command = take_a_command(&mut tokens, 1);
-        assert_eq!(a_command, ACommand(AValue::Symbolic("FOOBAR".to_string())));
+        assert_eq!(
+            a_command,
+            Command::A(AValue::Symbolic("FOOBAR".to_string()))
+        );
     }
 
     #[test]
@@ -354,7 +355,7 @@ mod tests {
         let a_command = take_l_command(&mut tokens, 1);
         assert_eq!(
             a_command,
-            LCommand {
+            Command::L {
                 identifier: "TEST".to_string()
             }
         );
@@ -363,7 +364,7 @@ mod tests {
         let a_command = take_l_command(&mut tokens, 1);
         assert_eq!(
             a_command,
-            LCommand {
+            Command::L {
                 identifier: "_TEST".to_string()
             }
         );
@@ -372,7 +373,7 @@ mod tests {
         let a_command = take_l_command(&mut tokens, 1);
         assert_eq!(
             a_command,
-            LCommand {
+            Command::L {
                 identifier: "T:E$S.T".to_string()
             }
         );
@@ -400,11 +401,17 @@ mod tests {
 
         let line = "@1234";
         let result = parse_line(tokenizer.tokenize(line).peekable(), 1);
-        assert_eq!(result, Some(ACommand(AValue::Numeric("1234".to_string()))));
+        assert_eq!(
+            result,
+            Some(Command::A(AValue::Numeric("1234".to_string())))
+        );
 
         let line = "   @1234  // here is a comment  ";
         let result = parse_line(tokenizer.tokenize(line).peekable(), 1);
-        assert_eq!(result, Some(ACommand(AValue::Numeric("1234".to_string()))));
+        assert_eq!(
+            result,
+            Some(Command::A(AValue::Numeric("1234".to_string())))
+        );
     }
 
     #[test]
@@ -414,7 +421,10 @@ mod tests {
 
         let line = "   @1234 blah blah blah";
         let result = parse_line(tokenizer.tokenize(line).peekable(), 1);
-        assert_eq!(result, Some(ACommand(AValue::Numeric("1234".to_string()))));
+        assert_eq!(
+            result,
+            Some(Command::A(AValue::Numeric("1234".to_string())))
+        );
     }
 
     #[test]
@@ -429,16 +439,16 @@ mod tests {
         assert_eq!(
             result,
             vec![
-                ACommand(AValue::Numeric("1234".to_string())),
-                CCommand {
+                Command::A(AValue::Numeric("1234".to_string())),
+                Command::C {
                     expr: "M+1".to_string(),
                     dest: Some("AMD".to_string()),
                     jump: Some("JGT".to_string())
                 },
-                LCommand {
+                Command::L {
                     identifier: "FOOBAR".to_string()
                 },
-                ACommand(AValue::Symbolic("FOOBAR".to_string())),
+                Command::A(AValue::Symbolic("FOOBAR".to_string())),
             ]
         );
     }

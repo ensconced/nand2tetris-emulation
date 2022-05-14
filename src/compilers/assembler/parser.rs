@@ -120,7 +120,7 @@ fn maybe_take_unary_expression(
         }) = tokens.next()
         {
             let operand = take_single_expression_term(tokens, line_number);
-            op_string.extend(operand.chars());
+            op_string.push_str(&operand);
             Some(op_string)
         } else {
             None
@@ -153,7 +153,7 @@ fn take_binary_or_single_term_expression(
 ) -> String {
     let mut result = take_single_expression_term(tokens, line_number);
     if let Some(remainder_string) = maybe_take_unary_expression(tokens, line_number) {
-        result.extend(remainder_string.chars());
+        result.push_str(&remainder_string);
     }
     result
 }
@@ -211,7 +211,7 @@ fn parse_line(line_tokens: PeekableTokens<TokenKind>, line_number: usize) -> Opt
     )
 }
 
-pub fn parse_lines<'a>(source: &'a str) -> impl Iterator<Item = Command> + 'a {
+pub fn parse_lines(source: &str) -> impl Iterator<Item = Command> + '_ {
     parse_by_line(source, parse_line, token_defs())
 }
 

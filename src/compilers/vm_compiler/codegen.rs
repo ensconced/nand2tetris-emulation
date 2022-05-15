@@ -1,7 +1,7 @@
 use std::thread::current;
 
 use super::parser::{
-    ArithmeticCommandVariant,
+    ArithmeticCommandVariant::{self, *},
     Command::{self, *},
     FlowCommandVariant,
     FunctionCommandVariant::{self, *},
@@ -68,24 +68,36 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_function_command(&self, command: FunctionCommandVariant) -> String {
+    fn compile_function_command(
+        &self,
+        command: FunctionCommandVariant,
+    ) -> impl Iterator<Item = String> {
         // TODO - if a function definition, need to set self.current_function
         todo!()
     }
 
-    fn compile_arithmetic_command(&self, command: ArithmeticCommandVariant) -> String {
+    fn compile_arithmetic_command(
+        &self,
+        command: ArithmeticCommandVariant,
+    ) -> impl Iterator<Item = String> {
+        match command {
+            Neg | Not => compile_unary_arithmetic_command(command),
+            _ => compile_binary_arithmetic_command(command),
+        }
+    }
+
+    fn compile_flow_command(&self, command: FlowCommandVariant) -> impl Iterator<Item = String> {
         todo!()
     }
 
-    fn compile_flow_command(&self, command: FlowCommandVariant) -> String {
+    fn compile_memory_command(
+        &self,
+        command: MemoryCommandVariant,
+    ) -> impl Iterator<Item = String> {
         todo!()
     }
 
-    fn compile_memory_command(&self, command: MemoryCommandVariant) -> String {
-        todo!()
-    }
-
-    fn compile_vm_command(&self, command: Command) -> String {
+    fn compile_vm_command(&self, command: Command) -> impl Iterator<Item = String> {
         match command {
             Function(variant) => self.compile_function_command(variant),
             Arithmetic(variant) => self.compile_arithmetic_command(variant),

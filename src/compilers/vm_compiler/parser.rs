@@ -9,16 +9,26 @@ use crate::compilers::tokenizer::Token;
 use std::iter::Peekable;
 
 #[derive(PartialEq, Debug)]
-pub enum ArithmeticCommandVariant {
+pub enum UnaryArithmeticCommandVariant {
+    Neg,
+    Not,
+}
+
+#[derive(PartialEq, Debug)]
+pub enum BinaryArithmeticCommandVariant {
     Add,
     Sub,
-    Neg,
     Eq,
     Gt,
     Lt,
     And,
     Or,
-    Not,
+}
+
+#[derive(PartialEq, Debug)]
+pub enum ArithmeticCommandVariant {
+    Unary(UnaryArithmeticCommandVariant),
+    Binary(BinaryArithmeticCommandVariant),
 }
 
 #[derive(PartialEq, Debug)]
@@ -62,11 +72,13 @@ pub enum Command {
 }
 
 use ArithmeticCommandVariant::*;
+use BinaryArithmeticCommandVariant::*;
 use Command::*;
 use FlowCommandVariant::*;
 use FunctionCommandVariant::*;
 use MemoryCommandVariant::*;
 use MemorySegmentVariant::*;
+use UnaryArithmeticCommandVariant::*;
 
 fn take_arithmetic_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> Command {
     match tokens.next() {
@@ -74,15 +86,15 @@ fn take_arithmetic_command(tokens: &mut PeekableTokens<TokenKind>, line_number: 
             kind: TokenKind::ArithmeticCmdToken(kind),
             ..
         }) => match kind {
-            ArithmeticCmdTokenVariant::Add => Arithmetic(Add),
-            ArithmeticCmdTokenVariant::Sub => Arithmetic(Sub),
-            ArithmeticCmdTokenVariant::Neg => Arithmetic(Neg),
-            ArithmeticCmdTokenVariant::Eq => Arithmetic(Eq),
-            ArithmeticCmdTokenVariant::Gt => Arithmetic(Gt),
-            ArithmeticCmdTokenVariant::Lt => Arithmetic(Lt),
-            ArithmeticCmdTokenVariant::And => Arithmetic(And),
-            ArithmeticCmdTokenVariant::Or => Arithmetic(Or),
-            ArithmeticCmdTokenVariant::Not => Arithmetic(Not),
+            ArithmeticCmdTokenVariant::Add => Arithmetic(Binary(Add)),
+            ArithmeticCmdTokenVariant::Sub => Arithmetic(Binary(Sub)),
+            ArithmeticCmdTokenVariant::Eq => Arithmetic(Binary(Eq)),
+            ArithmeticCmdTokenVariant::Gt => Arithmetic(Binary(Gt)),
+            ArithmeticCmdTokenVariant::Lt => Arithmetic(Binary(Lt)),
+            ArithmeticCmdTokenVariant::And => Arithmetic(Binary(And)),
+            ArithmeticCmdTokenVariant::Or => Arithmetic(Binary(Or)),
+            ArithmeticCmdTokenVariant::Neg => Arithmetic(Unary(Neg)),
+            ArithmeticCmdTokenVariant::Not => Arithmetic(Unary(Not)),
         },
         _ => panic!("expected arithmetic command token. line: {}", line_number),
     }
@@ -273,15 +285,15 @@ mod tests {
 
         let commands: Vec<Command> = parse_lines(source).collect();
         let expected = vec![
-            Arithmetic(Add),
-            Arithmetic(Sub),
-            Arithmetic(Neg),
-            Arithmetic(Eq),
-            Arithmetic(Gt),
-            Arithmetic(Lt),
-            Arithmetic(And),
-            Arithmetic(Or),
-            Arithmetic(Not),
+            Arithmetic(Binary(Add)),
+            Arithmetic(Binary(Sub)),
+            Arithmetic(Unary(Neg)),
+            Arithmetic(Binary(Eq)),
+            Arithmetic(Binary(Gt)),
+            Arithmetic(Binary(Lt)),
+            Arithmetic(Binary(And)),
+            Arithmetic(Binary(Or)),
+            Arithmetic(Unary(Not)),
             Memory(Push(Argument, 1)),
             Memory(Push(Local, 2)),
             Memory(Push(Static, 3)),

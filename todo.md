@@ -1,7 +1,8 @@
 ### main program
 
-- vm - enable parsing of whole files/directories, and prepending filenames to function names etc correctly
-- vm codegen!
+- start with single file...
+- vm codegen
+- vm - enable parsing of whole files/directories (is it just a matter of parsing then concatenating the commands of all the input files?)
 - maybe get rid of clap and parse cli args myself
 
 ### parser

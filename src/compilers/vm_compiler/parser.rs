@@ -38,15 +38,25 @@ pub enum MemoryCommandVariant {
 }
 
 #[derive(PartialEq, Debug)]
-pub enum MemorySegmentVariant {
+pub enum PointerSegmentVariant {
     Argument,
     Local,
-    Static,
-    Constant,
     This,
     That,
+}
+
+#[derive(PartialEq, Debug)]
+pub enum OffsetSegmentVariant {
+    Static,
     Pointer,
     Temp,
+}
+
+#[derive(PartialEq, Debug)]
+pub enum MemorySegmentVariant {
+    PointerSegment(PointerSegmentVariant),
+    OffsetSegment(OffsetSegmentVariant),
+    Constant,
 }
 
 #[derive(PartialEq, Debug)]
@@ -78,6 +88,8 @@ use FlowCommandVariant::*;
 use FunctionCommandVariant::*;
 use MemoryCommandVariant::*;
 use MemorySegmentVariant::*;
+use OffsetSegmentVariant::*;
+use PointerSegmentVariant::*;
 use UnaryArithmeticCommandVariant::*;
 
 fn take_arithmetic_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> Command {
@@ -109,14 +121,14 @@ fn take_mem_segment(
             kind: TokenKind::MemorySegmentToken(kind),
             ..
         }) => match kind {
-            MemorySegmentTokenVariant::Argument => Argument,
+            MemorySegmentTokenVariant::Argument => PointerSegment(Argument),
+            MemorySegmentTokenVariant::Local => PointerSegment(Local),
+            MemorySegmentTokenVariant::That => PointerSegment(That),
+            MemorySegmentTokenVariant::This => PointerSegment(This),
+            MemorySegmentTokenVariant::Pointer => OffsetSegment(Pointer),
+            MemorySegmentTokenVariant::Static => OffsetSegment(Static),
+            MemorySegmentTokenVariant::Temp => OffsetSegment(Temp),
             MemorySegmentTokenVariant::Constant => Constant,
-            MemorySegmentTokenVariant::Local => Local,
-            MemorySegmentTokenVariant::Pointer => Pointer,
-            MemorySegmentTokenVariant::Static => Static,
-            MemorySegmentTokenVariant::Temp => Temp,
-            MemorySegmentTokenVariant::That => That,
-            MemorySegmentTokenVariant::This => This,
         },
         _ => panic!("expected memory segment token. line: {}", line_number),
     }
@@ -294,14 +306,14 @@ mod tests {
             Arithmetic(Binary(And)),
             Arithmetic(Binary(Or)),
             Arithmetic(Unary(Not)),
-            Memory(Push(Argument, 1)),
-            Memory(Push(Local, 2)),
-            Memory(Push(Static, 3)),
+            Memory(Push(PointerSegment(Argument), 1)),
+            Memory(Push(PointerSegment(Local), 2)),
+            Memory(Push(OffsetSegment(Static), 3)),
             Memory(Push(Constant, 4)),
-            Memory(Pop(This, 5)),
-            Memory(Pop(That, 6)),
-            Memory(Pop(Pointer, 7)),
-            Memory(Pop(Temp, 8)),
+            Memory(Pop(PointerSegment(This), 5)),
+            Memory(Pop(PointerSegment(That), 6)),
+            Memory(Pop(OffsetSegment(Pointer), 7)),
+            Memory(Pop(OffsetSegment(Temp), 8)),
             Flow(GoTo("foobar".to_string())),
             Flow(Label("f12.3oo_bA:r".to_string())),
             Flow(IfGoTo("foo:bar".to_string())),

@@ -3,7 +3,7 @@ use super::parser::{
     BinaryArithmeticCommandVariant::*,
     Command::{self, *},
     MemoryCommandVariant::{self, *},
-    MemorySegmentVariant::*,
+    MemorySegmentVariant::{self, *},
     UnaryArithmeticCommandVariant::*,
 };
 
@@ -77,8 +77,19 @@ impl CodeGenerator {
     //     todo!()
     // }
 
-    fn compile_memory_command(&self, command: MemoryCommandVariant) -> Vec<String> {
+    fn push(&self, segment: MemorySegmentVariant, index: u16) -> Vec<String> {
         todo!()
+    }
+
+    fn pop(&self, segment: MemorySegmentVariant, index: u16) -> Vec<String> {
+        todo!()
+    }
+
+    fn compile_memory_command(&self, command: MemoryCommandVariant) -> Vec<String> {
+        match command {
+            Push(segment, index) => self.push(segment, index),
+            Pop(segment, index) => self.pop(segment, index),
+        }
     }
 
     fn compile_arithmetic_command(&self, command: ArithmeticCommandVariant) -> Vec<String> {

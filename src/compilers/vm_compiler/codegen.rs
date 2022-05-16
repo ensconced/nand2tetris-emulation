@@ -139,26 +139,26 @@ impl CodeGenerator {
 
         format!(
             "
-            // decrement stack pointer, so it's pointing to y,
-            @SP,
-            M=M-1,
-            // set A to point to x,
-            A=M-1,
-            // use R13 as another pointer to x,
-            D=A,
-            @R13,
-            M=D,
-            // load y into D,
-            @SP,
-            A=M,
-            D=M,
-            // load x - y into D,
-            A=A-1,
-            D=M-D,
-            // initially set result to true (i.e. 0xffff i.e. -1),
-            M=-1,
-            // then flip to false, unless condition holds,
-            @{jump_label},
+            // decrement stack pointer, so it's pointing to y
+            @SP
+            M=M-1
+            // set A to point to x
+            A=M-1
+            // use R13 as another pointer to x
+            D=A
+            @R13
+            M=D
+            // load y into D
+            @SP
+            A=M
+            D=M
+            // load x - y into D
+            A=A-1
+            D=M-D
+            // initially set result to true (i.e. 0xffff i.e. -1)
+            M=-1
+            // then flip to false unless condition holds
+            @{jump_label}
             D;J{operation}
             @R13
             A=M

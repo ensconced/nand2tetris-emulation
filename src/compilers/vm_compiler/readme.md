@@ -118,3 +118,53 @@ So the bootstrap code will need to do the following:
 - set SP to point to ARG+1
 - restore LCL, ARG, THIS, THAT from the caller's saved state
 - jump execution to the return address
+
+### x + y
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+
+// load y into D
+A=M
+D=M
+
+// point A to x
+A=A-1
+
+// adjust this line to get x - y, x & y, x | y
+M=M+D
+
+### x eq y
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+
+// set A to point to x
+A=M-1
+
+// use R13 as another pointer to x
+D=A
+@R13
+M=D
+
+// load y into D
+@SP
+A=M
+D=M
+
+// load x - y into D
+A=A-1
+D=M-D
+
+// initially set result to true (i.e. 0xffff i.e. -1)
+M=-1
+
+// then flip to false, unless condition holds
+@$after_set_to_false
+D;JEQ // adjust to get x gt y, x lt y
+@R13
+A=M
+M=0
+($after_set_to_false)

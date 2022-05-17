@@ -1,9 +1,12 @@
+use std::intrinsics::offset;
+
 use super::parser::{
     ArithmeticCommandVariant::{self, *},
     BinaryArithmeticCommandVariant::*,
     Command::{self, *},
     MemoryCommandVariant::{self, *},
     MemorySegmentVariant::{self, *},
+    OffsetSegmentVariant, PointerSegmentVariant,
     UnaryArithmeticCommandVariant::*,
 };
 
@@ -77,8 +80,56 @@ impl CodeGenerator {
     //     todo!()
     // }
 
-    fn push(&self, segment: MemorySegmentVariant, index: u16) -> Vec<String> {
+    fn offset_address(&self, segment: OffsetSegmentVariant, index: u16) -> u16 {
+        let (segment_base_address, segment_top_address): (u16, u16) = match segment {
+            OffsetSegmentVariant::Pointer => (3, 4),
+            OffsetSegmentVariant::Static => (16, 255),
+            OffsetSegmentVariant::Temp => (5, 12),
+        };
+        let segment_max_index = segment_top_address - segment_base_address;
+        if index > segment_max_index {
+            panic!(
+                "segment index {} is too high - max is {}",
+                index, segment_max_index
+            )
+        }
+        segment_base_address + index
+    }
+
+    fn push_from_memory_address(&self, address: u16) -> Vec<String> {
+        format!(
+            "
+            @{}
+            D=M
+            @SP
+            A=M
+            M=D
+            @SP
+            M=M+1
+            ",
+            address
+        )
+        .lines()
+        .map(|line| line.to_string())
+        .collect()
+    }
+
+    fn compile_pointer_segment(&self, segment: PointerSegmentVariant, index: u16) -> Vec<String> {
         todo!()
+    }
+
+    fn compile_constant_segment(&self, index: u16) -> Vec<String> {
+        todo!()
+    }
+
+    fn push(&self, segment: MemorySegmentVariant, index: u16) -> Vec<String> {
+        match segment {
+            OffsetSegment(offset_segment) => {
+                self.push_from_memory_address(self.offset_address(offset_segment, index))
+            }
+            PointerSegment(pointer_segment) => self.compile_pointer_segment(pointer_segment, index),
+            Constant => self.compile_constant_segment(index),
+        }
     }
 
     fn pop(&self, segment: MemorySegmentVariant, index: u16) -> Vec<String> {

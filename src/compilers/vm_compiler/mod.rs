@@ -28,8 +28,20 @@ mod tests {
         computer.ram.lock().unwrap()[0]
     }
 
-    fn args_base_address(computer: &Computer) -> i16 {
-        computer.ram.lock().unwrap()[2]
+    fn this(computer: &Computer, offset: usize) -> i16 {
+        let pointer_to_this = pointer(computer, 0);
+        let ram = computer.ram.lock().unwrap();
+        ram[pointer_to_this as usize + offset]
+    }
+
+    fn pointer(computer: &Computer, offset: usize) -> i16 {
+        let ram = computer.ram.lock().unwrap();
+        ram[3 + offset]
+    }
+
+    fn static_variable(computer: &Computer, offset: usize) -> i16 {
+        let ram = computer.ram.lock().unwrap();
+        ram[16 + offset]
     }
 
     fn nth_stack_value(computer: &Computer, n: usize) -> i16 {
@@ -40,9 +52,7 @@ mod tests {
     #[test]
     fn test_initialization() {
         let mut computer = program_computer("");
-        computer.tick_until(&|computer| {
-            stack_pointer(computer) == 256 && args_base_address(computer) != 0
-        });
+        computer.tick_until(&|computer| stack_pointer(computer) == 256);
     }
 
     #[test]
@@ -72,9 +82,10 @@ mod tests {
             stack_pointer(computer) == 256 + 3 && nth_stack_value(&computer, 0) == 3
         });
         computer.tick_until(&|computer| {
-            let all_popped = stack_pointer(computer) == 256;
-            let ram = computer.ram.lock().unwrap();
-            all_popped && ram[16] == 3 && ram[16 + 100] == 2 && ram[16 + 200] == 1
+            stack_pointer(computer) == 256
+                && static_variable(computer, 0) == 3
+                && static_variable(computer, 100) == 2
+                && static_variable(computer, 200) == 1
         });
         computer.tick_until(&|computer| {
             stack_pointer(computer) == 256 + 3
@@ -85,31 +96,22 @@ mod tests {
     }
 
     #[test]
-    fn test_pop_push_argument() {
+    fn test_pop_push_this() {
         let mut computer = program_computer(
             "
-            push constant 1
-            pop argument 0
+            push constant 1234
+            push constant 2051
+            pop pointer 0
+            pop this 2
         ",
         );
         computer.tick_until(&|computer| {
-            stack_pointer(computer) == 256 + 1 && nth_stack_value(&computer, 0) == 1
+            stack_pointer(computer) == 256 + 2 && nth_stack_value(&computer, 0) == 2051
         });
         computer.tick_until(&|computer| {
-            let all_popped = stack_pointer(computer) == 256;
-            let ram = computer.ram.lock().unwrap();
-            let arg_pointer = ram[2];
-            let args_base_address = ram[arg_pointer as usize] as usize;
-            all_popped
-                && ram[args_base_address] == 3
-                && ram[args_base_address + 1] == 2
-                && ram[args_base_address + 2] == 1
+            stack_pointer(computer) == 256 + 1 && pointer(computer, 0) == 2051
         });
-        computer.tick_until(&|computer| {
-            stack_pointer(computer) == 256 + 3
-                && nth_stack_value(computer, 0) == 1
-                && nth_stack_value(computer, 1) == 2
-                && nth_stack_value(computer, 2) == 3
-        });
+        computer
+            .tick_until(&|computer| stack_pointer(computer) == 256 && this(computer, 2) == 1234);
     }
 }

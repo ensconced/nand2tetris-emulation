@@ -10,9 +10,9 @@ fn comp_bits(instruction: i16) -> i16 {
     (instruction >> 6) & 0b1111111
 }
 
-struct Cpu {
-    reg_a: i16,
-    reg_d: i16,
+pub struct Cpu {
+    pub reg_a: i16,
+    pub reg_d: i16,
     out_m: i16,
     pc: i16,
     memory_load: bool,
@@ -82,7 +82,7 @@ impl Cpu {
 pub struct Computer {
     rom: [i16; 32768],
     pub ram: Arc<Mutex<[i16; 32768]>>,
-    cpu: Cpu,
+    pub cpu: Cpu,
 }
 
 impl Computer {
@@ -100,6 +100,7 @@ impl Computer {
         }
     }
     pub fn tick(&mut self) {
+        let prev_reg_a = self.cpu.reg_a;
         let instruction = self.rom[self.cpu.pc as usize];
         if DEBUG {
             let ram = self.ram.lock().unwrap();
@@ -112,8 +113,19 @@ impl Computer {
         let in_m = self.ram.lock().unwrap()[addr];
         self.cpu.execute(instruction, in_m);
         if self.cpu.memory_load {
-            self.ram.lock().unwrap()[self.cpu.reg_a as usize] = self.cpu.out_m;
+            self.ram.lock().unwrap()[prev_reg_a as usize] = self.cpu.out_m;
         }
+    }
+
+    pub fn tick_until(&mut self, predicate: &dyn Fn(&Computer) -> bool) {
+        let max_ticks = 100;
+        for _ in 0..=max_ticks {
+            if predicate(self) {
+                return;
+            }
+            self.tick();
+        }
+        panic!("predicate was not true within {} ticks", max_ticks);
     }
 }
 

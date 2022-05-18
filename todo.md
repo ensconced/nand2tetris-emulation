@@ -1,5 +1,7 @@
 ### main program
 
+- proper initialization of single stack frame for Sys.init, enough at least that ARG etc doesn't just point to address 0 and overwrite SP!
+- this should be enough to write tests for basic memory manipulation commands and get them passing
 - start with single file...
 - vm codegen
 - vm - enable parsing of whole files/directories (is it just a matter of parsing then concatenating the commands of all the input files?)

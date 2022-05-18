@@ -65,7 +65,7 @@ fn expression_code(expr: &str) -> &'static str {
         "M-D" => "1000111",
         "D&M" | "M&D" => "1000000",
         "D|M" | "M|D" => "1010101",
-        _ => panic!("unrecognized expression"),
+        _ => panic!("unrecognized expression {}", expr),
     }
 }
 

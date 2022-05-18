@@ -8,7 +8,7 @@ use first_pass::first_pass;
 use parser::parse_lines;
 use std::{fs, path::Path};
 
-fn assemble(source: String, rom_depth: usize) -> String {
+pub fn assemble(source: String, rom_depth: usize) -> String {
     let first_pass_result = first_pass(parse_lines(&source));
     let mut code_generator = CodeGenerator::new(first_pass_result);
     let mut machine_codes = code_generator.generate();

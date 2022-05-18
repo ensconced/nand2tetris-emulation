@@ -1,22 +1,11 @@
-use super::parser::{
-    ArithmeticCommandVariant::{self, *},
-    BinaryArithmeticCommandVariant::*,
-    Command::{self, *},
-    MemoryCommandVariant::{self, *},
-    MemorySegmentVariant::{self, *},
-    OffsetSegmentVariant, PointerSegmentVariant,
-    UnaryArithmeticCommandVariant::*,
-};
-
-fn initialize_stack_pointer() -> impl Iterator<Item = String> {
-    vec!["@SP", "M=256"].into_iter().map(|str| str.to_owned())
-}
-
-fn jump_end_spin() -> impl Iterator<Item = String> {
-    vec!["@$end_spin", "0;JMP"]
-        .into_iter()
-        .map(|str| str.to_owned())
-}
+// fn compile_function_command(
+//     &self,
+//     command: FunctionCommandVariant,
+// ) -> impl Iterator<Item = String> {
+//     // TODO - if a function definition, need to set self.current_function -
+//     // ...then where do we use self.current function? when creating labels?
+//     todo!()
+// }
 
 // fn push_return_address() -> impl Iterator<Item = String> {
 
@@ -45,247 +34,226 @@ fn jump_end_spin() -> impl Iterator<Item = String> {
 //     vec!["@SP", "M=256"].into_iter().map(|str| str.to_owned())
 // }
 
-fn prelude() -> impl Iterator<Item = String> {
-    let commands = vec![Memory(Push(Constant, 0))];
+use super::parser::{
+    ArithmeticCommandVariant::{self, *},
+    BinaryArithmeticCommandVariant::*,
+    Command::{self, *},
+    MemoryCommandVariant::{self, *},
+    MemorySegmentVariant::{self, *},
+    OffsetSegmentVariant,
+    PointerSegmentVariant::{self, *},
+    UnaryArithmeticCommandVariant::*,
+};
 
-    initialize_stack_pointer()
-        .chain(jump_end_spin())
-        .chain(push_return_address())
+fn string_commands(source: &str) -> impl Iterator<Item = String> + '_ {
+    source.lines().map(|line| line.to_string())
 }
+
+fn initialize_stack_pointer() -> impl Iterator<Item = String> {
+    vec!["@256", "D=A", "@SP", "M=D"]
+        .into_iter()
+        .map(|str| str.to_owned())
+}
+
+fn jump_end_spin() -> impl Iterator<Item = String> {
+    vec!["@$end_spin", "0;JMP"]
+        .into_iter()
+        .map(|str| str.to_owned())
+}
+
+fn prelude() -> impl Iterator<Item = String> {
+    // let commandss = vec![Memory(Push(Constant, 0))];
+    initialize_stack_pointer()
+    // .chain(jump_end_spin())
+    // .chain(push_return_address())
+}
+
 fn postlude() -> impl Iterator<Item = String> {
     vec![].into_iter()
 }
 
-struct CodeGenerator {
+fn offset_address(segment: OffsetSegmentVariant, index: u16) -> u16 {
+    let (segment_base_address, segment_top_address): (u16, u16) = match segment {
+        OffsetSegmentVariant::Pointer => (3, 4),
+        OffsetSegmentVariant::Static => (16, 255),
+        OffsetSegmentVariant::Temp => (5, 12),
+    };
+    let segment_max_index = segment_top_address - segment_base_address;
+    if index > segment_max_index {
+        panic!(
+            "segment index {} is too high - max is {}",
+            index, segment_max_index
+        )
+    }
+    segment_base_address + index
+}
+
+fn push_from_d_register() -> impl Iterator<Item = String> {
+    "
+    @SP
+    A=M
+    M=D
+    @SP
+    M=M+1
+    "
+    .lines()
+    .map(|line| line.to_string())
+}
+
+fn pop_into_d_register() -> impl Iterator<Item = String> {
+    "
+    @SP
+    MA=M-1
+    D=M
+    "
+    .lines()
+    .map(|line| line.to_string())
+}
+
+fn push_from_offset_memory_segment(segment: OffsetSegmentVariant, index: u16) -> Vec<String> {
+    string_commands(&format!(
+        "
+        @{}
+        D=M
+        ",
+        offset_address(segment, index)
+    ))
+    .chain(push_from_d_register())
+    .collect()
+}
+
+fn pop_into_offset_memory_segment(segment: OffsetSegmentVariant, index: u16) -> Vec<String> {
+    pop_into_d_register()
+        .chain(string_commands(&format!(
+            "
+        @{}
+        M=D
+        ",
+            offset_address(segment, index)
+        )))
+        .collect()
+}
+
+fn push_from_pointer_memory_segment(segment: PointerSegmentVariant, index: u16) -> Vec<String> {
+    let pointer_address = match segment {
+        Argument => "ARG",
+        Local => "LCL",
+        This => "THIS",
+        That => "THAT",
+    };
+    string_commands(&format!(
+        "
+        @{}
+        D=A
+        @{}
+        A=M+D
+        D=M
+        ",
+        index, pointer_address
+    ))
+    .chain(push_from_d_register())
+    .collect()
+}
+
+fn pop_into_pointer_memory_segment(segment: PointerSegmentVariant, index: u16) -> Vec<String> {
+    let pointer_address = match segment {
+        Argument => "ARG",
+        Local => "LCL",
+        This => "THIS",
+        That => "THAT",
+    };
+    pop_into_d_register()
+        .chain(string_commands(&format!(
+            "
+            // stash value from D into R13
+            @R13
+            M=D
+
+            // put value of pointer in D
+            @{}
+            D=M
+
+            // add index
+            @{}
+            D=D+A
+
+            // stash memory address in R14
+            @R14
+            M=D
+
+            // get value back into D
+            @R13
+            D=M
+
+            // load value into memory
+            @R14
+            A=M
+            M=D
+        ",
+            pointer_address, index,
+        )))
+        .collect()
+}
+
+fn push_from_constant(index: u16) -> Vec<String> {
+    let max_constant = 32767;
+    if index > max_constant {
+        panic!("constant {} is bigger than max of {}", index, max_constant);
+    }
+
+    string_commands(&format!(
+        "
+        @{}
+        D=A
+        ",
+        index
+    ))
+    .chain(push_from_d_register())
+    .collect()
+}
+fn push(segment: MemorySegmentVariant, index: u16) -> Vec<String> {
+    match segment {
+        OffsetSegment(offset_segment) => push_from_offset_memory_segment(offset_segment, index),
+        PointerSegment(pointer_segment) => push_from_pointer_memory_segment(pointer_segment, index),
+        Constant => push_from_constant(index),
+    }
+}
+fn pop(segment: MemorySegmentVariant, index: u16) -> Vec<String> {
+    match segment {
+        OffsetSegment(offset_segment) => pop_into_offset_memory_segment(offset_segment, index),
+        PointerSegment(pointer_segment) => pop_into_pointer_memory_segment(pointer_segment, index),
+        Constant => {
+            // popping into a constant doesn't make much sense - I guess it just
+            // means decrement the SP but don't do anything with the popped
+            // value
+            vec!["@SP", "M=M-1"]
+                .into_iter()
+                .map(|str| str.to_string())
+                .collect()
+        }
+    }
+}
+
+fn compile_memory_command(command: MemoryCommandVariant) -> Vec<String> {
+    match command {
+        Push(segment, index) => push(segment, index),
+        Pop(segment, index) => pop(segment, index),
+    }
+}
+pub struct CodeGenerator {
     current_function: Option<String>,
     after_set_to_false_count: u32,
 }
 
 impl CodeGenerator {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             current_function: None,
             after_set_to_false_count: 0,
         }
     }
 
-    // fn compile_function_command(
-    //     &self,
-    //     command: FunctionCommandVariant,
-    // ) -> impl Iterator<Item = String> {
-    //     // TODO - if a function definition, need to set self.current_function -
-    //     // ...then where do we use self.current function? when creating labels?
-    //     todo!()
-    // }
-
-    fn offset_address(&self, segment: OffsetSegmentVariant, index: u16) -> u16 {
-        let (segment_base_address, segment_top_address): (u16, u16) = match segment {
-            OffsetSegmentVariant::Pointer => (3, 4),
-            OffsetSegmentVariant::Static => (16, 255),
-            OffsetSegmentVariant::Temp => (5, 12),
-        };
-        let segment_max_index = segment_top_address - segment_base_address;
-        if index > segment_max_index {
-            panic!(
-                "segment index {} is too high - max is {}",
-                index, segment_max_index
-            )
-        }
-        segment_base_address + index
-    }
-
-    fn push_from_d_register(&self) -> impl Iterator<Item = String> {
-        "
-        @SP
-        A=M
-        M=D
-        @SP
-        M=M+1
-        "
-        .lines()
-        .map(|line| line.to_string())
-    }
-
-    fn pop_into_d_register(&self) -> impl Iterator<Item = String> {
-        "
-        @SP
-        MA=M-1
-        D=M
-        "
-        .lines()
-        .map(|line| line.to_string())
-    }
-
-    fn push_from_offset_memory_segment(
-        &self,
-        segment: OffsetSegmentVariant,
-        index: u16,
-    ) -> Vec<String> {
-        let load_into_d = format!(
-            "
-            @{}
-            D=M
-            ",
-            self.offset_address(segment, index)
-        )
-        .lines()
-        .map(|line| line.to_string());
-
-        load_into_d.chain(self.push_from_d_register()).collect()
-    }
-
-    fn pop_into_offset_memory_segment(
-        &self,
-        segment: OffsetSegmentVariant,
-        index: u16,
-    ) -> Vec<String> {
-        let load_d_into_memory = format!(
-            "
-            @{}
-            M=D
-            ",
-            self.offset_address(segment, index)
-        )
-        .lines()
-        .map(|line| line.to_string());
-
-        self.pop_into_d_register()
-            .chain(load_d_into_memory)
-            .collect()
-    }
-
-    fn push_from_pointer_memory_segment(
-        &self,
-        segment: PointerSegmentVariant,
-        index: u16,
-    ) -> Vec<String> {
-        let pointer_address = match segment {
-            Argument => "ARG",
-            Local => "LCL",
-            This => "THIS",
-            That => "THAT",
-        };
-        let load_into_d = format!(
-            "
-                @{}
-                D=A
-                @{}
-                A=M+D
-                D=M
-                ",
-            index, pointer_address
-        )
-        .lines()
-        .map(|line| line.to_string());
-
-        load_into_d.chain(self.push_from_d_register()).collect()
-    }
-
-    fn pop_into_pointer_memory_segment(
-        &self,
-        segment: PointerSegmentVariant,
-        index: u16,
-    ) -> Vec<String> {
-        let pointer_address = match segment {
-            Argument => "ARG",
-            Local => "LCL",
-            This => "THIS",
-            That => "THAT",
-        };
-        let load_d_into_memory = format!(
-            "
-                // stash value from D into R13
-                @R13
-                M=D
-
-                // put value of pointer in D
-                @{}
-                D=M
-
-                // add index
-                @{}
-                D=D+A
-
-                // stash memory address in R14
-                @R14
-                M=D
-
-                // get value back into D
-                @R13
-                D=M
-
-                // load value into memory
-                @R14
-                A=M
-                M=D
-            ",
-            pointer_address, index,
-        )
-        .lines()
-        .map(|line| line.to_string());
-
-        self.pop_into_d_register()
-            .chain(load_d_into_memory)
-            .collect()
-    }
-
-    fn push_from_constant(&self, index: u16) -> Vec<String> {
-        let max_constant = 32767;
-        if index > max_constant {
-            panic!("constant {} is bigger thatn max of {}", index, max_constant);
-        }
-
-        let load_into_d = format!(
-            "
-            @{}
-            D=A
-        ",
-            index
-        )
-        .lines()
-        .map(|line| line.to_string());
-
-        load_into_d.chain(self.push_from_d_register()).collect()
-    }
-
-    fn push(&self, segment: MemorySegmentVariant, index: u16) -> Vec<String> {
-        match segment {
-            OffsetSegment(offset_segment) => {
-                self.push_from_offset_memory_segment(offset_segment, index)
-            }
-            PointerSegment(pointer_segment) => {
-                self.push_from_pointer_memory_segment(pointer_segment, index)
-            }
-            Constant => self.push_from_constant(index),
-        }
-    }
-
-    fn pop(&self, segment: MemorySegmentVariant, index: u16) -> Vec<String> {
-        match segment {
-            OffsetSegment(offset_segment) => {
-                self.pop_into_offset_memory_segment(offset_segment, index)
-            }
-            PointerSegment(pointer_segment) => {
-                self.pop_into_pointer_memory_segment(pointer_segment, index)
-            }
-            Constant => {
-                // popping into a constant doesn't make much sense - I guess it is just a pop
-                vec!["@SP", "M=M-1"]
-                    .into_iter()
-                    .map(|str| str.to_string())
-                    .collect()
-            }
-        }
-    }
-
-    fn compile_memory_command(&self, command: MemoryCommandVariant) -> Vec<String> {
-        match command {
-            Push(segment, index) => self.push(segment, index),
-            Pop(segment, index) => self.pop(segment, index),
-        }
-    }
-
-    fn compile_arithmetic_command(&self, command: ArithmeticCommandVariant) -> Vec<String> {
+    fn compile_arithmetic_command(&mut self, command: ArithmeticCommandVariant) -> Vec<String> {
         match command {
             Binary(variant) => match variant {
                 Add => self.binary_operation("+"),
@@ -377,10 +345,10 @@ impl CodeGenerator {
         .collect()
     }
 
-    fn compile_vm_command(&self, command: Command) -> Vec<String> {
+    fn compile_vm_command(&mut self, command: Command) -> Vec<String> {
         match command {
             Arithmetic(variant) => self.compile_arithmetic_command(variant),
-            Memory(variant) => self.compile_memory_command(variant),
+            Memory(variant) => compile_memory_command(variant),
             Flow(variant) => {
                 todo!()
             }
@@ -391,7 +359,7 @@ impl CodeGenerator {
     }
 
     fn compile_vm_commands(
-        self,
+        mut self,
         vm_commands: impl Iterator<Item = Command>,
     ) -> impl Iterator<Item = String> {
         vm_commands
@@ -399,12 +367,11 @@ impl CodeGenerator {
             .flatten()
     }
 
-    fn generate_asm(
-        self,
-        vm_commands: impl Iterator<Item = Command>,
-    ) -> impl Iterator<Item = String> {
-        prelude()
+    pub fn generate_asm(self, vm_commands: impl Iterator<Item = Command>) -> String {
+        let vec: Vec<String> = prelude()
             .chain(self.compile_vm_commands(vm_commands))
             .chain(postlude())
+            .collect();
+        vec.join("\n")
     }
 }

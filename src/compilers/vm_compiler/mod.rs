@@ -114,4 +114,43 @@ mod tests {
         computer
             .tick_until(&|computer| stack_pointer(computer) == 256 && this(computer, 2) == 1234);
     }
+
+    #[test]
+    fn test_arithmetic() {
+        let mut computer = program_computer(
+            "
+            push constant 6
+            push constant 2
+            push constant 3
+            push constant 5
+            push constant 2
+            push constant 3
+            add
+            eq
+            pop constant 0
+            add
+            eq
+            pop constant 0
+        ",
+        );
+        computer.tick_until(&|computer| {
+            stack_pointer(computer) == 256 + 6 && nth_stack_value(&computer, 0) == 3
+        });
+        computer.tick_until(&|computer| {
+            stack_pointer(computer) == 256 + 5 && nth_stack_value(computer, 0) == 5
+        });
+        computer.tick_until(&|computer| {
+            stack_pointer(computer) == 256 + 4 && nth_stack_value(computer, 0) == -1
+        });
+        computer.tick_until(&|computer| {
+            stack_pointer(computer) == 256 + 3 && nth_stack_value(computer, 0) == 3
+        });
+        computer.tick_until(&|computer| {
+            stack_pointer(computer) == 256 + 2 && nth_stack_value(computer, 0) == 5
+        });
+        computer.tick_until(&|computer| {
+            stack_pointer(computer) == 256 + 1 && nth_stack_value(computer, 0) == 0
+        });
+        computer.tick_until(&|computer| stack_pointer(computer) == 256);
+    }
 }

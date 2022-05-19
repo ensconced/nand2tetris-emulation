@@ -1,43 +1,10 @@
-// fn compile_function_command(
-//     &self,
-//     command: FunctionCommandVariant,
-// ) -> impl Iterator<Item = String> {
-//     // TODO - if a function definition, need to set self.current_function -
-//     // ...then where do we use self.current function? when creating labels?
-//     todo!()
-// }
-
-// fn push_return_address() -> impl Iterator<Item = String> {
-
-//     vec![
-//         // Push the return address to the stack
-//         "@$begin_spin",
-//         "D=A",
-//         "@SP",
-//         "M=M+1",
-//         "A=M",
-//         "M=D",
-//         // - Save the caller's frame to the stack. In this case, there is no
-//         //   caller, so we'll just set LCL, ARG, THIS and THAT all to zero.
-//         // - reposition ARG pointer
-//         // - reposition LCL pointer
-//         // - jump to execute the code of the subroutine
-//         "asdf",
-//         "asdf",
-//         "asdflkajsdf",
-//         "asdlfkjsldf",
-//         "asdlfkjsdf",
-//     ]
-//     .into_iter()
-//     .map(|str| str.to_owned())
-
-//     vec!["@SP", "M=256"].into_iter().map(|str| str.to_owned())
-// }
+use std::iter;
 
 use super::parser::{
     ArithmeticCommandVariant::{self, *},
     BinaryArithmeticCommandVariant::*,
     Command::{self, *},
+    FunctionCommandVariant,
     MemoryCommandVariant::{self, *},
     MemorySegmentVariant::{self, *},
     OffsetSegmentVariant,
@@ -45,7 +12,7 @@ use super::parser::{
     UnaryArithmeticCommandVariant::*,
 };
 
-fn string_commands(source: &str) -> impl Iterator<Item = String> + '_ {
+fn string_lines(source: &str) -> impl Iterator<Item = String> + '_ {
     source.lines().map(|line| line.to_string())
 }
 
@@ -62,14 +29,47 @@ fn jump_end_spin() -> impl Iterator<Item = String> {
 }
 
 fn prelude() -> impl Iterator<Item = String> {
-    // let commandss = vec![Memory(Push(Constant, 0))];
-    initialize_stack_pointer()
-    // .chain(jump_end_spin())
-    // .chain(push_return_address())
-}
+    string_lines(
+        "
+      // This will be the very first instruction in the computer's ROM.
+      // We don't want to go into an infinite loop quite yet, so skip over it!
+      @$skip_infinite_loop
+      0;JMP
 
-fn postlude() -> impl Iterator<Item = String> {
-    vec![].into_iter()
+      // This will be the return address of the main Sys.init function, so when
+      // that function exits, the computer just goes into an infinite loop
+      ($infinite_loop)
+      @$infinite_loop
+      0;JMP
+
+      ($skip_infinite_loop)
+
+      // For each stack frame, ARG points to the base of the frame. This is the
+      // first stack frame, so here ARG points to the base of the entire stack.
+      @ARG
+      M=256
+
+      // Initialize the stack pointer. Even though there is no real caller
+      // function for Sys.init, we leave the customary space for the saved LCL,
+      // ARG, THIS and THAT of the caller. This in addition to the return
+      // address means the stack pointer will start 5 addresses above the base
+      // of the stack.
+      @SP
+      M=261
+
+      // I'm assuming for now that Sys.init has no local variables. Therefore,
+      // LCL starts off pointing to the same address as the stack pointer.
+      @LCL
+      M=261
+
+      // Load the return address. Sys.init takes no arguments, so this is
+      // located right at the base of the stack.
+      @$infinite_loop
+      D=A
+      @256
+      M=D
+    ",
+    )
 }
 
 fn offset_address(segment: OffsetSegmentVariant, index: u16) -> u16 {
@@ -111,7 +111,7 @@ fn pop_into_d_register() -> impl Iterator<Item = String> {
 }
 
 fn push_from_offset_memory_segment(segment: OffsetSegmentVariant, index: u16) -> Vec<String> {
-    string_commands(&format!(
+    string_lines(&format!(
         "
         @{}
         D=M
@@ -124,7 +124,7 @@ fn push_from_offset_memory_segment(segment: OffsetSegmentVariant, index: u16) ->
 
 fn pop_into_offset_memory_segment(segment: OffsetSegmentVariant, index: u16) -> Vec<String> {
     pop_into_d_register()
-        .chain(string_commands(&format!(
+        .chain(string_lines(&format!(
             "
         @{}
         M=D
@@ -141,7 +141,7 @@ fn push_from_pointer_memory_segment(segment: PointerSegmentVariant, index: u16) 
         This => "THIS",
         That => "THAT",
     };
-    string_commands(&format!(
+    string_lines(&format!(
         "
         @{}
         D=A
@@ -163,7 +163,7 @@ fn pop_into_pointer_memory_segment(segment: PointerSegmentVariant, index: u16) -
         That => "THAT",
     };
     pop_into_d_register()
-        .chain(string_commands(&format!(
+        .chain(string_lines(&format!(
             "
             // stash value from D into R13
             @R13
@@ -201,7 +201,7 @@ fn push_from_constant(index: u16) -> Vec<String> {
         panic!("constant {} is bigger than max of {}", index, max_constant);
     }
 
-    string_commands(&format!(
+    string_lines(&format!(
         "
         @{}
         D=A
@@ -345,14 +345,96 @@ impl CodeGenerator {
         .collect()
     }
 
+    fn compile_function_call(&mut self, function_name: String, arg_count: u16) -> Vec<String> {
+        // TODO - check through all this...
+        let save_caller_pointers =
+            vec!["LCL", "ARG", "THIS", "THAT"]
+                .into_iter()
+                .flat_map(|pointer| {
+                    vec![
+                        pointer.to_string(),
+                        "D=M".to_string(),
+                        push_from_d_register().collect(),
+                    ]
+                    .into_iter()
+                });
+
+        // At this point, all the arguments have been pushed to the stack,
+        // plus the return address, plus the four saved caller pointers.
+        // So to find the correct position for ARG, we can count 5 +
+        // arg_count steps back from the stack pointer.
+        let steps_back = 5 + arg_count;
+
+        let set_arg_pointer = format!(
+            "
+            @SP
+            D=M
+            @{}
+            D=D-A
+            @ARG
+            M=D
+        ",
+            steps_back
+        );
+
+        let jump = format!(
+            "
+            @$entry_{function_name}
+            0;JMP
+            (@$return_address_{function_name}) // TODO - this needs to be different each time the function is called...
+            ",
+            function_name = function_name
+        );
+
+        let load_return_address_into_d = format!(
+            "
+            @$return_address_{} // TODO - function scoping
+            D=A
+            ",
+            function_name
+        );
+
+        string_lines(&load_return_address_into_d)
+            .chain(push_from_d_register())
+            .chain(save_caller_pointers)
+            .chain(string_lines(&set_arg_pointer))
+            .chain(string_lines(&jump))
+            .collect()
+    }
+
+    fn compile_function_definition(
+        &mut self,
+        function_name: String,
+        local_var_count: u16,
+    ) -> Vec<String> {
+        todo!()
+    }
+
+    fn compile_function_return(&mut self) -> Vec<String> {
+        todo!()
+    }
+
+    fn compile_function_command(
+        &mut self,
+        function_command: FunctionCommandVariant,
+    ) -> Vec<String> {
+        match function_command {
+            FunctionCommandVariant::Call(function_name, arg_count) => {
+                self.compile_function_call(function_name, arg_count)
+            }
+            FunctionCommandVariant::Define(function_name, local_var_count) => {
+                self.compile_function_definition(function_name, local_var_count)
+            }
+            FunctionCommandVariant::ReturnFrom => self.compile_function_return(),
+        }
+    }
+
     fn compile_vm_command(&mut self, command: Command) -> Vec<String> {
         match command {
-            Arithmetic(variant) => self.compile_arithmetic_command(variant),
-            Memory(variant) => compile_memory_command(variant),
+            Arithmetic(arithmetic_command) => self.compile_arithmetic_command(arithmetic_command),
+            Memory(memory_command) => compile_memory_command(memory_command),
+            Function(function_command) => self.compile_function_command(function_command),
             Flow(variant) => {
-                todo!()
-            }
-            Function(variant) => {
                 todo!()
             }
         }
@@ -370,7 +452,6 @@ impl CodeGenerator {
     pub fn generate_asm(self, vm_commands: impl Iterator<Item = Command>) -> String {
         let vec: Vec<String> = prelude()
             .chain(self.compile_vm_commands(vm_commands))
-            .chain(postlude())
             .collect();
         vec.join("\n")
     }

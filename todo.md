@@ -2,6 +2,7 @@
 
 - proper initialization of single stack frame for Sys.init
 - codegen for function and program flow commands
+- can Sys.init have local variables? This would need accounting for in the initialization...
 - vm - enable parsing of whole files/directories (is it just a matter of parsing then concatenating the commands of all the input files?)
 
 ### main program

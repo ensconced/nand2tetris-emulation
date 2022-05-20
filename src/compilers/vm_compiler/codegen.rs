@@ -12,8 +12,9 @@ use super::parser::{
     UnaryArithmeticCommandVariant::*,
 };
 
-fn string_lines(source: &str) -> impl Iterator<Item = String> + '_ {
-    source.lines().map(|line| line.to_string())
+fn string_lines(source: &str) -> impl Iterator<Item = String> {
+    let vec: Vec<String> = source.lines().map(|line| line.to_string()).collect();
+    vec.into_iter()
 }
 
 fn initialize_stack_pointer() -> impl Iterator<Item = String> {
@@ -90,6 +91,7 @@ fn offset_address(segment: OffsetSegmentVariant, index: u16) -> u16 {
 
 fn push_from_d_register() -> impl Iterator<Item = String> {
     "
+    // Push from d register
     @SP
     A=M
     M=D
@@ -102,6 +104,7 @@ fn push_from_d_register() -> impl Iterator<Item = String> {
 
 fn pop_into_d_register() -> impl Iterator<Item = String> {
     "
+    // Pop into d register
     @SP
     MA=M-1
     D=M
@@ -243,6 +246,7 @@ fn compile_memory_command(command: MemoryCommandVariant) -> Vec<String> {
 pub struct CodeGenerator {
     current_function: Option<String>,
     after_set_to_false_count: u32,
+    return_address_count: u32,
 }
 
 impl CodeGenerator {
@@ -250,6 +254,7 @@ impl CodeGenerator {
         Self {
             current_function: None,
             after_set_to_false_count: 0,
+            return_address_count: 0,
         }
     }
 
@@ -346,8 +351,20 @@ impl CodeGenerator {
     }
 
     fn compile_function_call(&mut self, function_name: String, arg_count: u16) -> Vec<String> {
-        // TODO - check through all this...
-        let save_caller_pointers =
+        fn load_return_address_into_d(return_address_label: &str) -> impl Iterator<Item = String> {
+            let source = format!(
+                "
+                // Load return address into D
+                @{}
+                D=A
+                ",
+                return_address_label
+            );
+
+            string_lines(&source)
+        }
+
+        fn save_caller_pointers() -> impl Iterator<Item = String> {
             vec!["LCL", "ARG", "THIS", "THAT"]
                 .into_iter()
                 .flat_map(|pointer| {
@@ -357,48 +374,55 @@ impl CodeGenerator {
                         push_from_d_register().collect(),
                     ]
                     .into_iter()
-                });
+                })
+        }
 
-        // At this point, all the arguments have been pushed to the stack,
-        // plus the return address, plus the four saved caller pointers.
-        // So to find the correct position for ARG, we can count 5 +
-        // arg_count steps back from the stack pointer.
-        let steps_back = 5 + arg_count;
+        fn set_arg_pointer(arg_count: u16) -> impl Iterator<Item = String> {
+            // At this point, all the arguments have been pushed to the stack,
+            // plus the return address, plus the four saved caller pointers.
+            // So to find the correct position for ARG, we can count 5 +
+            // arg_count steps back from the stack pointer.
+            let steps_back = 5 + arg_count;
 
-        let set_arg_pointer = format!(
-            "
-            @SP
-            D=M
-            @{}
-            D=D-A
-            @ARG
-            M=D
-        ",
-            steps_back
-        );
+            let source = format!(
+                "
+                // Set arg pointer
+                @SP
+                D=M
+                @{}
+                D=D-A
+                @ARG
+                M=D
+                ",
+                steps_back
+            );
+            string_lines(&source)
+        }
 
-        let jump = format!(
-            "
-            @$entry_{function_name}
-            0;JMP
-            (@$return_address_{function_name}) // TODO - this needs to be different each time the function is called...
-            ",
-            function_name = function_name
-        );
+        fn jump(function_name: &str, return_address_label: &str) -> impl Iterator<Item = String> {
+            let source = format!(
+                "
+                // Jump to the callee
+                @$entry_{}
+                0;JMP
 
-        let load_return_address_into_d = format!(
-            "
-            @$return_address_{} // TODO - function scoping
-            D=A
-            ",
-            function_name
-        );
+                // Label for return to caller
+                (@{})
+                ",
+                function_name, return_address_label
+            );
 
-        string_lines(&load_return_address_into_d)
+            string_lines(&source)
+        }
+
+        let return_address_label = format!("${}", self.return_address_count);
+        self.return_address_count += 1;
+
+        load_return_address_into_d(&return_address_label)
             .chain(push_from_d_register())
-            .chain(save_caller_pointers)
-            .chain(string_lines(&set_arg_pointer))
-            .chain(string_lines(&jump))
+            .chain(save_caller_pointers())
+            .chain(set_arg_pointer(arg_count))
+            .chain(jump(&function_name, &return_address_label))
             .collect()
     }
 
@@ -407,11 +431,65 @@ impl CodeGenerator {
         function_name: String,
         local_var_count: u16,
     ) -> Vec<String> {
-        todo!()
+        fn initialize_locals(local_var_count: usize) -> impl Iterator<Item = String> {
+            iter::repeat_with(|| iter::once("D=0".to_string()).chain(push_from_d_register()))
+                .take(local_var_count)
+                .flatten()
+        }
+
+        iter::once(format!("($entry_{})", function_name))
+            .chain(initialize_locals(local_var_count as usize))
+            .collect()
     }
 
     fn compile_function_return(&mut self) -> Vec<String> {
-        todo!()
+        // TODO
+        fn stash_return_address() -> impl Iterator<Item = String> {
+            string_lines(
+                "
+              @LCL
+              D=M
+              @5
+              D=D-A
+              @R13
+              M=D
+            ",
+            )
+        }
+
+        fn place_return_value_for_caller() -> impl Iterator<Item = String> {
+            string_lines(
+                "
+              @ARG
+              M=D
+            ",
+            )
+        }
+
+        fn restore_stack_pointer() -> impl Iterator<Item = String> {
+            string_lines(
+                "
+                @SP
+                M=D+1
+            ",
+            )
+        }
+
+        fn restore_caller_pointers() -> impl Iterator<Item = String> {
+            todo!()
+        }
+
+        fn return_to_caller() -> impl Iterator<Item = String> {
+            todo!()
+        }
+
+        stash_return_address()
+            .chain(pop_into_d_register())
+            .chain(place_return_value_for_caller())
+            .chain(restore_stack_pointer())
+            .chain(restore_caller_pointers())
+            .chain(return_to_caller())
+            .collect()
     }
 
     fn compile_function_command(
@@ -434,7 +512,7 @@ impl CodeGenerator {
             Arithmetic(arithmetic_command) => self.compile_arithmetic_command(arithmetic_command),
             Memory(memory_command) => compile_memory_command(memory_command),
             Function(function_command) => self.compile_function_command(function_command),
-            Flow(variant) => {
+            Flow(flow_command) => {
                 todo!()
             }
         }

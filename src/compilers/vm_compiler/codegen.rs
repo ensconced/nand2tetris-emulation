@@ -4,7 +4,7 @@ use super::parser::{
     ArithmeticCommandVariant::{self, *},
     BinaryArithmeticCommandVariant::*,
     Command::{self, *},
-    FunctionCommandVariant,
+    FunctionCommandVariant::{self, *},
     MemoryCommandVariant::{self, *},
     MemorySegmentVariant::{self, *},
     OffsetSegmentVariant,
@@ -559,13 +559,11 @@ impl CodeGenerator {
         function_command: FunctionCommandVariant,
     ) -> Vec<String> {
         match function_command {
-            FunctionCommandVariant::Call(function_name, arg_count) => {
-                self.compile_function_call(function_name, arg_count)
-            }
-            FunctionCommandVariant::Define(function_name, local_var_count) => {
+            Call(function_name, arg_count) => self.compile_function_call(function_name, arg_count),
+            Define(function_name, local_var_count) => {
                 self.compile_function_definition(function_name, local_var_count)
             }
-            FunctionCommandVariant::ReturnFrom => self.compile_function_return(),
+            ReturnFrom => self.compile_function_return(),
         }
     }
 

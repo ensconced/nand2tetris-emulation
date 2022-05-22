@@ -1,3 +1,7 @@
+// turns keyboard-mashing into pixels on the screen - this
+// should be a useful source of randomness for initializing stuff like game of life,
+// or snake
+
 function Sys.init 3
   push constant 0
   pop local 0 // timer

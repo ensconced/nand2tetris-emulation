@@ -4,6 +4,7 @@ use super::parser::{
     ArithmeticCommandVariant::{self, *},
     BinaryArithmeticCommandVariant::*,
     Command::{self, *},
+    FlowCommandVariant,
     FunctionCommandVariant::{self, *},
     MemoryCommandVariant::{self, *},
     MemorySegmentVariant::{self, *},
@@ -53,7 +54,6 @@ fn prelude() -> impl Iterator<Item = String> {
       @SP
       M=D
 
-      // I'm assuming for now that Sys.init has no local variables. Therefore,
       // LCL starts off pointing to the same address as the stack pointer.
       @261
       D=A
@@ -253,6 +253,7 @@ fn compile_memory_command(command: MemoryCommandVariant) -> Vec<String> {
 pub struct CodeGenerator {
     after_set_to_false_count: u32,
     return_address_count: u32,
+    current_function: Option<String>,
 }
 
 impl CodeGenerator {
@@ -260,6 +261,7 @@ impl CodeGenerator {
         Self {
             after_set_to_false_count: 0,
             return_address_count: 0,
+            current_function: None,
         }
     }
 
@@ -440,10 +442,13 @@ impl CodeGenerator {
                 .take(local_var_count)
                 .flatten()
         }
-
-        iter::once(format!("($entry_{})", function_name))
+        let result = iter::once(format!("($entry_{})", &function_name))
             .chain(initialize_locals(local_var_count as usize))
-            .collect()
+            .collect();
+
+        self.current_function = Some(function_name);
+
+        result
     }
 
     fn compile_function_return(&mut self) -> Vec<String> {
@@ -575,14 +580,68 @@ impl CodeGenerator {
         }
     }
 
+    fn compile_goto(&self, label: String) -> Vec<String> {
+        if let Some(current_function) = &self.current_function {
+            string_lines(&format!(
+                "
+            @{}${}
+            0;JMP
+            ",
+                current_function, label
+            ))
+            .collect()
+        } else {
+            panic!(
+                "not in a function definition while compiling goto label: {}",
+                label
+            )
+        }
+    }
+
+    fn compile_label(&self, label: String) -> Vec<String> {
+        if let Some(current_function) = &self.current_function {
+            vec![format!("({}${})", current_function, label)]
+        } else {
+            panic!(
+                "not in a function definition while compiling label: {}",
+                label
+            )
+        }
+    }
+
+    fn compile_ifgoto(&self, label: String) -> Vec<String> {
+        if let Some(current_function) = &self.current_function {
+            pop_into_d_register("SP")
+                .chain(string_lines(&format!(
+                    "
+                @{}${}
+                D;JNE
+                ",
+                    current_function, label
+                )))
+                .collect()
+        } else {
+            panic!(
+                "not in a function definition while compiling ifgoto label: {}",
+                label
+            )
+        }
+    }
+
+    fn compile_flow_command(&mut self, flow_command: FlowCommandVariant) -> Vec<String> {
+        match flow_command {
+            FlowCommandVariant::GoTo(label) => self.compile_goto(label),
+            FlowCommandVariant::IfGoTo(label) => self.compile_ifgoto(label),
+            FlowCommandVariant::Label(label) => self.compile_label(label),
+        }
+    }
+
     fn compile_vm_command(&mut self, command: Command) -> Vec<String> {
         match command {
             Arithmetic(arithmetic_command) => self.compile_arithmetic_command(arithmetic_command),
             Memory(memory_command) => compile_memory_command(memory_command),
             Function(function_command) => self.compile_function_command(function_command),
-            Flow(flow_command) => {
-                todo!()
-            }
+            Flow(flow_command) => self.compile_flow_command(flow_command),
         }
     }
 

@@ -16,7 +16,7 @@ pub struct Cpu {
     pub reg_a: i16,
     pub reg_d: i16,
     out_m: i16,
-    pc: i16,
+    pub pc: i16,
     memory_load: bool,
 }
 
@@ -185,7 +185,7 @@ impl Computer {
     }
 
     pub fn tick_until(&mut self, predicate: &dyn Fn(&Computer) -> bool) {
-        let max_ticks = 1000;
+        let max_ticks = 1000000;
         for _ in 0..=max_ticks {
             if predicate(self) {
                 return;

@@ -229,4 +229,58 @@ mod tests {
         // 1 + 2 + 3 should make 6
         computer.tick_until(&|computer| nth_stack_value(&computer, 0) == 6);
     }
+
+    #[test]
+    fn test_fibonacci() {
+        let mut computer = program_computer(
+            "
+            function somefile.add 0
+            push argument 0
+            push argument 1
+            add
+            return
+
+            function somefile.fibonacci 0
+            // if n == 0, return 0
+            push argument 0
+            push constant 0
+            eq
+            if-goto return_zero
+
+            // if n == 1, return 1
+            push argument 0
+            push constant 1
+            eq
+            if-goto return_one
+
+            // else, compute fibonacci(n - 1)
+            push argument 0
+            push constant 1
+            sub // n - 1
+            call somefile.fibonacci 1
+            push argument 0
+            push constant 2
+            sub // n - 2
+            call somefile.fibonacci 1
+            add
+            return
+
+            label return_zero
+            push constant 0
+            return
+
+            label return_one
+            push constant 1
+            return
+
+            function Sys.init 0
+            push constant 10
+            call somefile.fibonacci 1
+            ",
+        );
+        // initialize
+        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        // 1 + 2 + 3 should make 6
+        computer.tick_until(&|computer| nth_stack_value(&computer, 0) == 55);
+    }
 }

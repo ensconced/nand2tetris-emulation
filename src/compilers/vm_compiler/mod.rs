@@ -198,27 +198,35 @@ mod tests {
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         // push first arguments to stack
         computer.tick_until(&|computer| nth_stack_value(&computer, 0) == 3);
-        computer.tick_until(&|computer| {
-            nth_stack_value(&computer, 0) == 3 && nth_stack_value(&computer, 1) == 3
-        });
-        // add function computes 1 + 2
-        // computer.tick_until(&|computer| nth_stack_value(computer, 0) == 3);
-        // computer.tick_until(&|computer| {
-        //     stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 4
-        //         && nth_stack_value(computer, 0) == -1
-        // });
-        // computer.tick_until(&|computer| {
-        //     stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 3
-        //         && nth_stack_value(computer, 0) == 3
-        // });
-        // computer.tick_until(&|computer| {
-        //     stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 2
-        //         && nth_stack_value(computer, 0) == 5
-        // });
-        // computer.tick_until(&|computer| {
-        //     stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 1
-        //         && nth_stack_value(computer, 0) == 0
-        // });
-        // computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        // 1 + 2 + 3 should make 6
+        computer.tick_until(&|computer| nth_stack_value(&computer, 0) == 6);
+    }
+
+    #[test]
+    fn test_sys_init_with_local() {
+        let mut computer = program_computer(
+            "
+            function somefile.add 0
+            push argument 0
+            push argument 1
+            add
+            return
+
+            function Sys.init 1
+            push constant 1
+            push constant 2
+            call somefile.add 2
+            pop local 0
+            push constant 3
+            push local 0
+            call somefile.add 2
+            ",
+        );
+        // initialize
+        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        // push first arguments to stack
+        computer.tick_until(&|computer| nth_stack_value(&computer, 0) == 3);
+        // 1 + 2 + 3 should make 6
+        computer.tick_until(&|computer| nth_stack_value(&computer, 0) == 6);
     }
 }

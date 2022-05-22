@@ -392,6 +392,18 @@ impl CodeGenerator {
             ))
         }
 
+        fn set_lcl_pointer() -> impl Iterator<Item = String> {
+            string_lines(&format!(
+                "
+                // Set lcl pointer
+                @SP
+                D=M
+                @LCL
+                M=D
+                ",
+            ))
+        }
+
         fn jump(function_name: &str, return_address_label: &str) -> impl Iterator<Item = String> {
             string_lines(&format!(
                 "
@@ -413,6 +425,7 @@ impl CodeGenerator {
             .chain(push_from_d_register())
             .chain(save_caller_pointers())
             .chain(set_arg_pointer(arg_count))
+            .chain(set_lcl_pointer())
             .chain(jump(&function_name, &return_address_label))
             .collect()
     }

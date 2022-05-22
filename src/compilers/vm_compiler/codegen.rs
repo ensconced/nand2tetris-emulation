@@ -13,7 +13,10 @@ use super::parser::{
 };
 
 fn string_lines(source: &str) -> impl Iterator<Item = String> {
-    let vec: Vec<String> = source.lines().map(|line| line.to_string()).collect();
+    let vec: Vec<String> = source
+        .lines()
+        .map(|line| line.trim_start().to_string())
+        .collect();
     vec.into_iter()
 }
 
@@ -84,16 +87,16 @@ fn offset_address(segment: OffsetSegmentVariant, index: u16) -> u16 {
 }
 
 fn push_from_d_register() -> impl Iterator<Item = String> {
-    "
+    string_lines(
+        "
     // Push from d register
     @SP
     A=M
     M=D
     @SP
     M=M+1
-    "
-    .lines()
-    .map(|line| line.to_string())
+    ",
+    )
 }
 
 fn pop_into_d_register(pointer: &str) -> impl Iterator<Item = String> {
@@ -226,10 +229,13 @@ fn pop(segment: MemorySegmentVariant, index: u16) -> Vec<String> {
             // popping into a constant doesn't make much sense - I guess it just
             // means decrement the SP but don't do anything with the popped
             // value
-            vec!["@SP", "M=M-1"]
-                .into_iter()
-                .map(|str| str.to_string())
-                .collect()
+            string_lines(
+                "
+            @SP
+            M=M-1
+            ",
+            )
+            .collect()
         }
     }
 }
@@ -272,7 +278,7 @@ impl CodeGenerator {
     }
 
     fn binary_operation(&self, operation: &str) -> Vec<String> {
-        format!(
+        string_lines(&format!(
             "
             // decrement stack pointer, so it's pointing to y
             @SP
@@ -285,23 +291,19 @@ impl CodeGenerator {
             M=M{}D
             ",
             operation
-        )
-        .lines()
-        .map(|line| line.to_string())
+        ))
         .collect()
     }
 
     fn unary_operation(&self, operation: &str) -> Vec<String> {
-        format!(
+        string_lines(&format!(
             "
             @SP
             A=M-1
             M={}M
             ",
             operation
-        )
-        .lines()
-        .map(|line| line.to_string())
+        ))
         .collect()
     }
 
@@ -309,7 +311,7 @@ impl CodeGenerator {
         let jump_label = format!("$after_set_to_false_{}", self.after_set_to_false_count);
         self.after_set_to_false_count += 1;
 
-        format!(
+        string_lines(&format!(
             "
             // decrement stack pointer, so it's pointing to y
             @SP
@@ -339,36 +341,29 @@ impl CodeGenerator {
             ",
             jump_label = jump_label,
             operation = operation,
-        )
-        .lines()
-        .map(|line| line.to_string())
+        ))
         .collect()
     }
 
     fn compile_function_call(&mut self, function_name: String, arg_count: u16) -> Vec<String> {
         fn load_return_address_into_d(return_address_label: &str) -> impl Iterator<Item = String> {
-            let source = format!(
+            string_lines(&format!(
                 "
                 // Load return address into D
                 @{}
                 D=A
                 ",
                 return_address_label
-            );
-
-            string_lines(&source)
+            ))
         }
 
         fn save_caller_pointers() -> impl Iterator<Item = String> {
             vec!["LCL", "ARG", "THIS", "THAT"]
                 .into_iter()
                 .flat_map(|pointer| {
-                    vec![
-                        pointer.to_string(),
-                        "D=M".to_string(),
-                        push_from_d_register().collect(),
-                    ]
-                    .into_iter()
+                    iter::once(format!("@{}", pointer))
+                        .chain(iter::once("D=M".to_string()))
+                        .chain(push_from_d_register())
                 })
         }
 
@@ -379,7 +374,7 @@ impl CodeGenerator {
             // arg_count steps back from the stack pointer.
             let steps_back = 5 + arg_count;
 
-            let source = format!(
+            string_lines(&format!(
                 "
                 // Set arg pointer
                 @SP
@@ -390,24 +385,21 @@ impl CodeGenerator {
                 M=D
                 ",
                 steps_back
-            );
-            string_lines(&source)
+            ))
         }
 
         fn jump(function_name: &str, return_address_label: &str) -> impl Iterator<Item = String> {
-            let source = format!(
+            string_lines(&format!(
                 "
                 // Jump to the callee
                 @$entry_{}
                 0;JMP
 
                 // Label for return to caller
-                (@{})
+                ({})
                 ",
                 function_name, return_address_label
-            );
-
-            string_lines(&source)
+            ))
         }
 
         let return_address_label = format!("${}", self.return_address_count);

@@ -49,13 +49,15 @@ fn take_a_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) ->
 
 fn take_l_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> Command {
     tokens.next(); // pop (
+    let token = tokens.next();
     let identifier_string = if let Some(Token {
         kind: Identifier(identifier_string),
         ..
-    }) = tokens.next()
+    }) = token
     {
         identifier_string
     } else {
+        dbg!(&token);
         panic!(
             "failed to parse l-command - expected identifier. line: {}",
             line_number

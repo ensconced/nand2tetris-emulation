@@ -20,6 +20,7 @@ mod tests {
 
     fn program_computer(vm_code: &str) -> Computer {
         let asm = compile_to_asm(vm_code.to_string());
+        println!("{}", asm);
         let machine_code = assemble(asm, config::ROM_DEPTH);
         Computer::new(generate_rom::from_string(machine_code))
     }
@@ -165,5 +166,47 @@ mod tests {
                 && nth_stack_value(computer, 0) == 0
         });
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+    }
+
+    #[test]
+    fn test_add_function() {
+        let mut computer = program_computer(
+            "
+            function somefile.add 0
+            push argument 0
+            push argument 1
+            add
+            return
+
+            push constant 1
+            push constant 2
+            call somefile.add 2
+        ",
+        );
+        // computer.tick_until(&|computer| {
+        //     stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 6
+        //         && nth_stack_value(&computer, 0) == 3
+        // });
+        // computer.tick_until(&|computer| {
+        //     stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 5
+        //         && nth_stack_value(computer, 0) == 5
+        // });
+        // computer.tick_until(&|computer| {
+        //     stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 4
+        //         && nth_stack_value(computer, 0) == -1
+        // });
+        // computer.tick_until(&|computer| {
+        //     stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 3
+        //         && nth_stack_value(computer, 0) == 3
+        // });
+        // computer.tick_until(&|computer| {
+        //     stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 2
+        //         && nth_stack_value(computer, 0) == 5
+        // });
+        // computer.tick_until(&|computer| {
+        //     stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 1
+        //         && nth_stack_value(computer, 0) == 0
+        // });
+        // computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
     }
 }

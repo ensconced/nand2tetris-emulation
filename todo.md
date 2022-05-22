@@ -16,7 +16,6 @@
 
 ### programs
 
-- game of life
 - pong
 - mandelbrot
 

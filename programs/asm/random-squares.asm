@@ -267,31 +267,6 @@ M=D
 M=M-1
 
 
-@0
-D=A
-@THAT
-A=M+D
-D=M
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-@18
-M=D
-
-
 // Load return address into D
 @$return_point_1
 D=A
@@ -567,7 +542,7 @@ M=D
 D=M
 
 // add index
-@10
+@0
 D=D+A
 
 // stash memory address in R14
@@ -680,6 +655,31 @@ A=M
 0;JMP
 
 ($entry_key_changed)
+
+@0
+D=A
+@THAT
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@18
+M=D
+
 
 @17
 D=M

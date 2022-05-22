@@ -17,18 +17,6 @@ fn string_lines(source: &str) -> impl Iterator<Item = String> {
     vec.into_iter()
 }
 
-fn initialize_stack_pointer() -> impl Iterator<Item = String> {
-    vec!["@256", "D=A", "@SP", "M=D"]
-        .into_iter()
-        .map(|str| str.to_owned())
-}
-
-fn jump_end_spin() -> impl Iterator<Item = String> {
-    vec!["@$end_spin", "0;JMP"]
-        .into_iter()
-        .map(|str| str.to_owned())
-}
-
 fn prelude() -> impl Iterator<Item = String> {
     string_lines(
         "
@@ -47,21 +35,27 @@ fn prelude() -> impl Iterator<Item = String> {
 
       // For each stack frame, ARG points to the base of the frame. This is the
       // first stack frame, so here ARG points to the base of the entire stack.
+      @256
+      D=A
       @ARG
-      M=256
+      M=D
 
       // Initialize the stack pointer. Even though there is no real caller
       // function for Sys.init, we leave the customary space for the saved LCL,
       // ARG, THIS and THAT of the caller. This in addition to the return
       // address means the stack pointer will start 5 addresses above the base
       // of the stack.
+      @261
+      D=A
       @SP
-      M=261
+      M=D
 
       // I'm assuming for now that Sys.init has no local variables. Therefore,
       // LCL starts off pointing to the same address as the stack pointer.
+      @261
+      D=A
       @LCL
-      M=261
+      M=D
 
       // Load the return address. Sys.init takes no arguments, so this is
       // located right at the base of the stack.
@@ -102,15 +96,18 @@ fn push_from_d_register() -> impl Iterator<Item = String> {
     .map(|line| line.to_string())
 }
 
-fn pop_into_d_register() -> impl Iterator<Item = String> {
-    "
+fn pop_into_d_register(pointer: &str) -> impl Iterator<Item = String> {
+    // pointer is usually going to be SP but occasionally we want to use a
+    // different pointer to perform a pop-like operation
+    string_lines(&format!(
+        "
     // Pop into d register
-    @SP
+    @{}
     MA=M-1
     D=M
-    "
-    .lines()
-    .map(|line| line.to_string())
+    ",
+        pointer
+    ))
 }
 
 fn push_from_offset_memory_segment(segment: OffsetSegmentVariant, index: u16) -> Vec<String> {
@@ -126,7 +123,7 @@ fn push_from_offset_memory_segment(segment: OffsetSegmentVariant, index: u16) ->
 }
 
 fn pop_into_offset_memory_segment(segment: OffsetSegmentVariant, index: u16) -> Vec<String> {
-    pop_into_d_register()
+    pop_into_d_register("SP")
         .chain(string_lines(&format!(
             "
         @{}
@@ -165,7 +162,7 @@ fn pop_into_pointer_memory_segment(segment: PointerSegmentVariant, index: u16) -
         This => "THIS",
         That => "THAT",
     };
-    pop_into_d_register()
+    pop_into_d_register("SP")
         .chain(string_lines(&format!(
             "
             // stash value from D into R13
@@ -244,7 +241,6 @@ fn compile_memory_command(command: MemoryCommandVariant) -> Vec<String> {
     }
 }
 pub struct CodeGenerator {
-    current_function: Option<String>,
     after_set_to_false_count: u32,
     return_address_count: u32,
 }
@@ -252,7 +248,6 @@ pub struct CodeGenerator {
 impl CodeGenerator {
     pub fn new() -> Self {
         Self {
-            current_function: None,
             after_set_to_false_count: 0,
             return_address_count: 0,
         }
@@ -443,52 +438,119 @@ impl CodeGenerator {
     }
 
     fn compile_function_return(&mut self) -> Vec<String> {
-        // TODO
-        fn stash_return_address() -> impl Iterator<Item = String> {
+        // This is carefully designed to not require tracking of the number of
+        // arguments or locals for the callee.
+
+        // Use R13 as a copy of ARG. We'll use this when placing the return
+        // value and restoring the stack pointer. We can't use ARG directly
+        // because it's going to be overwritten when restoring the caller state.
+        fn copy_arg_to_r13() -> impl Iterator<Item = String> {
             string_lines(
                 "
-              @LCL
-              D=M
-              @5
-              D=D-A
-              @R13
-              M=D
-            ",
+                @ARG
+                D=M
+                @R13
+                M=D
+                ",
             )
         }
 
-        fn place_return_value_for_caller() -> impl Iterator<Item = String> {
+        // Use R14 as copy of LCL. We'll use this to pop all the caller state.
+        // We can't use LCL directly because LCL is one of the pieces of we're
+        // restoring, so we would end up overwriting our pointer part way
+        // through the process. (If LCL was the last thing to be restored we
+        // would be able to get away with this, but since we want to carry on to
+        // also pop the return address, it doesn't work.)
+        fn copy_lcl_to_r14() -> impl Iterator<Item = String> {
             string_lines(
                 "
-              @ARG
-              M=D
-            ",
+                @LCL
+                D=M
+                @R14
+                M=D
+                ",
             )
+        }
+
+        fn restore_caller_state() -> impl Iterator<Item = String> {
+            pop_into_d_register("R14")
+                .chain(string_lines(
+                    "
+            @THAT
+            M=D
+            ",
+                ))
+                .chain(pop_into_d_register("R14"))
+                .chain(string_lines(
+                    "
+            @THIS
+            M=D
+            ",
+                ))
+                .chain(pop_into_d_register("R14"))
+                .chain(string_lines(
+                    "
+            @ARG
+            M=D
+            ",
+                ))
+                .chain(pop_into_d_register("R14"))
+                .chain(string_lines(
+                    "
+            @LCL
+            M=D
+            ",
+                ))
+        }
+
+        fn stash_return_address_in_r14() -> impl Iterator<Item = String> {
+            pop_into_d_register("R14").chain(string_lines(
+                "
+            @R14
+            M=D
+            ",
+            ))
+        }
+
+        fn place_return_value() -> impl Iterator<Item = String> {
+            pop_into_d_register("SP").chain(string_lines(
+                "
+            @R13
+            A=M
+            M=D
+            ",
+            ))
         }
 
         fn restore_stack_pointer() -> impl Iterator<Item = String> {
             string_lines(
                 "
-                @SP
-                M=D+1
+            @R13
+            D=M
+            @SP
+            M=D+1
             ",
             )
         }
 
-        fn restore_caller_pointers() -> impl Iterator<Item = String> {
-            todo!()
+        fn goto_return_address() -> impl Iterator<Item = String> {
+            string_lines(
+                "
+            @R14
+            A=M
+            0;JMP
+            ",
+            )
         }
 
-        fn return_to_caller() -> impl Iterator<Item = String> {
-            todo!()
-        }
-
-        stash_return_address()
-            .chain(pop_into_d_register())
-            .chain(place_return_value_for_caller())
+        copy_arg_to_r13()
+            .chain(copy_lcl_to_r14())
+            .chain(restore_caller_state())
+            .chain(stash_return_address_in_r14())
+            .chain(pop_into_d_register("SP"))
+            .chain(place_return_value())
             .chain(restore_stack_pointer())
-            .chain(restore_caller_pointers())
-            .chain(return_to_caller())
+            .chain(goto_return_address())
             .collect()
     }
 

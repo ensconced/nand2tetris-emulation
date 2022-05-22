@@ -49,17 +49,20 @@ mod tests {
         ram[ram[0] as usize - (1 + n)]
     }
 
+    const INITIAL_STACK_POINTER_ADDRESS: i16 = 261;
+
     #[test]
     fn test_initialization() {
         let mut computer = program_computer("");
-        computer.tick_until(&|computer| stack_pointer(computer) == 256);
+        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
     }
 
     #[test]
     fn test_push_constant() {
         let mut computer = program_computer("push constant 123");
         computer.tick_until(&|computer| {
-            stack_pointer(computer) == 257 && nth_stack_value(computer, 0) == 123
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 1
+                && nth_stack_value(computer, 0) == 123
         });
     }
 
@@ -79,16 +82,17 @@ mod tests {
         ",
         );
         computer.tick_until(&|computer| {
-            stack_pointer(computer) == 256 + 3 && nth_stack_value(&computer, 0) == 3
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 3
+                && nth_stack_value(&computer, 0) == 3
         });
         computer.tick_until(&|computer| {
-            stack_pointer(computer) == 256
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
                 && static_variable(computer, 0) == 3
                 && static_variable(computer, 100) == 2
                 && static_variable(computer, 200) == 1
         });
         computer.tick_until(&|computer| {
-            stack_pointer(computer) == 256 + 3
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 3
                 && nth_stack_value(computer, 0) == 1
                 && nth_stack_value(computer, 1) == 2
                 && nth_stack_value(computer, 2) == 3
@@ -106,13 +110,16 @@ mod tests {
         ",
         );
         computer.tick_until(&|computer| {
-            stack_pointer(computer) == 256 + 2 && nth_stack_value(&computer, 0) == 2051
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 2
+                && nth_stack_value(&computer, 0) == 2051
         });
         computer.tick_until(&|computer| {
-            stack_pointer(computer) == 256 + 1 && pointer(computer, 0) == 2051
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 1
+                && pointer(computer, 0) == 2051
         });
-        computer
-            .tick_until(&|computer| stack_pointer(computer) == 256 && this(computer, 2) == 1234);
+        computer.tick_until(&|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS && this(computer, 2) == 1234
+        });
     }
 
     #[test]
@@ -134,23 +141,29 @@ mod tests {
         ",
         );
         computer.tick_until(&|computer| {
-            stack_pointer(computer) == 256 + 6 && nth_stack_value(&computer, 0) == 3
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 6
+                && nth_stack_value(&computer, 0) == 3
         });
         computer.tick_until(&|computer| {
-            stack_pointer(computer) == 256 + 5 && nth_stack_value(computer, 0) == 5
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 5
+                && nth_stack_value(computer, 0) == 5
         });
         computer.tick_until(&|computer| {
-            stack_pointer(computer) == 256 + 4 && nth_stack_value(computer, 0) == -1
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 4
+                && nth_stack_value(computer, 0) == -1
         });
         computer.tick_until(&|computer| {
-            stack_pointer(computer) == 256 + 3 && nth_stack_value(computer, 0) == 3
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 3
+                && nth_stack_value(computer, 0) == 3
         });
         computer.tick_until(&|computer| {
-            stack_pointer(computer) == 256 + 2 && nth_stack_value(computer, 0) == 5
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 2
+                && nth_stack_value(computer, 0) == 5
         });
         computer.tick_until(&|computer| {
-            stack_pointer(computer) == 256 + 1 && nth_stack_value(computer, 0) == 0
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 1
+                && nth_stack_value(computer, 0) == 0
         });
-        computer.tick_until(&|computer| stack_pointer(computer) == 256);
+        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
     }
 }

@@ -183,6 +183,7 @@ mod tests {
             call somefile.add 2
         ",
         );
+        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         // computer.tick_until(&|computer| {
         //     stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 6
         //         && nth_stack_value(&computer, 0) == 3

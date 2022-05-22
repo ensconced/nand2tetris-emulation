@@ -567,7 +567,7 @@ M=D
 D=M
 
 // add index
-@0
+@10
 D=D+A
 
 // stash memory address in R14

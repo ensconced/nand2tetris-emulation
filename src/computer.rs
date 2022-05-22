@@ -1,4 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    num::Wrapping,
+    sync::{Arc, Mutex},
+};
 
 use tabled::{Style, Table, Tabled};
 
@@ -13,36 +16,36 @@ fn comp_bits(instruction: i16) -> i16 {
 }
 
 pub struct Cpu {
-    pub reg_a: i16,
-    pub reg_d: i16,
-    out_m: i16,
+    pub reg_a: Wrapping<i16>,
+    pub reg_d: Wrapping<i16>,
+    out_m: Wrapping<i16>,
     pub pc: i16,
     memory_load: bool,
 }
 
 impl Cpu {
-    fn execute(&mut self, instruction: i16, in_m: i16) {
+    fn execute(&mut self, instruction: i16, in_m: Wrapping<i16>) {
         if bit(instruction, 15) == 0 {
             // A Instruction
-            self.reg_a = instruction;
+            self.reg_a = Wrapping(instruction);
             self.pc += 1;
             self.memory_load = false;
         } else {
             // C Instruction
             let alu_out = match comp_bits(instruction) {
-                0b0101010 => 0,
-                0b0111111 => 1,
-                0b0111010 => -1,
+                0b0101010 => Wrapping(0),
+                0b0111111 => Wrapping(1),
+                0b0111010 => Wrapping(-1),
                 0b0001100 => self.reg_d,
                 0b0110000 => self.reg_a,
                 0b0001101 => !self.reg_d,
                 0b0110001 => !self.reg_a,
                 0b0001111 => -self.reg_d,
                 0b0110011 => -self.reg_a,
-                0b0011111 => self.reg_d + 1,
-                0b0110111 => self.reg_a + 1,
-                0b0001110 => self.reg_d - 1,
-                0b0110010 => self.reg_a - 1,
+                0b0011111 => self.reg_d + Wrapping(1),
+                0b0110111 => self.reg_a + Wrapping(1),
+                0b0001110 => self.reg_d - Wrapping(1),
+                0b0110010 => self.reg_a - Wrapping(1),
                 0b0000010 => self.reg_d + self.reg_a,
                 0b0010011 => self.reg_d - self.reg_a,
                 0b0000111 => self.reg_a - self.reg_d,
@@ -51,8 +54,8 @@ impl Cpu {
                 0b1110000 => in_m,
                 0b1110001 => !in_m,
                 0b1110011 => -in_m,
-                0b1110111 => in_m + 1,
-                0b1110010 => in_m - 1,
+                0b1110111 => in_m + Wrapping(1),
+                0b1110010 => in_m - Wrapping(1),
                 0b1000010 => self.reg_d + in_m,
                 0b1010011 => self.reg_d - in_m,
                 0b1000111 => in_m - self.reg_d,
@@ -60,11 +63,11 @@ impl Cpu {
                 0b1010101 => self.reg_d | in_m,
                 _ => panic!("bad instruction"),
             };
-            if (bit(instruction, 0) == 1 && alu_out > 0)
-                || (bit(instruction, 1) == 1 && alu_out == 0)
-                || (bit(instruction, 2) == 1 && alu_out < 0)
+            if (bit(instruction, 0) == 1 && alu_out > Wrapping(0))
+                || (bit(instruction, 1) == 1 && alu_out == Wrapping(0))
+                || (bit(instruction, 2) == 1 && alu_out < Wrapping(0))
             {
-                self.pc = self.reg_a;
+                self.pc = self.reg_a.0;
             } else {
                 self.pc += 1;
             }
@@ -139,10 +142,10 @@ impl Computer {
             rom,
             ram: Arc::new(Mutex::new([0; 32768])),
             cpu: Cpu {
-                reg_a: 0,
-                reg_d: 0,
+                reg_a: Wrapping(0),
+                reg_d: Wrapping(0),
                 pc: 0,
-                out_m: 0,
+                out_m: Wrapping(0),
                 memory_load: false,
             },
         }
@@ -160,8 +163,8 @@ impl Computer {
             };
             let rows = vec![DebugInfo::new(
                 self.cpu.pc,
-                self.cpu.reg_a,
-                self.cpu.reg_d,
+                self.cpu.reg_a.0,
+                self.cpu.reg_d.0,
                 ram[0],
                 ram[1],
                 ram[2],
@@ -176,11 +179,11 @@ impl Computer {
             println!("instruction: {:016b}", instruction);
             println!();
         }
-        let addr = self.cpu.reg_a as usize % self.ram.lock().unwrap().len();
-        let in_m = self.ram.lock().unwrap()[addr];
+        let addr = self.cpu.reg_a.0 as usize % self.ram.lock().unwrap().len();
+        let in_m = Wrapping(self.ram.lock().unwrap()[addr]);
         self.cpu.execute(instruction, in_m);
         if self.cpu.memory_load {
-            self.ram.lock().unwrap()[prev_reg_a as usize] = self.cpu.out_m;
+            self.ram.lock().unwrap()[prev_reg_a.0 as usize] = self.cpu.out_m.0;
         }
     }
 

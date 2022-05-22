@@ -1,0 +1,34 @@
+function Sys.init 2
+  push constant 0
+  pop local 0 // timer
+  push constant 0
+  pop local 1 // key
+
+  // THIS is screen
+  push constant 16384
+  pop pointer 0
+
+  label start
+    // increment timer
+    push local 0
+    push constant 1
+    add
+    pop local 0
+
+    push local 1
+    call key_changed 1
+    if-goto handle_key_change
+    goto start
+  label end
+
+  label handle_key_change
+    // set output
+    push local 0
+    pop this 0
+
+    // increment screen pointer
+    push constant 1
+    push pointer 0
+    add
+    pop pointer 0
+  goto start

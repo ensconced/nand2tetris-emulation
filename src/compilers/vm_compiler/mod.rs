@@ -2,6 +2,8 @@ mod codegen;
 mod parser;
 mod tokenizer;
 
+use std::{fs, path::Path};
+
 use codegen::CodeGenerator;
 use parser::parse_lines;
 
@@ -9,6 +11,12 @@ pub fn compile_to_asm(vm_code: String) -> String {
     let vm_commands = parse_lines(&vm_code);
     let code_generator = CodeGenerator::new();
     code_generator.generate_asm(vm_commands)
+}
+
+pub fn compile_file(source_path: &Path, dest_path: &Path) {
+    let string = fs::read_to_string(source_path).expect("failed to read source file");
+    let asm = compile_to_asm(string);
+    fs::write(dest_path, asm).expect("failed to write output");
 }
 
 #[cfg(test)]

@@ -1,7 +1,10 @@
 ### vm compiler
 
 - do static variables as suggested in the book...
+- game of life in vm code
 - vm - enable parsing of whole files/directories (is it just a matter of parsing then concatenating the commands of all the input files?)
+- do something using the keyboard...pong? typing?
+- improve emitted code size - use more jumps?
 
 ### main program
 
@@ -13,6 +16,7 @@
 
 ### programs
 
+- game of life
 - pong
 - mandelbrot
 

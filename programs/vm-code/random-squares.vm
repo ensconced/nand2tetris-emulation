@@ -28,11 +28,7 @@ function Sys.init 3
     push that 0
     pop static 2
 
-    // check if key changed
-    push static 1
-    push static 2
-    eq
-    not
+    call key_changed 0
     if-goto handle_key_change
   goto start
 
@@ -51,6 +47,14 @@ function Sys.init 3
     add
     pop pointer 0
   goto start
+
+
+function key_changed 0
+  push static 1
+  push static 2
+  eq
+  not
+  return
 
 
 function increment_timer 0

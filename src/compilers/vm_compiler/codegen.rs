@@ -66,6 +66,10 @@ fn prelude() -> impl Iterator<Item = String> {
       D=A
       @256
       M=D
+
+      // Call Sys.init
+      @$entry_Sys.init
+      0;JMP
     ",
     )
 }
@@ -402,7 +406,7 @@ impl CodeGenerator {
             ))
         }
 
-        let return_address_label = format!("${}", self.return_address_count);
+        let return_address_label = format!("$return_point_{}", self.return_address_count);
         self.return_address_count += 1;
 
         load_return_address_into_d(&return_address_label)

@@ -60,7 +60,12 @@ mod tests {
 
     #[test]
     fn test_push_constant() {
-        let mut computer = program_computer("push constant 123");
+        let mut computer = program_computer(
+            "
+        function Sys.init 0
+        push constant 123
+        ",
+        );
         computer.tick_until(&|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 1
                 && nth_stack_value(computer, 0) == 123
@@ -71,6 +76,7 @@ mod tests {
     fn test_pop_push_static() {
         let mut computer = program_computer(
             "
+            function Sys.init 0
             push constant 1
             push constant 2
             push constant 3
@@ -104,11 +110,12 @@ mod tests {
     fn test_pop_push_this() {
         let mut computer = program_computer(
             "
+            function Sys.init 0
             push constant 1234
             push constant 2051
             pop pointer 0
             pop this 2
-        ",
+            ",
         );
         computer.tick_until(&|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 2
@@ -127,6 +134,7 @@ mod tests {
     fn test_arithmetic() {
         let mut computer = program_computer(
             "
+            function Sys.init 0
             push constant 6
             push constant 2
             push constant 3
@@ -139,7 +147,7 @@ mod tests {
             add
             eq
             pop constant 0
-        ",
+            ",
         );
         computer.tick_until(&|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 6
@@ -178,20 +186,23 @@ mod tests {
             add
             return
 
+            function Sys.init 0
             push constant 1
             push constant 2
             call somefile.add 2
-        ",
+            push constant 3
+            call somefile.add 2
+            ",
         );
+        // initialize
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        // computer.tick_until(&|computer| {
-        //     stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 6
-        //         && nth_stack_value(&computer, 0) == 3
-        // });
-        // computer.tick_until(&|computer| {
-        //     stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 5
-        //         && nth_stack_value(computer, 0) == 5
-        // });
+        // push first arguments to stack
+        computer.tick_until(&|computer| nth_stack_value(&computer, 0) == 3);
+        computer.tick_until(&|computer| {
+            nth_stack_value(&computer, 0) == 3 && nth_stack_value(&computer, 1) == 3
+        });
+        // add function computes 1 + 2
+        // computer.tick_until(&|computer| nth_stack_value(computer, 0) == 3);
         // computer.tick_until(&|computer| {
         //     stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 4
         //         && nth_stack_value(computer, 0) == -1

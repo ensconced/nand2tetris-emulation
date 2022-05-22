@@ -1,0 +1,1155 @@
+ pc   a   d   sp   lcl   arg   this   that   r13   r14   stack
+ 0    0   0   0     0     0     0      0      0     0     []
+
+
+// This will be the very first instruction in the computer's ROM.
+// We don't want to go into an infinite loop quite yet, so skip over it!
+@$skip_infinite_loop
+0;JMP
+
+instruction: 0000000000000100
+
+ pc   a   d   sp   lcl   arg   this   that   r13   r14   stack
+ 1    4   0   0     0     0     0      0      0     0     []
+
+
+instruction: 1110101010000111
+
+ pc   a   d   sp   lcl   arg   this   that   r13   r14   stack
+ 4    4   0   0     0     0     0      0      0     0     []
+
+
+
+// For each stack frame, ARG points to the base of the frame. This is the
+// first stack frame, so here ARG points to the base of the entire stack.
+@256
+D=A
+@ARG
+M=D
+
+
+instruction: 0000000100000000
+
+ pc    a    d   sp   lcl   arg   this   that   r13   r14   stack
+ 5    256   0   0     0     0     0      0      0     0     []
+
+
+instruction: 1110110000010000
+
+ pc    a     d    sp   lcl   arg   this   that   r13   r14   stack
+ 6    256   256   0     0     0     0      0      0     0     []
+
+
+instruction: 0000000000000010
+
+ pc   a    d    sp   lcl   arg   this   that   r13   r14   stack
+ 7    2   256   0     0     0     0      0      0     0     []
+
+
+instruction: 1110001100001000
+
+ pc   a    d    sp   lcl   arg   this   that   r13   r14   stack
+ 8    2   256   0     0    256    0      0      0     0     []
+
+
+
+// Initialize the stack pointer. Even though there is no real caller
+// function for Sys.init, we leave the customary space for the saved LCL,
+// ARG, THIS and THAT of the caller. This in addition to the return
+// address means the stack pointer will start 5 addresses above the base
+// of the stack.
+@261
+D=A
+@SP
+M=D
+
+instruction: 0000000100000101
+
+ pc    a     d    sp   lcl   arg   this   that   r13   r14   stack
+ 9    261   256   0     0    256    0      0      0     0     []
+
+
+instruction: 1110110000010000
+
+ pc    a     d    sp   lcl   arg   this   that   r13   r14   stack
+ 10   261   261   0     0    256    0      0      0     0     []
+
+
+instruction: 0000000000000000
+
+ pc   a    d    sp   lcl   arg   this   that   r13   r14   stack
+ 11   0   261   0     0    256    0      0      0     0     []
+
+
+instruction: 1110001100001000
+
+ pc   a    d    sp    lcl   arg   this   that   r13   r14        stack
+ 12   0   261   261    0    256    0      0      0     0    [0, 0, 0, 0, 0]
+
+
+// I'm assuming for now that Sys.init has no local variables. Therefore,
+// LCL starts off pointing to the same address as the stack pointer.
+@261
+D=A
+@LCL
+M=D
+
+
+instruction: 0000000100000101
+
+ pc    a     d    sp    lcl   arg   this   that   r13   r14        stack
+ 13   261   261   261    0    256    0      0      0     0    [0, 0, 0, 0, 0]
+
+
+instruction: 1110110000010000
+
+ pc    a     d    sp    lcl   arg   this   that   r13   r14        stack
+ 14   261   261   261    0    256    0      0      0     0    [0, 0, 0, 0, 0]
+
+
+instruction: 0000000000000001
+
+ pc   a    d    sp    lcl   arg   this   that   r13   r14        stack
+ 15   1   261   261    0    256    0      0      0     0    [0, 0, 0, 0, 0]
+
+
+instruction: 1110001100001000
+
+ pc   a    d    sp    lcl   arg   this   that   r13   r14        stack
+ 16   1   261   261   261   256    0      0      0     0    [0, 0, 0, 0, 0]
+
+
+// Load the return address. Sys.init takes no arguments, so this is
+// located right at the base of the stack.
+@$infinite_loop
+D=A
+@256
+M=D
+
+instruction: 0000000000000010
+
+ pc   a    d    sp    lcl   arg   this   that   r13   r14        stack
+ 17   2   261   261   261   256    0      0      0     0    [0, 0, 0, 0, 0]
+
+
+instruction: 1110110000010000
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14        stack
+ 18   2   2   261   261   256    0      0      0     0    [0, 0, 0, 0, 0]
+
+
+instruction: 0000000100000000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14        stack
+ 19   256   2   261   261   256    0      0      0     0    [0, 0, 0, 0, 0]
+
+
+instruction: 1110001100001000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14        stack
+ 20   256   2   261   261   256    0      0      0     0    [2, 0, 0, 0, 0]
+
+
+// Call Sys.init
+@$entry_Sys.init
+0;JMP
+
+instruction: 0000000001011110
+
+ pc   a    d   sp    lcl   arg   this   that   r13   r14        stack
+ 21   94   2   261   261   256    0      0      0     0    [2, 0, 0, 0, 0]
+
+
+instruction: 1110101010000111
+
+ pc   a    d   sp    lcl   arg   this   that   r13   r14        stack
+ 94   94   2   261   261   256    0      0      0     0    [2, 0, 0, 0, 0]
+
+
+@1
+D=A
+
+instruction: 0000000000000001
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14        stack
+ 95   1   2   261   261   256    0      0      0     0    [2, 0, 0, 0, 0]
+
+
+instruction: 1110110000010000
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14        stack
+ 96   1   1   261   261   256    0      0      0     0    [2, 0, 0, 0, 0]
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+instruction: 0000000000000000
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14        stack
+ 97   0   1   261   261   256    0      0      0     0    [2, 0, 0, 0, 0]
+
+
+instruction: 1111110000100000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14        stack
+ 98   261   1   261   261   256    0      0      0     0    [2, 0, 0, 0, 0]
+
+
+instruction: 1110001100001000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14        stack
+ 99   261   1   261   261   256    0      0      0     0    [2, 0, 0, 0, 0]
+
+
+instruction: 0000000000000000
+
+ pc    a   d   sp    lcl   arg   this   that   r13   r14        stack
+ 100   0   1   261   261   256    0      0      0     0    [2, 0, 0, 0, 0]
+
+
+instruction: 1111110111001000
+
+ pc    a   d   sp    lcl   arg   this   that   r13   r14         stack
+ 101   0   1   262   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1]
+
+
+@2
+D=A
+
+
+instruction: 0000000000000010
+
+ pc    a   d   sp    lcl   arg   this   that   r13   r14         stack
+ 102   2   1   262   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1]
+
+
+instruction: 1110110000010000
+
+ pc    a   d   sp    lcl   arg   this   that   r13   r14         stack
+ 103   2   2   262   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1]
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+instruction: 0000000000000000
+
+ pc    a   d   sp    lcl   arg   this   that   r13   r14         stack
+ 104   0   2   262   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1]
+
+
+instruction: 1111110000100000
+
+ pc     a    d   sp    lcl   arg   this   that   r13   r14         stack
+ 105   262   2   262   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1]
+
+
+instruction: 1110001100001000
+
+ pc     a    d   sp    lcl   arg   this   that   r13   r14         stack
+ 106   262   2   262   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1]
+
+
+instruction: 0000000000000000
+
+ pc    a   d   sp    lcl   arg   this   that   r13   r14         stack
+ 107   0   2   262   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1]
+
+
+instruction: 1111110111001000
+
+ pc    a   d   sp    lcl   arg   this   that   r13   r14           stack
+ 108   0   2   263   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2]
+
+
+// Load return address into D
+@$return_point_0
+D=A
+
+
+instruction: 0000000010010111
+
+ pc     a    d   sp    lcl   arg   this   that   r13   r14           stack
+ 109   151   2   263   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2]
+
+
+instruction: 1110110000010000
+
+ pc     a     d    sp    lcl   arg   this   that   r13   r14           stack
+ 110   151   151   263   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2]
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+instruction: 0000000000000000
+
+ pc    a    d    sp    lcl   arg   this   that   r13   r14           stack
+ 111   0   151   263   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2]
+
+
+instruction: 1111110000100000
+
+ pc     a     d    sp    lcl   arg   this   that   r13   r14           stack
+ 112   263   151   263   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2]
+
+
+instruction: 1110001100001000
+
+ pc     a     d    sp    lcl   arg   this   that   r13   r14           stack
+ 113   263   151   263   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2]
+
+
+instruction: 0000000000000000
+
+ pc    a    d    sp    lcl   arg   this   that   r13   r14           stack
+ 114   0   151   263   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2]
+
+
+instruction: 1111110111001000
+
+ pc    a    d    sp    lcl   arg   this   that   r13   r14             stack
+ 115   0   151   264   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151]
+
+
+@LCL
+D=M
+
+
+instruction: 0000000000000001
+
+ pc    a    d    sp    lcl   arg   this   that   r13   r14             stack
+ 116   1   151   264   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151]
+
+
+instruction: 1111110000010000
+
+ pc    a    d    sp    lcl   arg   this   that   r13   r14             stack
+ 117   1   261   264   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151]
+
+
+ // Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+instruction: 0000000000000000
+
+ pc    a    d    sp    lcl   arg   this   that   r13   r14             stack
+ 118   0   261   264   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151]
+
+
+instruction: 1111110000100000
+
+ pc     a     d    sp    lcl   arg   this   that   r13   r14             stack
+ 119   264   261   264   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151]
+
+
+instruction: 1110001100001000
+
+ pc     a     d    sp    lcl   arg   this   that   r13   r14             stack
+ 120   264   261   264   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151]
+
+
+instruction: 0000000000000000
+
+ pc    a    d    sp    lcl   arg   this   that   r13   r14             stack
+ 121   0   261   264   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151]
+
+
+instruction: 1111110111001000
+
+ pc    a    d    sp    lcl   arg   this   that   r13   r14                stack
+ 122   0   261   265   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261]
+
+
+@ARG
+D=M
+
+
+instruction: 0000000000000010
+
+ pc    a    d    sp    lcl   arg   this   that   r13   r14                stack
+ 123   2   261   265   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261]
+
+
+instruction: 1111110000010000
+
+ pc    a    d    sp    lcl   arg   this   that   r13   r14                stack
+ 124   2   256   265   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261]
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+instruction: 0000000000000000
+
+ pc    a    d    sp    lcl   arg   this   that   r13   r14                stack
+ 125   0   256   265   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261]
+
+
+instruction: 1111110000100000
+
+ pc     a     d    sp    lcl   arg   this   that   r13   r14                stack
+ 126   265   256   265   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261]
+
+
+instruction: 1110001100001000
+
+ pc     a     d    sp    lcl   arg   this   that   r13   r14                stack
+ 127   265   256   265   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261]
+
+
+instruction: 0000000000000000
+
+ pc    a    d    sp    lcl   arg   this   that   r13   r14                stack
+ 128   0   256   265   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261]
+
+
+instruction: 1111110111001000
+
+ pc    a    d    sp    lcl   arg   this   that   r13   r14                  stack
+ 129   0   256   266   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256]
+
+
+@THIS
+D=M
+
+
+instruction: 0000000000000011
+
+ pc    a    d    sp    lcl   arg   this   that   r13   r14                  stack
+ 130   3   256   266   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256]
+
+
+instruction: 1111110000010000
+
+ pc    a   d   sp    lcl   arg   this   that   r13   r14                  stack
+ 131   3   0   266   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256]
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+instruction: 0000000000000000
+
+ pc    a   d   sp    lcl   arg   this   that   r13   r14                  stack
+ 132   0   0   266   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256]
+
+
+instruction: 1111110000100000
+
+ pc     a    d   sp    lcl   arg   this   that   r13   r14                  stack
+ 133   266   0   266   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256]
+
+
+instruction: 1110001100001000
+
+ pc     a    d   sp    lcl   arg   this   that   r13   r14                  stack
+ 134   266   0   266   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256]
+
+
+instruction: 0000000000000000
+
+ pc    a   d   sp    lcl   arg   this   that   r13   r14                  stack
+ 135   0   0   266   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256]
+
+
+instruction: 1111110111001000
+
+ pc    a   d   sp    lcl   arg   this   that   r13   r14                    stack
+ 136   0   0   267   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0]
+
+
+@THAT
+D=M
+
+instruction: 0000000000000100
+
+ pc    a   d   sp    lcl   arg   this   that   r13   r14                    stack
+ 137   4   0   267   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0]
+
+
+instruction: 1111110000010000
+
+ pc    a   d   sp    lcl   arg   this   that   r13   r14                    stack
+ 138   4   0   267   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0]
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+instruction: 0000000000000000
+
+ pc    a   d   sp    lcl   arg   this   that   r13   r14                    stack
+ 139   0   0   267   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0]
+
+
+instruction: 1111110000100000
+
+ pc     a    d   sp    lcl   arg   this   that   r13   r14                    stack
+ 140   267   0   267   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0]
+
+
+instruction: 1110001100001000
+
+ pc     a    d   sp    lcl   arg   this   that   r13   r14                    stack
+ 141   267   0   267   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0]
+
+
+instruction: 0000000000000000
+
+ pc    a   d   sp    lcl   arg   this   that   r13   r14                    stack
+ 142   0   0   267   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0]
+
+
+instruction: 1111110111001000
+
+ pc    a   d   sp    lcl   arg   this   that   r13   r14                     stack
+ 143   0   0   268   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0]
+
+
+// Set arg pointer
+@SP
+D=M
+@7
+D=D-A
+@ARG
+M=D
+
+
+instruction: 0000000000000000
+
+ pc    a   d   sp    lcl   arg   this   that   r13   r14                     stack
+ 144   0   0   268   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0]
+
+
+instruction: 1111110000010000
+
+ pc    a    d    sp    lcl   arg   this   that   r13   r14                     stack
+ 145   0   268   268   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0]
+
+
+instruction: 0000000000000111
+
+ pc    a    d    sp    lcl   arg   this   that   r13   r14                     stack
+ 146   7   268   268   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0]
+
+
+instruction: 1110010011010000
+
+ pc    a    d    sp    lcl   arg   this   that   r13   r14                     stack
+ 147   7   261   268   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0]
+
+
+instruction: 0000000000000010
+
+ pc    a    d    sp    lcl   arg   this   that   r13   r14                     stack
+ 148   2   261   268   261   256    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0]
+
+
+instruction: 1110001100001000
+
+ pc    a    d    sp    lcl   arg   this   that   r13   r14                     stack
+ 149   2   261   268   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0]
+
+
+// Jump to the callee
+@$entry_somefile.add
+0;JMP
+
+instruction: 0000000000010110
+
+ pc    a     d    sp    lcl   arg   this   that   r13   r14                     stack
+ 150   22   261   268   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0]
+
+
+instruction: 1110101010000111
+
+ pc   a     d    sp    lcl   arg   this   that   r13   r14                     stack
+ 22   22   261   268   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0]
+
+
+@0
+D=A
+@ARG
+A=M+D
+D=M
+
+instruction: 0000000000000000
+
+ pc   a    d    sp    lcl   arg   this   that   r13   r14                     stack
+ 23   0   261   268   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0]
+
+
+instruction: 1110110000010000
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14                     stack
+ 24   0   0   268   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0]
+
+
+instruction: 0000000000000010
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14                     stack
+ 25   2   0   268   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0]
+
+
+instruction: 1111000010100000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14                     stack
+ 26   261   0   268   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0]
+
+
+instruction: 1111110000010000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14                     stack
+ 27   261   1   268   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0]
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+instruction: 0000000000000000
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14                     stack
+ 28   0   1   268   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0]
+
+
+instruction: 1111110000100000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14                     stack
+ 29   268   1   268   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0]
+
+
+instruction: 1110001100001000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14                     stack
+ 30   268   1   268   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0]
+
+
+instruction: 0000000000000000
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14                     stack
+ 31   0   1   268   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0]
+
+
+instruction: 1111110111001000
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14                       stack
+ 32   0   1   269   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 1]
+
+
+@1
+D=A
+@ARG
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+instruction: 0000000000000001
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14                       stack
+ 33   1   1   269   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 1]
+
+
+instruction: 1110110000010000
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14                       stack
+ 34   1   1   269   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 1]
+
+
+instruction: 0000000000000010
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14                       stack
+ 35   2   1   269   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 1]
+
+
+instruction: 1111000010100000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14                       stack
+ 36   262   1   269   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 1]
+
+
+instruction: 1111110000010000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14                       stack
+ 37   262   2   269   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 1]
+
+
+instruction: 0000000000000000
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14                       stack
+ 38   0   2   269   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 1]
+
+
+instruction: 1111110000100000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14                       stack
+ 39   269   2   269   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 1]
+
+
+instruction: 1110001100001000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14                       stack
+ 40   269   2   269   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 1]
+
+
+instruction: 0000000000000000
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14                       stack
+ 41   0   2   269   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 1]
+
+
+instruction: 1111110111001000
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14                        stack
+ 42   0   2   270   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 1, 2]
+
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+// load y into D
+A=M
+D=M
+// point A to x
+A=A-1
+M=M+D
+
+
+instruction: 0000000000000000
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14                        stack
+ 43   0   2   270   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 1, 2]
+
+
+instruction: 1111110010001000
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14                       stack
+ 44   0   2   269   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 1]
+
+
+instruction: 1111110000100000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14                       stack
+ 45   269   2   269   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 1]
+
+
+instruction: 1111110000010000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14                       stack
+ 46   269   2   269   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 1]
+
+
+instruction: 1110110010100000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14                       stack
+ 47   268   2   269   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 1]
+
+
+instruction: 1111000010001000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14                       stack
+ 48   268   2   269   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+@ARG
+D=M
+@R13
+M=D
+
+
+instruction: 0000000000000010
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14                       stack
+ 49   2   2   269   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+instruction: 1111110000010000
+
+ pc   a    d    sp    lcl   arg   this   that   r13   r14                       stack
+ 50   2   261   269   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+instruction: 0000000000001101
+
+ pc   a     d    sp    lcl   arg   this   that   r13   r14                       stack
+ 51   13   261   269   261   261    0      0      0     0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+instruction: 1110001100001000
+
+ pc   a     d    sp    lcl   arg   this   that   r13   r14                       stack
+ 52   13   261   269   261   261    0      0     261    0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+@LCL
+D=M
+@R14
+M=D
+
+
+instruction: 0000000000000001
+
+ pc   a    d    sp    lcl   arg   this   that   r13   r14                       stack
+ 53   1   261   269   261   261    0      0     261    0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+instruction: 1111110000010000
+
+ pc   a    d    sp    lcl   arg   this   that   r13   r14                       stack
+ 54   1   261   269   261   261    0      0     261    0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+instruction: 0000000000001110
+
+ pc   a     d    sp    lcl   arg   this   that   r13   r14                       stack
+ 55   14   261   269   261   261    0      0     261    0    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+instruction: 1110001100001000
+
+ pc   a     d    sp    lcl   arg   this   that   r13   r14                       stack
+ 56   14   261   269   261   261    0      0     261   261   [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+instruction: 0000000000001110
+
+ pc   a     d    sp    lcl   arg   this   that   r13   r14                       stack
+ 57   14   261   269   261   261    0      0     261   261   [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+instruction: 1111110010101000
+
+ pc    a     d    sp    lcl   arg   this   that   r13   r14                       stack
+ 58   260   261   269   261   261    0      0     261   260   [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+instruction: 1111110000010000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14                       stack
+ 59   260   0   269   261   261    0      0     261   260   [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+@THAT
+M=D
+
+instruction: 0000000000000100
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14                       stack
+ 60   4   0   269   261   261    0      0     261   260   [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+instruction: 1110001100001000
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14                       stack
+ 61   4   0   269   261   261    0      0     261   260   [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+instruction: 0000000000001110
+
+ pc   a    d   sp    lcl   arg   this   that   r13   r14                       stack
+ 62   14   0   269   261   261    0      0     261   260   [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+instruction: 1111110010101000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14                       stack
+ 63   259   0   269   261   261    0      0     261   259   [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+instruction: 1111110000010000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14                       stack
+ 64   259   0   269   261   261    0      0     261   259   [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+@THIS
+M=D
+
+instruction: 0000000000000011
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14                       stack
+ 65   3   0   269   261   261    0      0     261   259   [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+instruction: 1110001100001000
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14                       stack
+ 66   3   0   269   261   261    0      0     261   259   [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+instruction: 0000000000001110
+
+ pc   a    d   sp    lcl   arg   this   that   r13   r14                       stack
+ 67   14   0   269   261   261    0      0     261   259   [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+instruction: 1111110010101000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14                       stack
+ 68   258   0   269   261   261    0      0     261   258   [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+instruction: 1111110000010000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14                       stack
+ 69   258   0   269   261   261    0      0     261   258   [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+@ARG
+M=D
+
+instruction: 0000000000000010
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14                       stack
+ 70   2   0   269   261   261    0      0     261   258   [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+instruction: 1110001100001000
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14                       stack
+ 71   2   0   269   261    0     0      0     261   258   [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+instruction: 0000000000001110
+
+ pc   a    d   sp    lcl   arg   this   that   r13   r14                       stack
+ 72   14   0   269   261    0     0      0     261   258   [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+instruction: 1111110010101000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14                       stack
+ 73   257   0   269   261    0     0      0     261   257   [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+instruction: 1111110000010000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14                       stack
+ 74   257   0   269   261    0     0      0     261   257   [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+@LCL
+M=D
+
+instruction: 0000000000000001
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14                       stack
+ 75   1   0   269   261    0     0      0     261   257   [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+instruction: 1110001100001000
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14                       stack
+ 76   1   0   269    0     0     0      0     261   257   [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+instruction: 0000000000001110
+
+ pc   a    d   sp    lcl   arg   this   that   r13   r14                       stack
+ 77   14   0   269    0     0     0      0     261   257   [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+instruction: 1111110010101000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14                       stack
+ 78   256   0   269    0     0     0      0     261   256   [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+instruction: 1111110000010000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14                       stack
+ 79   256   2   269    0     0     0      0     261   256   [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+@R14
+M=D
+
+
+instruction: 0000000000001110
+
+ pc   a    d   sp    lcl   arg   this   that   r13   r14                       stack
+ 80   14   2   269    0     0     0      0     261   256   [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+instruction: 1110001100001000
+
+ pc   a    d   sp    lcl   arg   this   that   r13   r14                       stack
+ 81   14   2   269    0     0     0      0     261    2    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+instruction: 0000000000000000
+
+ pc   a   d   sp    lcl   arg   this   that   r13   r14                       stack
+ 82   0   2   269    0     0     0      0     261    2    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0, 3]
+
+
+instruction: 1111110010101000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14                     stack
+ 83   268   2   268    0     0     0      0     261    2    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0]
+
+
+instruction: 1111110000010000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14                     stack
+ 84   268   3   268    0     0     0      0     261    2    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0]
+
+
+@R13
+A=M
+M=D
+
+instruction: 0000000000001101
+
+ pc   a    d   sp    lcl   arg   this   that   r13   r14                     stack
+ 85   13   3   268    0     0     0      0     261    2    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0]
+
+
+instruction: 1111110000100000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14                     stack
+ 86   261   3   268    0     0     0      0     261    2    [2, 0, 0, 0, 0, 1, 2, 151, 261, 256, 0, 0]
+
+
+instruction: 1110001100001000
+
+ pc    a    d   sp    lcl   arg   this   that   r13   r14                     stack
+ 87   261   3   268    0     0     0      0     261    2    [2, 0, 0, 0, 0, 3, 2, 151, 261, 256, 0, 0]
+
+
+@R13
+D=M
+@SP
+M=D+1
+
+instruction: 0000000000001101
+
+ pc   a    d   sp    lcl   arg   this   that   r13   r14                     stack
+ 88   13   3   268    0     0     0      0     261    2    [2, 0, 0, 0, 0, 3, 2, 151, 261, 256, 0, 0]
+
+
+instruction: 1111110000010000
+
+ pc   a     d    sp    lcl   arg   this   that   r13   r14                     stack
+ 89   13   261   268    0     0     0      0     261    2    [2, 0, 0, 0, 0, 3, 2, 151, 261, 256, 0, 0]
+
+
+instruction: 0000000000000000
+
+ pc   a    d    sp    lcl   arg   this   that   r13   r14                     stack
+ 90   0   261   268    0     0     0      0     261    2    [2, 0, 0, 0, 0, 3, 2, 151, 261, 256, 0, 0]
+
+
+instruction: 1110011111001000
+
+ pc   a    d    sp    lcl   arg   this   that   r13   r14         stack
+ 91   0   261   262    0     0     0      0     261    2    [2, 0, 0, 0, 0, 3]
+
+
+@R14
+A=M
+0;JMP
+
+
+instruction: 0000000000001110
+
+ pc   a     d    sp    lcl   arg   this   that   r13   r14         stack
+ 92   14   261   262    0     0     0      0     261    2    [2, 0, 0, 0, 0, 3]
+
+
+instruction: 1111110000100000
+
+ pc   a    d    sp    lcl   arg   this   that   r13   r14         stack
+ 93   2   261   262    0     0     0      0     261    2    [2, 0, 0, 0, 0, 3]
+
+
+instruction: 1110101010000111
+
+ pc   a    d    sp    lcl   arg   this   that   r13   r14         stack
+ 2    2   261   262    0     0     0      0     261    2    [2, 0, 0, 0, 0, 3]
+
+
+@$infinite_loop
+0;JMP
+
+instruction: 0000000000000010
+
+ pc   a    d    sp    lcl   arg   this   that   r13   r14         stack
+ 3    2   261   262    0     0     0      0     261    2    [2, 0, 0, 0, 0, 3]
+
+
+instruction: 1110101010000111
+
+ pc   a    d    sp    lcl   arg   this   that   r13   r14         stack
+ 2    2   261   262    0     0     0      0     261    2    [2, 0, 0, 0, 0, 3]

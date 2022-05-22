@@ -1,5 +1,6 @@
 ### vm compiler
 
+- allow Sys.init to have local variables
 - proper initialization of single stack frame for Sys.init
 - codegen for function and program flow commands
 - can Sys.init have local variables? This would need accounting for in the initialization...

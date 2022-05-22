@@ -543,7 +543,6 @@ impl CodeGenerator {
             .chain(copy_lcl_to_r14())
             .chain(restore_caller_state())
             .chain(stash_return_address_in_r14())
-            .chain(pop_into_d_register("SP"))
             .chain(place_return_value())
             .chain(restore_stack_pointer())
             .chain(goto_return_address())

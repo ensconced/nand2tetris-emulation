@@ -10,3 +10,4 @@ opt-level = 3
 clap = { version = "3.1.13", features = ["derive"] }
 minifb = "0.23.0"
 regex = "1.5.5"
+tabled = "0.7.0"

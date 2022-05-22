@@ -1,6 +1,8 @@
 use std::sync::{Arc, Mutex};
 
-const DEBUG: bool = false;
+use tabled::{Style, Table, Tabled};
+
+const DEBUG: bool = true;
 
 pub fn bit(instruction: i16, idx: u32) -> u16 {
     (instruction as u16 & (2u16).pow(idx)) >> idx
@@ -79,6 +81,52 @@ impl Cpu {
         }
     }
 }
+
+#[derive(Tabled)]
+struct DebugInfo {
+    pc: i16,
+    a: i16,
+    d: i16,
+    sp: i16,
+    lcl: i16,
+    arg: i16,
+    this: i16,
+    that: i16,
+    r13: i16,
+    r14: i16,
+    stack: String,
+}
+
+impl DebugInfo {
+    fn new(
+        pc: i16,
+        a: i16,
+        d: i16,
+        sp: i16,
+        lcl: i16,
+        arg: i16,
+        this: i16,
+        that: i16,
+        r13: i16,
+        r14: i16,
+        stack: String,
+    ) -> Self {
+        Self {
+            a,
+            pc,
+            d,
+            sp,
+            lcl,
+            arg,
+            this,
+            that,
+            r13,
+            r14,
+            stack,
+        }
+    }
+}
+
 pub struct Computer {
     rom: [i16; 32768],
     pub ram: Arc<Mutex<[i16; 32768]>>,
@@ -104,10 +152,29 @@ impl Computer {
         let instruction = self.rom[self.cpu.pc as usize];
         if DEBUG {
             let ram = self.ram.lock().unwrap();
-            println!(
-                "pc: {}, instruction: {:016b}, reg_a: {}, reg_d: {}, R0: {}, R1: {}, R2: {}, R3: {}, R4: {}, R5: {}, R6: {}",
-                self.cpu.pc, instruction, self.cpu.reg_a, self.cpu.reg_d, ram[0], ram[1],ram[2],ram[3],ram[4],ram[5],ram[6]
-            );
+            let sp = ram[0];
+            let stack = if sp >= 256 {
+                &ram[256..ram[0] as usize]
+            } else {
+                &[]
+            };
+            let rows = vec![DebugInfo::new(
+                self.cpu.pc,
+                self.cpu.reg_a,
+                self.cpu.reg_d,
+                ram[0],
+                ram[1],
+                ram[2],
+                ram[3],
+                ram[4],
+                ram[13],
+                ram[14],
+                format!("{:?}", stack),
+            )];
+            println!("{}", Table::new(rows).with(Style::blank()));
+            println!();
+            println!("instruction: {:016b}", instruction);
+            println!();
         }
         let addr = self.cpu.reg_a as usize % self.ram.lock().unwrap().len();
         let in_m = self.ram.lock().unwrap()[addr];
@@ -118,7 +185,7 @@ impl Computer {
     }
 
     pub fn tick_until(&mut self, predicate: &dyn Fn(&Computer) -> bool) {
-        let max_ticks = 10000;
+        let max_ticks = 1000;
         for _ in 0..=max_ticks {
             if predicate(self) {
                 return;

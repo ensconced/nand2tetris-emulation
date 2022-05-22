@@ -4,13 +4,13 @@
 
 function Sys.init 3
   push constant 0
-  pop local 0 // timer
+  pop static 0 // timer
 
   push constant 0
-  pop local 1 // prevkey
+  pop static 1 // prevkey
 
   push constant 0
-  pop local 2 // currentkey
+  pop static 2 // currentkey
 
   // THIS is screen
   push constant 16384
@@ -21,19 +21,16 @@ function Sys.init 3
   pop pointer 1
 
   label start
-    // increment timer
-    push local 0
-    push constant 1
-    add
-    pop local 0
+    call increment_timer 0
+    pop constant 0 // discard return value
 
     // set currentkey
     push that 0
-    pop local 2
+    pop static 2
 
     // check if key changed
-    push local 1
-    push local 2
+    push static 1
+    push static 2
     eq
     not
     if-goto handle_key_change
@@ -42,10 +39,10 @@ function Sys.init 3
   label handle_key_change
     // set key local
     push that 0
-    pop local 1
+    pop static 1
 
     // show output on screen
-    push local 0
+    push static 0
     pop this 0
 
     // increment screen pointer
@@ -54,3 +51,14 @@ function Sys.init 3
     add
     pop pointer 0
   goto start
+
+
+function increment_timer 0
+  push static 0
+  push constant 1
+  add
+  pop static 0
+
+  // we have to return something
+  push constant 0
+  return

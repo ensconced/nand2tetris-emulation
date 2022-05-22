@@ -93,29 +93,7 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
-@LCL
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
-A=M
+@16
 M=D
 
 
@@ -137,29 +115,7 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
-@LCL
-D=M
-
-// add index
-@1
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
-A=M
+@17
 M=D
 
 
@@ -181,29 +137,7 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
-@LCL
-D=M
-
-// add index
-@2
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
-A=M
+@18
 M=D
 
 
@@ -252,12 +186,50 @@ M=D
 
 (Sys.init$start)
 
-@0
+// Load return address into D
+@$return_point_0
 D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
 @LCL
-A=M+D
 D=M
 
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+@ARG
+D=M
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+@THIS
+D=M
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+@THAT
+D=M
 
 // Push from d register
 @SP
@@ -267,59 +239,32 @@ M=D
 M=M+1
 
 
-@1
-D=A
-
-
-// Push from d register
+// Set arg pointer
 @SP
-A=M
+D=M
+@5
+D=D-A
+@ARG
 M=D
+
+
+// Set lcl pointer
 @SP
-M=M+1
+D=M
+@LCL
+M=D
 
 
-// decrement stack pointer, so it's pointing to y
+// Jump to the callee
+@$entry_increment_timer
+0;JMP
+
+// Label for return to caller
+($return_point_0)
+
+
 @SP
 M=M-1
-// load y into D
-A=M
-D=M
-// point A to x
-A=A-1
-M=M+D
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
-@LCL
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
-A=M
-M=D
 
 
 @0
@@ -343,36 +288,11 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
-@LCL
-D=M
-
-// add index
-@2
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
-A=M
+@18
 M=D
 
 
-@1
-D=A
-@LCL
-A=M+D
+@17
 D=M
 
 
@@ -384,10 +304,7 @@ M=D
 M=M+1
 
 
-@2
-D=A
-@LCL
-A=M+D
+@18
 D=M
 
 
@@ -467,36 +384,11 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
-@LCL
-D=M
-
-// add index
-@1
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
-A=M
+@17
 M=D
 
 
-@0
-D=A
-@LCL
-A=M+D
+@16
 D=M
 
 
@@ -586,4 +478,146 @@ M=D
 
 
 @Sys.init$start
+0;JMP
+
+($entry_increment_timer)
+
+@16
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@1
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+// load y into D
+A=M
+D=M
+// point A to x
+A=A-1
+M=M+D
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@16
+M=D
+
+
+@0
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@ARG
+D=M
+@R13
+M=D
+
+
+@LCL
+D=M
+@R14
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@THAT
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@THIS
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@ARG
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@LCL
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@R14
+M=D
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@R13
+A=M
+M=D
+
+
+@R13
+D=M
+@SP
+M=D+1
+
+
+@R14
+A=M
 0;JMP

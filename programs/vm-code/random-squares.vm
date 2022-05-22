@@ -1,12 +1,20 @@
-function Sys.init 2
+function Sys.init 3
   push constant 0
   pop local 0 // timer
+
   push constant 0
-  pop local 1 // key
+  pop local 1 // prevkey
+
+  push constant 0
+  pop local 2 // currentkey
 
   // THIS is screen
   push constant 16384
   pop pointer 0
+
+  // THAT is keyboard
+  push constant 24576
+  pop pointer 1
 
   label start
     // increment timer
@@ -15,14 +23,24 @@ function Sys.init 2
     add
     pop local 0
 
+    // set currentkey
+    push that 0
+    pop local 2
+
+    // check if key changed
     push local 1
-    call key_changed 1
+    push local 2
+    eq
+    not
     if-goto handle_key_change
-    goto start
-  label end
+  goto start
 
   label handle_key_change
-    // set output
+    // set key local
+    push that 0
+    pop local 1
+
+    // show output on screen
     push local 0
     pop this 0
 

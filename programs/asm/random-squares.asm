@@ -65,6 +65,15 @@ M=D
 @SP
 M=M+1
 
+D=0
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
 
 @0
 D=A
@@ -154,6 +163,50 @@ A=M
 M=D
 
 
+@0
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+// stash value from D into R13
+@R13
+M=D
+
+// put value of pointer in D
+@LCL
+D=M
+
+// add index
+@2
+D=D+A
+
+// stash memory address in R14
+@R14
+M=D
+
+// get value back into D
+@R13
+D=M
+
+// load value into memory
+@R14
+A=M
+M=D
+
+
 @16384
 D=A
 
@@ -173,6 +226,28 @@ D=M
 
 
 @3
+M=D
+
+
+@24576
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@4
 M=D
 
 (Sys.init$start)
@@ -247,6 +322,53 @@ A=M
 M=D
 
 
+@0
+D=A
+@THAT
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+// stash value from D into R13
+@R13
+M=D
+
+// put value of pointer in D
+@LCL
+D=M
+
+// add index
+@2
+D=D+A
+
+// stash memory address in R14
+@R14
+M=D
+
+// get value back into D
+@R13
+D=M
+
+// load value into memory
+@R14
+A=M
+M=D
+
+
 @1
 D=A
 @LCL
@@ -262,50 +384,12 @@ M=D
 M=M+1
 
 
-// Load return address into D
-@$return_point_0
+@2
 D=A
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
 @LCL
+A=M+D
 D=M
 
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-@ARG
-D=M
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-@THIS
-D=M
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-@THAT
-D=M
 
 // Push from d register
 @SP
@@ -315,28 +399,36 @@ M=D
 M=M+1
 
 
-// Set arg pointer
+// decrement stack pointer, so it's pointing to y
 @SP
-D=M
-@6
-D=D-A
-@ARG
+M=M-1
+// set A to point to x
+A=M-1
+// use R13 as another pointer to x
+D=A
+@R13
 M=D
-
-
-// Set lcl pointer
+// load y into D
 @SP
+A=M
 D=M
-@LCL
-M=D
+// load x - y into D
+A=A-1
+D=M-D
+// initially set result to true (i.e. 0xffff i.e. -1)
+M=-1
+// then flip to false unless condition holds
+@$after_set_to_false_0
+D;JEQ
+@R13
+A=M
+M=0
+($after_set_to_false_0)
 
 
-// Jump to the callee
-@$entry_key_changed
-0;JMP
-
-// Label for return to caller
-($return_point_0)
+@SP
+A=M-1
+M=!M
 
 
 // Pop into d register
@@ -352,8 +444,54 @@ D;JNE
 @Sys.init$start
 0;JMP
 
-(Sys.init$end)
 (Sys.init$handle_key_change)
+
+@0
+D=A
+@THAT
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+// stash value from D into R13
+@R13
+M=D
+
+// put value of pointer in D
+@LCL
+D=M
+
+// add index
+@1
+D=D+A
+
+// stash memory address in R14
+@R14
+M=D
+
+// get value back into D
+@R13
+D=M
+
+// load value into memory
+@R14
+A=M
+M=D
+
 
 @0
 D=A
@@ -448,173 +586,4 @@ M=D
 
 
 @Sys.init$start
-0;JMP
-
-($entry_key_changed)
-
-@24576
-D=A
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-@4
-M=D
-
-
-@0
-D=A
-@THIS
-A=M+D
-D=M
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-@0
-D=A
-@ARG
-A=M+D
-D=M
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-// decrement stack pointer, so it's pointing to y
-@SP
-M=M-1
-// set A to point to x
-A=M-1
-// use R13 as another pointer to x
-D=A
-@R13
-M=D
-// load y into D
-@SP
-A=M
-D=M
-// load x - y into D
-A=A-1
-D=M-D
-// initially set result to true (i.e. 0xffff i.e. -1)
-M=-1
-// then flip to false unless condition holds
-@$after_set_to_false_0
-D;JEQ
-@R13
-A=M
-M=0
-($after_set_to_false_0)
-
-
-@SP
-A=M-1
-M=!M
-
-
-@ARG
-D=M
-@R13
-M=D
-
-
-@LCL
-D=M
-@R14
-M=D
-
-
-// Pop into d register
-@R14
-MA=M-1
-D=M
-
-
-@THAT
-M=D
-
-
-// Pop into d register
-@R14
-MA=M-1
-D=M
-
-
-@THIS
-M=D
-
-
-// Pop into d register
-@R14
-MA=M-1
-D=M
-
-
-@ARG
-M=D
-
-
-// Pop into d register
-@R14
-MA=M-1
-D=M
-
-
-@LCL
-M=D
-
-
-// Pop into d register
-@R14
-MA=M-1
-D=M
-
-
-@R14
-M=D
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-@R13
-A=M
-M=D
-
-
-@R13
-D=M
-@SP
-M=D+1
-
-
-@R14
-A=M
 0;JMP

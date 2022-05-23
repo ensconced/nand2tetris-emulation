@@ -48,28 +48,6 @@ M=D
 
 ($entry_Sys.init)
 
-@16384
-D=A
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-@16
-M=D
-
-
 @15
 D=A
 
@@ -374,22 +352,6 @@ M=D
 
 // Label for return to caller
 ($return_point_1)
-
-
-@SP
-M=M-1
-
-
-@16
-D=M
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
 
 
 // Pop into d register
@@ -780,8 +742,17 @@ M=D
 @SP
 M=M+1
 
+D=0
 
-@0
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@16384
 D=A
 
 
@@ -824,9 +795,53 @@ D=M
 A=M
 M=D
 
-(offset_pointer$start_y_offset_loop)
 
 @0
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+// stash value from D into R13
+@R13
+M=D
+
+// put value of pointer in D
+@LCL
+D=M
+
+// add index
+@1
+D=D+A
+
+// stash memory address in R14
+@R14
+M=D
+
+// get value back into D
+@R13
+D=M
+
+// load value into memory
+@R14
+A=M
+M=D
+
+(offset_pointer$start_y_offset_loop)
+
+@1
 D=A
 @LCL
 A=M+D
@@ -893,51 +908,6 @@ D=M
 D;JNE
 
 
-@16
-D=M
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-@512
-D=A
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-// decrement stack pointer, so it's pointing to y
-@SP
-M=M-1
-// load y into D
-A=M
-D=M
-// point A to x
-A=A-1
-M=M+D
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-@16
-M=D
-
-
 @0
 D=A
 @LCL
@@ -953,7 +923,7 @@ M=D
 M=M+1
 
 
-@1
+@512
 D=A
 
 
@@ -1008,12 +978,85 @@ A=M
 M=D
 
 
+@1
+D=A
+@LCL
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@1
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+// load y into D
+A=M
+D=M
+// point A to x
+A=A-1
+M=M+D
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+// stash value from D into R13
+@R13
+M=D
+
+// put value of pointer in D
+@LCL
+D=M
+
+// add index
+@1
+D=D+A
+
+// stash memory address in R14
+@R14
+M=D
+
+// get value back into D
+@R13
+D=M
+
+// load value into memory
+@R14
+A=M
+M=D
+
+
 @offset_pointer$start_y_offset_loop
 0;JMP
 
 (offset_pointer$end_y_offset_loop)
 
-@16
+@0
+D=A
+@LCL
+A=M+D
 D=M
 
 
@@ -1049,28 +1092,6 @@ D=M
 // point A to x
 A=A-1
 M=M+D
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-@16
-M=D
-
-
-@0
-D=A
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
 
 
 @ARG

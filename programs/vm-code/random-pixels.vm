@@ -1,0 +1,71 @@
+// turns keyboard-mashing into pixels on the screen - this
+// should be a useful source of randomness for initializing stuff like game of life,
+// or snake
+
+function Sys.init 3
+  push constant 0
+  pop static 0 // timer
+
+  push constant 0
+  pop static 1 // prevkey
+
+  push constant 0
+  pop static 2 // currentkey
+
+  // THIS is screen
+  push constant 16384
+  pop pointer 0
+
+  // THAT is keyboard
+  push constant 24576
+  pop pointer 1
+
+  label start
+    call increment_timer 0
+    pop constant 0 // discard return value
+
+    call key_changed 0
+    if-goto handle_key_change
+  goto start
+
+  label handle_key_change
+    // set key local
+    push that 0
+    pop static 1
+
+    call show_output 0
+    pop constant 0
+
+    // increment screen pointer
+    push constant 1
+    push pointer 0
+    add
+    pop pointer 0
+  goto start
+
+
+function show_output 0
+  // show output on screen
+  push static 0
+  pop this 0 // NB we're using the `this` inherited from the caller frame here
+  push constant 0
+  return
+
+function key_changed 0
+  // set currentkey
+  push that 0 // using `that` inherited from caller frame
+  pop static 2
+  push static 1
+  push static 2
+  eq
+  not
+  return
+
+function increment_timer 0
+  push static 0
+  push constant 1
+  add
+  pop static 0
+  // we have to return something
+  push constant 0
+  return

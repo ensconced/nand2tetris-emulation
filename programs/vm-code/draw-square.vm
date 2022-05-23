@@ -1,40 +1,21 @@
 function Sys.init 0
+  push constant 16384
+  pop static 0 // drawing pointer
+
   push constant 15
   push constant 5
   call draw_square 2
   pop constant 0
   return
 
-function draw_square 2
-  push constant 16384
-  pop pointer 0 // THIS is screen
-
-  // y offset
-  push constant 0
-  pop local 1
-  label start_y_offset_loop
-    push local 1
-    push argument 1
-    eq
-    if-goto end_y_offset_loop
-
-    push pointer 0
-    push constant 512
-    add
-    pop pointer 0
-
-    push local 1
-    push constant 1
-    add
-    pop local 1
-    goto start_y_offset_loop
-  label end_y_offset_loop
-
-  // x offset
-  push pointer 0
+function draw_square 1
   push argument 0
-  add
-  pop pointer 0
+  push argument 1
+  call offset_pointer 2
+  pop constant 0
+
+  push static 0
+  pop pointer 0 // get updated drawing pointer
 
   push constant 0
   pop local 0 // row_idx
@@ -59,6 +40,38 @@ function draw_square 2
     push constant 16
     lt
     if-goto start_loop
+
+  push constant 0
+  return
+
+
+function offset_pointer 1
+  // y offset
+  push constant 0
+  pop local 0
+  label start_y_offset_loop
+    push local 0
+    push argument 1
+    eq
+    if-goto end_y_offset_loop
+
+    push static 0
+    push constant 512
+    add
+    pop static 0
+
+    push local 0
+    push constant 1
+    add
+    pop local 0
+    goto start_y_offset_loop
+  label end_y_offset_loop
+
+  // x offset
+  push static 0
+  push argument 0
+  add
+  pop static 0
 
   push constant 0
   return

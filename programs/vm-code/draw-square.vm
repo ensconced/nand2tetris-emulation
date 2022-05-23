@@ -9,7 +9,6 @@ function draw_square 2
   push constant 16384
   pop pointer 0 // THIS is screen
 
-
   // y offset
   push constant 0
   pop local 1

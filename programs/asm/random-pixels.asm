@@ -363,7 +363,7 @@ M=D
 
 
 // Jump to the callee
-@$entry_handle_key_change
+@$entry_show_squares_from_timer
 0;JMP
 
 // Label for return to caller
@@ -373,7 +373,194 @@ M=D
 @Sys.init$start
 0;JMP
 
-($entry_handle_key_change)
+($entry_show_squares_from_timer)
+D=0
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+D=0
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@1
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+// stash value from D into R13
+@R13
+M=D
+
+// put value of pointer in D
+@LCL
+D=M
+
+// add index
+@0
+D=D+A
+
+// stash memory address in R14
+@R14
+M=D
+
+// get value back into D
+@R13
+D=M
+
+// load value into memory
+@R14
+A=M
+M=D
+
+
+@0
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+// stash value from D into R13
+@R13
+M=D
+
+// put value of pointer in D
+@LCL
+D=M
+
+// add index
+@1
+D=D+A
+
+// stash memory address in R14
+@R14
+M=D
+
+// get value back into D
+@R13
+D=M
+
+// load value into memory
+@R14
+A=M
+M=D
+
+(show_squares_from_timer$start_loop)
+
+@16
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@0
+D=A
+@LCL
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+// load y into D
+A=M
+D=M
+// point A to x
+A=A-1
+M=M&D
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@show_squares_from_timer$call_draw_square
+D;JNE
+
+
+@show_squares_from_timer$end_loop
+0;JMP
+
+(show_squares_from_timer$call_draw_square)
+
+@1
+D=A
+@LCL
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@0
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
 
 // Load return address into D
 @$return_point_3
@@ -431,7 +618,7 @@ M=M+1
 // Set arg pointer
 @SP
 D=M
-@5
+@7
 D=D-A
 @ARG
 M=D
@@ -445,7 +632,7 @@ M=D
 
 
 // Jump to the callee
-@$entry_show_output
+@$entry_draw_square
 0;JMP
 
 // Label for return to caller
@@ -455,9 +642,13 @@ M=D
 @SP
 M=M-1
 
+(show_squares_from_timer$end_loop)
 
-@1
+@0
 D=A
+@LCL
+A=M+D
+D=M
 
 
 // Push from d register
@@ -468,7 +659,10 @@ M=D
 M=M+1
 
 
-@18
+@0
+D=A
+@LCL
+A=M+D
 D=M
 
 
@@ -497,9 +691,175 @@ MA=M-1
 D=M
 
 
-@18
+// stash value from D into R13
+@R13
 M=D
 
+// put value of pointer in D
+@LCL
+D=M
+
+// add index
+@0
+D=D+A
+
+// stash memory address in R14
+@R14
+M=D
+
+// get value back into D
+@R13
+D=M
+
+// load value into memory
+@R14
+A=M
+M=D
+
+
+@1
+D=A
+@LCL
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@1
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+// load y into D
+A=M
+D=M
+// point A to x
+A=A-1
+M=M+D
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+// stash value from D into R13
+@R13
+M=D
+
+// put value of pointer in D
+@LCL
+D=M
+
+// add index
+@1
+D=D+A
+
+// stash memory address in R14
+@R14
+M=D
+
+// get value back into D
+@R13
+D=M
+
+// load value into memory
+@R14
+A=M
+M=D
+
+
+@0
+D=A
+@LCL
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@1
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@SP
+A=M-1
+M=!M
+
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+// set A to point to x
+A=M-1
+// use R13 as another pointer to x
+D=A
+@R13
+M=D
+// load y into D
+@SP
+A=M
+D=M
+// load x - y into D
+A=A-1
+D=M-D
+// initially set result to true (i.e. 0xffff i.e. -1)
+M=-1
+// then flip to false unless condition holds
+@$after_set_to_false_0
+D;JEQ
+@R13
+A=M
+M=0
+($after_set_to_false_0)
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@show_squares_from_timer$break_loop
+D;JNE
+
+
+@show_squares_from_timer$start_loop
+0;JMP
+
+(show_squares_from_timer$break_loop)
 
 @0
 D=A
@@ -885,12 +1245,12 @@ D=M-D
 // initially set result to true (i.e. 0xffff i.e. -1)
 M=-1
 // then flip to false unless condition holds
-@$after_set_to_false_0
+@$after_set_to_false_1
 D;JEQ
 @R13
 A=M
 M=0
-($after_set_to_false_0)
+($after_set_to_false_1)
 
 
 @SP
@@ -1192,6 +1552,947 @@ A=M
 M=D
 @SP
 M=M+1
+
+
+@ARG
+D=M
+@R13
+M=D
+
+
+@LCL
+D=M
+@R14
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@THAT
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@THIS
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@ARG
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@LCL
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@R14
+M=D
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@R13
+A=M
+M=D
+
+
+@R13
+D=M
+@SP
+M=D+1
+
+
+@R14
+A=M
+0;JMP
+
+($entry_draw_square)
+D=0
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@0
+D=A
+@ARG
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@1
+D=A
+@ARG
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Load return address into D
+@$return_point_4
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+@LCL
+D=M
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+@ARG
+D=M
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+@THIS
+D=M
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+@THAT
+D=M
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Set arg pointer
+@SP
+D=M
+@7
+D=D-A
+@ARG
+M=D
+
+
+// Set lcl pointer
+@SP
+D=M
+@LCL
+M=D
+
+
+// Jump to the callee
+@$entry_offset_screen_pointer
+0;JMP
+
+// Label for return to caller
+($return_point_4)
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@3
+M=D
+
+
+@0
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+// stash value from D into R13
+@R13
+M=D
+
+// put value of pointer in D
+@LCL
+D=M
+
+// add index
+@0
+D=D+A
+
+// stash memory address in R14
+@R14
+M=D
+
+// get value back into D
+@R13
+D=M
+
+// load value into memory
+@R14
+A=M
+M=D
+
+(draw_square$start_loop)
+
+@0
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@SP
+A=M-1
+M=!M
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+// stash value from D into R13
+@R13
+M=D
+
+// put value of pointer in D
+@THIS
+D=M
+
+// add index
+@0
+D=D+A
+
+// stash memory address in R14
+@R14
+M=D
+
+// get value back into D
+@R13
+D=M
+
+// load value into memory
+@R14
+A=M
+M=D
+
+
+@3
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@32
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+// load y into D
+A=M
+D=M
+// point A to x
+A=A-1
+M=M+D
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@3
+M=D
+
+
+@0
+D=A
+@LCL
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@1
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+// load y into D
+A=M
+D=M
+// point A to x
+A=A-1
+M=M+D
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+// stash value from D into R13
+@R13
+M=D
+
+// put value of pointer in D
+@LCL
+D=M
+
+// add index
+@0
+D=D+A
+
+// stash memory address in R14
+@R14
+M=D
+
+// get value back into D
+@R13
+D=M
+
+// load value into memory
+@R14
+A=M
+M=D
+
+
+@0
+D=A
+@LCL
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@16
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+// set A to point to x
+A=M-1
+// use R13 as another pointer to x
+D=A
+@R13
+M=D
+// load y into D
+@SP
+A=M
+D=M
+// load x - y into D
+A=A-1
+D=M-D
+// initially set result to true (i.e. 0xffff i.e. -1)
+M=-1
+// then flip to false unless condition holds
+@$after_set_to_false_2
+D;JLT
+@R13
+A=M
+M=0
+($after_set_to_false_2)
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@draw_square$start_loop
+D;JNE
+
+
+@0
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@ARG
+D=M
+@R13
+M=D
+
+
+@LCL
+D=M
+@R14
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@THAT
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@THIS
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@ARG
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@LCL
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@R14
+M=D
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@R13
+A=M
+M=D
+
+
+@R13
+D=M
+@SP
+M=D+1
+
+
+@R14
+A=M
+0;JMP
+
+($entry_offset_screen_pointer)
+D=0
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+D=0
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@16384
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+// stash value from D into R13
+@R13
+M=D
+
+// put value of pointer in D
+@LCL
+D=M
+
+// add index
+@0
+D=D+A
+
+// stash memory address in R14
+@R14
+M=D
+
+// get value back into D
+@R13
+D=M
+
+// load value into memory
+@R14
+A=M
+M=D
+
+
+@0
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+// stash value from D into R13
+@R13
+M=D
+
+// put value of pointer in D
+@LCL
+D=M
+
+// add index
+@1
+D=D+A
+
+// stash memory address in R14
+@R14
+M=D
+
+// get value back into D
+@R13
+D=M
+
+// load value into memory
+@R14
+A=M
+M=D
+
+(offset_screen_pointer$start_y_offset_loop)
+
+@1
+D=A
+@LCL
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@1
+D=A
+@ARG
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+// set A to point to x
+A=M-1
+// use R13 as another pointer to x
+D=A
+@R13
+M=D
+// load y into D
+@SP
+A=M
+D=M
+// load x - y into D
+A=A-1
+D=M-D
+// initially set result to true (i.e. 0xffff i.e. -1)
+M=-1
+// then flip to false unless condition holds
+@$after_set_to_false_3
+D;JEQ
+@R13
+A=M
+M=0
+($after_set_to_false_3)
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@offset_screen_pointer$end_y_offset_loop
+D;JNE
+
+
+@0
+D=A
+@LCL
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@512
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+// load y into D
+A=M
+D=M
+// point A to x
+A=A-1
+M=M+D
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+// stash value from D into R13
+@R13
+M=D
+
+// put value of pointer in D
+@LCL
+D=M
+
+// add index
+@0
+D=D+A
+
+// stash memory address in R14
+@R14
+M=D
+
+// get value back into D
+@R13
+D=M
+
+// load value into memory
+@R14
+A=M
+M=D
+
+
+@1
+D=A
+@LCL
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@1
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+// load y into D
+A=M
+D=M
+// point A to x
+A=A-1
+M=M+D
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+// stash value from D into R13
+@R13
+M=D
+
+// put value of pointer in D
+@LCL
+D=M
+
+// add index
+@1
+D=D+A
+
+// stash memory address in R14
+@R14
+M=D
+
+// get value back into D
+@R13
+D=M
+
+// load value into memory
+@R14
+A=M
+M=D
+
+
+@offset_screen_pointer$start_y_offset_loop
+0;JMP
+
+(offset_screen_pointer$end_y_offset_loop)
+
+@0
+D=A
+@LCL
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@0
+D=A
+@ARG
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+// load y into D
+A=M
+D=M
+// point A to x
+A=A-1
+M=M+D
 
 
 @ARG

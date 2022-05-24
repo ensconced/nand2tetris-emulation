@@ -2,11 +2,12 @@
 // should be a useful source of randomness for initializing stuff like game of life,
 // or snake
 
+// static 0 is timer
 // static 1 is prevkey
 
 function Sys.init 3
   push constant 0
-  pop static 0 // timer
+  pop static 0
 
   // THIS is screen
   push constant 16384
@@ -48,11 +49,12 @@ function show_output 0
   return
 
 function key_changed 1
-  // static 1 is prevkey
   // local 0 is currentkey
 
   // get currentkey
-  push that 0 // using `that` inherited from caller frame
+  push constant 24576
+  pop pointer 1
+  push that 0
   pop local 0
 
   push static 1

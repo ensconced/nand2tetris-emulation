@@ -621,6 +621,28 @@ M=D
 M=M+1
 
 
+@24576
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@4
+M=D
+
+
 @0
 D=A
 @THAT

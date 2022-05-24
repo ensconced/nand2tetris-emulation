@@ -7,14 +7,11 @@
 // static 2 is screen pointer
 
 function Sys.init 3
-  push constant 0
-  pop static 0
-
-  // THIS is screen
+  // initialize screen pointer
   push constant 16384
   pop static 2
 
-  // THAT is keyboard
+  // initialize keyboard
   push constant 24576
   pop pointer 1
 

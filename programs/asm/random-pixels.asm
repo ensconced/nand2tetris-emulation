@@ -75,28 +75,6 @@ M=D
 M=M+1
 
 
-@0
-D=A
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-@16
-M=D
-
-
 @16384
 D=A
 

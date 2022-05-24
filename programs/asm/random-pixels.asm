@@ -370,6 +370,10 @@ M=D
 ($return_point_2)
 
 
+@SP
+M=M-1
+
+
 @Sys.init$start
 0;JMP
 
@@ -802,7 +806,7 @@ M=D
 M=M+1
 
 
-@1
+@32767
 D=A
 
 

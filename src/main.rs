@@ -5,7 +5,7 @@ mod generate_rom;
 mod io;
 mod run;
 
-use std::path::Path;
+use std::{num::Wrapping, path::Path};
 
 use clap::{Parser, Subcommand};
 use compilers::{assembler::assemble_file, vm_compiler};

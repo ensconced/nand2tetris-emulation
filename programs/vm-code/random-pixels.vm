@@ -24,6 +24,7 @@ function Sys.init 3
     goto start
     label call_handle_key_change
     call show_squares_from_timer 0
+    pop constant 0
     goto start
 
 function show_squares_from_timer 2
@@ -60,7 +61,7 @@ function show_squares_from_timer 2
 
     // break if done
     push local 0
-    push constant 1
+    push constant 32767
     not
     eq
     if-goto break_loop

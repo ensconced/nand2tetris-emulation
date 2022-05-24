@@ -315,31 +315,6 @@ D;JNE
 
 (Sys.init$handle_key_change)
 
-@0
-D=A
-@THAT
-A=M+D
-D=M
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-@17
-M=D
-
-
 // Load return address into D
 @$return_point_2
 D=A

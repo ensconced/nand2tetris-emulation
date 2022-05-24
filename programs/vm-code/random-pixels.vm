@@ -26,10 +26,6 @@ function Sys.init 3
   goto start
 
   label handle_key_change
-    // set key local
-    push that 0
-    pop static 1
-
     call show_output 0
     pop constant 0
 

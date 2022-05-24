@@ -1,0 +1,189 @@
+// turns keyboard-mashing into pixels on the screen - this
+// should be a useful source of randomness for initializing stuff like game of life,
+// or snake
+
+// static 0 is timer
+// static 1 is prevkey
+// static 2 is screen pointer
+
+function Sys.init 3
+  // initialize screen pointer
+  push constant 16384
+  pop static 2
+
+  // initialize keyboard
+  push constant 24576
+  pop pointer 1
+
+  label start
+    call increment_timer 0
+    pop constant 0 // discard return value
+
+    call key_changed 0
+    if-goto call_handle_key_change
+    goto start
+    label call_handle_key_change
+    call show_squares_from_timer 0
+    pop constant 0
+    goto start
+
+function show_squares_from_timer 2
+  push constant 1
+  pop local 0 // mask
+  push constant 0
+  pop local 1 // x_offset
+  label start_loop
+    push static 0 // timer
+    push local 0 // mask
+    and
+    if-goto call_draw_square
+    goto end_loop
+
+    label call_draw_square
+    push local 1 // x_offset
+    push constant 0 // y_offset is constant for now
+    call draw_square 2
+    pop constant 0
+
+    label end_loop
+
+    // mask = mask * 2
+    push local 0
+    push local 0
+    add
+    pop local 0
+
+    // x_offset++
+    push local 1
+    push constant 1
+    add
+    pop local 1
+
+    // break if done
+    push local 0
+    push constant 32767
+    not
+    eq
+    if-goto break_loop
+
+    goto start_loop
+    label break_loop
+
+
+  push constant 0
+  return
+
+function show_output 0
+  // restore THIS using static screen screen pointer
+  push static 2
+  pop pointer 0
+
+  // show output on screen
+  push static 0
+  pop this 0
+  push constant 0
+  return
+
+function key_changed 1
+  // local 0 is currentkey
+
+  // get currentkey
+  push constant 24576
+  pop pointer 1
+  push that 0
+  pop local 0
+
+  push static 1
+  push local 0
+  eq
+  not
+  if-goto did_change
+  goto did_not_change
+
+  label did_change
+  push local 0
+  pop static 1
+  // return true
+  push constant 0
+  not
+  return
+
+  label did_not_change
+  // return false
+  push constant 0
+  return
+
+function increment_timer 0
+  push static 0
+  push constant 1
+  add
+  pop static 0
+  // we have to return something
+  push constant 0
+  return
+
+
+function draw_square 1
+  push argument 0
+  push argument 1
+  call offset_screen_pointer 2
+  pop pointer 0
+
+  push constant 0
+  pop local 0 // row_idx
+  label start_loop
+    // draw line
+    push constant 0
+    not
+    pop this 0
+
+    push pointer 0
+    push constant 32
+    add
+    pop pointer 0
+
+    // row_idx++
+    push local 0
+    push constant 1
+    add
+    pop local 0
+
+    push local 0
+    push constant 16
+    lt
+    if-goto start_loop
+
+  push constant 0
+  return
+
+
+function offset_screen_pointer 2
+  push constant 16384
+  pop local 0 // result
+
+  // y offset
+  push constant 0
+  pop local 1
+  label start_y_offset_loop
+    push local 1
+    push argument 1
+    eq
+    if-goto end_y_offset_loop
+
+    push local 0
+    push constant 512
+    add
+    pop local 0
+
+    push local 1
+    push constant 1
+    add
+    pop local 1
+    goto start_y_offset_loop
+  label end_y_offset_loop
+
+  // x offset
+  push local 0
+  push argument 0
+  add
+  return

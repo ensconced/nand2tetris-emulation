@@ -347,7 +347,7 @@ M=D
 
 
 // Jump to the callee
-@$entry_offset_pointer
+@$entry_offset_screen_pointer
 0;JMP
 
 // Label for return to caller
@@ -732,7 +732,7 @@ M=D+1
 A=M
 0;JMP
 
-($entry_offset_pointer)
+($entry_offset_screen_pointer)
 D=0
 
 // Push from d register
@@ -839,7 +839,7 @@ D=M
 A=M
 M=D
 
-(offset_pointer$start_y_offset_loop)
+(offset_screen_pointer$start_y_offset_loop)
 
 @1
 D=A
@@ -904,7 +904,7 @@ MA=M-1
 D=M
 
 
-@offset_pointer$end_y_offset_loop
+@offset_screen_pointer$end_y_offset_loop
 D;JNE
 
 
@@ -1048,10 +1048,10 @@ A=M
 M=D
 
 
-@offset_pointer$start_y_offset_loop
+@offset_screen_pointer$start_y_offset_loop
 0;JMP
 
-(offset_pointer$end_y_offset_loop)
+(offset_screen_pointer$end_y_offset_loop)
 
 @0
 D=A

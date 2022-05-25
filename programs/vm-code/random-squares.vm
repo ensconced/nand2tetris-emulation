@@ -6,7 +6,7 @@
 // static 1 is prevkey
 // static 2 is screen pointer
 
-function Sys.init 3
+function Sys.init 1
   // initialize screen pointer
   push constant 16384
   pop static 2
@@ -14,6 +14,7 @@ function Sys.init 3
   // initialize keyboard
   push constant 24576
   pop pointer 1
+
 
   label start
     call increment_timer 0
@@ -23,11 +24,11 @@ function Sys.init 3
     if-goto call_handle_key_change
     goto start
     label call_handle_key_change
-    call show_squares_from_timer 0
+    call handle_key_change 0
     pop constant 0
-    goto start
+  goto start
 
-function show_squares_from_timer 2
+function handle_key_change 2
   push constant 1
   pop local 0 // mask
   push constant 0

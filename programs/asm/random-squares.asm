@@ -56,24 +56,6 @@ M=D
 @SP
 M=M+1
 
-D=0
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-D=0
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
 
 @16384
 D=A
@@ -363,7 +345,7 @@ M=D
 
 
 // Jump to the callee
-@$entry_show_squares_from_timer
+@$entry_handle_key_change
 0;JMP
 
 // Label for return to caller
@@ -377,7 +359,7 @@ M=M-1
 @Sys.init$start
 0;JMP
 
-($entry_show_squares_from_timer)
+($entry_handle_key_change)
 D=0
 
 // Push from d register
@@ -484,7 +466,7 @@ D=M
 A=M
 M=D
 
-(show_squares_from_timer$start_loop)
+(handle_key_change$start_loop)
 
 @16
 D=M
@@ -530,14 +512,14 @@ MA=M-1
 D=M
 
 
-@show_squares_from_timer$call_draw_square
+@handle_key_change$call_draw_square
 D;JNE
 
 
-@show_squares_from_timer$end_loop
+@handle_key_change$end_loop
 0;JMP
 
-(show_squares_from_timer$call_draw_square)
+(handle_key_change$call_draw_square)
 
 @1
 D=A
@@ -646,7 +628,7 @@ M=D
 @SP
 M=M-1
 
-(show_squares_from_timer$end_loop)
+(handle_key_change$end_loop)
 
 @0
 D=A
@@ -856,14 +838,14 @@ MA=M-1
 D=M
 
 
-@show_squares_from_timer$break_loop
+@handle_key_change$break_loop
 D;JNE
 
 
-@show_squares_from_timer$start_loop
+@handle_key_change$start_loop
 0;JMP
 
-(show_squares_from_timer$break_loop)
+(handle_key_change$break_loop)
 
 @0
 D=A

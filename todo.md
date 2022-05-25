@@ -1,10 +1,8 @@
 ### vm compiler
 
 - game of life in vm code
-- vm - enable parsing of whole files/directories (is it just a matter of parsing then concatenating the commands of all the input files?)
-- do something using the keyboard...pong? typing?
-- improve emitted code size - use more jumps?
-- do static variables as suggested in the book...? (I don't think this is actually necessary - my way should be fine...)
+- vm - enable parsing of whole files/directories (is it just a matter of parsing then concatenating the commands of all the input files?) need to handle static vars properly
+- break game of life out into multiple files
 
 ### main program
 
@@ -27,3 +25,7 @@
 
 - add timer in hardware?
 - ethernet...
+
+### optimizations
+
+- improve emitted code size - use more jumps?

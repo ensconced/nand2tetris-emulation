@@ -100,6 +100,50 @@ D=M
 @4
 M=D
 
+
+@0
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@19
+M=D
+
+
+@0
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@20
+M=D
+
 (Sys.init$start)
 
 // Load return address into D
@@ -438,6 +482,232 @@ M=D
 ($return_point_3)
 
 
+@19
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@0
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+// set A to point to x
+A=M-1
+// use R13 as another pointer to x
+D=A
+@R13
+M=D
+// load y into D
+@SP
+A=M
+D=M
+// load x - y into D
+A=A-1
+D=M-D
+// initially set result to true (i.e. 0xffff i.e. -1)
+M=-1
+// then flip to false unless condition holds
+@$after_set_to_false_0
+D;JEQ
+@R13
+A=M
+M=0
+($after_set_to_false_0)
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@handle_key_change$increment_y_offset
+D;JNE
+
+
+@0
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@ARG
+D=M
+@R13
+M=D
+
+
+@LCL
+D=M
+@R14
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@THAT
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@THIS
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@ARG
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@LCL
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@R14
+M=D
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@R13
+A=M
+M=D
+
+
+@R13
+D=M
+@SP
+M=D+1
+
+
+@R14
+A=M
+0;JMP
+
+(handle_key_change$increment_y_offset)
+
+@20
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@1
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+// load y into D
+A=M
+D=M
+// point A to x
+A=A-1
+M=M+D
+
+
+@15
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+// load y into D
+A=M
+D=M
+// point A to x
+A=A-1
+M=M&D
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@20
+M=D
+
+
 @0
 D=A
 
@@ -587,28 +857,6 @@ D=M
 A=M
 M=D
 
-
-@0
-D=A
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-@19
-M=D
-
 (draw_16_squares$start_loop)
 
 @16
@@ -676,8 +924,8 @@ M=D
 M=M+1
 
 
-@0
-D=A
+@20
+D=M
 
 
 // Push from d register
@@ -878,6 +1126,29 @@ A=A-1
 M=M+D
 
 
+@31
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+// load y into D
+A=M
+D=M
+// point A to x
+A=A-1
+M=M&D
+
+
 // Pop into d register
 @SP
 MA=M-1
@@ -939,12 +1210,12 @@ D=M-D
 // initially set result to true (i.e. 0xffff i.e. -1)
 M=-1
 // then flip to false unless condition holds
-@$after_set_to_false_0
+@$after_set_to_false_1
 D;JEQ
 @R13
 A=M
 M=0
-($after_set_to_false_0)
+($after_set_to_false_1)
 
 
 // Pop into d register
@@ -1346,12 +1617,12 @@ D=M-D
 // initially set result to true (i.e. 0xffff i.e. -1)
 M=-1
 // then flip to false unless condition holds
-@$after_set_to_false_1
+@$after_set_to_false_2
 D;JEQ
 @R13
 A=M
 M=0
-($after_set_to_false_1)
+($after_set_to_false_2)
 
 
 @SP
@@ -2121,12 +2392,12 @@ D=M-D
 // initially set result to true (i.e. 0xffff i.e. -1)
 M=-1
 // then flip to false unless condition holds
-@$after_set_to_false_2
+@$after_set_to_false_3
 D;JLT
 @R13
 A=M
 M=0
-($after_set_to_false_2)
+($after_set_to_false_3)
 
 
 // Pop into d register
@@ -2392,12 +2663,12 @@ D=M-D
 // initially set result to true (i.e. 0xffff i.e. -1)
 M=-1
 // then flip to false unless condition holds
-@$after_set_to_false_3
+@$after_set_to_false_4
 D;JEQ
 @R13
 A=M
 M=0
-($after_set_to_false_3)
+($after_set_to_false_4)
 
 
 // Pop into d register

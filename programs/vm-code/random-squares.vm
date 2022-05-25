@@ -5,7 +5,8 @@
 // static 0 is timer
 // static 1 is prevkey
 // static 2 is screen pointer
-// static 3 is x offset
+// static 3 is xoffset
+// static 4 is yoffset
 
 function Sys.init 1
   // initialize screen pointer
@@ -16,6 +17,13 @@ function Sys.init 1
   push constant 24576
   pop pointer 1
 
+  // initialize xoffset
+  push constant 0
+  pop static 3
+
+  // initialize yoffset
+  push constant 0
+  pop static 4
 
   label start
     call increment_timer 0
@@ -31,14 +39,30 @@ function Sys.init 1
 
 function handle_key_change 0
   call draw_16_squares 0
+
+  // if xoffset is zero, increment yoffset
+  push static 3
+  push constant 0
+  eq
+  if-goto increment_y_offset
+  push constant 0
+  return
+
+  label increment_y_offset
+  // yoffset = (yoffset + 1) % 16
+  push static 4
+  push constant 1
+  add
+  push constant 15
+  and
+  pop static 4
+
   push constant 0
   return
 
 function draw_16_squares 1
   push constant 1
   pop local 0 // mask
-  push constant 0
-  pop static 3 // x_offset
   label start_loop
     push static 0 // timer
     push local 0 // mask
@@ -47,8 +71,8 @@ function draw_16_squares 1
     goto end_loop
 
     label call_draw_square
-    push static 3 // x_offset
-    push constant 0 // y_offset is constant for now
+    push static 3 // xoffset
+    push static 4
     call draw_square 2
     pop constant 0
 
@@ -60,10 +84,12 @@ function draw_16_squares 1
     add
     pop local 0
 
-    // x_offset++
+    // xoffset = (xoffset + 1) % 32
     push static 3
     push constant 1
     add
+    push constant 31
+    and
     pop static 3
 
     // break if done

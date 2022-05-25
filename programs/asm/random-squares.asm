@@ -360,6 +360,180 @@ M=M-1
 0;JMP
 
 ($entry_handle_key_change)
+
+// Load return address into D
+@$return_point_3
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+@LCL
+D=M
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+@ARG
+D=M
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+@THIS
+D=M
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+@THAT
+D=M
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Set arg pointer
+@SP
+D=M
+@5
+D=D-A
+@ARG
+M=D
+
+
+// Set lcl pointer
+@SP
+D=M
+@LCL
+M=D
+
+
+// Jump to the callee
+@$entry_draw_16_squares
+0;JMP
+
+// Label for return to caller
+($return_point_3)
+
+
+@0
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@ARG
+D=M
+@R13
+M=D
+
+
+@LCL
+D=M
+@R14
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@THAT
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@THIS
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@ARG
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@LCL
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@R14
+M=D
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@R13
+A=M
+M=D
+
+
+@R13
+D=M
+@SP
+M=D+1
+
+
+@R14
+A=M
+0;JMP
+
+($entry_draw_16_squares)
 D=0
 
 // Push from d register
@@ -435,7 +609,7 @@ D=M
 @19
 M=D
 
-(handle_key_change$start_loop)
+(draw_16_squares$start_loop)
 
 @16
 D=M
@@ -481,14 +655,14 @@ MA=M-1
 D=M
 
 
-@handle_key_change$call_draw_square
+@draw_16_squares$call_draw_square
 D;JNE
 
 
-@handle_key_change$end_loop
+@draw_16_squares$end_loop
 0;JMP
 
-(handle_key_change$call_draw_square)
+(draw_16_squares$call_draw_square)
 
 @19
 D=M
@@ -515,7 +689,7 @@ M=M+1
 
 
 // Load return address into D
-@$return_point_3
+@$return_point_4
 D=A
 
 
@@ -588,13 +762,13 @@ M=D
 0;JMP
 
 // Label for return to caller
-($return_point_3)
+($return_point_4)
 
 
 @SP
 M=M-1
 
-(handle_key_change$end_loop)
+(draw_16_squares$end_loop)
 
 @0
 D=A
@@ -779,14 +953,14 @@ MA=M-1
 D=M
 
 
-@handle_key_change$break_loop
+@draw_16_squares$break_loop
 D;JNE
 
 
-@handle_key_change$start_loop
+@draw_16_squares$start_loop
 0;JMP
 
-(handle_key_change$break_loop)
+(draw_16_squares$break_loop)
 
 @0
 D=A
@@ -1606,7 +1780,7 @@ M=M+1
 
 
 // Load return address into D
-@$return_point_4
+@$return_point_5
 D=A
 
 
@@ -1679,7 +1853,7 @@ M=D
 0;JMP
 
 // Label for return to caller
-($return_point_4)
+($return_point_5)
 
 
 // Pop into d register

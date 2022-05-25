@@ -482,6 +482,10 @@ M=D
 ($return_point_3)
 
 
+@SP
+M=M-1
+
+
 @19
 D=M
 
@@ -859,6 +863,94 @@ M=D
 
 (draw_16_squares$start_loop)
 
+@0
+D=A
+@LCL
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@0
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+// set A to point to x
+A=M-1
+// use R13 as another pointer to x
+D=A
+@R13
+M=D
+// load y into D
+@SP
+A=M
+D=M
+// load x - y into D
+A=A-1
+D=M-D
+// initially set result to true (i.e. 0xffff i.e. -1)
+M=-1
+// then flip to false unless condition holds
+@$after_set_to_false_1
+D;JEQ
+@R13
+A=M
+M=0
+($after_set_to_false_1)
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@draw_16_squares$break_loop
+D;JNE
+
+
+@19
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@20
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
 @16
 D=M
 
@@ -895,45 +987,6 @@ D=M
 // point A to x
 A=A-1
 M=M&D
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-@draw_16_squares$call_draw_square
-D;JNE
-
-
-@draw_16_squares$end_loop
-0;JMP
-
-(draw_16_squares$call_draw_square)
-
-@19
-D=M
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-@20
-D=M
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
 
 
 // Load return address into D
@@ -992,7 +1045,7 @@ M=M+1
 // Set arg pointer
 @SP
 D=M
-@7
+@8
 D=D-A
 @ARG
 M=D
@@ -1016,7 +1069,6 @@ M=D
 @SP
 M=M-1
 
-(draw_16_squares$end_loop)
 
 @0
 D=A
@@ -1157,75 +1209,6 @@ D=M
 
 @19
 M=D
-
-
-@0
-D=A
-@LCL
-A=M+D
-D=M
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-@32767
-D=A
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-@SP
-A=M-1
-M=!M
-
-
-// decrement stack pointer, so it's pointing to y
-@SP
-M=M-1
-// set A to point to x
-A=M-1
-// use R13 as another pointer to x
-D=A
-@R13
-M=D
-// load y into D
-@SP
-A=M
-D=M
-// load x - y into D
-A=A-1
-D=M-D
-// initially set result to true (i.e. 0xffff i.e. -1)
-M=-1
-// then flip to false unless condition holds
-@$after_set_to_false_1
-D;JEQ
-@R13
-A=M
-M=0
-($after_set_to_false_1)
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-@draw_16_squares$break_loop
-D;JNE
 
 
 @draw_16_squares$start_loop
@@ -2182,6 +2165,21 @@ M=D
 
 (draw_square$start_loop)
 
+@2
+D=A
+@ARG
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
 @0
 D=A
 
@@ -2192,6 +2190,33 @@ A=M
 M=D
 @SP
 M=M+1
+
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+// set A to point to x
+A=M-1
+// use R13 as another pointer to x
+D=A
+@R13
+M=D
+// load y into D
+@SP
+A=M
+D=M
+// load x - y into D
+A=A-1
+D=M-D
+// initially set result to true (i.e. 0xffff i.e. -1)
+M=-1
+// then flip to false unless condition holds
+@$after_set_to_false_3
+D;JEQ
+@R13
+A=M
+M=0
+($after_set_to_false_3)
 
 
 @SP
@@ -2392,12 +2417,12 @@ D=M-D
 // initially set result to true (i.e. 0xffff i.e. -1)
 M=-1
 // then flip to false unless condition holds
-@$after_set_to_false_3
+@$after_set_to_false_4
 D;JLT
 @R13
 A=M
 M=0
-($after_set_to_false_3)
+($after_set_to_false_4)
 
 
 // Pop into d register
@@ -2663,12 +2688,12 @@ D=M-D
 // initially set result to true (i.e. 0xffff i.e. -1)
 M=-1
 // then flip to false unless condition holds
-@$after_set_to_false_4
+@$after_set_to_false_5
 D;JEQ
 @R13
 A=M
 M=0
-($after_set_to_false_4)
+($after_set_to_false_5)
 
 
 // Pop into d register

@@ -39,6 +39,7 @@ function Sys.init 1
 
 function handle_key_change 0
   call draw_16_squares 0
+  pop constant 0
 
   // if xoffset is zero, increment yoffset
   push static 3
@@ -64,19 +65,19 @@ function draw_16_squares 1
   push constant 1
   pop local 0 // mask
   label start_loop
+    // break if done
+    push local 0
+    push constant 0
+    eq
+    if-goto break_loop
+
+    push static 3 // xoffset
+    push static 4 // yoffset
     push static 0 // timer
     push local 0 // mask
     and
-    if-goto call_draw_square
-    goto end_loop
-
-    label call_draw_square
-    push static 3 // xoffset
-    push static 4
-    call draw_square 2
+    call draw_square 3
     pop constant 0
-
-    label end_loop
 
     // mask = mask * 2
     push local 0
@@ -92,17 +93,9 @@ function draw_16_squares 1
     and
     pop static 3
 
-    // break if done
-    push local 0
-    push constant 32767
-    not
-    eq
-    if-goto break_loop
 
     goto start_loop
     label break_loop
-
-
   push constant 0
   return
 
@@ -167,7 +160,9 @@ function draw_square 1
   pop local 0 // row_idx
   label start_loop
     // draw line
+    push argument 2
     push constant 0
+    eq
     not
     pop this 0
 

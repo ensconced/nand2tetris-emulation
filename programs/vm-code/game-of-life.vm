@@ -1,0 +1,268 @@
+// GAME OF LIFE
+// TODO - need to store compact representation of screen
+// and then when is_frame is true, create next version of that
+
+// So, on key change, we will do update_compact_representation, then draw_from_compact_representation (at a given offset).
+// NB draw_from_compact_representation will be very similar to the stuff that currently draws directly from the keyboard.
+
+// static 0 is timer
+// static 1 is prevkey
+// static 2 is screen pointer
+// static 3 is xoffset
+// static 4 is yoffset
+// static 5 is outertimer
+
+function Sys.init 1
+  // initialize timer
+  push constant 0
+  pop static 0
+
+  // initialize outertimer
+  push constant 0
+  pop static 5
+
+  // initialize screen pointer
+  push constant 16384
+  pop static 2
+
+  // initialize keyboard
+  push constant 24576
+  pop pointer 1
+
+  // initialize xoffset
+  push constant 0
+  pop static 3
+
+  // initialize yoffset
+  push constant 0
+  pop static 4
+
+  label start
+    call increment_timers 0
+    pop constant 0 // discard return value
+
+    call key_changed 0
+    if-goto call_handle_key_change
+    goto start
+    label call_handle_key_change
+    call handle_key_change 0
+    pop constant 0
+  goto start
+
+function handle_key_change 0
+  call draw_16_squares 0
+  pop constant 0
+
+  // if xoffset is zero, increment yoffset
+  push static 3
+  push constant 0
+  eq
+  if-goto increment_y_offset
+  push constant 0
+  return
+
+  label increment_y_offset
+  // yoffset = (yoffset + 1) % 16
+  push static 4
+  push constant 1
+  add
+  push constant 15
+  and
+  pop static 4
+
+  push constant 0
+  return
+
+function draw_16_squares 1
+  push constant 1
+  pop local 0 // mask
+  label start_loop
+    // break if done
+    push local 0
+    push constant 0
+    eq
+    if-goto break_loop
+
+    push static 3 // xoffset
+    push static 4 // yoffset
+    push static 0 // timer
+    push local 0 // mask
+    and
+    call draw_square 3
+    pop constant 0
+
+    // mask = mask * 2
+    push local 0
+    push local 0
+    add
+    pop local 0
+
+    // xoffset = (xoffset + 1) % 32
+    push static 3
+    push constant 1
+    add
+    push constant 31
+    and
+    pop static 3
+
+
+    goto start_loop
+    label break_loop
+  push constant 0
+  return
+
+
+function show_output 0
+  // restore THIS using static screen screen pointer
+  push static 2
+  pop pointer 0
+
+  // show output on screen
+  push static 0
+  pop this 0
+  push constant 0
+  return
+
+function key_changed 1
+  // local 0 is currentkey
+
+  // get currentkey
+  push constant 24576
+  pop pointer 1
+  push that 0
+  pop local 0
+
+  push static 1
+  push local 0
+  eq
+  not
+  if-goto did_change
+  goto did_not_change
+
+  label did_change
+  push local 0
+  pop static 1
+  // return true
+  push constant 0
+  not
+  return
+
+  label did_not_change
+  // return false
+  push constant 0
+  return
+
+function increment_timers 0
+  push static 0
+  push constant 1
+  add
+  pop static 0
+
+  push static 0
+  push constant 0
+  eq
+  if-goto increment_outer_timer
+  push constant 0
+  return
+
+  label increment_outer_timer
+  push static 5
+  push constant 1
+  pop static 5
+
+  push static 5
+  push constant 5
+  eq
+  if-goto zero_outer_timer
+  push constant 0
+  return
+
+  label zero_outer_timer
+  push constant 0
+  pop static 5
+
+  // we have to return something
+  push constant 0
+  return
+
+
+function draw_square 1
+  push argument 0
+  push argument 1
+  call offset_screen_pointer 2
+  pop pointer 0
+
+  push constant 0
+  pop local 0 // row_idx
+  label start_loop
+    // draw line
+    push argument 2
+    push constant 0
+    eq
+    not
+    pop this 0
+
+    push pointer 0
+    push constant 32
+    add
+    pop pointer 0
+
+    // row_idx++
+    push local 0
+    push constant 1
+    add
+    pop local 0
+
+    push local 0
+    push constant 16
+    lt
+    if-goto start_loop
+
+  push constant 0
+  return
+
+
+function offset_screen_pointer 2
+  push constant 16384
+  pop local 0 // result
+
+  // y offset
+  push constant 0
+  pop local 1
+  label start_y_offset_loop
+    push local 1
+    push argument 1
+    eq
+    if-goto end_y_offset_loop
+
+    push local 0
+    push constant 512
+    add
+    pop local 0
+
+    push local 1
+    push constant 1
+    add
+    pop local 1
+    goto start_y_offset_loop
+  label end_y_offset_loop
+
+  // x offset
+  push local 0
+  push argument 0
+  add
+  return
+
+
+function is_frame 1
+  push static 0
+  push constant 0
+  eq
+  pop local 0
+
+  push static 5
+  push constant 0
+  eq
+  push local 0
+  and
+  return

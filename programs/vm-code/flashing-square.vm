@@ -1,0 +1,115 @@
+function Sys.init 1
+  push constant 0
+  pop local 0 // square color
+
+  label start_loop
+    push local 0
+    not
+    pop local 0
+
+    push constant 15 // xoffset
+    push constant 5 // yoffset
+    push local 0 // square color
+    call draw_square 3
+    pop constant 0
+
+    call delay 0
+    pop constant 0
+
+  goto start_loop
+
+function draw_square 1
+  push argument 0
+  push argument 1
+  call offset_screen_pointer 2
+  pop pointer 0
+
+  push constant 0
+  pop local 0 // row_idx
+  label start_loop
+    // draw line
+    push argument 2
+    pop this 0
+
+    push pointer 0
+    push constant 32
+    add
+    pop pointer 0
+
+    // row_idx++
+    push local 0
+    push constant 1
+    add
+    pop local 0
+
+    push local 0
+    push constant 16
+    lt
+    if-goto start_loop
+
+  push constant 0
+  return
+
+
+function offset_screen_pointer 2
+  push constant 16384
+  pop local 0 // result
+
+  // y offset
+  push constant 0
+  pop local 1
+  label start_y_offset_loop
+    push local 1
+    push argument 1
+    eq
+    if-goto end_y_offset_loop
+
+    push local 0
+    push constant 512
+    add
+    pop local 0
+
+    push local 1
+    push constant 1
+    add
+    pop local 1
+    goto start_y_offset_loop
+  label end_y_offset_loop
+
+  // x offset
+  push local 0
+  push argument 0
+  add
+  return
+
+function delay 2
+  push constant 0
+  pop local 0
+
+  push constant 0
+  pop local 1
+
+  label start_outer_loop
+    label start_inner_loop
+      push constant 1
+      push local 0
+      add
+      pop local 0
+
+      push local 0
+      if-goto start_inner_loop
+
+    push constant 1
+    push local 1
+    add
+    pop local 1
+
+    push local 1
+    push constant 4
+    eq
+    not
+    if-goto start_outer_loop
+
+  push constant 0
+  return
+

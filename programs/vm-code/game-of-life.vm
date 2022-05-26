@@ -100,7 +100,6 @@ function draw_from_compact_representation 2
     eq
     if-goto end_loop
 
-
     push constant 1
     pop local 0
     label start_inner_loop

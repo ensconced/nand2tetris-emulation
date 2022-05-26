@@ -3,7 +3,6 @@
 // and then when is_frame is true, create next version of that
 
 // So, on key change, we will do update_compact_representation, then draw_from_compact_representation (at a given offset).
-// NB draw_from_compact_representation will be very similar to the stuff that currently draws directly from the keyboard.
 
 // static 0 is timer
 // static 1 is prevkey
@@ -254,6 +253,7 @@ function draw_square 1
   return
 
 
+// TODO - could optimize this by just updating static pointer rather than recomputing each time...
 function offset_screen_pointer 2
   push constant 16384
   pop local 0 // result

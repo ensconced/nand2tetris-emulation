@@ -53,8 +53,12 @@ function Sys.init 1
     pop constant 0
 
     call is_frame 0
+    if-goto call_compute_frame
+    goto start
+    label call_compute_frame
+    call compute_frame 0
     pop constant 0
-  goto start
+    goto start
 
 function handle_key_change 0
   // update_compact_representation
@@ -290,4 +294,8 @@ function is_frame 1
   eq
   push local 0
   and
+  return
+
+function compute_frame 0
+  push constant 0
   return

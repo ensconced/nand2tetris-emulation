@@ -543,6 +543,98 @@ M=D
 ($return_point_3)
 
 
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@Sys.init$call_compute_frame
+D;JNE
+
+
+@Sys.init$start
+0;JMP
+
+(Sys.init$call_compute_frame)
+
+// Load return address into D
+@$return_point_4
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+@LCL
+D=M
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+@ARG
+D=M
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+@THIS
+D=M
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+@THAT
+D=M
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Set arg pointer
+@SP
+D=M
+@5
+D=D-A
+@ARG
+M=D
+
+
+// Set lcl pointer
+@SP
+D=M
+@LCL
+M=D
+
+
+// Jump to the callee
+@$entry_compute_frame
+0;JMP
+
+// Label for return to caller
+($return_point_4)
+
+
 @SP
 M=M-1
 
@@ -565,7 +657,7 @@ M=M+1
 
 
 // Load return address into D
-@$return_point_4
+@$return_point_5
 D=A
 
 
@@ -638,7 +730,7 @@ M=D
 0;JMP
 
 // Label for return to caller
-($return_point_4)
+($return_point_5)
 
 
 @SP
@@ -726,7 +818,7 @@ M=M+1
 
 
 // Load return address into D
-@$return_point_5
+@$return_point_6
 D=A
 
 
@@ -799,7 +891,7 @@ M=D
 0;JMP
 
 // Label for return to caller
-($return_point_5)
+($return_point_6)
 
 
 @SP
@@ -1502,7 +1594,7 @@ M=M&D
 
 
 // Load return address into D
-@$return_point_6
+@$return_point_7
 D=A
 
 
@@ -1575,7 +1667,7 @@ M=D
 0;JMP
 
 // Label for return to caller
-($return_point_6)
+($return_point_7)
 
 
 @SP
@@ -2755,7 +2847,7 @@ M=M+1
 
 
 // Load return address into D
-@$return_point_7
+@$return_point_8
 D=A
 
 
@@ -2828,7 +2920,7 @@ M=D
 0;JMP
 
 // Label for return to caller
-($return_point_7)
+($return_point_8)
 
 
 // Pop into d register
@@ -3865,6 +3957,103 @@ D=M
 // point A to x
 A=A-1
 M=M&D
+
+
+@ARG
+D=M
+@R13
+M=D
+
+
+@LCL
+D=M
+@R14
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@THAT
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@THIS
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@ARG
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@LCL
+M=D
+
+
+// Pop into d register
+@R14
+MA=M-1
+D=M
+
+
+@R14
+M=D
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@R13
+A=M
+M=D
+
+
+@R13
+D=M
+@SP
+M=D+1
+
+
+@R14
+A=M
+0;JMP
+
+($entry_compute_frame)
+
+@0
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
 
 
 @ARG

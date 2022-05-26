@@ -4480,7 +4480,387 @@ M=D+1
 A=M
 0;JMP
 
-($entry_word_to_array)
+($entry_word_to_bool_array)
+D=0
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@2112
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@3
+M=D
+
+
+@1
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+// stash value from D into R13
+@R13
+M=D
+
+// put value of pointer in D
+@LCL
+D=M
+
+// add index
+@0
+D=D+A
+
+// stash memory address in R14
+@R14
+M=D
+
+// get value back into D
+@R13
+D=M
+
+// load value into memory
+@R14
+A=M
+M=D
+
+(word_to_bool_array$start_loop)
+
+@0
+D=A
+@LCL
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@0
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+// set A to point to x
+A=M-1
+// use R13 as another pointer to x
+D=A
+@R13
+M=D
+// load y into D
+@SP
+A=M
+D=M
+// load x - y into D
+A=A-1
+D=M-D
+// initially set result to true (i.e. 0xffff i.e. -1)
+M=-1
+// then flip to false unless condition holds
+@$after_set_to_false_12
+D;JEQ
+@R13
+A=M
+M=0
+($after_set_to_false_12)
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@word_to_bool_array$end_loop
+D;JNE
+
+
+@0
+D=A
+@ARG
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@0
+D=A
+@LCL
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+// load y into D
+A=M
+D=M
+// point A to x
+A=A-1
+M=M&D
+
+
+@0
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+// set A to point to x
+A=M-1
+// use R13 as another pointer to x
+D=A
+@R13
+M=D
+// load y into D
+@SP
+A=M
+D=M
+// load x - y into D
+A=A-1
+D=M-D
+// initially set result to true (i.e. 0xffff i.e. -1)
+M=-1
+// then flip to false unless condition holds
+@$after_set_to_false_13
+D;JEQ
+@R13
+A=M
+M=0
+($after_set_to_false_13)
+
+
+@SP
+A=M-1
+M=!M
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+// stash value from D into R13
+@R13
+M=D
+
+// put value of pointer in D
+@THIS
+D=M
+
+// add index
+@0
+D=D+A
+
+// stash memory address in R14
+@R14
+M=D
+
+// get value back into D
+@R13
+D=M
+
+// load value into memory
+@R14
+A=M
+M=D
+
+
+@0
+D=A
+@LCL
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@0
+D=A
+@LCL
+A=M+D
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+// load y into D
+A=M
+D=M
+// point A to x
+A=A-1
+M=M+D
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+// stash value from D into R13
+@R13
+M=D
+
+// put value of pointer in D
+@LCL
+D=M
+
+// add index
+@0
+D=D+A
+
+// stash memory address in R14
+@R14
+M=D
+
+// get value back into D
+@R13
+D=M
+
+// load value into memory
+@R14
+A=M
+M=D
+
+
+@3
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+@1
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+// load y into D
+A=M
+D=M
+// point A to x
+A=A-1
+M=M+D
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@3
+M=D
+
+
+@word_to_bool_array$start_loop
+0;JMP
+
+(word_to_bool_array$end_loop)
 
 @0
 D=A

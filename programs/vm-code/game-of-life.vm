@@ -338,6 +338,41 @@ function compute_frame 2
 
 
 
-function word_to_array 0
+function word_to_bool_array 1
+  push constant 2112
+  pop pointer 0
+
+  push constant 1
+  pop local 0 // mask
+
+  label start_loop
+    push local 0
+    push constant 0
+    eq
+    if-goto end_loop
+
+    push argument 0 // word
+    push local 0 // mask
+    and
+    push constant 0
+    eq
+    not
+    pop this 0
+
+    // mask = mask * 2
+    push local 0
+    push local 0
+    add
+    pop local 0
+
+    // increment pointer
+    push pointer 0
+    push constant 1
+    add
+    pop pointer 0
+
+    goto start_loop
+    label end_loop
+
   push constant 0
   return

@@ -111,31 +111,33 @@ function update_compact_representation 0
   push constant 0
   return
 
-function draw_16_squares 1
-  push constant 1
-  pop local 0 // mask
+function draw_16_squares 0
+  push argument 0 // value
+  call word_to_bool_array 1
+  pop constant 0
+  // bool array should now be on heap at base address 2112
+  push constant 2112
+  pop pointer 0
+
   label start_loop
-    // break if done
-    push local 0
-    push constant 0
+    push pointer 0
+    push constant 2128
     eq
-    if-goto break_loop
+    if-goto end_loop
 
     push static 3 // xoffset
     push static 4 // yoffset
-    push argument 0 // value
-    push local 0 // mask
-    and
+    push this 0 // bool
     call draw_square 3
     pop constant 0
 
-    // mask = mask * 2
-    push local 0
-    push local 0
+    // i++
+    push constant 1
+    push pointer 0
     add
-    pop local 0
+    pop pointer 0
 
-    // xoffset = (xoffset + 1) % 32
+    // xoffset++
     push static 3
     push constant 1
     add
@@ -143,9 +145,9 @@ function draw_16_squares 1
     and
     pop static 3
 
-
     goto start_loop
-    label break_loop
+    label end_loop
+
   push constant 0
   return
 

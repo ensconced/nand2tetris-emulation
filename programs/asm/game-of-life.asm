@@ -1409,7 +1409,13 @@ A=M
 0;JMP
 
 ($entry_draw_16_squares)
-D=0
+
+@0
+D=A
+@ARG
+A=M+D
+D=M
+
 
 // Push from d register
 @SP
@@ -1419,7 +1425,88 @@ M=D
 M=M+1
 
 
-@1
+// Load return address into D
+@$return_point_7
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+@LCL
+D=M
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+@ARG
+D=M
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+@THIS
+D=M
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+@THAT
+D=M
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Set arg pointer
+@SP
+D=M
+@6
+D=D-A
+@ARG
+M=D
+
+
+// Set lcl pointer
+@SP
+D=M
+@LCL
+M=D
+
+
+// Jump to the callee
+@$entry_word_to_bool_array
+0;JMP
+
+// Label for return to caller
+($return_point_7)
+
+
+@SP
+M=M-1
+
+
+@2112
 D=A
 
 
@@ -1437,37 +1524,12 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
-@LCL
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
-A=M
+@3
 M=D
 
 (draw_16_squares$start_loop)
 
-@0
-D=A
-@LCL
-A=M+D
+@3
 D=M
 
 
@@ -1479,7 +1541,7 @@ M=D
 M=M+1
 
 
-@0
+@2128
 D=A
 
 
@@ -1524,7 +1586,7 @@ MA=M-1
 D=M
 
 
-@draw_16_squares$break_loop
+@draw_16_squares$end_loop
 D;JNE
 
 
@@ -1554,7 +1616,7 @@ M=M+1
 
 @0
 D=A
-@ARG
+@THIS
 A=M+D
 D=M
 
@@ -1565,36 +1627,10 @@ A=M
 M=D
 @SP
 M=M+1
-
-
-@0
-D=A
-@LCL
-A=M+D
-D=M
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-// decrement stack pointer, so it's pointing to y
-@SP
-M=M-1
-// load y into D
-A=M
-D=M
-// point A to x
-A=A-1
-M=M&D
 
 
 // Load return address into D
-@$return_point_7
+@$return_point_8
 D=A
 
 
@@ -1667,18 +1703,15 @@ M=D
 0;JMP
 
 // Label for return to caller
-($return_point_7)
+($return_point_8)
 
 
 @SP
 M=M-1
 
 
-@0
+@1
 D=A
-@LCL
-A=M+D
-D=M
 
 
 // Push from d register
@@ -1689,10 +1722,7 @@ M=D
 M=M+1
 
 
-@0
-D=A
-@LCL
-A=M+D
+@3
 D=M
 
 
@@ -1721,29 +1751,7 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
-@LCL
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
-A=M
+@3
 M=D
 
 
@@ -1818,7 +1826,7 @@ M=D
 @draw_16_squares$start_loop
 0;JMP
 
-(draw_16_squares$break_loop)
+(draw_16_squares$end_loop)
 
 @0
 D=A
@@ -2847,7 +2855,7 @@ M=M+1
 
 
 // Load return address into D
-@$return_point_8
+@$return_point_9
 D=A
 
 
@@ -2920,7 +2928,7 @@ M=D
 0;JMP
 
 // Label for return to caller
-($return_point_8)
+($return_point_9)
 
 
 // Pop into d register

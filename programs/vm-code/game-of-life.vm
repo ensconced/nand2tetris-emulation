@@ -143,17 +143,6 @@ function draw_16_squares 1
   return
 
 
-function show_output 0
-  // restore THIS using static screen screen pointer
-  push static 2
-  pop pointer 0
-
-  // show output on screen
-  push static 0
-  pop this 0
-  push constant 0
-  return
-
 function key_changed 1
   // local 0 is currentkey
 

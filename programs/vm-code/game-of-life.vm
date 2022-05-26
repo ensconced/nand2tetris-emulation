@@ -74,28 +74,7 @@ function handle_key_change 0
   and
   pop static 6
 
-  push static 0
-  call draw_16_squares 1
-  pop constant 0
-
-  // if xoffset is zero, increment yoffset
-  push static 3
-  push constant 0
-  eq
-  if-goto increment_y_offset
-  push constant 0
-  return
-
-  label increment_y_offset
-  // yoffset = (yoffset + 1) % 16
-  push static 4
-  push constant 1
-  add
-  push constant 15
-  and
-  pop static 4
-
-  push constant 0
+  call draw_from_compact_representation 0
   return
 
 function update_compact_representation 0
@@ -111,46 +90,90 @@ function update_compact_representation 0
   push constant 0
   return
 
-function draw_16_squares 0
-  push argument 0 // value
-  call word_to_bool_array 1
-  pop constant 0
-  // bool array should now be on heap at base address 2112
-  push constant 2112
-  pop pointer 0
+function draw_from_compact_representation 2
+  push constant 2048
+  pop pointer 0 // THIS is base of compact representation
 
   label start_loop
     push pointer 0
-    push constant 2128
+    push constant 2080
     eq
     if-goto end_loop
 
-    push static 3 // xoffset
-    push static 4 // yoffset
-    push this 0 // bool
-    call draw_square 3
-    pop constant 0
 
-    // i++
     push constant 1
+    pop local 0
+    label start_inner_loop
+      push local 0
+      push constant 0
+      eq
+      if-goto end_inner_loop
+
+      push this 0
+      push local 0
+      and
+      push constant 0
+      eq
+      not
+      call draw_square 1
+      pop constant 0
+
+      push local 0
+      push local 0
+      add
+      pop local 0
+
+      goto start_inner_loop
+      label end_inner_loop
+
     push pointer 0
+    push constant 1
     add
     pop pointer 0
-
-    // xoffset++
-    push static 3
-    push constant 1
-    add
-    push constant 31
-    and
-    pop static 3
-
     goto start_loop
+
     label end_loop
 
   push constant 0
   return
 
+
+// draw screen pointer to draw square, leaving pointer in correct position for the next one
+function draw_square 1
+  push constant 0
+  push local 0
+  label start_loop
+    push local 0
+    push constant 16
+    eq
+    if-goto end_loop
+
+    push static 2
+    pop pointer 0
+
+    push argument 0
+    pop this 0
+
+    push static 2
+    push constant 32
+    add
+    pop static 2
+
+    push local 0
+    push constant 1
+    add
+    pop local 0
+
+    goto start_loop
+    label end_loop
+
+  push static 2
+  push constant 511
+  sub
+  pop static 2
+
+  push constant 0
+  return
 
 function key_changed 1
   // local 0 is currentkey
@@ -214,77 +237,6 @@ function increment_timers 0
   push constant 0
   return
 
-
-// takes xoffset, yoffset, value
-function draw_square 1
-  push argument 0
-  push argument 1
-  call offset_screen_pointer 2
-  pop pointer 0
-
-  push constant 0
-  pop local 0 // row_idx
-  label start_loop
-    // draw line
-    push argument 2
-    push constant 0
-    eq
-    not
-    pop this 0
-
-    push pointer 0
-    push constant 32
-    add
-    pop pointer 0
-
-    // row_idx++
-    push local 0
-    push constant 1
-    add
-    pop local 0
-
-    push local 0
-    push constant 16
-    lt
-    if-goto start_loop
-
-  push constant 0
-  return
-
-
-// TODO - could optimize this by just updating static pointer rather than recomputing each time...
-function offset_screen_pointer 2
-  push constant 16384
-  pop local 0 // result
-
-  // y offset
-  push constant 0
-  pop local 1
-  label start_y_offset_loop
-    push local 1
-    push argument 1
-    eq
-    if-goto end_y_offset_loop
-
-    push local 0
-    push constant 512
-    add
-    pop local 0
-
-    push local 1
-    push constant 1
-    add
-    pop local 1
-    goto start_y_offset_loop
-  label end_y_offset_loop
-
-  // x offset
-  push local 0
-  push argument 0
-  add
-  return
-
-
 function is_frame 1
   push static 0
   push constant 0
@@ -296,83 +248,4 @@ function is_frame 1
   eq
   push local 0
   and
-  return
-
-function compute_frame 2
-  push constant 2048 // base of compact representation for current frame
-  pop pointer 0 // THIS is now compact representation for current frame
-
-  // iterate over words of compact representation for current frame
-  push constant 0
-  pop local 0 // iterator index
-  label start_loop
-    push constant 32
-    push local 0
-    eq
-    if-goto end_loop
-
-    // get bool array for easier iteration
-    pop this 0
-    call word_to_bool_array 1
-    pop constant 0
-
-    // iterate over bools of current word from compact representation
-    push constant 0
-    pop local 1
-    label start_inner_loop
-      push local 1
-      push constant 16
-      eq
-      if-goto end_inner_loop
-
-      // TODO - do compute next state of this cell and write to next_frame buffer on heap
-
-      goto start_inner_loop
-      label end_inner_loop
-
-    goto start_loop
-    label end_loop
-
-  push constant 0
-  return
-
-
-
-function word_to_bool_array 1
-  push constant 2112
-  pop pointer 0
-
-  push constant 1
-  pop local 0 // mask
-
-  label start_loop
-    push local 0
-    push constant 0
-    eq
-    if-goto end_loop
-
-    push argument 0 // word
-    push local 0 // mask
-    and
-    push constant 0
-    eq
-    not
-    pop this 0
-
-    // mask = mask * 2
-    push local 0
-    push local 0
-    add
-    pop local 0
-
-    // increment pointer
-    push pointer 0
-    push constant 1
-    add
-    pop pointer 0
-
-    goto start_loop
-    label end_loop
-
-  push constant 0
   return

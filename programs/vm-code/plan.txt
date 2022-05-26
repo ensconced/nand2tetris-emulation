@@ -1,0 +1,13 @@
+GOL plan
+
+on tick
+  increment timer
+
+on keychange
+  change compact representation
+  draw from compact representation
+
+on frame
+  compute next frame
+  draw from compact representation
+

@@ -11,6 +11,7 @@
 // static 3 is xoffset
 // static 4 is yoffset
 // static 5 is outertimer
+// static 6 is compact_representation_offset
 
 function Sys.init 1
   // initialize timer
@@ -37,6 +38,10 @@ function Sys.init 1
   push constant 0
   pop static 4
 
+  // initialize compact representation offset
+  push constant 0
+  pop static 6
+
   label start
     call increment_timers 0
     pop constant 0 // discard return value
@@ -50,6 +55,18 @@ function Sys.init 1
   goto start
 
 function handle_key_change 0
+  push static 6
+  call update_compact_representation 1
+  pop constant 0
+
+  // compact_representation_offset = (compact_representation_offset + 1) % 32
+  push static 6
+  push constant 1
+  add
+  push constant 31
+  and
+  pop static 6
+
   call draw_16_squares 0
   pop constant 0
 
@@ -69,6 +86,19 @@ function handle_key_change 0
   push constant 15
   and
   pop static 4
+
+  push constant 0
+  return
+
+function update_compact_representation 0
+  // set THIS
+  push static 6 // compact_representation_offset
+  push constant 2048 // base of compact representation
+  add
+  pop pointer 0
+
+  push argument 0 // value
+  pop this 0
 
   push constant 0
   return

@@ -167,7 +167,7 @@ function draw_square 1
     label end_loop
 
   push static 2
-  push constant 511
+  push constant 479
   sub
   pop static 2
 

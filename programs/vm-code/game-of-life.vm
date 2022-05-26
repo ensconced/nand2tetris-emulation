@@ -206,6 +206,7 @@ function increment_timers 0
   return
 
 
+// takes xoffset, yoffset, value
 function draw_square 1
   push argument 0
   push argument 1

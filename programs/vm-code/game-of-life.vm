@@ -311,23 +311,21 @@ function compute_frame 2
     eq
     if-goto end_loop
 
-    // iterate over pixels of each word
-    label start_inner_loop
-      push constant 1
-      pop local 1 // mask
+    // get bool array for easier iteration
+    pop this 0
+    call word_to_bool_array 1
+    pop constant 0
 
+    // iterate over bools of current word from compact representation
+    push constant 0
+    pop local 1
+    label start_inner_loop
       push local 1
-      push constant 0
+      push constant 16
       eq
       if-goto end_inner_loop
 
-      // TODO - do stuff
-
-      // mask = mask * 2
-      push local 1
-      push local 1
-      add
-      pop local 1
+      // TODO - do compute next state of this cell and write to next_frame buffer on heap
 
       goto start_inner_loop
       label end_inner_loop

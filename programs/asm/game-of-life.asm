@@ -4200,9 +4200,121 @@ D=M
 @compute_frame$end_loop
 D;JNE
 
-(compute_frame$start_inner_loop)
 
-@1
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+// stash value from D into R13
+@R13
+M=D
+
+// put value of pointer in D
+@THIS
+D=M
+
+// add index
+@0
+D=D+A
+
+// stash memory address in R14
+@R14
+M=D
+
+// get value back into D
+@R13
+D=M
+
+// load value into memory
+@R14
+A=M
+M=D
+
+
+// Load return address into D
+@$return_point_10
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+@LCL
+D=M
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+@ARG
+D=M
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+@THIS
+D=M
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+@THAT
+D=M
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Set arg pointer
+@SP
+D=M
+@6
+D=D-A
+@ARG
+M=D
+
+
+// Set lcl pointer
+@SP
+D=M
+@LCL
+M=D
+
+
+// Jump to the callee
+@$entry_word_to_bool_array
+0;JMP
+
+// Label for return to caller
+($return_point_10)
+
+
+@SP
+M=M-1
+
+
+@0
 D=A
 
 
@@ -4245,6 +4357,7 @@ D=M
 A=M
 M=D
 
+(compute_frame$start_inner_loop)
 
 @1
 D=A
@@ -4261,7 +4374,7 @@ M=D
 M=M+1
 
 
-@0
+@16
 D=A
 
 
@@ -4308,79 +4421,6 @@ D=M
 
 @compute_frame$end_inner_loop
 D;JNE
-
-
-@1
-D=A
-@LCL
-A=M+D
-D=M
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-@1
-D=A
-@LCL
-A=M+D
-D=M
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-// decrement stack pointer, so it's pointing to y
-@SP
-M=M-1
-// load y into D
-A=M
-D=M
-// point A to x
-A=A-1
-M=M+D
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
-@LCL
-D=M
-
-// add index
-@1
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
-A=M
-M=D
 
 
 @compute_frame$start_inner_loop

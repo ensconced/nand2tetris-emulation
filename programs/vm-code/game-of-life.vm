@@ -55,7 +55,8 @@ function Sys.init 1
   goto start
 
 function handle_key_change 0
-  push static 6
+  // update_compact_representation
+  push static 0
   call update_compact_representation 1
   pop constant 0
 
@@ -67,7 +68,8 @@ function handle_key_change 0
   and
   pop static 6
 
-  call draw_16_squares 0
+  push static 0
+  call draw_16_squares 1
   pop constant 0
 
   // if xoffset is zero, increment yoffset
@@ -115,7 +117,7 @@ function draw_16_squares 1
 
     push static 3 // xoffset
     push static 4 // yoffset
-    push static 0 // timer
+    push argument 0 // value
     push local 0 // mask
     and
     call draw_square 3

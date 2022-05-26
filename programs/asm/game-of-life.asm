@@ -471,7 +471,7 @@ M=M-1
 
 ($entry_handle_key_change)
 
-@22
+@16
 D=M
 
 
@@ -632,6 +632,18 @@ D=M
 M=D
 
 
+@16
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
 // Load return address into D
 @$return_point_4
 D=A
@@ -688,7 +700,7 @@ M=M+1
 // Set arg pointer
 @SP
 D=M
-@5
+@6
 D=D-A
 @ARG
 M=D
@@ -1367,7 +1379,10 @@ M=D
 M=M+1
 
 
-@16
+@0
+D=A
+@ARG
+A=M+D
 D=M
 
 

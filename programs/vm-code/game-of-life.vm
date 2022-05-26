@@ -51,6 +51,9 @@ function Sys.init 1
     label call_handle_key_change
     call handle_key_change 0
     pop constant 0
+
+    call is_frame 0
+    pop constant 0
   goto start
 
 function handle_key_change 0

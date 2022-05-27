@@ -282,17 +282,10 @@ function increment_timers 0
   push constant 0
   return
 
-function is_frame 1
-  push static 0
-  push constant 0
-  eq
-  pop local 0
-
+function is_frame 0
   push static 5
   push constant 0
   eq
-  push local 0
-  and
   return
 
 function handle_frame 0

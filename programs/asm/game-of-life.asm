@@ -3921,17 +3921,8 @@ A=M
 0;JMP
 
 ($entry_is_frame)
-D=0
 
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-@16
+@21
 D=M
 
 
@@ -3980,115 +3971,6 @@ D;JEQ
 A=M
 M=0
 ($after_set_to_false_7)
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
-@LCL
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
-A=M
-M=D
-
-
-@21
-D=M
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-@0
-D=A
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-// decrement stack pointer, so it's pointing to y
-@SP
-M=M-1
-// set A to point to x
-A=M-1
-// use R13 as another pointer to x
-D=A
-@R13
-M=D
-// load y into D
-@SP
-A=M
-D=M
-// load x - y into D
-A=A-1
-D=M-D
-// initially set result to true (i.e. 0xffff i.e. -1)
-M=-1
-// then flip to false unless condition holds
-@$after_set_to_false_8
-D;JEQ
-@R13
-A=M
-M=0
-($after_set_to_false_8)
-
-
-@0
-D=A
-@LCL
-A=M+D
-D=M
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-// decrement stack pointer, so it's pointing to y
-@SP
-M=M-1
-// load y into D
-A=M
-D=M
-// point A to x
-A=A-1
-M=M&D
 
 
 @ARG
@@ -4199,10 +4081,6 @@ M=D
 
 (handle_frame$start_loop)
 
-@handle_frame$start_loop
-0;JMP
-
-
 @3
 D=M
 
@@ -4246,12 +4124,12 @@ D=M-D
 // initially set result to true (i.e. 0xffff i.e. -1)
 M=-1
 // then flip to false unless condition holds
-@$after_set_to_false_9
+@$after_set_to_false_8
 D;JEQ
 @R13
 A=M
 M=0
-($after_set_to_false_9)
+($after_set_to_false_8)
 
 
 // Pop into d register

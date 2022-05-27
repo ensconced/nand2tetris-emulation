@@ -288,10 +288,87 @@ function is_frame 0
   eq
   return
 
-function handle_frame 0
-  // for now, just wipe compact representation
+function handle_frame 4
+  // point THIS to current frame buffer
   push constant 2048
   pop pointer 0
+
+  // point THAT to next frame buffer
+  push constant 2080
+  pop pointer 1
+
+  push constant 0
+  pop local 0 // wordidx
+
+  push constant 0
+  pop local 1 // bitidx
+
+  label start_loop
+    push local 0
+    push constant 32
+    eq
+    if-goto end_loop
+
+    push constant 0
+    pop local 2 // word
+
+    push constant 1
+    pop local 3 // mask
+
+    label start_inner_loop
+      push local 1
+      push constant 16
+      eq
+      if-goto end_inner_loop
+
+      push local 0
+      push local 1
+      call get_next_state 2
+      push local 3 // mask
+      and
+      push local 2
+      and
+      pop local 2
+
+      push local 3
+      push local 3
+      add
+      pop local 3
+
+      push local 1
+      push constant 1
+      add
+      pop local 1
+      goto start_inner_loop
+      label end_inner_loop
+
+    push local 2
+    pop that 0
+
+    push pointer 1
+    push constant 1
+    add
+    pop pointer 1
+
+    push local 0
+    push constant 1
+    add
+    pop local 0
+    goto start_loop
+  label end_loop
+
+  call copy_next_buffer 0
+  pop constant 0
+
+  call draw_from_compact_representation 0
+  return
+
+function copy_next_buffer 0
+  push constant 2048
+  pop pointer 0
+
+  push constant 2080
+  pop pointer 1
 
   label start_loop
     push pointer 0
@@ -299,18 +376,23 @@ function handle_frame 0
     eq
     if-goto end_loop
 
-    push constant 0
-    pop this 0
+    push this 0
+    pop that 0
 
     push pointer 0
     push constant 1
     add
     pop pointer 0
 
+    push pointer 1
+    push constant 1
+    add
+    pop pointer 1
+
     goto start_loop
     label end_loop
 
-  call draw_from_compact_representation 0
+  push constant 0
   return
 
 function left 0
@@ -697,3 +779,47 @@ function is_even 0
   eq
   not
   return
+
+function get_next_state 2
+  push argument 0
+  push argument 1
+  call count_alive_neighbours 2
+  pop local 0 // live_neighbour_count
+
+  push argument 0
+  push argument 1
+  call read_value 2
+  pop local 1 // current_state
+
+  push local 1
+  push constant 0
+  not
+  eq
+  if-goto handle_living_cell
+
+  // handle dead cell
+  push local 0
+  push constant 3
+  eq
+  if-goto live
+
+  // stay dead
+  push constant 0
+  return
+
+  label handle_living_cell
+  push local 0
+  push constant 2
+  eq
+  if-goto live
+  push local 0
+  push constant 3
+  if-goto live
+  // die
+  push constant 0
+  return
+
+  label live
+    push constant 0
+    not
+    return

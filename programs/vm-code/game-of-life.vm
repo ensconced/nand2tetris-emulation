@@ -208,10 +208,10 @@ function draw_square 1
     add
     pop pointer 0
 
-    push local 0
-    push constant 1
-    add
-    pop local 0
+    // push local 0
+    // push constant 1
+    // add
+    // pop local 0
 
     goto start_loop
     label end_loop

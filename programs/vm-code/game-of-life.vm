@@ -90,52 +90,72 @@ function update_compact_representation 0
   push constant 0
   return
 
-function draw_from_compact_representation 2
+function draw_from_compact_representation 1
   push constant 2048
-  pop pointer 0 // THIS is base of compact representation
+  pop local 0 // base of row within compact representation
 
   label start_loop
-    push pointer 0
+    push local 0
     push constant 2080
     eq
     if-goto end_loop
 
-    push constant 1
-    pop local 0
-    label start_inner_loop
-      push local 0
-      push constant 0
-      eq
-      if-goto end_inner_loop
+    push local 0
+    call draw_row_from_compact_representation 1
+    pop constant 0
 
-      push this 0
-      push local 0
-      and
-      push constant 0
-      eq
-      not
-      call draw_square 1
-      pop constant 0
-
-      push local 0
-      push local 0
-      add
-      pop local 0
-
-      goto start_inner_loop
-      label end_inner_loop
-
-    push pointer 0
-    push constant 1
+    push local 0
+    push constant 2
     add
-    pop pointer 0
-    goto start_loop
+    pop local 0
 
+    goto start_loop
     label end_loop
+  push constant 0
+  return
+
+function draw_row_from_compact_representation 0
+  push argument 0
+  call draw_half_row 1
+  pop constant 0
+
+  push argument 0
+  push constant 1
+  add
+  call draw_half_row 1
+  pop constant 0
 
   push constant 0
   return
 
+function draw_half_row 1
+  push argument 0
+  pop pointer 0
+
+  push constant 1
+  pop local 0 // mask
+
+  label start_loop
+    push local 0
+    push constant 0
+    eq
+    if-goto end_loop
+
+    push this 0
+    push local 0
+    call draw_square 1
+    pop constant 0
+
+    push local 0
+    push local 0
+    add
+    pop local 0
+
+    goto start_loop
+    label end_loop
+
+  push constant 0
+  return
 
 // draw screen pointer to draw square, leaving pointer in correct position for the next one
 function draw_square 1
@@ -165,11 +185,6 @@ function draw_square 1
 
     goto start_loop
     label end_loop
-
-  push static 2
-  push constant 479
-  sub
-  pop static 2
 
   push constant 0
   return

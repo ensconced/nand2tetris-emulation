@@ -212,7 +212,7 @@ M=D
 
 (Sys.init$showline)
 
-@0
+@1
 D=A
 
 
@@ -222,11 +222,6 @@ A=M
 M=D
 @SP
 M=M+1
-
-
-@SP
-A=M-1
-M=!M
 
 
 // Pop into d register

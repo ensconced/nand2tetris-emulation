@@ -79,28 +79,6 @@ D=M
 M=D
 
 
-@0
-D=A
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-@21
-M=D
-
-
 @24576
 D=A
 
@@ -3453,378 +3431,6 @@ D=M
 M=D
 
 
-@16
-D=M
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-@0
-D=A
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-// decrement stack pointer, so it's pointing to y
-@SP
-M=M-1
-// set A to point to x
-A=M-1
-// use R13 as another pointer to x
-D=A
-@R13
-M=D
-// load y into D
-@SP
-A=M
-D=M
-// load x - y into D
-A=A-1
-D=M-D
-// initially set result to true (i.e. 0xffff i.e. -1)
-M=-1
-// then flip to false unless condition holds
-@$after_set_to_false_5
-D;JEQ
-@R13
-A=M
-M=0
-($after_set_to_false_5)
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-@increment_timers$increment_outer_timer
-D;JNE
-
-
-@0
-D=A
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-@ARG
-D=M
-@R13
-M=D
-
-
-@LCL
-D=M
-@R14
-M=D
-
-
-// Pop into d register
-@R14
-MA=M-1
-D=M
-
-
-@THAT
-M=D
-
-
-// Pop into d register
-@R14
-MA=M-1
-D=M
-
-
-@THIS
-M=D
-
-
-// Pop into d register
-@R14
-MA=M-1
-D=M
-
-
-@ARG
-M=D
-
-
-// Pop into d register
-@R14
-MA=M-1
-D=M
-
-
-@LCL
-M=D
-
-
-// Pop into d register
-@R14
-MA=M-1
-D=M
-
-
-@R14
-M=D
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-@R13
-A=M
-M=D
-
-
-@R13
-D=M
-@SP
-M=D+1
-
-
-@R14
-A=M
-0;JMP
-
-(increment_timers$increment_outer_timer)
-
-@21
-D=M
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-@1
-D=A
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-@21
-M=D
-
-
-@21
-D=M
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-@1
-D=A
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-// decrement stack pointer, so it's pointing to y
-@SP
-M=M-1
-// set A to point to x
-A=M-1
-// use R13 as another pointer to x
-D=A
-@R13
-M=D
-// load y into D
-@SP
-A=M
-D=M
-// load x - y into D
-A=A-1
-D=M-D
-// initially set result to true (i.e. 0xffff i.e. -1)
-M=-1
-// then flip to false unless condition holds
-@$after_set_to_false_6
-D;JEQ
-@R13
-A=M
-M=0
-($after_set_to_false_6)
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-@increment_timers$zero_outer_timer
-D;JNE
-
-
-@0
-D=A
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-@ARG
-D=M
-@R13
-M=D
-
-
-@LCL
-D=M
-@R14
-M=D
-
-
-// Pop into d register
-@R14
-MA=M-1
-D=M
-
-
-@THAT
-M=D
-
-
-// Pop into d register
-@R14
-MA=M-1
-D=M
-
-
-@THIS
-M=D
-
-
-// Pop into d register
-@R14
-MA=M-1
-D=M
-
-
-@ARG
-M=D
-
-
-// Pop into d register
-@R14
-MA=M-1
-D=M
-
-
-@LCL
-M=D
-
-
-// Pop into d register
-@R14
-MA=M-1
-D=M
-
-
-@R14
-M=D
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-@R13
-A=M
-M=D
-
-
-@R13
-D=M
-@SP
-M=D+1
-
-
-@R14
-A=M
-0;JMP
-
-(increment_timers$zero_outer_timer)
-
-@0
-D=A
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-@21
-M=D
-
-
 @0
 D=A
 
@@ -3922,6 +3528,18 @@ A=M
 
 ($entry_is_frame)
 
+@16
+D=M
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
 @0
 D=A
 
@@ -3934,9 +3552,31 @@ M=D
 M=M+1
 
 
+// decrement stack pointer, so it's pointing to y
 @SP
+M=M-1
+// set A to point to x
 A=M-1
-M=!M
+// use R13 as another pointer to x
+D=A
+@R13
+M=D
+// load y into D
+@SP
+A=M
+D=M
+// load x - y into D
+A=A-1
+D=M-D
+// initially set result to true (i.e. 0xffff i.e. -1)
+M=-1
+// then flip to false unless condition holds
+@$after_set_to_false_5
+D;JEQ
+@R13
+A=M
+M=0
+($after_set_to_false_5)
 
 
 @ARG
@@ -4195,12 +3835,12 @@ D=M-D
 // initially set result to true (i.e. 0xffff i.e. -1)
 M=-1
 // then flip to false unless condition holds
-@$after_set_to_false_7
+@$after_set_to_false_6
 D;JEQ
 @R13
 A=M
 M=0
-($after_set_to_false_7)
+($after_set_to_false_6)
 
 
 // Pop into d register
@@ -4392,12 +4032,12 @@ D=M-D
 // initially set result to true (i.e. 0xffff i.e. -1)
 M=-1
 // then flip to false unless condition holds
-@$after_set_to_false_8
+@$after_set_to_false_7
 D;JEQ
 @R13
 A=M
 M=0
-($after_set_to_false_8)
+($after_set_to_false_7)
 
 
 // Pop into d register
@@ -5247,12 +4887,12 @@ D=M-D
 // initially set result to true (i.e. 0xffff i.e. -1)
 M=-1
 // then flip to false unless condition holds
-@$after_set_to_false_9
+@$after_set_to_false_8
 D;JEQ
 @R13
 A=M
 M=0
-($after_set_to_false_9)
+($after_set_to_false_8)
 
 
 // Pop into d register
@@ -5572,12 +5212,12 @@ D=M-D
 // initially set result to true (i.e. 0xffff i.e. -1)
 M=-1
 // then flip to false unless condition holds
-@$after_set_to_false_10
+@$after_set_to_false_9
 D;JEQ
 @R13
 A=M
 M=0
-($after_set_to_false_10)
+($after_set_to_false_9)
 
 
 // Pop into d register
@@ -6566,12 +6206,12 @@ D=M-D
 // initially set result to true (i.e. 0xffff i.e. -1)
 M=-1
 // then flip to false unless condition holds
-@$after_set_to_false_11
+@$after_set_to_false_10
 D;JEQ
 @R13
 A=M
 M=0
-($after_set_to_false_11)
+($after_set_to_false_10)
 
 
 // Pop into d register
@@ -8166,12 +7806,12 @@ D=M-D
 // initially set result to true (i.e. 0xffff i.e. -1)
 M=-1
 // then flip to false unless condition holds
-@$after_set_to_false_12
+@$after_set_to_false_11
 D;JEQ
 @R13
 A=M
 M=0
-($after_set_to_false_12)
+($after_set_to_false_11)
 
 
 // Pop into d register
@@ -8455,12 +8095,12 @@ D=M-D
 // initially set result to true (i.e. 0xffff i.e. -1)
 M=-1
 // then flip to false unless condition holds
-@$after_set_to_false_13
+@$after_set_to_false_12
 D;JEQ
 @R13
 A=M
 M=0
-($after_set_to_false_13)
+($after_set_to_false_12)
 
 
 @ARG
@@ -8617,12 +8257,12 @@ D=M-D
 // initially set result to true (i.e. 0xffff i.e. -1)
 M=-1
 // then flip to false unless condition holds
-@$after_set_to_false_14
+@$after_set_to_false_13
 D;JEQ
 @R13
 A=M
 M=0
-($after_set_to_false_14)
+($after_set_to_false_13)
 
 
 @SP
@@ -8855,7 +8495,7 @@ M=D
 
 
 // Jump to the callee
-@$entry_down
+@$entry_left
 0;JMP
 
 // Label for return to caller

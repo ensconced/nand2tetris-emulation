@@ -5,18 +5,12 @@
 // static 2 is screen pointer
 // static 3 is xoffset
 // static 4 is yoffset
-// static 5 is outertimer
 // static 6 is compact_representation_offset
-// static 7 is done_frame_for_cycle
 
 function Sys.init 1
   // initialize timer
   push constant 0
   pop static 0
-
-  // initialize outertimer
-  push constant 0
-  pop static 5
 
   // initialize keyboard
   push constant 24576
@@ -57,7 +51,6 @@ function Sys.init 1
     goto start
 
 function handle_key_change 0
-  // update_compact_representation
   push static 0
   call update_compact_representation 1
   pop constant 0
@@ -82,6 +75,7 @@ function update_compact_representation 0
 
   push argument 0 // value
   pop this 0
+
 
   push constant 0
   return
@@ -256,60 +250,15 @@ function increment_timers 0
   add
   pop static 0
 
-  push static 0
-  push constant 0
-  eq
-  if-goto increment_outer_timer
-  push constant 0
-  return
-
-  label increment_outer_timer
-  push static 5
-  push constant 1
-  pop static 5
-
-  push static 5
-  push constant 1
-  eq
-  if-goto zero_outer_timer
-  push constant 0
-  return
-
-  label zero_outer_timer
-  push constant 0
-  pop static 5
-
   // we have to return something
   push constant 0
   return
 
 function is_frame 0
-  push static 5
+  push static 0
   push constant 0
   eq
-  if-goto handle_outer_counter_is_zero
-
-  // we have not done a frame for this cycle yet
-  push constant 0
-  pop static 7
-  push constant 0
   return
-
-  label handle_outer_counter_is_zero
-    push static 7 // done_frame_for_cycle
-    not
-    if-goto do_frame
-    push constant 0
-    return
-
-  label do_frame
-    push constant 0
-    not
-    pop static 7
-
-    push constant 0
-    not
-    return
 
 function handle_frame 4
   // point THIS to current frame buffer
@@ -613,7 +562,7 @@ function get_next_state 2
 
   push argument 0
   push argument 1
-  call down 2
+  call left 2
   pop constant 0
 
   push this 0

@@ -4181,50 +4181,6 @@ D=M
 A=M
 M=D
 
-
-@0
-D=A
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
-@LCL
-D=M
-
-// add index
-@1
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
-A=M
-M=D
-
 (handle_frame$start_loop)
 
 @0
@@ -4289,6 +4245,50 @@ D=M
 
 @handle_frame$end_loop
 D;JNE
+
+
+@0
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+// stash value from D into R13
+@R13
+M=D
+
+// put value of pointer in D
+@LCL
+D=M
+
+// add index
+@1
+D=D+A
+
+// stash memory address in R14
+@R14
+M=D
+
+// get value back into D
+@R13
+D=M
+
+// load value into memory
+@R14
+A=M
+M=D
 
 
 @0

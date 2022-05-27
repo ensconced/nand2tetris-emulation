@@ -17,10 +17,6 @@ function Sys.init 1
   push constant 0
   pop static 5
 
-  // initialize screen pointer
-  push constant 16384
-  pop static 2
-
   // initialize keyboard
   push constant 24576
   pop pointer 1
@@ -40,6 +36,15 @@ function Sys.init 1
   label start
     call increment_timers 0
     pop constant 0 // discard return value
+
+    call is_frame 0
+    if-goto call_handle_frame
+    goto after_call_handle_frame
+
+    label call_handle_frame
+    call handle_frame 0
+    pop constant 0
+    label after_call_handle_frame
 
     call key_changed 0
     if-goto call_handle_key_change
@@ -80,9 +85,9 @@ function update_compact_representation 0
   push constant 0
   return
 
-function draw_from_compact_representation 2
-  push static 2
-  pop local 1
+function draw_from_compact_representation 1
+  push constant 16384
+  pop static 2
 
   push constant 2048
   pop local 0 // base of row within compact representation
@@ -109,10 +114,6 @@ function draw_from_compact_representation 2
 
     goto start_loop
     label end_loop
-
-  // rewind screen pointer
-  push local 1
-  pop static 2
 
   push constant 0
   return
@@ -279,4 +280,42 @@ function increment_timers 0
 
   // we have to return something
   push constant 0
+  return
+
+function is_frame 1
+  push static 0
+  push constant 0
+  eq
+  pop local 0
+
+  push static 5
+  push constant 0
+  eq
+  push local 0
+  and
+  return
+
+function handle_frame 0
+  // for now, just wipe compact representation
+  push constant 2048
+  pop pointer 0
+
+  label start_loop
+    push pointer 0
+    push constant 2080
+    eq
+    if-goto end_loop
+
+    push constant 0
+    pop this 0
+
+    push pointer 0
+    push constant 1
+    add
+    pop pointer 0
+
+    goto start_loop
+    label end_loop
+
+  call draw_from_compact_representation 0
   return

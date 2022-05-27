@@ -162,9 +162,8 @@ function draw_half_row 1
     push this 0
     push local 0
     and
-    push constant 0
+    push local 0
     eq
-    not
     call draw_square 1
     pop constant 0
 
@@ -189,15 +188,12 @@ function draw_half_row 1
   return
 
 // draw square, without moving screen pointer
-function draw_square 2
-  push static 2
-  pop local 1 // for rewinding screen pointer after draw
-
+function draw_square 1
   push static 2
   pop pointer 0
 
   push constant 0
-  push local 0
+  pop local 0
   label start_loop
     push local 0
     push constant 16
@@ -207,10 +203,10 @@ function draw_square 2
     push argument 0
     pop this 0
 
-    push static 2
+    push pointer 0
     push constant 32
     add
-    pop static 2
+    pop pointer 0
 
     push local 0
     push constant 1
@@ -219,10 +215,6 @@ function draw_square 2
 
     goto start_loop
     label end_loop
-
-  // rewind screen pointer
-  push local 1
-  pop static 2
 
   push constant 0
   return

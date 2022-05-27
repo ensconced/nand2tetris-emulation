@@ -2157,6 +2157,9 @@ M=M&D
 
 @0
 D=A
+@LCL
+A=M+D
+D=M
 
 
 // Push from d register
@@ -2192,11 +2195,6 @@ D;JEQ
 A=M
 M=0
 ($after_set_to_false_2)
-
-
-@SP
-A=M-1
-M=!M
 
 
 // Load return address into D
@@ -2533,59 +2531,6 @@ M=D
 @SP
 M=M+1
 
-D=0
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-@18
-D=M
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
-@LCL
-D=M
-
-// add index
-@1
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
-A=M
-M=D
-
 
 @18
 D=M
@@ -2621,19 +2566,36 @@ M=D
 M=M+1
 
 
-@0
-D=A
-@LCL
-A=M+D
+// Pop into d register
+@SP
+MA=M-1
 D=M
 
 
-// Push from d register
-@SP
+// stash value from D into R13
+@R13
+M=D
+
+// put value of pointer in D
+@LCL
+D=M
+
+// add index
+@0
+D=D+A
+
+// stash memory address in R14
+@R14
+M=D
+
+// get value back into D
+@R13
+D=M
+
+// load value into memory
+@R14
 A=M
 M=D
-@SP
-M=M+1
 
 (draw_square$start_loop)
 
@@ -2748,7 +2710,7 @@ A=M
 M=D
 
 
-@18
+@3
 D=M
 
 
@@ -2789,7 +2751,7 @@ MA=M-1
 D=M
 
 
-@18
+@3
 M=D
 
 
@@ -2867,31 +2829,6 @@ M=D
 0;JMP
 
 (draw_square$end_loop)
-
-@1
-D=A
-@LCL
-A=M+D
-D=M
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-@18
-M=D
-
 
 @0
 D=A

@@ -2710,51 +2710,6 @@ A=M
 M=D
 
 
-@3
-D=M
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-@32
-D=A
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-// decrement stack pointer, so it's pointing to y
-@SP
-M=M-1
-// load y into D
-A=M
-D=M
-// point A to x
-A=A-1
-M=M+D
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-@3
-M=D
-
-
 @draw_square$start_loop
 0;JMP
 

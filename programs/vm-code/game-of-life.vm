@@ -1,8 +1,4 @@
 // GAME OF LIFE
-// TODO - need to store compact representation of screen
-// and then when is_frame is true, create next version of that
-
-// So, on key change, we will do update_compact_representation, then draw_from_compact_representation (at a given offset).
 
 // static 0 is timer
 // static 1 is prevkey
@@ -48,15 +44,9 @@ function Sys.init 1
     call key_changed 0
     if-goto call_handle_key_change
     goto start
+
     label call_handle_key_change
     call handle_key_change 0
-    pop constant 0
-
-    call is_frame 0
-    if-goto call_compute_frame
-    goto start
-    label call_compute_frame
-    call compute_frame 0
     pop constant 0
     goto start
 
@@ -90,7 +80,10 @@ function update_compact_representation 0
   push constant 0
   return
 
-function draw_from_compact_representation 1
+function draw_from_compact_representation 2
+  push static 2
+  pop local 1
+
   push constant 2048
   pop local 0 // base of row within compact representation
 
@@ -104,6 +97,11 @@ function draw_from_compact_representation 1
     call draw_row_from_compact_representation 1
     pop constant 0
 
+    push static 2
+    push constant 512
+    add
+    pop static 2
+
     push local 0
     push constant 2
     add
@@ -111,13 +109,26 @@ function draw_from_compact_representation 1
 
     goto start_loop
     label end_loop
+
+  // rewind screen pointer
+  push local 1
+  pop static 2
+
   push constant 0
   return
 
-function draw_row_from_compact_representation 0
+function draw_row_from_compact_representation 1
+  push static 2
+  pop local 0
+
   push argument 0
   call draw_half_row 1
   pop constant 0
+
+  push static 2
+  push constant 16
+  add
+  pop static 2
 
   push argument 0
   push constant 1
@@ -125,10 +136,17 @@ function draw_row_from_compact_representation 0
   call draw_half_row 1
   pop constant 0
 
+  // rewind screen pointer
+  push local 0
+  pop static 2
+
   push constant 0
   return
 
 function draw_half_row 1
+  push static 2
+  pop local 1
+
   push argument 0
   pop pointer 0
 
@@ -143,8 +161,17 @@ function draw_half_row 1
 
     push this 0
     push local 0
+    and
+    push constant 0
+    eq
+    not
     call draw_square 1
     pop constant 0
+
+    push static 2
+    push constant 1
+    add
+    pop static 2
 
     push local 0
     push local 0
@@ -154,11 +181,21 @@ function draw_half_row 1
     goto start_loop
     label end_loop
 
+  // rewind screen pointer
+  push local 1
+  pop static 2
+
   push constant 0
   return
 
-// draw screen pointer to draw square, leaving pointer in correct position for the next one
-function draw_square 1
+// draw square, without moving screen pointer
+function draw_square 2
+  push static 2
+  pop local 1 // for rewinding screen pointer after draw
+
+  push static 2
+  pop pointer 0
+
   push constant 0
   push local 0
   label start_loop
@@ -166,9 +203,6 @@ function draw_square 1
     push constant 16
     eq
     if-goto end_loop
-
-    push static 2
-    pop pointer 0
 
     push argument 0
     pop this 0
@@ -185,6 +219,10 @@ function draw_square 1
 
     goto start_loop
     label end_loop
+
+  // rewind screen pointer
+  push local 1
+  pop static 2
 
   push constant 0
   return
@@ -249,17 +287,4 @@ function increment_timers 0
 
   // we have to return something
   push constant 0
-  return
-
-function is_frame 1
-  push static 0
-  push constant 0
-  eq
-  pop local 0
-
-  push static 5
-  push constant 0
-  eq
-  push local 0
-  and
   return

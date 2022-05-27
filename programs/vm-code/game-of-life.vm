@@ -359,8 +359,8 @@ function handle_frame 4
     goto start_loop
     label end_loop
 
-  call copy_next_buffer 0
-  pop constant 0
+  // call copy_next_buffer 0
+  // pop constant 0
 
   call draw_from_compact_representation 0
   return

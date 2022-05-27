@@ -1935,6 +1935,15 @@ M=D
 @SP
 M=M+1
 
+D=0
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
 
 @18
 D=M

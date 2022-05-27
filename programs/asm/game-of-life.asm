@@ -5301,7 +5301,7 @@ D;JNE
 
 @0
 D=A
-@THIS
+@THAT
 A=M+D
 D=M
 
@@ -5325,7 +5325,7 @@ D=M
 M=D
 
 // put value of pointer in D
-@THAT
+@THIS
 D=M
 
 // add index

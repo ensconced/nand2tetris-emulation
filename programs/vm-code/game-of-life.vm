@@ -355,7 +355,7 @@ function handle_frame 4
     add
     pop local 0
     goto start_loop
-  label end_loop
+    label end_loop
 
   call copy_next_buffer 0
   pop constant 0
@@ -376,8 +376,8 @@ function copy_next_buffer 0
     eq
     if-goto end_loop
 
-    push this 0
-    pop that 0
+    push that 0
+    pop this 0
 
     push pointer 0
     push constant 1

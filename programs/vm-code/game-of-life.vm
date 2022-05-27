@@ -312,3 +312,388 @@ function handle_frame 0
 
   call draw_from_compact_representation 0
   return
+
+function left 0
+  push constant 2112
+  pop pointer 0
+
+  push argument 1 // bitidx
+  push constant 15
+  eq
+  if-goto call_handle_left_edgecase
+
+  push argument 0 // wordidx
+  pop this 0
+
+  push argument 1 // bitidx
+  push constant 1
+  add
+  pop this 1
+
+  push constant 0
+  return
+
+  label call_handle_left_edgecase
+  push argument 0
+  push argument 1
+  call left_edgecase 2
+  return
+
+function left_edgecase 0
+  push constant 2112
+  pop pointer 0
+
+  push constant 0
+  pop this 1
+
+  push argument 0 // wordidx
+  call is_even 1
+  if-goto handle_even_wordidx
+  push argument 0
+  push constant 1
+  sub
+  pop this 0
+
+  push constant 0
+  return
+
+  label handle_even_wordidx
+  push argument 0
+  push constant 1
+  add
+  pop this 0
+
+  push constant 0
+  return
+
+
+function right 0
+  push constant 2112
+  pop pointer 0
+
+  push argument 1 // bitidx
+  push constant 0
+  eq
+  if-goto handle_right_edgecase
+  push argument 0
+  pop this 0
+
+  push argument 1
+  push constant 1
+  sub
+  pop this 1
+
+  push constant 0
+  return
+
+  label handle_right_edgecase
+  push argument 0
+  push argument 1
+  call right_edgecase 2
+  return
+
+function right_edgecase 0
+  push constant 2112
+  pop pointer 0
+
+  push constant 15
+  pop this 1
+
+  push argument 0 // wordidx
+  call is_even 1
+  if-goto handle_even_wordidx
+
+  push argument 0
+  push constant 1
+  sub
+  pop this 0
+
+  push constant 0
+  return
+
+  label handle_even_wordidx
+  push argument 0
+  push constant 1
+  pop this 0
+
+
+  push constant 0
+  return
+
+function up 0
+  push constant 2112
+  pop pointer 0
+
+  push argument 0
+  push constant 30
+  add
+  push constant 31
+  and
+  pop this 0
+
+  push argument 1
+  pop this 1
+
+  push constant 0
+  return
+
+function down 0
+  push constant 2112
+  pop pointer 0
+
+  push argument 0
+  push constant 2
+  add
+  push constant 31
+  and
+  pop this 0
+
+  push argument 1
+  pop this 1
+
+  push constant 0
+  return
+
+function up_left 0
+  push constant 2112
+  pop pointer 0
+
+  push argument 0
+  push argument 1
+  call left 2
+
+  push this 0
+  push this 1
+  call up 2
+
+  push constant 0
+  return
+
+function up_right 0
+  push constant 2112
+  pop pointer 0
+
+  push argument 0
+  push argument 1
+  call right 2
+
+  push this 0
+  push this 1
+  call up 2
+
+  push constant 0
+  return
+
+function down_right 0
+  push constant 2112
+  pop pointer 0
+
+  push argument 0
+  push argument 1
+  call right 2
+
+  push this 0
+  push this 1
+  call down 2
+
+  push constant 0
+  return
+
+function down_left 0
+  push constant 2112
+  pop pointer 0
+
+  push argument 0
+  push argument 1
+  call left 2
+
+  push this 0
+  push this 1
+  call down 2
+
+  push constant 0
+  return
+
+function read_value 2
+  // generate mask
+  push constant 1
+  pop local 0 // mask
+
+  push constant 0
+  pop local 1 // counter
+  label start_loop
+    push argument 1 // bitidx
+    push local 1
+    eq
+    if-goto end_loop
+
+    push local 0
+    push local 0
+    add
+    pop local 0
+
+    push local 1
+    push constant 1
+    add
+    pop local 1
+
+    goto start_loop
+    label end_loop
+
+  push constant 2048
+  push argument 0
+  add
+  pop pointer 0
+  push this 0 // value
+  push local 0 // mask
+  and
+  push local 0
+  eq
+  return
+
+function count_alive_neighbours 1
+  push constant 2112
+  pop pointer 0
+
+  push constant 0
+  pop local 0 // sum
+
+  push argument 0
+  push argument 1
+  call up 2
+  pop constant 0
+  push this 0
+  push this 1
+  call read_value 2
+  if-goto include_up
+  goto end_up
+  label include_up
+  push local 0
+  push constant 1
+  add
+  pop local 0
+  label end_up
+
+  push argument 0
+  push argument 1
+  call up_right 2
+  pop constant 0
+  push this 0
+  push this 1
+  call read_value 2
+  if-goto include_up_right
+  goto end_up_right
+  label include_up_right
+  push local 0
+  push constant 1
+  add
+  pop local 0
+  label end_up_right
+
+  push argument 0
+  push argument 1
+  call right 2
+  pop constant 0
+  push this 0
+  push this 1
+  call read_value 2
+  if-goto include_right
+  goto end_up_right
+  label include_right
+  push local 0
+  push constant 1
+  add
+  pop local 0
+  label end_right
+
+  push argument 0
+  push argument 1
+  call down_right 2
+  pop constant 0
+  push this 0
+  push this 1
+  call read_value 2
+  if-goto include_down_right
+  goto end_down_right
+  label include_down_right
+  push local 0
+  push constant 1
+  add
+  pop local 0
+  label end_down_right
+
+  push argument 0
+  push argument 1
+  call down 2
+  pop constant 0
+  push this 0
+  push this 1
+  call read_value 2
+  if-goto include_down
+  goto end_down
+  label include_down
+  push local 0
+  push constant 1
+  add
+  pop local 0
+  label end_down
+
+  push argument 0
+  push argument 1
+  call down_left 2
+  pop constant 0
+  push this 0
+  push this 1
+  call read_value 2
+  if-goto include_down_left
+  goto end_down_left
+  label include_down_left
+  push local 0
+  push constant 1
+  add
+  pop local 0
+  label end_down_left
+
+  push argument 0
+  push argument 1
+  call left 2
+  pop constant 0
+  push this 0
+  push this 1
+  call read_value 2
+  if-goto include_left
+  goto end_left
+  label include_left
+  push local 0
+  push constant 1
+  add
+  pop local 0
+  label end_left
+
+  push argument 0
+  push argument 1
+  call up_left 2
+  pop constant 0
+  push this 0
+  push this 1
+  call read_value 2
+  if-goto include_up_left
+  goto end_up_left
+  label include_up_left
+  push local 0
+  push constant 1
+  add
+  pop local 0
+  label end_up_left
+
+  push local 0
+  return
+
+function is_even 0
+  push argument 0
+  push constant 1
+  and
+  push constant 1
+  eq
+  not
+  return

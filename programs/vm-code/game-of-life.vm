@@ -3,30 +3,16 @@
 // static 0 is timer
 // static 1 is prevkey
 // static 2 is screen pointer
-// static 3 is xoffset
-// static 4 is yoffset
-// static 6 is compact_representation_offset
+// static 3 is compact_representation_offset
 
 function Sys.init 1
   // initialize timer
   push constant 0
   pop static 0
 
-  // initialize keyboard
-  push constant 24576
-  pop pointer 1
-
-  // initialize xoffset
-  push constant 0
-  pop static 3
-
-  // initialize yoffset
-  push constant 0
-  pop static 4
-
   // initialize compact representation offset
   push constant 0
-  pop static 6
+  pop static 3
 
   label start
     call increment_timers 0
@@ -51,37 +37,37 @@ function Sys.init 1
     goto start
 
 function handle_key_change 0
-  push static 0
-  call update_compact_representation 1
+  call update_compact_representation 0
   pop constant 0
 
   // compact_representation_offset = (compact_representation_offset + 1) % 32
-  push static 6
+  push static 3
   push constant 1
   add
   push constant 31
   and
-  pop static 6
+  pop static 3
 
   call draw_from_compact_representation 0
   return
 
 function update_compact_representation 0
   // set THIS
-  push static 6 // compact_representation_offset
+  push static 3 // compact_representation_offset
   push constant 2048 // base of compact representation
   add
   pop pointer 0
 
-  push argument 0 // value
+  push static 0 // timer value
   pop this 0
-
 
   push constant 0
   return
 
 function draw_from_compact_representation 1
   push constant 16384
+  push constant 16
+  add
   pop static 2
 
   push constant 2048
@@ -165,7 +151,7 @@ function draw_half_row 2
 
     push static 2
     push constant 1
-    add
+    sub
     pop static 2
 
     push local 0

@@ -79,28 +79,6 @@ D=M
 M=D
 
 
-@24576
-D=A
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-@4
-M=D
-
-
 @0
 D=A
 
@@ -120,50 +98,6 @@ D=M
 
 
 @19
-M=D
-
-
-@0
-D=A
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-@20
-M=D
-
-
-@0
-D=A
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-// Pop into d register
-@SP
-MA=M-1
-D=M
-
-
-@22
 M=D
 
 (Sys.init$start)
@@ -601,18 +535,6 @@ M=M-1
 
 ($entry_handle_key_change)
 
-@16
-D=M
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
 // Load return address into D
 @$return_point_5
 D=A
@@ -669,7 +591,7 @@ M=M+1
 // Set arg pointer
 @SP
 D=M
-@6
+@5
 D=D-A
 @ARG
 M=D
@@ -694,7 +616,7 @@ M=D
 M=M-1
 
 
-@22
+@19
 D=M
 
 
@@ -758,7 +680,7 @@ MA=M-1
 D=M
 
 
-@22
+@19
 M=D
 
 
@@ -924,7 +846,7 @@ A=M
 
 ($entry_update_compact_representation)
 
-@22
+@19
 D=M
 
 
@@ -969,10 +891,7 @@ D=M
 M=D
 
 
-@0
-D=A
-@ARG
-A=M+D
+@16
 D=M
 
 
@@ -1132,6 +1051,29 @@ A=M
 M=D
 @SP
 M=M+1
+
+
+@16
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// decrement stack pointer, so it's pointing to y
+@SP
+M=M-1
+// load y into D
+A=M
+D=M
+// point A to x
+A=A-1
+M=M+D
 
 
 // Pop into d register
@@ -2393,7 +2335,7 @@ A=M
 D=M
 // point A to x
 A=A-1
-M=M+D
+M=M-D
 
 
 // Pop into d register

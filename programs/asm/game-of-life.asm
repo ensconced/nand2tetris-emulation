@@ -183,95 +183,8 @@ M=D
 M=M-1
 
 
-@Sys.init$after_call_handle_frame
-0;JMP
-
-(Sys.init$call_handle_frame)
-
 // Load return address into D
 @$return_point_1
-D=A
-
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-@LCL
-D=M
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-@ARG
-D=M
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-@THIS
-D=M
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-@THAT
-D=M
-
-// Push from d register
-@SP
-A=M
-M=D
-@SP
-M=M+1
-
-
-// Set arg pointer
-@SP
-D=M
-@5
-D=D-A
-@ARG
-M=D
-
-
-// Set lcl pointer
-@SP
-D=M
-@LCL
-M=D
-
-
-// Jump to the callee
-@$entry_handle_frame
-0;JMP
-
-// Label for return to caller
-($return_point_1)
-
-
-@SP
-M=M-1
-
-(Sys.init$after_call_handle_frame)
-
-// Load return address into D
-@$return_point_2
 D=A
 
 
@@ -344,7 +257,7 @@ M=D
 0;JMP
 
 // Label for return to caller
-($return_point_2)
+($return_point_1)
 
 
 // Pop into d register
@@ -363,7 +276,7 @@ D;JNE
 (Sys.init$call_handle_key_change)
 
 // Load return address into D
-@$return_point_3
+@$return_point_2
 D=A
 
 
@@ -436,7 +349,7 @@ M=D
 0;JMP
 
 // Label for return to caller
-($return_point_3)
+($return_point_2)
 
 
 @SP
@@ -449,7 +362,7 @@ M=M-1
 ($entry_handle_key_change)
 
 // Load return address into D
-@$return_point_4
+@$return_point_3
 D=A
 
 
@@ -522,7 +435,7 @@ M=D
 0;JMP
 
 // Label for return to caller
-($return_point_4)
+($return_point_3)
 
 
 @SP
@@ -664,7 +577,7 @@ M=D
 (handle_key_change$call_draw_from_compact_representation)
 
 // Load return address into D
-@$return_point_5
+@$return_point_4
 D=A
 
 
@@ -737,7 +650,7 @@ M=D
 0;JMP
 
 // Label for return to caller
-($return_point_5)
+($return_point_4)
 
 
 @ARG
@@ -1167,7 +1080,7 @@ M=M+1
 
 
 // Load return address into D
-@$return_point_6
+@$return_point_5
 D=A
 
 
@@ -1240,7 +1153,7 @@ M=D
 0;JMP
 
 // Label for return to caller
-($return_point_6)
+($return_point_5)
 
 
 @SP
@@ -1533,7 +1446,7 @@ M=M+1
 
 
 // Load return address into D
-@$return_point_7
+@$return_point_6
 D=A
 
 
@@ -1606,7 +1519,7 @@ M=D
 0;JMP
 
 // Label for return to caller
-($return_point_7)
+($return_point_6)
 
 
 @SP
@@ -1697,7 +1610,7 @@ M=M+D
 
 
 // Load return address into D
-@$return_point_8
+@$return_point_7
 D=A
 
 
@@ -1770,7 +1683,7 @@ M=D
 0;JMP
 
 // Label for return to caller
-($return_point_8)
+($return_point_7)
 
 
 @SP
@@ -2179,7 +2092,7 @@ M=0
 
 
 // Load return address into D
-@$return_point_9
+@$return_point_8
 D=A
 
 
@@ -2252,7 +2165,7 @@ M=D
 0;JMP
 
 // Label for return to caller
-($return_point_9)
+($return_point_8)
 
 
 @SP
@@ -3979,7 +3892,7 @@ M=M+1
 
 
 // Load return address into D
-@$return_point_10
+@$return_point_9
 D=A
 
 
@@ -4052,7 +3965,7 @@ M=D
 0;JMP
 
 // Label for return to caller
-($return_point_10)
+($return_point_9)
 
 
 @3
@@ -4455,7 +4368,7 @@ M=D
 (handle_frame$end_loop)
 
 // Load return address into D
-@$return_point_11
+@$return_point_10
 D=A
 
 
@@ -4528,7 +4441,7 @@ M=D
 0;JMP
 
 // Label for return to caller
-($return_point_11)
+($return_point_10)
 
 
 @SP
@@ -4536,7 +4449,7 @@ M=M-1
 
 
 // Load return address into D
-@$return_point_12
+@$return_point_11
 D=A
 
 
@@ -4609,7 +4522,7 @@ M=D
 0;JMP
 
 // Label for return to caller
-($return_point_12)
+($return_point_11)
 
 
 @ARG
@@ -5373,7 +5286,7 @@ M=M+1
 
 
 // Load return address into D
-@$return_point_13
+@$return_point_12
 D=A
 
 
@@ -5446,7 +5359,7 @@ M=D
 0;JMP
 
 // Label for return to caller
-($return_point_13)
+($return_point_12)
 
 
 @ARG
@@ -5616,7 +5529,7 @@ M=M+1
 
 
 // Load return address into D
-@$return_point_14
+@$return_point_13
 D=A
 
 
@@ -5689,7 +5602,7 @@ M=D
 0;JMP
 
 // Label for return to caller
-($return_point_14)
+($return_point_13)
 
 
 // Pop into d register
@@ -6367,7 +6280,7 @@ M=M+1
 
 
 // Load return address into D
-@$return_point_15
+@$return_point_14
 D=A
 
 
@@ -6440,7 +6353,7 @@ M=D
 0;JMP
 
 // Label for return to caller
-($return_point_15)
+($return_point_14)
 
 
 @ARG
@@ -6610,7 +6523,7 @@ M=M+1
 
 
 // Load return address into D
-@$return_point_16
+@$return_point_15
 D=A
 
 
@@ -6683,7 +6596,7 @@ M=D
 0;JMP
 
 // Label for return to caller
-($return_point_16)
+($return_point_15)
 
 
 // Pop into d register
@@ -8324,7 +8237,7 @@ M=M+1
 
 
 // Load return address into D
-@$return_point_17
+@$return_point_16
 D=A
 
 
@@ -8397,7 +8310,7 @@ M=D
 0;JMP
 
 // Label for return to caller
-($return_point_17)
+($return_point_16)
 
 
 @SP
@@ -8435,7 +8348,7 @@ M=M+1
 
 
 // Load return address into D
-@$return_point_18
+@$return_point_17
 D=A
 
 
@@ -8508,7 +8421,7 @@ M=D
 0;JMP
 
 // Label for return to caller
-($return_point_18)
+($return_point_17)
 
 
 @ARG

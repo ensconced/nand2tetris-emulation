@@ -1,5 +1,7 @@
 // GAME OF LIFE
 
+// mash the keyboard to provide random initialisation
+
 // static 0 is timer
 // static 1 is prevkey
 // static 2 is screen pointer

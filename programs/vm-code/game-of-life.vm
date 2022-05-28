@@ -18,6 +18,14 @@ function Sys.init 1
     call increment_timer 0
     pop constant 0 // discard return value
 
+    call is_frame 0
+    if-goto call_handle_frame
+    goto after_call_handle_frame
+    label call_handle_frame
+    call handle_frame 0
+    pop constant 0
+    label after_call_handle_frame
+
     call key_changed 0
     if-goto call_handle_key_change
     goto start
@@ -543,7 +551,7 @@ function get_next_state 2
 
   push argument 0
   push argument 1
-  call left 2
+  call down 2
   pop constant 0
 
   push this 0

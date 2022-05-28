@@ -28,3 +28,8 @@
 ### optimizations
 
 - improve emitted code size - use more jumps?
+
+### debugging
+
+- add print instruction, only included when compilation is targeting the emulator
+- report stack overflows etc in emulator

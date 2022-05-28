@@ -1,6 +1,5 @@
 ### vm compiler
 
-- game of life in vm code
 - vm - enable parsing of whole files/directories (is it just a matter of parsing then concatenating the commands of all the input files?) need to handle static vars properly
 - break game of life out into multiple files
 

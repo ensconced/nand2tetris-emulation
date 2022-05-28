@@ -62,7 +62,7 @@ function update_compact_representation 0
 
 function draw_from_compact_representation 1
   push constant 16384
-  push constant 16
+  push constant 15
   add
   pop static 2
 

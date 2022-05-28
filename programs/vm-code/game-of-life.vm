@@ -245,6 +245,8 @@ function increment_timer 0
 
 function is_frame 0
   push static 0
+  push constant 4097
+  and
   push constant 0
   eq
   return
@@ -359,21 +361,18 @@ function copy_next_buffer 0
   return
 
 function left 0
-  push constant 2112
-  pop pointer 0
-
   push argument 1 // bitidx
   push constant 15
   eq
   if-goto call_handle_left_edgecase
 
   push argument 0 // wordidx
-  pop this 0
+  pop temp 0
 
   push argument 1 // bitidx
   push constant 1
   add
-  pop this 1
+  pop temp 1
 
   push constant 0
   return
@@ -385,11 +384,8 @@ function left 0
   return
 
 function left_edgecase 0
-  push constant 2112
-  pop pointer 0
-
   push constant 0
-  pop this 1
+  pop temp 1
 
   push argument 0 // wordidx
   call is_even 1
@@ -397,7 +393,7 @@ function left_edgecase 0
   push argument 0
   push constant 1
   sub
-  pop this 0
+  pop temp 0
 
   push constant 0
   return
@@ -413,20 +409,17 @@ function left_edgecase 0
 
 
 function right 0
-  push constant 2112
-  pop pointer 0
-
   push argument 1 // bitidx
   push constant 0
   eq
   if-goto handle_right_edgecase
   push argument 0
-  pop this 0
+  pop temp 0
 
   push argument 1
   push constant 1
   sub
-  pop this 1
+  pop temp 1
 
   push constant 0
   return
@@ -438,11 +431,8 @@ function right 0
   return
 
 function right_edgecase 0
-  push constant 2112
-  pop pointer 0
-
   push constant 15
-  pop this 1
+  pop temp 1
 
   push argument 0 // wordidx
   call is_even 1
@@ -451,7 +441,7 @@ function right_edgecase 0
   push argument 0
   push constant 1
   sub
-  pop this 0
+  pop temp 0
 
   push constant 0
   return
@@ -460,41 +450,35 @@ function right_edgecase 0
   push argument 0
   push constant 1
   add
-  pop this 0
+  pop temp 0
 
   push constant 0
   return
 
 function up 0
-  push constant 2112
-  pop pointer 0
-
   push argument 0
   push constant 30
   add
   push constant 31
   and
-  pop this 0
+  pop temp 0
 
   push argument 1
-  pop this 1
+  pop temp 1
 
   push constant 0
   return
 
 function down 0
-  push constant 2112
-  pop pointer 0
-
   push argument 0
   push constant 2
   add
   push constant 31
   and
-  pop this 0
+  pop temp 0
 
   push argument 1
-  pop this 1
+  pop temp 1
 
   push constant 0
   return
@@ -545,16 +529,162 @@ function is_even 0
   not
   return
 
-function get_next_state 2
+function neighbour_positions 0
   push constant 2112
   pop pointer 0
 
   push argument 0
   push argument 1
+  call up 2
+  pop constant 0
+  push temp 0
+  pop this 0
+  push temp 1
+  pop this 1
+
+  push temp 0
+  push temp 1
+  call right 2
+  pop constant 0
+  push temp 0
+  pop this 2
+  push temp 1
+  pop this 3
+
+  push temp 0
+  push temp 1
   call down 2
   pop constant 0
+  push temp 0
+  pop this 4
+  push temp 1
+  pop this 5
 
-  push this 0
-  push this 1
-  call read_value 2
+  push temp 0
+  push temp 1
+  call down 2
+  pop constant 0
+  push temp 0
+  pop this 6
+  push temp 1
+  pop this 7
+
+  push temp 0
+  push temp 1
+  call left 2
+  pop constant 0
+  push temp 0
+  pop this 8
+  push temp 1
+  pop this 9
+
+  push temp 0
+  push temp 1
+  call left 2
+  pop constant 0
+  push temp 0
+  pop this 10
+  push temp 1
+  pop this 11
+
+  push temp 0
+  push temp 1
+  call up 2
+  pop constant 0
+  push temp 0
+  pop this 12
+  push temp 1
+  pop this 13
+
+  push temp 0
+  push temp 1
+  call up 2
+  pop constant 0
+  push temp 0
+  pop this 14
+  push temp 1
+  pop this 15
+
+  push constant 0
   return
+
+function live_neighbour_count 1
+  push constant 2112
+  pop pointer 0
+
+  push argument 0
+  push argument 1
+  call neighbour_positions 2
+
+  push constant 0
+  pop local 0 // sum
+
+  label start_loop
+    push pointer 0
+    push constant 2128
+    eq
+    if-goto end_loop
+
+    push this 0
+    push this 1
+    call read_value 2
+    if-goto add_to_sum
+    goto skip_add_to_sum
+    label add_to_sum
+    push local 0
+    push constant 1
+    add
+    pop local 0
+    label skip_add_to_sum
+
+    push pointer 0
+    push constant 2
+    add
+    pop pointer 0
+    goto start_loop
+    label end_loop
+
+  push local 0
+  return
+
+
+function get_next_state 1
+  // Any live cell with two or three live neighbours survives.
+  // Any dead cell with three live neighbours becomes a live cell.
+  // All other live cells die in the next generation. Similarly, all other dead cells stay dead.
+  push argument 0
+  push argument 1
+  call live_neighbour_count 2
+  pop local 0 // alive_neighbours
+
+  push argument 0
+  push argument 1
+  call read_value 2
+  if-goto handle_live_cell
+  goto handle_dead_cell
+  label handle_live_cell
+    push local 0
+    push constant 2
+    eq
+    if-goto live
+    push local 0
+    push constant 3
+    eq
+    if-goto live
+    goto die
+
+  label handle_dead_cell
+    push local 0
+    push constant 3
+    eq
+    if-goto live
+    goto die
+
+  label die
+    push constant 0
+    return
+
+  label live
+    push constant 0
+    not
+    return

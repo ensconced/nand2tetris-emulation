@@ -3,23 +3,23 @@
 // static 0 is timer
 // static 1 is prevkey
 // static 2 is screen pointer
-// static 3 is compact_representation_offset
+// static 3 is key_update_pointer
 
 function Sys.init 1
   // initialize timer
   push constant 0
   pop static 0
 
-  // initialize compact representation offset
-  push constant 0
+  // initialize key_update_pointer
+  push constant 2048
   pop static 3
 
   label start
-    call increment_timers 0
+    call increment_timer 0
     pop constant 0 // discard return value
 
-    call is_frame 0
-    if-goto call_handle_frame
+    // call is_frame 0
+    // if-goto call_handle_frame
     goto after_call_handle_frame
 
     label call_handle_frame
@@ -40,22 +40,27 @@ function handle_key_change 0
   call update_compact_representation 0
   pop constant 0
 
-  // compact_representation_offset = (compact_representation_offset + 1) % 32
   push static 3
   push constant 1
   add
-  push constant 31
-  and
   pop static 3
 
+  push static 3
+  push constant 2080
+  eq
+  if-goto reset_key_update_pointer
+  goto call_draw_from_compact_representation
+  label reset_key_update_pointer
+  push constant 2048
+  pop static 3
+
+  label call_draw_from_compact_representation
   call draw_from_compact_representation 0
   return
 
 function update_compact_representation 0
   // set THIS
-  push static 3 // compact_representation_offset
-  push constant 2048 // base of compact representation
-  add
+  push static 3
   pop pointer 0
 
   push static 0 // timer value
@@ -230,13 +235,12 @@ function key_changed 1
   push constant 0
   return
 
-function increment_timers 0
+function increment_timer 0
   push static 0
   push constant 1
   add
   pop static 0
 
-  // we have to return something
   push constant 0
   return
 

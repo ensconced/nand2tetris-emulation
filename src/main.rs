@@ -5,7 +5,7 @@ mod generate_rom;
 mod io;
 mod run;
 
-use std::{num::Wrapping, path::Path};
+use std::path::Path;
 
 use clap::{Parser, Subcommand};
 use compilers::{assembler::assemble_file, vm_compiler};
@@ -58,7 +58,7 @@ fn main() {
             let source_path = source_path_maybe.as_ref().expect("source path is required");
             let dest_path = dest_path_maybe.as_ref().expect("dest path is required");
             println!("assembling {} to {}", source_path, dest_path);
-            vm_compiler::compile_file(Path::new(source_path), Path::new(dest_path));
+            vm_compiler::compile(Path::new(source_path), Path::new(dest_path)).unwrap();
         }
         Commands::Run { file_path_maybe } => {
             let file_path = file_path_maybe.as_ref().expect("path is required");

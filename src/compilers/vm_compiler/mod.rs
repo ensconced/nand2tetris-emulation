@@ -2,21 +2,42 @@ mod codegen;
 mod parser;
 mod tokenizer;
 
-use std::{fs, path::Path};
+use std::{fs, io, path::Path};
 
 use codegen::CodeGenerator;
 use parser::parse_lines;
 
-pub fn compile_to_asm(vm_code: String) -> String {
+fn compile_vm_code_to_asm(vm_code: String, source_path: &Path) -> Result<String, io::Error> {
     let vm_commands = parse_lines(&vm_code);
-    let code_generator = CodeGenerator::new();
-    code_generator.generate_asm(vm_commands)
+    let code_generator = CodeGenerator::new(
+        source_path
+            .file_name()
+            .expect("source path to have valid filename"),
+    );
+    Ok(code_generator.generate_asm(vm_commands))
 }
 
-pub fn compile_file(source_path: &Path, dest_path: &Path) {
-    let string = fs::read_to_string(source_path).expect("failed to read source file");
-    let asm = compile_to_asm(string);
-    fs::write(dest_path, asm).expect("failed to write output");
+fn compile_from_vm_path(source_path: &Path) -> Result<String, io::Error> {
+    let vm_code = fs::read_to_string(source_path)?;
+    compile_vm_code_to_asm(vm_code, source_path)
+}
+
+fn compile_directory(source_path: &Path) -> Result<String, io::Error> {
+    let asm: Vec<String> = fs::read_dir(source_path)?
+        .flatten()
+        .flat_map(|entry| compile_from_vm_path(entry.path().as_path()))
+        .collect();
+    Ok(asm.join("\n"))
+}
+
+pub fn compile(path: &Path, dest_path: &Path) -> Result<(), io::Error> {
+    let metadata = fs::metadata(path)?;
+    let asm = if metadata.is_dir() {
+        compile_directory(path)?
+    } else {
+        compile_from_vm_path(path)?
+    };
+    fs::write(dest_path, asm)
 }
 
 #[cfg(test)]
@@ -27,7 +48,8 @@ mod tests {
     use crate::{computer::Computer, config, generate_rom};
 
     fn program_computer(vm_code: &str) -> Computer {
-        let asm = compile_to_asm(vm_code.to_string());
+        let path = Path::new("testpath");
+        let asm = compile_vm_code_to_asm(vm_code.to_string(), &path).unwrap();
         println!("{}", asm);
         let machine_code = assemble(asm, config::ROM_DEPTH);
         Computer::new(generate_rom::from_string(machine_code))
@@ -103,8 +125,8 @@ mod tests {
         computer.tick_until(&|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
                 && static_variable(computer, 0) == 3
-                && static_variable(computer, 100) == 2
-                && static_variable(computer, 200) == 1
+                && static_variable(computer, 1) == 2
+                && static_variable(computer, 2) == 1
         });
         computer.tick_until(&|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 3

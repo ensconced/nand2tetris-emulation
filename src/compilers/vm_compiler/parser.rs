@@ -47,7 +47,6 @@ pub enum PointerSegmentVariant {
 
 #[derive(PartialEq, Debug)]
 pub enum OffsetSegmentVariant {
-    Static,
     Pointer,
     Temp,
 }
@@ -56,6 +55,7 @@ pub enum OffsetSegmentVariant {
 pub enum MemorySegmentVariant {
     PointerSegment(PointerSegmentVariant),
     OffsetSegment(OffsetSegmentVariant),
+    Static,
     Constant,
 }
 
@@ -126,7 +126,7 @@ fn take_mem_segment(
             MemorySegmentTokenVariant::That => PointerSegment(That),
             MemorySegmentTokenVariant::This => PointerSegment(This),
             MemorySegmentTokenVariant::Pointer => OffsetSegment(Pointer),
-            MemorySegmentTokenVariant::Static => OffsetSegment(Static),
+            MemorySegmentTokenVariant::Static => Static,
             MemorySegmentTokenVariant::Temp => OffsetSegment(Temp),
             MemorySegmentTokenVariant::Constant => Constant,
         },
@@ -308,7 +308,7 @@ mod tests {
             Arithmetic(Unary(Not)),
             Memory(Push(PointerSegment(Argument), 1)),
             Memory(Push(PointerSegment(Local), 2)),
-            Memory(Push(OffsetSegment(Static), 3)),
+            Memory(Push(Static, 3)),
             Memory(Push(Constant, 4)),
             Memory(Pop(PointerSegment(This), 5)),
             Memory(Pop(PointerSegment(That), 6)),

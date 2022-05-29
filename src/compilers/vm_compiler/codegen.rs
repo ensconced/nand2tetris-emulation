@@ -1,4 +1,4 @@
-use std::iter;
+use std::{ffi::OsStr, iter};
 
 use super::parser::{
     ArithmeticCommandVariant::{self, *},
@@ -77,7 +77,6 @@ fn prelude() -> impl Iterator<Item = String> {
 fn offset_address(segment: OffsetSegmentVariant, index: u16) -> u16 {
     let (segment_base_address, segment_top_address): (u16, u16) = match segment {
         OffsetSegmentVariant::Pointer => (3, 4),
-        OffsetSegmentVariant::Static => (16, 255),
         OffsetSegmentVariant::Temp => (5, 12),
     };
     let segment_max_index = segment_top_address - segment_base_address;
@@ -172,16 +171,16 @@ fn pop_into_pointer_memory_segment(segment: PointerSegmentVariant, index: u16) -
     pop_into_d_register("SP")
         .chain(string_lines(&format!(
             "
-            // stash value from D into R13
-            @R13
-            M=D
+        // stash value from D into R13
+        @R13
+        M=D
 
-            // put value of pointer in D
-            @{}
-            D=M
+        // put value of pointer in D
+        @{}
+        D=M
 
-            // add index
-            @{}
+        // add index
+        @{}
             D=D+A
 
             // stash memory address in R14
@@ -196,7 +195,7 @@ fn pop_into_pointer_memory_segment(segment: PointerSegmentVariant, index: u16) -
             @R14
             A=M
             M=D
-        ",
+            ",
             pointer_address, index,
         )))
         .collect()
@@ -210,58 +209,96 @@ fn push_from_constant(index: u16) -> Vec<String> {
 
     string_lines(&format!(
         "
-        @{}
-        D=A
-        ",
+            @{}
+            D=A
+            ",
         index
     ))
     .chain(push_from_d_register())
     .collect()
 }
-fn push(segment: MemorySegmentVariant, index: u16) -> Vec<String> {
-    match segment {
-        OffsetSegment(offset_segment) => push_from_offset_memory_segment(offset_segment, index),
-        PointerSegment(pointer_segment) => push_from_pointer_memory_segment(pointer_segment, index),
-        Constant => push_from_constant(index),
-    }
-}
-fn pop(segment: MemorySegmentVariant, index: u16) -> Vec<String> {
-    match segment {
-        OffsetSegment(offset_segment) => pop_into_offset_memory_segment(offset_segment, index),
-        PointerSegment(pointer_segment) => pop_into_pointer_memory_segment(pointer_segment, index),
-        Constant => {
-            // popping into a constant doesn't make much sense - I guess it just
-            // means decrement the SP but don't do anything with the popped
-            // value
-            string_lines(
-                "
-            @SP
-            M=M-1
-            ",
-            )
-            .collect()
-        }
-    }
-}
 
-fn compile_memory_command(command: MemoryCommandVariant) -> Vec<String> {
-    match command {
-        Push(segment, index) => push(segment, index),
-        Pop(segment, index) => pop(segment, index),
-    }
-}
 pub struct CodeGenerator {
     after_set_to_false_count: u32,
     return_address_count: u32,
     current_function: Option<String>,
+    filename: String,
 }
 
 impl CodeGenerator {
-    pub fn new() -> Self {
+    pub fn new(filename: &OsStr) -> Self {
         Self {
             after_set_to_false_count: 0,
             return_address_count: 0,
             current_function: None,
+            filename: filename
+                .to_str()
+                .expect("filename should be valid unicode")
+                .to_owned(),
+        }
+    }
+
+    fn pop_into_static_memory_segment(&self, index: u16) -> Vec<String> {
+        pop_into_d_register("SP")
+            .chain(string_lines(&format!(
+                "
+            @{}.{}
+            M=D
+            ",
+                self.filename, index
+            )))
+            .collect()
+    }
+
+    fn push_from_static(&self, index: u16) -> Vec<String> {
+        string_lines(&format!(
+            "
+            @{}.{}
+            D=M
+            ",
+            self.filename, index
+        ))
+        .chain(push_from_d_register())
+        .collect()
+    }
+
+    fn push(&self, segment: MemorySegmentVariant, index: u16) -> Vec<String> {
+        match segment {
+            OffsetSegment(offset_segment) => push_from_offset_memory_segment(offset_segment, index),
+            PointerSegment(pointer_segment) => {
+                push_from_pointer_memory_segment(pointer_segment, index)
+            }
+            Static => self.push_from_static(index),
+            Constant => push_from_constant(index),
+        }
+    }
+
+    fn pop(&self, segment: MemorySegmentVariant, index: u16) -> Vec<String> {
+        match segment {
+            OffsetSegment(offset_segment) => pop_into_offset_memory_segment(offset_segment, index),
+            PointerSegment(pointer_segment) => {
+                pop_into_pointer_memory_segment(pointer_segment, index)
+            }
+            Static => self.pop_into_static_memory_segment(index),
+            Constant => {
+                // popping into a constant doesn't make much sense - I guess it just
+                // means decrement the SP but don't do anything with the popped
+                // value
+                string_lines(
+                    "
+                    @SP
+                    M=M-1
+                    ",
+                )
+                .collect()
+            }
+        }
+    }
+
+    fn compile_memory_command(&self, command: MemoryCommandVariant) -> Vec<String> {
+        match command {
+            Push(segment, index) => self.push(segment, index),
+            Pop(segment, index) => self.pop(segment, index),
         }
     }
 
@@ -639,7 +676,7 @@ impl CodeGenerator {
     fn compile_vm_command(&mut self, command: Command) -> Vec<String> {
         match command {
             Arithmetic(arithmetic_command) => self.compile_arithmetic_command(arithmetic_command),
-            Memory(memory_command) => compile_memory_command(memory_command),
+            Memory(memory_command) => self.compile_memory_command(memory_command),
             Function(function_command) => self.compile_function_command(function_command),
             Flow(flow_command) => self.compile_flow_command(flow_command),
         }

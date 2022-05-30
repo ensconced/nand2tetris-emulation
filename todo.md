@@ -1,6 +1,7 @@
 ### vm compiler
 
-- vm - enable parsing of whole files/directories (is it just a matter of parsing then concatenating the commands of all the input files?) need to handle static vars properly
+- vm - enable parsing of whole files/directories (is it just a matter of parsing then concatenating the commands of all the input files?)
+- functions should include filename - check book
 - break game of life out into multiple files
 
 ### main program

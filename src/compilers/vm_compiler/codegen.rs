@@ -1,4 +1,4 @@
-use std::{ffi::OsStr, iter};
+use std::iter;
 
 use super::parser::{
     ArithmeticCommandVariant::{self, *},
@@ -222,19 +222,14 @@ pub struct CodeGenerator {
     after_set_to_false_count: u32,
     return_address_count: u32,
     current_function: Option<String>,
-    filename: String,
 }
 
 impl CodeGenerator {
-    pub fn new(filename: &OsStr) -> Self {
+    pub fn new() -> Self {
         Self {
             after_set_to_false_count: 0,
             return_address_count: 0,
             current_function: None,
-            filename: filename
-                .to_str()
-                .expect("filename should be valid unicode")
-                .to_owned(),
         }
     }
 
@@ -682,19 +677,18 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_vm_commands(
-        mut self,
-        vm_commands: impl Iterator<Item = Command>,
-    ) -> impl Iterator<Item = String> {
-        vm_commands
-            .map(move |command| self.compile_vm_command(command).into_iter())
-            .flatten()
+    fn compile_vm_commands(&mut self) -> impl Iterator<Item = String> {
+        if let Some(vm_commands) = self.vm_commands.take() {
+            vm_commands
+                .map(move |command| self.compile_vm_command(command).into_iter())
+                .flatten()
+        } else {
+            panic!("code generator has no commands. try calling feed_commands first.");
+        }
     }
 
-    pub fn generate_asm(self, vm_commands: impl Iterator<Item = Command>) -> String {
-        let vec: Vec<String> = prelude()
-            .chain(self.compile_vm_commands(vm_commands))
-            .collect();
+    pub fn generate_asm(&mut self) -> String {
+        let vec: Vec<String> = prelude().chain(self.compile_vm_commands()).collect();
         vec.join("\n")
     }
 }

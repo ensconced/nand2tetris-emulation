@@ -1,0 +1,40 @@
+function get_next_state 1
+  // Any live cell with two or three live neighbours survives.
+  // Any dead cell with three live neighbours becomes a live cell.
+  // All other live cells die in the next generation. Similarly, all other dead cells stay dead.
+  push argument 0
+  push argument 1
+  call live_neighbour_count 2
+  pop local 0 // alive_neighbours
+
+  push argument 0
+  push argument 1
+  call read_value 2
+  if-goto handle_live_cell
+  goto handle_dead_cell
+  label handle_live_cell
+    push local 0
+    push constant 2
+    eq
+    if-goto live
+    push local 0
+    push constant 3
+    eq
+    if-goto live
+    goto die
+
+  label handle_dead_cell
+    push local 0
+    push constant 3
+    eq
+    if-goto live
+    goto die
+
+  label die
+    push constant 0
+    return
+
+  label live
+    push constant 0
+    not
+    return

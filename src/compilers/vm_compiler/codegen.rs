@@ -1,16 +1,19 @@
-use std::iter;
+use std::{ffi::OsStr, iter};
 
-use super::parser::{
-    ArithmeticCommandVariant::{self, *},
-    BinaryArithmeticCommandVariant::*,
-    Command::{self, *},
-    FlowCommandVariant,
-    FunctionCommandVariant::{self, *},
-    MemoryCommandVariant::{self, *},
-    MemorySegmentVariant::{self, *},
-    OffsetSegmentVariant,
-    PointerSegmentVariant::{self, *},
-    UnaryArithmeticCommandVariant::*,
+use super::{
+    parser::{
+        ArithmeticCommandVariant::{self, *},
+        BinaryArithmeticCommandVariant::*,
+        Command::{self, *},
+        FlowCommandVariant,
+        FunctionCommandVariant::{self, *},
+        MemoryCommandVariant::{self, *},
+        MemorySegmentVariant::{self, *},
+        OffsetSegmentVariant,
+        PointerSegmentVariant::{self, *},
+        UnaryArithmeticCommandVariant::*,
+    },
+    VMModule,
 };
 
 fn string_lines(source: &str) -> impl Iterator<Item = String> {
@@ -233,48 +236,48 @@ impl CodeGenerator {
         }
     }
 
-    fn pop_into_static_memory_segment(&self, index: u16) -> Vec<String> {
+    fn pop_into_static_memory_segment(&self, index: u16, filename: &OsStr) -> Vec<String> {
         pop_into_d_register("SP")
             .chain(string_lines(&format!(
                 "
-            @{}.{}
+            @{:?}.{}
             M=D
             ",
-                self.filename, index
+                filename, index
             )))
             .collect()
     }
 
-    fn push_from_static(&self, index: u16) -> Vec<String> {
+    fn push_from_static(&self, index: u16, filename: &OsStr) -> Vec<String> {
         string_lines(&format!(
             "
-            @{}.{}
+            @{:?}.{}
             D=M
             ",
-            self.filename, index
+            filename, index
         ))
         .chain(push_from_d_register())
         .collect()
     }
 
-    fn push(&self, segment: MemorySegmentVariant, index: u16) -> Vec<String> {
+    fn push(&self, segment: MemorySegmentVariant, index: u16, filename: &OsStr) -> Vec<String> {
         match segment {
             OffsetSegment(offset_segment) => push_from_offset_memory_segment(offset_segment, index),
             PointerSegment(pointer_segment) => {
                 push_from_pointer_memory_segment(pointer_segment, index)
             }
-            Static => self.push_from_static(index),
+            Static => self.push_from_static(index, filename),
             Constant => push_from_constant(index),
         }
     }
 
-    fn pop(&self, segment: MemorySegmentVariant, index: u16) -> Vec<String> {
+    fn pop(&self, segment: MemorySegmentVariant, index: u16, filename: &OsStr) -> Vec<String> {
         match segment {
             OffsetSegment(offset_segment) => pop_into_offset_memory_segment(offset_segment, index),
             PointerSegment(pointer_segment) => {
                 pop_into_pointer_memory_segment(pointer_segment, index)
             }
-            Static => self.pop_into_static_memory_segment(index),
+            Static => self.pop_into_static_memory_segment(index, filename),
             Constant => {
                 // popping into a constant doesn't make much sense - I guess it just
                 // means decrement the SP but don't do anything with the popped
@@ -290,10 +293,14 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_memory_command(&self, command: MemoryCommandVariant) -> Vec<String> {
+    fn compile_memory_command(
+        &self,
+        command: MemoryCommandVariant,
+        filename: &OsStr,
+    ) -> Vec<String> {
         match command {
-            Push(segment, index) => self.push(segment, index),
-            Pop(segment, index) => self.pop(segment, index),
+            Push(segment, index) => self.push(segment, index, filename),
+            Pop(segment, index) => self.pop(segment, index, filename),
         }
     }
 
@@ -668,27 +675,21 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_vm_command(&mut self, command: Command) -> Vec<String> {
+    fn compile_vm_command(&mut self, command: Command, filename: &OsStr) -> Vec<String> {
         match command {
             Arithmetic(arithmetic_command) => self.compile_arithmetic_command(arithmetic_command),
-            Memory(memory_command) => self.compile_memory_command(memory_command),
+            Memory(memory_command) => self.compile_memory_command(memory_command, filename),
             Function(function_command) => self.compile_function_command(function_command),
             Flow(flow_command) => self.compile_flow_command(flow_command),
         }
     }
-
-    fn compile_vm_commands(&mut self) -> impl Iterator<Item = String> {
-        if let Some(vm_commands) = self.vm_commands.take() {
-            vm_commands
-                .map(move |command| self.compile_vm_command(command).into_iter())
-                .flatten()
-        } else {
-            panic!("code generator has no commands. try calling feed_commands first.");
-        }
-    }
-
-    pub fn generate_asm(&mut self) -> String {
-        let vec: Vec<String> = prelude().chain(self.compile_vm_commands()).collect();
+    pub fn generate_asm(mut self, vm_modules: Vec<VMModule>) -> String {
+        let modules_asm = vm_modules.into_iter().flat_map(|vm_module| {
+            vm_module
+                .commands
+                .flat_map(|command| self.compile_vm_command(command, vm_module.filename))
+        });
+        let vec: Vec<_> = prelude().chain(modules_asm).collect();
         vec.join("\n")
     }
 }

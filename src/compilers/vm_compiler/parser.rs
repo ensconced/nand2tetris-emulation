@@ -255,7 +255,7 @@ fn parse_line(
     )
 }
 
-pub fn parse_lines<'a>(source: &'a str) -> impl Iterator<Item = Command> + 'a {
+pub fn parse_lines(source: &str) -> impl Iterator<Item = Command> + '_ {
     parse_by_line(source, parse_line, token_defs())
 }
 

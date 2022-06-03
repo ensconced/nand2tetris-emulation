@@ -240,10 +240,11 @@ impl CodeGenerator {
         pop_into_d_register("SP")
             .chain(string_lines(&format!(
                 "
-            @{:?}.{}
+            @{}.{}
             M=D
             ",
-                filename, index
+                filename.to_str().unwrap(),
+                index
             )))
             .collect()
     }
@@ -251,10 +252,11 @@ impl CodeGenerator {
     fn push_from_static(&self, index: u16, filename: &OsStr) -> Vec<String> {
         string_lines(&format!(
             "
-            @{:?}.{}
+            @{}.{}
             D=M
             ",
-            filename, index
+            filename.to_str().unwrap(),
+            index
         ))
         .chain(push_from_d_register())
         .collect()

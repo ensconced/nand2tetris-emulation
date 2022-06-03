@@ -68,6 +68,7 @@ fn get_first_token<LangTokenKind>(
     string: &str,
     token_defs: &[TokenDef<LangTokenKind>],
 ) -> Option<Token<LangTokenKind>> {
+    dbg!(string);
     if string.is_empty() {
         return None;
     }

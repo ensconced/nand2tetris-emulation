@@ -684,12 +684,15 @@ impl CodeGenerator {
         }
     }
     pub fn generate_asm(mut self, vm_modules: Vec<VMModule>) -> String {
-        let modules_asm = vm_modules.into_iter().flat_map(|vm_module| {
-            vm_module
-                .commands
-                .flat_map(|command| self.compile_vm_command(command, vm_module.filename))
-        });
-        let vec: Vec<_> = prelude().chain(modules_asm).collect();
-        vec.join("\n")
+        let mut result = Vec::new();
+        for vm_module in vm_modules {
+            for command in vm_module.commands {
+                for asm_instruction in self.compile_vm_command(command, vm_module.filename) {
+                    result.push(asm_instruction);
+                }
+            }
+        }
+        let v: Vec<_> = prelude().chain(result.into_iter()).collect();
+        v.join("\n")
     }
 }

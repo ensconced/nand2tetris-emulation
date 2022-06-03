@@ -2,41 +2,62 @@ mod codegen;
 mod parser;
 mod tokenizer;
 
-use std::{ffi::OsStr, fs, io, path::Path};
+use std::{
+    ffi::{OsStr, OsString},
+    fs, io,
+    path::{Path, PathBuf},
+};
 
 use codegen::CodeGenerator;
 use parser::parse_lines;
 
 use self::parser::Command;
 
-struct VMModule<'a> {
-    filename: &'a OsStr,
+struct SourceModule {
+    filename: OsString,
     source: String,
+}
+
+pub struct VMModule<'a> {
+    filename: &'a OsStr,
     commands: Box<dyn Iterator<Item = Command> + 'a>,
 }
 
-impl<'a> VMModule<'a> {
-    fn new(path: &'a Path) -> Self {
-        let src = fs::read_to_string(path).expect("failed to read file to string");
+impl SourceModule {
+    fn new(path: PathBuf) -> Self {
+        let source = fs::read_to_string(&path).expect("failed to read file to string");
         Self {
+            source,
             filename: path
                 .file_name()
-                .expect("file name should not terminate in \"..\""),
-            source: src,
-            commands: Box::new(parse_lines(&src)),
+                .expect("file name should not terminate in \"..\"")
+                .to_owned(),
+        }
+    }
+}
+
+impl<'a> VMModule<'a> {
+    fn new(filename: &'a OsStr, source: &'a str) -> Self {
+        Self {
+            filename,
+            commands: Box::new(parse_lines(source)),
         }
     }
 }
 
 pub fn compile(src_path: &Path, dest_path: &Path) -> Result<(), io::Error> {
-    let vm_modules = if fs::metadata(src_path)?.is_dir() {
+    let source_modules = if fs::metadata(src_path)?.is_dir() {
         fs::read_dir(src_path)?
             .flatten()
-            .map(|entry| VMModule::new(&entry.path()))
+            .map(|entry| SourceModule::new(entry.path()))
             .collect()
     } else {
-        vec![VMModule::new(&src_path)]
+        vec![SourceModule::new(src_path.to_owned())]
     };
+    let vm_modules: Vec<_> = source_modules
+        .iter()
+        .map(|source_module| VMModule::new(&source_module.filename, &source_module.source))
+        .collect();
     let code_generator = CodeGenerator::new();
     fs::write(dest_path, code_generator.generate_asm(vm_modules))
 }
@@ -49,7 +70,10 @@ mod tests {
     use crate::{computer::Computer, config, generate_rom};
 
     fn program_computer(vm_code: &str) -> Computer {
-        let vm_modules = vec![VMModule::from_str(vm_code, Path::new("testpath"))];
+        let vm_modules = vec![VMModule::new(
+            Path::new("testpath").file_name().unwrap(),
+            vm_code,
+        )];
         let code_generator = CodeGenerator::new();
         let asm = code_generator.generate_asm(vm_modules);
         let machine_code = assemble(asm, config::ROM_DEPTH);

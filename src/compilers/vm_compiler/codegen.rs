@@ -17,11 +17,11 @@ use super::{
 };
 
 fn string_lines(source: &str) -> impl Iterator<Item = String> {
-    let vec: Vec<String> = source
+    source
         .lines()
         .map(|line| line.trim_start().to_string())
-        .collect();
-    vec.into_iter()
+        .collect::<Vec<_>>()
+        .into_iter()
 }
 
 fn prelude() -> impl Iterator<Item = String> {
@@ -436,7 +436,7 @@ impl CodeGenerator {
         }
 
         fn set_lcl_pointer() -> impl Iterator<Item = String> {
-            string_lines(&format!(
+            string_lines(
                 "
                 // Set lcl pointer
                 @SP
@@ -444,7 +444,7 @@ impl CodeGenerator {
                 @LCL
                 M=D
                 ",
-            ))
+            )
         }
 
         fn jump(function_name: &str, return_address_label: &str) -> impl Iterator<Item = String> {

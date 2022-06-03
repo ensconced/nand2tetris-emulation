@@ -38,3 +38,122 @@ function get_next_state 1
     push constant 0
     not
     return
+
+function live_neighbour_count 1
+  push constant 2112
+  pop pointer 0
+
+  push argument 0
+  push argument 1
+  call neighbour_positions 2
+
+  push constant 0
+  pop local 0 // sum
+
+  label start_loop
+    push pointer 0
+    push constant 2128
+    eq
+    if-goto end_loop
+
+    push this 0
+    push this 1
+    call read_value 2
+    if-goto add_to_sum
+    goto skip_add_to_sum
+    label add_to_sum
+    push local 0
+    push constant 1
+    add
+    pop local 0
+    label skip_add_to_sum
+
+    push pointer 0
+    push constant 2
+    add
+    pop pointer 0
+    goto start_loop
+    label end_loop
+
+  push local 0
+  return
+
+function neighbour_positions 0
+  push constant 2112
+  pop pointer 0
+
+  push argument 0
+  push argument 1
+  call up 2
+  pop constant 0
+  push temp 0
+  pop this 0
+  push temp 1
+  pop this 1
+
+  push temp 0
+  push temp 1
+  call right 2
+  pop constant 0
+  push temp 0
+  pop this 2
+  push temp 1
+  pop this 3
+
+  push temp 0
+  push temp 1
+  call down 2
+  pop constant 0
+  push temp 0
+  pop this 4
+  push temp 1
+  pop this 5
+
+  push temp 0
+  push temp 1
+  call down 2
+  pop constant 0
+  push temp 0
+  pop this 6
+  push temp 1
+  pop this 7
+
+  push temp 0
+  push temp 1
+  call left 2
+  pop constant 0
+  push temp 0
+  pop this 8
+  push temp 1
+  pop this 9
+
+  push temp 0
+  push temp 1
+  call left 2
+  pop constant 0
+  push temp 0
+  pop this 10
+  push temp 1
+  pop this 11
+
+  push temp 0
+  push temp 1
+  call up 2
+  pop constant 0
+  push temp 0
+  pop this 12
+  push temp 1
+  pop this 13
+
+  push temp 0
+  push temp 1
+  call up 2
+  pop constant 0
+  push temp 0
+  pop this 14
+  push temp 1
+  pop this 15
+
+  push constant 0
+  return
+

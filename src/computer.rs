@@ -100,36 +100,6 @@ struct DebugInfo {
     stack: String,
 }
 
-impl DebugInfo {
-    fn new(
-        pc: i16,
-        a: i16,
-        d: i16,
-        sp: i16,
-        lcl: i16,
-        arg: i16,
-        this: i16,
-        that: i16,
-        r13: i16,
-        r14: i16,
-        stack: String,
-    ) -> Self {
-        Self {
-            a,
-            pc,
-            d,
-            sp,
-            lcl,
-            arg,
-            this,
-            that,
-            r13,
-            r14,
-            stack,
-        }
-    }
-}
-
 pub struct Computer {
     rom: [i16; 32768],
     pub ram: Arc<Mutex<[i16; 32768]>>,
@@ -161,19 +131,19 @@ impl Computer {
             } else {
                 &[]
             };
-            let rows = vec![DebugInfo::new(
-                self.cpu.pc,
-                self.cpu.reg_a.0,
-                self.cpu.reg_d.0,
-                ram[0],
-                ram[1],
-                ram[2],
-                ram[3],
-                ram[4],
-                ram[13],
-                ram[14],
-                format!("{:?}", stack),
-            )];
+            let rows = vec![DebugInfo {
+                pc: self.cpu.pc,
+                a: self.cpu.reg_a.0,
+                d: self.cpu.reg_d.0,
+                sp: ram[0],
+                lcl: ram[1],
+                arg: ram[2],
+                this: ram[3],
+                that: ram[4],
+                r13: ram[13],
+                r14: ram[14],
+                stack: format!("{:?}", stack),
+            }];
             println!("{}", Table::new(rows).with(Style::blank()));
             println!();
             println!("instruction: {:016b}", instruction);

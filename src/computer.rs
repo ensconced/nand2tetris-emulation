@@ -5,7 +5,7 @@ use std::{
 
 use tabled::{Style, Table, Tabled};
 
-const DEBUG: bool = true;
+const DEBUG: bool = false;
 
 pub fn bit(instruction: i16, idx: u32) -> u16 {
     (instruction as u16 & (2u16).pow(idx)) >> idx

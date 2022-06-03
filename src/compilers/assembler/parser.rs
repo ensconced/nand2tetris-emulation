@@ -57,7 +57,6 @@ fn take_l_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) ->
     {
         identifier_string
     } else {
-        dbg!(&token);
         panic!(
             "failed to parse l-command - expected identifier. line: {}",
             line_number

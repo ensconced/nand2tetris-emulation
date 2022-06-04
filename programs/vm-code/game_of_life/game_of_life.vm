@@ -7,7 +7,7 @@
 // static 2 is screen pointer
 // static 3 is key_update_pointer
 
-function Sys.init 1
+function Sys.init 0
   // initialize timer
   push constant 0
   pop static 0

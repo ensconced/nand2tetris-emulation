@@ -5,7 +5,7 @@ use std::{
 
 use tabled::{Style, Table, Tabled};
 
-const DEBUG: bool = true;
+const DEBUG: bool = false;
 
 pub fn bit(instruction: i16, idx: u32) -> u16 {
     (instruction as u16 & (2u16).pow(idx)) >> idx
@@ -87,6 +87,7 @@ impl Cpu {
 
 #[derive(Tabled, PartialEq)]
 struct DebugInfo {
+    pc: i16,
     sp: i16,
     lcl: i16,
     arg: i16,
@@ -109,7 +110,6 @@ pub struct Computer {
     rom: [i16; 32768],
     pub ram: Arc<Mutex<[i16; 32768]>>,
     pub cpu: Cpu,
-    prev_debug_info: Option<DebugInfo>,
 }
 
 impl Computer {
@@ -124,7 +124,6 @@ impl Computer {
                 out_m: Wrapping(0),
                 memory_load: false,
             },
-            prev_debug_info: None,
         }
     }
     pub fn tick(&mut self) {
@@ -141,6 +140,7 @@ impl Computer {
             let heap = &ram[2048..2148];
             let temp = format!("{:?}", &ram[5..=12]);
             let debug_info = DebugInfo {
+                pc: self.cpu.pc,
                 sp: ram[0],
                 lcl: ram[1],
                 arg: ram[2],
@@ -150,14 +150,7 @@ impl Computer {
                 heap: format!("{:?}", heap),
                 temp: format!("{:?}", temp),
             };
-            if let Some(ref prev_debug_info) = self.prev_debug_info {
-                if prev_debug_info != &debug_info {
-                    debug_info.display();
-                }
-            } else {
-                debug_info.display();
-            }
-            self.prev_debug_info = Some(debug_info);
+            debug_info.display();
         }
         let addr = self.cpu.reg_a.0 as usize % self.ram.lock().unwrap().len();
         let in_m = Wrapping(self.ram.lock().unwrap()[addr]);

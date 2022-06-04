@@ -1,6 +1,6 @@
 // static 0 is timer
 // static 1 is key_update_pointer
-
+// static 2 is prevkey
 
 function handle_key_change 0
   call update_compact_representation 0
@@ -54,3 +54,33 @@ function increment_timer 0
 
   push constant 0
   return
+
+function key_changed 1
+  // local 0 is currentkey
+
+  // get currentkey
+  push constant 24576
+  pop pointer 1
+  push that 0
+  pop local 0
+
+  push static 2
+  push local 0
+  eq
+  not
+  if-goto did_change
+  goto did_not_change
+
+  label did_change
+  push local 0
+  pop static 2
+  // return true
+  push constant 0
+  not
+  return
+
+  label did_not_change
+  // return false
+  push constant 0
+  return
+

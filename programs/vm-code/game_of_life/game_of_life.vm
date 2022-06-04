@@ -2,13 +2,7 @@
 
 // mash the keyboard to provide random initialisation
 
-// static 1 is prevkey
-
 function Sys.init 0
-  // initialize timer
-  push constant 0
-  pop static 0
-
   push constant 2048
   pop pointer 0
   push constant 2
@@ -34,187 +28,77 @@ function Sys.init 0
     pop constant 0
     goto start
 
-function key_changed 1
-  // local 0 is currentkey
-
-  // get currentkey
-  push constant 24576
-  pop pointer 1
-  push that 0
-  pop local 0
-
-  push static 1
-  push local 0
-  eq
-  not
-  if-goto did_change
-  goto did_not_change
-
-  label did_change
-  push local 0
-  pop static 1
-  // return true
-  push constant 0
-  not
-  return
-
-  label did_not_change
-  // return false
-  push constant 0
-  return
-
-function copy_next_buffer 0
-  push constant 2048
-  pop pointer 0
-
+function handle_frame 4
+  // point THAT to next frame buffer
   push constant 2080
   pop pointer 1
 
+  push constant 0
+  pop local 0 // wordidx
+
   label start_loop
-    push pointer 0
-    push constant 2080
+    push local 0 // wordidx
+    push constant 32
     eq
     if-goto end_loop
 
-    push that 0
-    pop this 0
+    push constant 0
+    pop local 1 // bitidx
 
-    push pointer 0
+    push constant 0
+    pop local 2 // word
+
     push constant 1
-    add
-    pop pointer 0
+    pop local 3 // mask
+
+    label start_inner_loop
+      push local 1 // bitidx
+      push constant 16
+      eq
+      if-goto end_inner_loop
+
+      push local 0 // wordidx
+      push local 1 // bitidx
+      call get_next_state 2
+      push local 3 // mask
+      and
+      push local 2 // word
+      or
+      pop local 2 // word
+
+      // shift mask
+      push local 3
+      push local 3
+      add
+      pop local 3
+
+      // bitidx++
+      push local 1
+      push constant 1
+      add
+      pop local 1
+      goto start_inner_loop
+      label end_inner_loop
+
+    push local 2 // word
+    pop that 0
 
     push pointer 1
     push constant 1
     add
     pop pointer 1
 
+    push local 0 // wordidx
+    push constant 1
+    add
+    pop local 0
     goto start_loop
     label end_loop
 
-  push constant 0
-  return
+  call copy_next_buffer 0
+  pop constant 0
 
-function left 0
-  push argument 1 // bitidx
-  push constant 15
-  eq
-  if-goto call_handle_left_edgecase
-
-  push argument 0 // wordidx
-  pop temp 0
-
-  push argument 1 // bitidx
-  push constant 1
-  add
-  pop temp 1
-
-  push constant 0
-  return
-
-  label call_handle_left_edgecase
-  push argument 0
-  push argument 1
-  call left_edgecase 2
-  return
-
-function left_edgecase 0
-  push constant 0
-  pop temp 1
-
-  push argument 0 // wordidx
-  call is_even 1
-  if-goto handle_even_wordidx
-  push argument 0
-  push constant 1
-  sub
-  pop temp 0
-
-  push constant 0
-  return
-
-  label handle_even_wordidx
-  push argument 0
-  push constant 1
-  add
-  pop temp 0
-
-  push constant 0
-  return
-
-function right 0
-  push argument 1 // bitidx
-  push constant 0
-  eq
-  if-goto handle_right_edgecase
-  push argument 0
-  pop temp 0
-
-  push argument 1
-  push constant 1
-  sub
-  pop temp 1
-
-  push constant 0
-  return
-
-  label handle_right_edgecase
-  push argument 0
-  push argument 1
-  call right_edgecase 2
-  return
-
-function right_edgecase 0
-  push constant 15
-  pop temp 1
-
-  push argument 0 // wordidx
-  call is_even 1
-  if-goto handle_even_wordidx
-
-  push argument 0
-  push constant 1
-  sub
-  pop temp 0
-
-  push constant 0
-  return
-
-  label handle_even_wordidx
-  push argument 0
-  push constant 1
-  add
-  pop temp 0
-
-  push constant 0
-  return
-
-function up 0
-  push argument 0
-  push constant 30
-  add
-  push constant 31
-  and
-  pop temp 0
-
-  push argument 1
-  pop temp 1
-
-  push constant 0
-  return
-
-function down 0
-  push argument 0
-  push constant 2
-  add
-  push constant 31
-  and
-  pop temp 0
-
-  push argument 1
-  pop temp 1
-
-  push constant 0
+  call draw_from_compact_representation 0
   return
 
 function read_value 2
@@ -254,12 +138,43 @@ function read_value 2
   eq
   return
 
-function is_even 0
+function get_next_state 1
+  // Any live cell with two or three live neighbours survives.
+  // Any dead cell with three live neighbours becomes a live cell.
+  // All other live cells die in the next generation. Similarly, all other dead cells stay dead.
   push argument 0
-  push constant 1
-  and
-  push constant 1
-  eq
-  not
-  return
+  push argument 1
+  call live_neighbour_count 2
+  pop local 0 // alive_neighbours
 
+  push argument 0
+  push argument 1
+  call read_value 2
+  if-goto handle_live_cell
+  goto handle_dead_cell
+  label handle_live_cell
+    push local 0
+    push constant 2
+    eq
+    if-goto live
+    push local 0
+    push constant 3
+    eq
+    if-goto live
+    goto die
+
+  label handle_dead_cell
+    push local 0
+    push constant 3
+    eq
+    if-goto live
+    goto die
+
+  label die
+    push constant 0
+    return
+
+  label live
+    push constant 0
+    not
+    return

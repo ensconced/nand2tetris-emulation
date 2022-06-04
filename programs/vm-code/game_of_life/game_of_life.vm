@@ -2,19 +2,13 @@
 
 // mash the keyboard to provide random initialisation
 
-// static 0 is timer
 // static 1 is prevkey
 // static 2 is screen pointer
-// static 3 is key_update_pointer
 
 function Sys.init 0
   // initialize timer
   push constant 0
   pop static 0
-
-  // initialize key_update_pointer
-  push constant 2048
-  pop static 3
 
   push constant 2048
   pop pointer 0
@@ -40,39 +34,6 @@ function Sys.init 0
     call handle_key_change 0
     pop constant 0
     goto start
-
-function handle_key_change 0
-  call update_compact_representation 0
-  pop constant 0
-
-  push static 3
-  push constant 1
-  add
-  pop static 3
-
-  push static 3
-  push constant 2080
-  eq
-  if-goto reset_key_update_pointer
-  goto call_draw_from_compact_representation
-  label reset_key_update_pointer
-  push constant 2048
-  pop static 3
-
-  label call_draw_from_compact_representation
-  call draw_from_compact_representation 0
-  return
-
-function update_compact_representation 0
-  // set THIS
-  push static 3
-  pop pointer 0
-
-  push static 0 // timer value
-  pop this 0
-
-  push constant 0
-  return
 
 function draw_from_compact_representation 1
   push constant 16384
@@ -237,15 +198,6 @@ function key_changed 1
 
   label did_not_change
   // return false
-  push constant 0
-  return
-
-function increment_timer 0
-  push static 0
-  push constant 1
-  add
-  pop static 0
-
   push constant 0
   return
 

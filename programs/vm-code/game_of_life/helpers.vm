@@ -46,6 +46,7 @@ function live_neighbour_count 1
   push argument 0
   push argument 1
   call neighbour_positions 2
+  pop constant 0
 
   push constant 0
   pop local 0 // sum

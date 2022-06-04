@@ -100,6 +100,160 @@ D=M
 @game_of_life.vm.3
 M=D
 
+
+@2048
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+@3
+M=D
+
+
+@2
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+// stash value from D into R13
+@R13
+M=D
+
+// put value of pointer in D
+@THIS
+D=M
+
+// add index
+@0
+D=D+A
+
+// stash memory address in R14
+@R14
+M=D
+
+// get value back into D
+@R13
+D=M
+
+// load value into memory
+@R14
+A=M
+M=D
+
+
+@1
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+// stash value from D into R13
+@R13
+M=D
+
+// put value of pointer in D
+@THIS
+D=M
+
+// add index
+@2
+D=D+A
+
+// stash memory address in R14
+@R14
+M=D
+
+// get value back into D
+@R13
+D=M
+
+// load value into memory
+@R14
+A=M
+M=D
+
+
+@7
+D=A
+
+
+// Push from d register
+@SP
+A=M
+M=D
+@SP
+M=M+1
+
+
+// Pop into d register
+@SP
+MA=M-1
+D=M
+
+
+// stash value from D into R13
+@R13
+M=D
+
+// put value of pointer in D
+@THIS
+D=M
+
+// add index
+@4
+D=D+A
+
+// stash memory address in R14
+@R14
+M=D
+
+// get value back into D
+@R13
+D=M
+
+// load value into memory
+@R14
+A=M
+M=D
+
 (Sys.init$start)
 
 // Load return address into D
@@ -3525,7 +3679,7 @@ M=D
 M=M+1
 
 
-@4097
+@16383
 D=A
 
 
@@ -7693,6 +7847,11 @@ M=0
 ($after_set_to_false_13)
 
 
+@SP
+A=M-1
+M=!M
+
+
 @ARG
 D=M
 @R13
@@ -8752,6 +8911,10 @@ M=D
 
 // Label for return to caller
 ($return_point_20)
+
+
+@SP
+M=M-1
 
 
 @0

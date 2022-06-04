@@ -16,6 +16,16 @@ function Sys.init 1
   push constant 2048
   pop static 3
 
+  push constant 2048
+  pop pointer 0
+  push constant 2
+  pop this 0
+  push constant 1
+  pop this 2
+  push constant 7
+  pop this 4
+
+
   label start
     call increment_timer 0
     pop constant 0 // discard return value
@@ -247,7 +257,7 @@ function increment_timer 0
 
 function is_frame 0
   push static 0
-  push constant 4097
+  push constant 16383
   and
   push constant 0
   eq
@@ -408,7 +418,6 @@ function left_edgecase 0
 
   push constant 0
   return
-
 
 function right 0
   push argument 1 // bitidx

@@ -5,7 +5,7 @@ use std::{
 
 use tabled::{Style, Table, Tabled};
 
-const DEBUG: bool = false;
+const DEBUG: bool = true;
 
 pub fn bit(instruction: i16, idx: u32) -> u16 {
     (instruction as u16 & (2u16).pow(idx)) >> idx
@@ -98,6 +98,7 @@ struct DebugInfo {
     r13: i16,
     r14: i16,
     stack: String,
+    heap: String,
 }
 
 pub struct Computer {
@@ -131,6 +132,7 @@ impl Computer {
             } else {
                 &[]
             };
+            let heap = &ram[2048..2148];
             let rows = vec![DebugInfo {
                 pc: self.cpu.pc,
                 a: self.cpu.reg_a.0,
@@ -143,6 +145,7 @@ impl Computer {
                 r13: ram[13],
                 r14: ram[14],
                 stack: format!("{:?}", stack),
+                heap: format!("{:?}", heap),
             }];
             println!("{}", Table::new(rows).with(Style::blank()));
             println!();

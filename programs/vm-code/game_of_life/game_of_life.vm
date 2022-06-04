@@ -29,14 +29,8 @@ function Sys.init 1
   label start
     call increment_timer 0
     pop constant 0 // discard return value
-
-    call is_frame 0
-    if-goto call_handle_frame
-    goto after_call_handle_frame
-    label call_handle_frame
     call handle_frame 0
     pop constant 0
-    label after_call_handle_frame
 
     call key_changed 0
     if-goto call_handle_key_change
@@ -253,14 +247,6 @@ function increment_timer 0
   pop static 0
 
   push constant 0
-  return
-
-function is_frame 0
-  push static 0
-  push constant 16383
-  and
-  push constant 0
-  eq
   return
 
 function handle_frame 4

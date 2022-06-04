@@ -76,6 +76,43 @@ function live_neighbour_count 1
     goto start_loop
     label end_loop
 
+  // this bit isn't necessary...but clear temp values
+  push constant 2112
+  pop pointer 0
+  push constant 0
+  pop this 0
+  push constant 0
+  pop this 1
+  push constant 0
+  pop this 2
+  push constant 0
+  pop this 3
+  push constant 0
+  pop this 4
+  push constant 0
+  pop this 5
+  push constant 0
+  pop this 6
+  push constant 0
+  pop this 7
+  push constant 0
+  pop this 8
+  push constant 0
+  pop this 9
+  push constant 0
+  pop this 10
+  push constant 0
+  pop this 11
+  push constant 0
+  pop this 12
+  push constant 0
+  pop this 13
+  push constant 0
+  pop this 14
+  push constant 0
+  pop this 15
+
+
   push local 0
   return
 

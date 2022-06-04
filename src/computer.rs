@@ -5,7 +5,7 @@ use std::{
 
 use tabled::{Style, Table, Tabled};
 
-const DEBUG: bool = false;
+const DEBUG: bool = true;
 
 pub fn bit(instruction: i16, idx: u32) -> u16 {
     (instruction as u16 & (2u16).pow(idx)) >> idx
@@ -85,26 +85,31 @@ impl Cpu {
     }
 }
 
-#[derive(Tabled)]
+#[derive(Tabled, PartialEq)]
 struct DebugInfo {
-    pc: i16,
-    a: i16,
-    d: i16,
     sp: i16,
     lcl: i16,
     arg: i16,
     this: i16,
     that: i16,
-    r13: i16,
-    r14: i16,
+    temp: String,
     stack: String,
     heap: String,
+}
+
+impl DebugInfo {
+    fn display(&self) {
+        let rows = vec![self];
+        println!("{}", Table::new(rows).with(Style::blank()));
+        println!();
+    }
 }
 
 pub struct Computer {
     rom: [i16; 32768],
     pub ram: Arc<Mutex<[i16; 32768]>>,
     pub cpu: Cpu,
+    prev_debug_info: Option<DebugInfo>,
 }
 
 impl Computer {
@@ -119,6 +124,7 @@ impl Computer {
                 out_m: Wrapping(0),
                 memory_load: false,
             },
+            prev_debug_info: None,
         }
     }
     pub fn tick(&mut self) {
@@ -133,24 +139,25 @@ impl Computer {
                 &[]
             };
             let heap = &ram[2048..2148];
-            let rows = vec![DebugInfo {
-                pc: self.cpu.pc,
-                a: self.cpu.reg_a.0,
-                d: self.cpu.reg_d.0,
+            let temp = format!("{:?}", &ram[5..=12]);
+            let debug_info = DebugInfo {
                 sp: ram[0],
                 lcl: ram[1],
                 arg: ram[2],
                 this: ram[3],
                 that: ram[4],
-                r13: ram[13],
-                r14: ram[14],
                 stack: format!("{:?}", stack),
                 heap: format!("{:?}", heap),
-            }];
-            println!("{}", Table::new(rows).with(Style::blank()));
-            println!();
-            println!("instruction: {:016b}", instruction);
-            println!();
+                temp: format!("{:?}", temp),
+            };
+            if let Some(ref prev_debug_info) = self.prev_debug_info {
+                if prev_debug_info != &debug_info {
+                    debug_info.display();
+                }
+            } else {
+                debug_info.display();
+            }
+            self.prev_debug_info = Some(debug_info);
         }
         let addr = self.cpu.reg_a.0 as usize % self.ram.lock().unwrap().len();
         let in_m = Wrapping(self.ram.lock().unwrap()[addr]);

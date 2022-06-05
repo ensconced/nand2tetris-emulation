@@ -1,15 +1,10 @@
 mod compilers;
-mod computer;
-mod config;
-mod generate_rom;
-mod io;
-mod run;
-
-use std::path::Path;
+mod emulator;
 
 use clap::{Parser, Subcommand};
 use compilers::{assembler::assemble_file, vm_compiler};
-use run::run;
+use emulator::run::run;
+use std::path::Path;
 
 #[derive(Parser, Debug)]
 #[clap()]
@@ -48,7 +43,7 @@ fn main() {
             assemble_file(
                 Path::new(source_path),
                 Path::new(dest_path),
-                config::ROM_DEPTH,
+                emulator::config::ROM_DEPTH,
             );
         }
         Commands::Compile {

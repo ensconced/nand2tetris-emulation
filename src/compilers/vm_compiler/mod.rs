@@ -67,7 +67,7 @@ mod tests {
     use super::*;
 
     use crate::compilers::assembler::assemble;
-    use crate::{computer::Computer, config, generate_rom};
+    use crate::{emulator::computer::Computer, emulator::config, emulator::generate_rom};
 
     fn program_computer(vm_code: &str) -> Computer {
         let vm_modules = vec![VMModule::new(

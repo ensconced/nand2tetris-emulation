@@ -1,4 +1,4 @@
-use crate::computer::bit;
+use super::computer::bit;
 use minifb::{Key, Scale, ScaleMode, Window, WindowOptions};
 use std::sync::{Arc, Mutex};
 use std::time::SystemTime;

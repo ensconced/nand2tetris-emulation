@@ -82,7 +82,7 @@ fn get_first_token<LangTokenKind>(
     if longest_token.is_some() {
         longest_token
     } else {
-        panic!("failed to tokenize");
+        panic!("failed to tokenize: {}", string);
     }
 }
 

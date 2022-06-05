@@ -2,10 +2,12 @@ use super::tokenizer::{
     token_defs, ArithmeticCmdTokenVariant, FunctionCmdTokenVariant, MemoryCmdTokenVariant,
     MemorySegmentTokenVariant, ProgramFlowCmdTokenVariant, TokenKind,
 };
-use crate::compilers::parser_utils::{
-    maybe_take_command_with_optional_comment_and_whitespace, parse_by_line, PeekableTokens,
+use crate::compilers::utils::{
+    parser_utils::{
+        maybe_take_command_with_optional_comment_and_whitespace, parse_by_line, PeekableTokens,
+    },
+    tokenizer::Token,
 };
-use crate::compilers::tokenizer::Token;
 use std::iter::Peekable;
 
 #[derive(PartialEq, Debug)]

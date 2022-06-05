@@ -1,4 +1,4 @@
-use crate::compilers::tokenizer::TokenDef;
+use crate::compilers::utils::tokenizer::TokenDef;
 
 #[derive(PartialEq, Debug)]
 pub enum ArithmeticCmdTokenVariant {

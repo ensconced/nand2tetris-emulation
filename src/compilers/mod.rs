@@ -1,4 +1,3 @@
 pub mod assembler;
-mod parser_utils;
-mod tokenizer;
+mod utils;
 pub mod vm_compiler;

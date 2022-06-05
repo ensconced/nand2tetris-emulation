@@ -1,12 +1,13 @@
-use crate::compilers::parser_utils::PeekableTokens;
-
-use super::super::parser_utils::{
-    maybe_take, maybe_take_command_with_optional_comment_and_whitespace, parse_by_line,
-};
-use super::super::tokenizer::Token;
 use super::tokenizer::{
     token_defs,
     TokenKind::{self, *},
+};
+use crate::compilers::utils::{
+    parser_utils::{
+        maybe_take, maybe_take_command_with_optional_comment_and_whitespace, parse_by_line,
+        PeekableTokens,
+    },
+    tokenizer::Token,
 };
 
 #[derive(PartialEq, Debug)]
@@ -217,7 +218,7 @@ pub fn parse_lines(source: &str) -> impl Iterator<Item = Command> + '_ {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::compilers::tokenizer::Tokenizer;
+    use crate::compilers::utils::tokenizer::Tokenizer;
 
     #[test]
     fn test_take_c_command() {

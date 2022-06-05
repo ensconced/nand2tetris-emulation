@@ -1,5 +1,5 @@
 use super::tokenizer::{Token, TokenDef, Tokenizer};
-use std::iter::Peekable;
+use std::{fmt::Debug, iter::Peekable};
 
 pub fn maybe_take<TokenKind>(
     tokens: &mut Peekable<impl Iterator<Item = Token<TokenKind>>>,
@@ -21,7 +21,7 @@ type LineParser<ParsedLine, TokenKind> =
     fn(tokens: PeekableTokens<TokenKind>, line_number: usize) -> Option<ParsedLine>;
 type TokenDefs<TokenKind> = Vec<TokenDef<TokenKind>>;
 
-pub fn parse_by_line<ParsedLine, TokenKind>(
+pub fn parse_by_line<ParsedLine, TokenKind: Debug>(
     source: &str,
     line_parser: LineParser<ParsedLine, TokenKind>,
     token_defs: TokenDefs<TokenKind>,

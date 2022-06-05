@@ -1,11 +1,11 @@
 use regex::Regex;
-use std::iter;
+use std::{fmt::Debug, iter};
 
 pub struct Tokenizer<LangTokenKind> {
     token_defs: Vec<TokenDef<LangTokenKind>>,
 }
 
-impl<LangTokenKind> Tokenizer<LangTokenKind> {
+impl<LangTokenKind: Debug> Tokenizer<LangTokenKind> {
     pub fn new(token_defs: Vec<TokenDef<LangTokenKind>>) -> Self {
         Self { token_defs }
     }
@@ -31,7 +31,7 @@ where
 }
 
 impl<LangTokenKind> Token<LangTokenKind> {
-    fn new(length: usize, kind: LangTokenKind) -> Self {
+    pub fn new(length: usize, kind: LangTokenKind) -> Self {
         Token { length, kind }
     }
 }

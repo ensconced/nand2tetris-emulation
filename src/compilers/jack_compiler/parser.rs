@@ -176,7 +176,7 @@ fn take_class(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> Cla
     let name = take_identifier(tokens, line_number);
     take_l_curly(tokens, line_number);
     let var_declarations = take_class_var_declarations(tokens, line_number);
-    let subroutine_declarations = take_subroutine_declarations(tokens, line_number);
+    let subroutine_declarations = take_class_subroutine_declarations(tokens, line_number);
     take_r_curly(tokens, line_number);
     Class {
         name,

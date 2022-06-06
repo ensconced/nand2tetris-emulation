@@ -40,7 +40,17 @@ struct Parameter {
     var_name: String,
 }
 
-struct SubroutineCall;
+enum SubroutineCall {
+    Direct {
+        subroutine_name: String,
+        arguments: Vec<Expression>,
+    },
+    Method {
+        this_name: String,
+        method_name: String,
+        arguments: Vec<Expression>,
+    },
+}
 
 enum Statement {
     Let {
@@ -101,10 +111,6 @@ fn take_identifier(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -
     todo!()
 }
 
-fn take_expression(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> Expression {
-    todo!()
-}
-
 fn maybe_take_expression(
     tokens: &mut PeekableTokens<TokenKind>,
     line_number: usize,
@@ -112,11 +118,22 @@ fn maybe_take_expression(
     todo!()
 }
 
+fn take_expression(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> Expression {
+    maybe_take_expression(tokens, line_number).expect("expected expression")
+}
+
 fn take_expression_list(
     tokens: &mut PeekableTokens<TokenKind>,
     line_number: usize,
 ) -> Vec<Expression> {
-    todo!()
+    let mut result = Vec::new();
+    if let Some(expression) = maybe_take_expression(tokens, line_number) {
+        result.push(expression);
+        while let Some(Token { kind: Comma, .. }) = tokens.next() {
+            result.push(take_expression(tokens, line_number));
+        }
+    }
+    result
 }
 
 fn take_subroutine_call(
@@ -124,20 +141,32 @@ fn take_subroutine_call(
     line_number: usize,
 ) -> SubroutineCall {
     let name = take_identifier(tokens, line_number);
-    if let Some(Token { kind: LParen, .. }) = tokens.peek() {
-        // Direct function call
-        tokens.next(); // LParen
-        todo!()
-    } else {
-        // Method call
-        todo!()
+    match tokens.peek() {
+        Some(Token { kind: LParen, .. }) => {
+            // Direct function call
+            tokens.next(); // LParen
+            let arguments = take_expression_list(tokens, line_number);
+            take_r_paren(tokens, line_number);
+            SubroutineCall::Direct {
+                subroutine_name: name,
+                arguments,
+            }
+        }
+        Some(Token { kind: Dot, .. }) => {
+            // Method call
+            tokens.next(); // Dot
+            let method_name = take_identifier(tokens, line_number);
+            take_l_paren(tokens, line_number);
+            let arguments = take_expression_list(tokens, line_number);
+            take_r_paren(tokens, line_number);
+            SubroutineCall::Method {
+                this_name: name,
+                method_name,
+                arguments,
+            }
+        }
+        _ => panic!("expected subroutine call. line: {}", line_number),
     }
-
-    take_l_paren(tokens, line_number);
-    let expressions = take_expression_list(tokens, line_number);
-    take_r_paren(tokens, line_number);
-
-    todo!()
 }
 
 fn take_subroutine_return_type(

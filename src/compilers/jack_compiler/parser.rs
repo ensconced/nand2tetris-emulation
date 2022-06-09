@@ -1,8 +1,12 @@
 use super::tokenizer::{
+    token_defs,
     KeywordTokenVariant::*,
     TokenKind::{self, *},
 };
-use crate::compilers::utils::{parser_utils::PeekableTokens, tokenizer::Token};
+use crate::compilers::utils::{
+    parser_utils::PeekableTokens,
+    tokenizer::{Token, Tokenizer},
+};
 
 struct Class {
     name: String,
@@ -34,7 +38,13 @@ enum SubroutineKind {
     Method,
 }
 
-struct Expression;
+enum TermVariant {
+    IntegerConstant(String),
+}
+
+enum Expression {
+    Term(TermVariant),
+}
 struct Parameter {
     type_name: Type,
     var_name: String,
@@ -86,36 +96,91 @@ struct SubroutineDeclaration {
     body: SubroutineBody,
 }
 
-fn take_class_keyword(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) {
-    todo!()
-}
-fn take_l_curly(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) {
-    todo!()
-}
-fn take_l_paren(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) {
-    todo!()
-}
-fn take_r_square_paren(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) {
-    todo!()
-}
-fn take_r_paren(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) {
-    todo!()
-}
-fn take_r_curly(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) {
-    todo!()
-}
-fn take_equals(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) {
-    todo!()
-}
-fn take_identifier(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> String {
-    todo!()
-}
-
 fn maybe_take_expression(
     tokens: &mut PeekableTokens<TokenKind>,
     line_number: usize,
 ) -> Option<Expression> {
-    todo!()
+    if let Some(Token {
+        kind: IntegerLiteral(string),
+        ..
+    }) = tokens.next()
+    {
+        Some(Expression::Term(TermVariant::IntegerConstant(string)))
+    } else {
+        None
+    }
+}
+
+fn take_class_keyword(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) {
+    if let Some(Token {
+        kind: Keyword(Class),
+        ..
+    }) = tokens.next()
+    {
+        // all good
+    } else {
+        panic!("expected keyword \"class\". line: {}", line_number)
+    }
+}
+fn take_l_curly(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) {
+    if let Some(Token { kind: LCurly, .. }) = tokens.next() {
+        // all good
+    } else {
+        panic!("expected \"{{\". line: {}", line_number)
+    }
+}
+fn take_l_paren(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) {
+    if let Some(Token { kind: LParen, .. }) = tokens.next() {
+        // all good
+    } else {
+        panic!("expected \"[\". line: {}", line_number)
+    }
+}
+fn take_r_square_bracket(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) {
+    if let Some(Token {
+        kind: RSquareBracket,
+        ..
+    }) = tokens.next()
+    {
+        // all good
+    } else {
+        panic!("expected \"]\". line: {}", line_number)
+    }
+}
+fn take_r_paren(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) {
+    if let Some(Token { kind: RParen, .. }) = tokens.next() {
+        // all good
+    } else {
+        panic!("expected \")\". line: {}", line_number)
+    }
+}
+
+fn take_r_curly(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) {
+    if let Some(Token { kind: RCurly, .. }) = tokens.next() {
+        // all good
+    } else {
+        panic!("expected \"}}\". line: {}", line_number)
+    }
+}
+
+fn take_equals(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) {
+    if let Some(Token { kind: Equals, .. }) = tokens.next() {
+        // all good
+    } else {
+        panic!("expected \"=\". line: {}", line_number)
+    }
+}
+
+fn take_identifier(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> String {
+    if let Some(Token {
+        kind: Identifier(string),
+        ..
+    }) = tokens.next()
+    {
+        string
+    } else {
+        panic!("expected identifier. line: {}", line_number)
+    }
 }
 
 fn take_expression(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> Expression {
@@ -211,12 +276,13 @@ fn maybe_take_array_index(
     line_number: usize,
 ) -> Option<Expression> {
     if let Some(Token {
-        kind: LSquareParen, ..
+        kind: LSquareBracket,
+        ..
     }) = tokens.peek()
     {
         tokens.next();
         let expression = take_expression(tokens, line_number);
-        take_r_square_paren(tokens, line_number);
+        take_r_square_bracket(tokens, line_number);
         Some(expression)
     } else {
         None
@@ -425,7 +491,7 @@ fn maybe_take_subroutine_declaration(
         ..
     }) = tokens.peek()
     {
-        take_subroutine_declaration(tokens, line_number)
+        Some(take_subroutine_declaration(tokens, line_number))
     } else {
         None
     }
@@ -579,4 +645,9 @@ fn take_class(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> Cla
         var_declarations,
         subroutine_declarations,
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
 }

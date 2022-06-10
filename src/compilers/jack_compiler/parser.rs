@@ -575,7 +575,6 @@ fn parse(source: &str) -> Class {
             TokenKind::Whitespace | TokenKind::SingleLineComment | TokenKind::MultiLineComment
         )
     });
-    // TODO - could we use generic instead of dyn Iterator here? This would let us do away with the Box?
     let cleaned_tokens: Box<dyn Iterator<Item = Token<TokenKind>>> = Box::new(filtered);
     let mut cleaned_peekable_tokens = cleaned_tokens.peekable();
     take_class(&mut cleaned_peekable_tokens)

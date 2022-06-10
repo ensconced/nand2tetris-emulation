@@ -1,3 +1,5 @@
+use std::iter::Peekable;
+
 use super::tokenizer::{
     token_defs,
     KeywordTokenVariant::*,
@@ -8,17 +10,20 @@ use crate::compilers::utils::{
     tokenizer::{Token, Tokenizer},
 };
 
+#[derive(Debug, PartialEq)]
 struct Class {
     name: String,
     var_declarations: Vec<ClassVarDeclaration>,
     subroutine_declarations: Vec<SubroutineDeclaration>,
 }
 
+#[derive(Debug, PartialEq)]
 enum ClassVarDeclarationQualifier {
     Static,
     Field,
 }
 
+#[derive(Debug, PartialEq)]
 enum Type {
     Int,
     Char,
@@ -26,30 +31,37 @@ enum Type {
     ClassName(String),
 }
 
+#[derive(Debug, PartialEq)]
 struct ClassVarDeclaration {
     type_name: Type,
     qualifier: ClassVarDeclarationQualifier,
     var_names: Vec<String>,
 }
 
+#[derive(Debug, PartialEq)]
 enum SubroutineKind {
     Constructor,
     Function,
     Method,
 }
 
+#[derive(Debug, PartialEq)]
 enum TermVariant {
     IntegerConstant(String),
 }
 
+#[derive(Debug, PartialEq)]
 enum Expression {
     Term(TermVariant),
 }
+
+#[derive(Debug, PartialEq)]
 struct Parameter {
     type_name: Type,
     var_name: String,
 }
 
+#[derive(Debug, PartialEq)]
 enum SubroutineCall {
     Direct {
         subroutine_name: String,
@@ -62,6 +74,7 @@ enum SubroutineCall {
     },
 }
 
+#[derive(Debug, PartialEq)]
 enum Statement {
     Let {
         var_name: String,
@@ -80,14 +93,18 @@ enum Statement {
     Do(SubroutineCall),
     Return(Option<Expression>),
 }
+#[derive(Debug, PartialEq)]
 struct VarDeclaration {
     type_name: Type,
     var_names: Vec<String>,
 }
+
+#[derive(Debug, PartialEq)]
 struct SubroutineBody {
     var_declarations: Vec<VarDeclaration>,
     statements: Vec<Statement>,
 }
+#[derive(Debug, PartialEq)]
 struct SubroutineDeclaration {
     subroutine_kind: SubroutineKind,
     return_type: Option<Type>,
@@ -647,7 +664,33 @@ fn take_class(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> Cla
     }
 }
 
+fn parse(source: &str) -> Class {
+    let tokens = Tokenizer::new(token_defs()).tokenize(source);
+    let filtered = tokens.filter(|token| {
+        !matches!(
+            token.kind,
+            TokenKind::Whitespace | TokenKind::SingleLineComment | TokenKind::MultiLineComment
+        )
+    });
+    // TODO - could we use impl Iterator instead of dyn Iterator here? This would let us do away with the Box?
+    let cleaned_tokens: Box<dyn Iterator<Item = Token<TokenKind>>> = Box::new(filtered);
+    let mut cleaned_peekable_tokens = cleaned_tokens.peekable();
+    take_class(&mut cleaned_peekable_tokens, 0)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test() {
+        assert_eq!(
+            parse("class foo {}"),
+            Class {
+                name: "foo".to_string(),
+                var_declarations: vec![],
+                subroutine_declarations: vec![]
+            }
+        );
+    }
 }

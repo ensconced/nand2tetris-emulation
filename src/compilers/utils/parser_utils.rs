@@ -1,8 +1,13 @@
 use super::tokenizer::{Token, TokenDef, Tokenizer};
 use std::{fmt::Debug, iter::Peekable};
 
+pub type PeekableTokens<TokenKind> = Peekable<Box<dyn Iterator<Item = Token<TokenKind>>>>;
+type LineParser<ParsedLine, TokenKind> =
+    fn(tokens: PeekableTokens<TokenKind>, line_number: usize) -> Option<ParsedLine>;
+type TokenDefs<TokenKind> = Vec<TokenDef<TokenKind>>;
+
 pub fn maybe_take<TokenKind>(
-    tokens: &mut Peekable<impl Iterator<Item = Token<TokenKind>>>,
+    tokens: &mut PeekableTokens<TokenKind>,
     token_kind: &TokenKind,
 ) -> Option<Token<TokenKind>>
 where
@@ -15,11 +20,6 @@ where
     }
     None
 }
-
-pub type PeekableTokens<TokenKind> = Peekable<Box<dyn Iterator<Item = Token<TokenKind>>>>;
-type LineParser<ParsedLine, TokenKind> =
-    fn(tokens: PeekableTokens<TokenKind>, line_number: usize) -> Option<ParsedLine>;
-type TokenDefs<TokenKind> = Vec<TokenDef<TokenKind>>;
 
 pub fn parse_by_line<ParsedLine, TokenKind: Debug>(
     source: &str,

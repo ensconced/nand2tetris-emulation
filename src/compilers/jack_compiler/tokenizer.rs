@@ -221,4 +221,19 @@ mod tests {
             ]
         );
     }
+
+    #[test]
+    fn test_class() {
+        assert_eq!(
+            tokenize("class foo {}"),
+            vec![
+                Token::new(5, Keyword(Class)),
+                Token::new(1, Whitespace),
+                Token::new(3, Identifier("foo".to_string())),
+                Token::new(1, Whitespace),
+                Token::new(1, LCurly),
+                Token::new(1, RCurly),
+            ]
+        );
+    }
 }

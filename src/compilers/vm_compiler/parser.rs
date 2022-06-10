@@ -244,10 +244,7 @@ fn take_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> C
     }
 }
 
-fn parse_line(
-    line_tokens: Peekable<Box<dyn Iterator<Item = Token<TokenKind>>>>,
-    line_number: usize,
-) -> Option<Command> {
+fn parse_line(line_tokens: PeekableTokens<TokenKind>, line_number: usize) -> Option<Command> {
     maybe_take_command_with_optional_comment_and_whitespace(
         line_tokens,
         take_command,

@@ -762,30 +762,65 @@ mod tests {
             parse(
                 "
             class foo {
-                constructor int blah() {
-                    let a = 1234;
+                constructor boolean bar(int abc, char def, foo ghi) {
+                }
+                function char baz(boolean _123) {
+                }
+                method void qux() {
                 }
             }"
             ),
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![],
-                subroutine_declarations: vec![SubroutineDeclaration {
-                    subroutine_kind: SubroutineKind::Constructor,
-                    return_type: Some(Type::Int),
-                    parameters: vec![],
-                    name: "blah".to_string(),
-                    body: SubroutineBody {
-                        var_declarations: vec![],
-                        statements: vec![Statement::Let {
-                            var_name: "a".to_string(),
-                            array_index: None,
-                            value: Expression::Term(TermVariant::IntegerConstant(
-                                "1234".to_string()
-                            ))
-                        }]
+                subroutine_declarations: vec![
+                    SubroutineDeclaration {
+                        subroutine_kind: SubroutineKind::Constructor,
+                        return_type: Some(Type::Boolean),
+                        parameters: vec![
+                            Parameter {
+                                type_name: Type::Int,
+                                var_name: "abc".to_string()
+                            },
+                            Parameter {
+                                type_name: Type::Char,
+                                var_name: "def".to_string()
+                            },
+                            Parameter {
+                                type_name: Type::ClassName("foo".to_string()),
+                                var_name: "ghi".to_string()
+                            }
+                        ],
+                        name: "bar".to_string(),
+                        body: SubroutineBody {
+                            var_declarations: vec![],
+                            statements: vec![]
+                        }
+                    },
+                    SubroutineDeclaration {
+                        subroutine_kind: SubroutineKind::Function,
+                        return_type: Some(Type::Char),
+                        parameters: vec![Parameter {
+                            type_name: Type::Boolean,
+                            var_name: "_123".to_string()
+                        },],
+                        name: "baz".to_string(),
+                        body: SubroutineBody {
+                            var_declarations: vec![],
+                            statements: vec![]
+                        }
+                    },
+                    SubroutineDeclaration {
+                        subroutine_kind: SubroutineKind::Method,
+                        return_type: None,
+                        parameters: vec![],
+                        name: "qux".to_string(),
+                        body: SubroutineBody {
+                            var_declarations: vec![],
+                            statements: vec![]
+                        }
                     }
-                }],
+                ],
             }
         );
     }
@@ -799,9 +834,15 @@ mod tests {
                 constructor int blah() {
                     var int a;
                     let a = 1234;
+                    let b[22] = 123;
                     if (1) {
                         while (1) {
                            do foobar();
+                           do foobar(1);
+                           do foobar(1, 2, 3);
+                           do foo.bar();
+                           do foo.bar(1);
+                           do foo.bar(1, 2, 3);
                         }
                     } else {
                         return 123;
@@ -830,6 +871,15 @@ mod tests {
                                     "1234".to_string()
                                 ))
                             },
+                            Statement::Let {
+                                var_name: "b".to_string(),
+                                array_index: Some(Expression::Term(TermVariant::IntegerConstant(
+                                    "22".to_string()
+                                ))),
+                                value: Expression::Term(TermVariant::IntegerConstant(
+                                    "123".to_string()
+                                ))
+                            },
                             Statement::If {
                                 condition: Expression::Term(TermVariant::IntegerConstant(
                                     "1".to_string()
@@ -838,10 +888,59 @@ mod tests {
                                     condition: Expression::Term(TermVariant::IntegerConstant(
                                         "1".to_string()
                                     )),
-                                    statements: vec![Statement::Do(SubroutineCall::Direct {
-                                        subroutine_name: "foobar".to_string(),
-                                        arguments: vec![]
-                                    })]
+                                    statements: vec![
+                                        Statement::Do(SubroutineCall::Direct {
+                                            subroutine_name: "foobar".to_string(),
+                                            arguments: vec![]
+                                        }),
+                                        Statement::Do(SubroutineCall::Direct {
+                                            subroutine_name: "foobar".to_string(),
+                                            arguments: vec![Expression::Term(
+                                                TermVariant::IntegerConstant("1".to_string())
+                                            )]
+                                        }),
+                                        Statement::Do(SubroutineCall::Direct {
+                                            subroutine_name: "foobar".to_string(),
+                                            arguments: vec![
+                                                Expression::Term(TermVariant::IntegerConstant(
+                                                    "1".to_string()
+                                                )),
+                                                Expression::Term(TermVariant::IntegerConstant(
+                                                    "2".to_string()
+                                                )),
+                                                Expression::Term(TermVariant::IntegerConstant(
+                                                    "3".to_string()
+                                                ))
+                                            ]
+                                        }),
+                                        Statement::Do(SubroutineCall::Method {
+                                            this_name: "foo".to_string(),
+                                            method_name: "bar".to_string(),
+                                            arguments: vec![]
+                                        }),
+                                        Statement::Do(SubroutineCall::Method {
+                                            this_name: "foo".to_string(),
+                                            method_name: "bar".to_string(),
+                                            arguments: vec![Expression::Term(
+                                                TermVariant::IntegerConstant("1".to_string())
+                                            )]
+                                        }),
+                                        Statement::Do(SubroutineCall::Method {
+                                            this_name: "foo".to_string(),
+                                            method_name: "bar".to_string(),
+                                            arguments: vec![
+                                                Expression::Term(TermVariant::IntegerConstant(
+                                                    "1".to_string()
+                                                )),
+                                                Expression::Term(TermVariant::IntegerConstant(
+                                                    "2".to_string()
+                                                )),
+                                                Expression::Term(TermVariant::IntegerConstant(
+                                                    "3".to_string()
+                                                ))
+                                            ]
+                                        }),
+                                    ]
                                 }],
                                 else_statements: Some(vec![Statement::Return(Some(
                                     Expression::Term(TermVariant::IntegerConstant(

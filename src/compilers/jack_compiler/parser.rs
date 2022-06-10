@@ -51,6 +51,10 @@ enum TermVariant {
 #[derive(Debug, PartialEq)]
 enum Expression {
     Term(TermVariant),
+    Sum {
+        lhs: Box<Expression>,
+        rhs: Box<Expression>,
+    },
 }
 
 #[derive(Debug, PartialEq)]
@@ -578,6 +582,43 @@ fn parse(source: &str) -> Class {
     let cleaned_tokens: Box<dyn Iterator<Item = Token<TokenKind>>> = Box::new(filtered);
     let mut cleaned_peekable_tokens = cleaned_tokens.peekable();
     take_class(&mut cleaned_peekable_tokens)
+}
+
+fn prefix_precedence(token: TokenKind) -> Option<u8> {
+    match token {
+        Tilde => Some(20),
+        Minus => Some(19),
+        _ => None,
+    }
+}
+
+fn infix_precedence(token: TokenKind) -> Option<(u8, u8)> {
+    match token {
+        Star => Some((17, 18)),
+        Slash => Some((15, 16)),
+        Plus => Some((13, 14)),
+        Minus => Some((11, 12)),
+        LessThan => Some((9, 10)),
+        GreaterThan => Some((7, 8)),
+        Ampersand => Some((5, 6)),
+        Pipe => Some((3, 4)),
+        Equals => Some((1, 2)),
+        _ => None,
+    }
+}
+
+// TODO - we won't need this function once we're done...
+fn parse_expression(source: &str) -> Expression {
+    let tokens = Tokenizer::new(token_defs()).tokenize(source);
+    let filtered = tokens.filter(|token| {
+        !matches!(
+            token.kind,
+            TokenKind::Whitespace | TokenKind::SingleLineComment | TokenKind::MultiLineComment
+        )
+    });
+    let cleaned_tokens: Box<dyn Iterator<Item = Token<TokenKind>>> = Box::new(filtered);
+    let mut cleaned_peekable_tokens = cleaned_tokens.peekable();
+    take_expression(&mut cleaned_peekable_tokens)
 }
 
 #[cfg(test)]

@@ -1,6 +1,6 @@
 use super::tokenizer::{
     token_defs,
-    KeywordTokenVariant::*,
+    KeywordTokenVariant::{self, *},
     TokenKind::{self, *},
 };
 use crate::compilers::utils::{
@@ -128,63 +128,23 @@ fn maybe_take_expression(tokens: &mut PeekableTokens<TokenKind>) -> Option<Expre
 }
 
 fn take_class_keyword(tokens: &mut PeekableTokens<TokenKind>) {
-    if let Some(Token {
-        kind: Keyword(Class),
-        ..
-    }) = tokens.next()
-    {
-        // all good
-    } else {
-        panic!("expected keyword \"class\".")
-    }
-}
-fn take_l_curly(tokens: &mut PeekableTokens<TokenKind>) {
-    if let Some(Token { kind: LCurly, .. }) = tokens.next() {
-        // all good
-    } else {
-        panic!("expected \"{{\"")
-    }
-}
-fn take_l_paren(tokens: &mut PeekableTokens<TokenKind>) {
-    if let Some(Token { kind: LParen, .. }) = tokens.next() {
-        // all good
-    } else {
-        panic!("expected \"[\"")
-    }
-}
-fn take_r_square_bracket(tokens: &mut PeekableTokens<TokenKind>) {
-    if let Some(Token {
-        kind: RSquareBracket,
-        ..
-    }) = tokens.next()
-    {
-        // all good
-    } else {
-        panic!("expected \"]\"")
-    }
-}
-fn take_r_paren(tokens: &mut PeekableTokens<TokenKind>) {
-    if let Some(Token { kind: RParen, .. }) = tokens.next() {
-        // all good
-    } else {
-        panic!("expected \")\"")
-    }
+    tokens
+        .next_if(|token| {
+            matches!(
+                token,
+                Token {
+                    kind: Keyword(Class),
+                    ..
+                }
+            )
+        })
+        .expect("expected keyword \"class\".");
 }
 
-fn take_r_curly(tokens: &mut PeekableTokens<TokenKind>) {
-    if let Some(Token { kind: RCurly, .. }) = tokens.next() {
-        // all good
-    } else {
-        panic!("expected \"}}\"")
-    }
-}
-
-fn take_equals(tokens: &mut PeekableTokens<TokenKind>) {
-    if let Some(Token { kind: Equals, .. }) = tokens.next() {
-        // all good
-    } else {
-        panic!("expected \"=\"")
-    }
+fn take_token(tokens: &mut PeekableTokens<TokenKind>, token_kind: TokenKind) {
+    tokens
+        .next_if(|token| token.kind == token_kind)
+        .unwrap_or_else(|| panic!("expected token {:?}", token_kind));
 }
 
 fn take_identifier(tokens: &mut PeekableTokens<TokenKind>) -> String {
@@ -222,7 +182,7 @@ fn take_subroutine_call(tokens: &mut PeekableTokens<TokenKind>) -> SubroutineCal
             // Direct function call
             tokens.next(); // LParen
             let arguments = take_expression_list(tokens);
-            take_r_paren(tokens);
+            take_token(tokens, RParen);
             SubroutineCall::Direct {
                 subroutine_name: name,
                 arguments,
@@ -232,9 +192,9 @@ fn take_subroutine_call(tokens: &mut PeekableTokens<TokenKind>) -> SubroutineCal
             // Method call
             tokens.next(); // Dot
             let method_name = take_identifier(tokens);
-            take_l_paren(tokens);
+            take_token(tokens, LParen);
             let arguments = take_expression_list(tokens);
-            take_r_paren(tokens);
+            take_token(tokens, RParen);
             SubroutineCall::Method {
                 this_name: name,
                 method_name,
@@ -281,27 +241,30 @@ fn take_parameters(tokens: &mut PeekableTokens<TokenKind>) -> Vec<Parameter> {
 }
 
 fn maybe_take_array_index(tokens: &mut PeekableTokens<TokenKind>) -> Option<Expression> {
-    if let Some(Token {
-        kind: LSquareBracket,
-        ..
-    }) = tokens.peek()
-    {
-        tokens.next();
-        let expression = take_expression(tokens);
-        take_r_square_bracket(tokens);
-        Some(expression)
-    } else {
-        None
-    }
+    tokens
+        .next_if(|token| {
+            matches!(
+                token,
+                Token {
+                    kind: LSquareBracket,
+                    ..
+                }
+            )
+        })
+        .map(|_| {
+            let expression = take_expression(tokens);
+            take_token(tokens, RSquareBracket);
+            expression
+        })
 }
 
 fn take_let_statement(tokens: &mut PeekableTokens<TokenKind>) -> Statement {
     tokens.next(); // "let" keyword
     let var_name = take_identifier(tokens);
     let array_index = maybe_take_array_index(tokens);
-    take_equals(tokens);
+    take_token(tokens, Equals);
     let value = take_expression(tokens);
-    take_semicolon(tokens);
+    take_token(tokens, Semicolon);
     Statement::Let {
         var_name,
         array_index,
@@ -310,30 +273,31 @@ fn take_let_statement(tokens: &mut PeekableTokens<TokenKind>) -> Statement {
 }
 
 fn take_statement_block(tokens: &mut PeekableTokens<TokenKind>) -> Vec<Statement> {
-    take_l_curly(tokens);
+    take_token(tokens, LCurly);
     let statements = take_statements(tokens);
-    take_r_curly(tokens);
+    take_token(tokens, RCurly);
     statements
 }
 
 fn maybe_take_else_block(tokens: &mut PeekableTokens<TokenKind>) -> Option<Vec<Statement>> {
-    if let Some(Token {
-        kind: Keyword(Else),
-        ..
-    }) = tokens.peek()
-    {
-        tokens.next(); // "else" keyword
-        Some(take_statement_block(tokens))
-    } else {
-        None
-    }
+    tokens
+        .next_if(|token| {
+            matches!(
+                token,
+                Token {
+                    kind: Keyword(Else),
+                    ..
+                }
+            )
+        })
+        .map(|_| take_statement_block(tokens))
 }
 
 fn take_if_statement(tokens: &mut PeekableTokens<TokenKind>) -> Statement {
     tokens.next(); // "if" keyword
-    take_l_paren(tokens);
+    take_token(tokens, LParen);
     let condition = take_expression(tokens);
-    take_r_paren(tokens);
+    take_token(tokens, RParen);
     let if_statements = take_statement_block(tokens);
     let else_statements = maybe_take_else_block(tokens);
     Statement::If {
@@ -345,9 +309,9 @@ fn take_if_statement(tokens: &mut PeekableTokens<TokenKind>) -> Statement {
 
 fn take_while_statement(tokens: &mut PeekableTokens<TokenKind>) -> Statement {
     tokens.next(); // "while" keyword
-    take_l_paren(tokens);
+    take_token(tokens, LParen);
     let expression = take_expression(tokens);
-    take_r_paren(tokens);
+    take_token(tokens, RParen);
     let statements = take_statement_block(tokens);
     Statement::While {
         condition: expression,
@@ -358,14 +322,14 @@ fn take_while_statement(tokens: &mut PeekableTokens<TokenKind>) -> Statement {
 fn take_do_statement(tokens: &mut PeekableTokens<TokenKind>) -> Statement {
     tokens.next(); // "do" keyword
     let subroutine_call = take_subroutine_call(tokens);
-    take_semicolon(tokens);
+    take_token(tokens, Semicolon);
     Statement::Do(subroutine_call)
 }
 
 fn take_return_statement(tokens: &mut PeekableTokens<TokenKind>) -> Statement {
     tokens.next(); // "return" keyword
     let expression = maybe_take_expression(tokens);
-    take_semicolon(tokens);
+    take_token(tokens, Semicolon);
     Statement::Return(expression)
 }
 
@@ -403,7 +367,7 @@ fn take_var_declaration(tokens: &mut PeekableTokens<TokenKind>) -> VarDeclaratio
     {
         let type_name = take_type(tokens);
         let var_names = take_var_names(tokens);
-        take_semicolon(tokens);
+        take_token(tokens, Semicolon);
         VarDeclaration {
             type_name,
             var_names,
@@ -425,10 +389,10 @@ fn take_var_declarations(tokens: &mut PeekableTokens<TokenKind>) -> Vec<VarDecla
 }
 
 fn take_subroutine_body(tokens: &mut PeekableTokens<TokenKind>) -> SubroutineBody {
-    take_l_curly(tokens);
+    take_token(tokens, LCurly);
     let var_declarations = take_var_declarations(tokens);
     let statements = take_statements(tokens);
-    take_r_curly(tokens);
+    take_token(tokens, RCurly);
     SubroutineBody {
         var_declarations,
         statements,
@@ -450,9 +414,9 @@ fn take_subroutine_declaration(tokens: &mut PeekableTokens<TokenKind>) -> Subrou
 
         let return_type = take_subroutine_return_type(tokens);
         let name = take_identifier(tokens);
-        take_l_paren(tokens);
+        take_token(tokens, LParen);
         let parameters = take_parameters(tokens);
-        take_r_paren(tokens);
+        take_token(tokens, RParen);
         let body = take_subroutine_body(tokens);
 
         SubroutineDeclaration {
@@ -557,22 +521,11 @@ fn maybe_take_type(tokens: &mut PeekableTokens<TokenKind>) -> Option<Type> {
     }
 }
 
-fn take_semicolon(tokens: &mut PeekableTokens<TokenKind>) {
-    if let Some(Token {
-        kind: Semicolon, ..
-    }) = tokens.next()
-    {
-        // all good
-    } else {
-        panic!("expected semicolon at line")
-    }
-}
-
 fn take_class_var_declaration(tokens: &mut PeekableTokens<TokenKind>) -> ClassVarDeclaration {
     let qualifier = take_class_var_declaration_qualifier(tokens);
     let type_name = take_type(tokens);
     let var_names = take_var_names(tokens);
-    take_semicolon(tokens);
+    take_token(tokens, Semicolon);
     ClassVarDeclaration {
         qualifier,
         type_name,
@@ -603,10 +556,10 @@ fn take_class_var_declarations(tokens: &mut PeekableTokens<TokenKind>) -> Vec<Cl
 fn take_class(tokens: &mut PeekableTokens<TokenKind>) -> Class {
     take_class_keyword(tokens);
     let name = take_identifier(tokens);
-    take_l_curly(tokens);
+    take_token(tokens, LCurly);
     let var_declarations = take_class_var_declarations(tokens);
     let subroutine_declarations = take_class_subroutine_declarations(tokens);
-    take_r_curly(tokens);
+    take_token(tokens, RCurly);
     Class {
         name,
         var_declarations,

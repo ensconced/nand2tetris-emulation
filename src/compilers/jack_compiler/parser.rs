@@ -120,9 +120,13 @@ fn maybe_take_expression(
     if let Some(Token {
         kind: IntegerLiteral(string),
         ..
-    }) = tokens.next()
+    }) = tokens.peek()
     {
-        Some(Expression::Term(TermVariant::IntegerConstant(string)))
+        let result = Some(Expression::Term(TermVariant::IntegerConstant(
+            string.to_string(),
+        )));
+        tokens.next();
+        result
     } else {
         None
     }
@@ -211,7 +215,8 @@ fn take_expression_list(
     let mut result = Vec::new();
     if let Some(expression) = maybe_take_expression(tokens, line_number) {
         result.push(expression);
-        while let Some(Token { kind: Comma, .. }) = tokens.next() {
+        while let Some(Token { kind: Comma, .. }) = tokens.peek() {
+            tokens.next();
             result.push(take_expression(tokens, line_number));
         }
     }
@@ -258,8 +263,9 @@ fn take_subroutine_return_type(
     if let Some(Token {
         kind: Keyword(Void),
         ..
-    }) = tokens.next()
+    }) = tokens.peek()
     {
+        tokens.next();
         None
     } else {
         Some(take_type(tokens, line_number))
@@ -683,13 +689,169 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test() {
+    fn test_simple_class() {
         assert_eq!(
             parse("class foo {}"),
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![],
                 subroutine_declarations: vec![]
+            }
+        );
+    }
+
+    #[test]
+    fn test_class_with_var_declaration() {
+        assert_eq!(
+            parse(
+                "
+            class foo {
+              static int bar;
+            }"
+            ),
+            Class {
+                name: "foo".to_string(),
+                var_declarations: vec![ClassVarDeclaration {
+                    qualifier: ClassVarDeclarationQualifier::Static,
+                    type_name: Type::Int,
+                    var_names: vec!["bar".to_string()]
+                }],
+                subroutine_declarations: vec![]
+            }
+        );
+    }
+
+    #[test]
+    fn test_class_with_multiple_var_declarations() {
+        assert_eq!(
+            parse(
+                "
+            class foo {
+              static int bar;
+              field char baz, buz, boz;
+              field boolean a, b, c;
+            }"
+            ),
+            Class {
+                name: "foo".to_string(),
+                var_declarations: vec![
+                    ClassVarDeclaration {
+                        qualifier: ClassVarDeclarationQualifier::Static,
+                        type_name: Type::Int,
+                        var_names: vec!["bar".to_string()]
+                    },
+                    ClassVarDeclaration {
+                        qualifier: ClassVarDeclarationQualifier::Field,
+                        type_name: Type::Char,
+                        var_names: vec!["baz".to_string(), "buz".to_string(), "boz".to_string()]
+                    },
+                    ClassVarDeclaration {
+                        qualifier: ClassVarDeclarationQualifier::Field,
+                        type_name: Type::Boolean,
+                        var_names: vec!["a".to_string(), "b".to_string(), "c".to_string()]
+                    }
+                ],
+                subroutine_declarations: vec![]
+            }
+        );
+    }
+
+    #[test]
+    fn test_class_with_subroutine_declarations() {
+        assert_eq!(
+            parse(
+                "
+            class foo {
+                constructor int blah() {
+                    let a = 1234;
+                }
+            }"
+            ),
+            Class {
+                name: "foo".to_string(),
+                var_declarations: vec![],
+                subroutine_declarations: vec![SubroutineDeclaration {
+                    subroutine_kind: SubroutineKind::Constructor,
+                    return_type: Some(Type::Int),
+                    parameters: vec![],
+                    name: "blah".to_string(),
+                    body: SubroutineBody {
+                        var_declarations: vec![],
+                        statements: vec![Statement::Let {
+                            var_name: "a".to_string(),
+                            array_index: None,
+                            value: Expression::Term(TermVariant::IntegerConstant(
+                                "1234".to_string()
+                            ))
+                        }]
+                    }
+                }],
+            }
+        );
+    }
+
+    #[test]
+    fn test_all_statement_types() {
+        assert_eq!(
+            parse(
+                "
+            class foo {
+                constructor int blah() {
+                    var int a;
+                    let a = 1234;
+                    if (1) {
+                        while (1) {
+                           do foobar();
+                        }
+                    } else {
+                        return 123;
+                    }
+                }
+            }"
+            ),
+            Class {
+                name: "foo".to_string(),
+                var_declarations: vec![],
+                subroutine_declarations: vec![SubroutineDeclaration {
+                    subroutine_kind: SubroutineKind::Constructor,
+                    return_type: Some(Type::Int),
+                    parameters: vec![],
+                    name: "blah".to_string(),
+                    body: SubroutineBody {
+                        var_declarations: vec![VarDeclaration {
+                            type_name: Type::Int,
+                            var_names: vec!["a".to_string()]
+                        }],
+                        statements: vec![
+                            Statement::Let {
+                                var_name: "a".to_string(),
+                                array_index: None,
+                                value: Expression::Term(TermVariant::IntegerConstant(
+                                    "1234".to_string()
+                                ))
+                            },
+                            Statement::If {
+                                condition: Expression::Term(TermVariant::IntegerConstant(
+                                    "1".to_string()
+                                )),
+                                if_statements: vec![Statement::While {
+                                    condition: Expression::Term(TermVariant::IntegerConstant(
+                                        "1".to_string()
+                                    )),
+                                    statements: vec![Statement::Do(SubroutineCall::Direct {
+                                        subroutine_name: "foobar".to_string(),
+                                        arguments: vec![]
+                                    })]
+                                }],
+                                else_statements: Some(vec![Statement::Return(Some(
+                                    Expression::Term(TermVariant::IntegerConstant(
+                                        "123".to_string()
+                                    ))
+                                ))]),
+                            }
+                        ]
+                    }
+                }],
             }
         );
     }

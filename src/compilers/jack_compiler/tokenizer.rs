@@ -26,6 +26,20 @@ pub enum KeywordTokenVariant {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum OperatorVariant {
+    Plus,
+    Minus,
+    Star,
+    Slash,
+    Ampersand,
+    Pipe,
+    LessThan,
+    GreaterThan,
+    Equals,
+    Tilde,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum TokenKind {
     Keyword(KeywordTokenVariant),
     IntegerLiteral(String),
@@ -40,23 +54,15 @@ pub enum TokenKind {
     Dot,
     Comma,
     Semicolon,
-    Plus,
-    Minus,
-    Star,
-    Slash,
-    Ampersand,
-    Pipe,
-    LessThan,
-    GreaterThan,
-    Equals,
-    Tilde,
     Whitespace,
     SingleLineComment,
     MultiLineComment,
+    Operator(OperatorVariant),
 }
 
 pub fn token_defs() -> Vec<TokenDef<TokenKind>> {
     use KeywordTokenVariant::*;
+    use OperatorVariant::*;
     use TokenKind::*;
 
     vec![
@@ -72,16 +78,16 @@ pub fn token_defs() -> Vec<TokenDef<TokenKind>> {
         TokenDef::new(r"\.", |_| Dot),
         TokenDef::new(r",", |_| Comma),
         TokenDef::new(r";", |_| Semicolon),
-        TokenDef::new(r"\+", |_| Plus),
-        TokenDef::new(r"-", |_| Minus),
-        TokenDef::new(r"\*", |_| Star),
-        TokenDef::new(r"/", |_| Slash),
-        TokenDef::new(r"&", |_| Ampersand),
-        TokenDef::new(r"\|", |_| Pipe),
-        TokenDef::new(r"<", |_| LessThan),
-        TokenDef::new(r">", |_| GreaterThan),
-        TokenDef::new(r"=", |_| Equals),
-        TokenDef::new(r"~", |_| Tilde),
+        TokenDef::new(r"\+", |_| Operator(Plus)),
+        TokenDef::new(r"-", |_| Operator(Minus)),
+        TokenDef::new(r"\*", |_| Operator(Star)),
+        TokenDef::new(r"/", |_| Operator(Slash)),
+        TokenDef::new(r"&", |_| Operator(Ampersand)),
+        TokenDef::new(r"\|", |_| Operator(Pipe)),
+        TokenDef::new(r"<", |_| Operator(LessThan)),
+        TokenDef::new(r">", |_| Operator(GreaterThan)),
+        TokenDef::new(r"=", |_| Operator(Equals)),
+        TokenDef::new(r"~", |_| Operator(Tilde)),
         TokenDef::new(r"\d+", IntegerLiteral),
         TokenDef::new("\"[^\"]*\"", |match_str| {
             StringLiteral(match_str[1..match_str.len() - 1].to_string())
@@ -113,7 +119,7 @@ pub fn token_defs() -> Vec<TokenDef<TokenKind>> {
 
 #[cfg(test)]
 mod tests {
-    use super::{KeywordTokenVariant::*, TokenKind::*, *};
+    use super::{KeywordTokenVariant::*, OperatorVariant::*, TokenKind::*, *};
     use crate::compilers::utils::tokenizer::{Token, Tokenizer};
 
     fn tokenize(str: &str) -> Vec<Token<TokenKind>> {
@@ -195,23 +201,23 @@ mod tests {
                 Token::new(1, Whitespace),
                 Token::new(1, Semicolon),
                 Token::new(1, Whitespace),
-                Token::new(1, Plus),
+                Token::new(1, Operator(Plus)),
                 Token::new(1, Whitespace),
-                Token::new(1, Star),
+                Token::new(1, Operator(Star)),
                 Token::new(1, Whitespace),
-                Token::new(1, Slash),
+                Token::new(1, Operator(Slash)),
                 Token::new(1, Whitespace),
-                Token::new(1, Ampersand),
+                Token::new(1, Operator(Ampersand)),
                 Token::new(1, Whitespace),
-                Token::new(1, Pipe),
+                Token::new(1, Operator(Pipe)),
                 Token::new(1, Whitespace),
-                Token::new(1, LessThan),
+                Token::new(1, Operator(LessThan)),
                 Token::new(1, Whitespace),
-                Token::new(1, GreaterThan),
+                Token::new(1, Operator(GreaterThan)),
                 Token::new(1, Whitespace),
-                Token::new(1, Equals),
+                Token::new(1, Operator(Equals)),
                 Token::new(1, Whitespace),
-                Token::new(1, Tilde),
+                Token::new(1, Operator(Tilde)),
                 Token::new(1, Whitespace),
                 Token::new(4, IntegerLiteral("1234".to_string())),
                 Token::new(1, Whitespace),

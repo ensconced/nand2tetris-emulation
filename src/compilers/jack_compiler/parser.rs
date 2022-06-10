@@ -1,6 +1,7 @@
 use super::tokenizer::{
     token_defs,
     KeywordTokenVariant::{self, *},
+    OperatorVariant::{self, *},
     TokenKind::{self, *},
 };
 use crate::compilers::utils::{
@@ -266,7 +267,7 @@ fn take_let_statement(tokens: &mut PeekableTokens<TokenKind>) -> Statement {
     tokens.next(); // "let" keyword
     let var_name = take_identifier(tokens);
     let array_index = maybe_take_array_index(tokens);
-    take_token(tokens, Equals);
+    take_token(tokens, Operator(Equals));
     let value = take_expression(tokens);
     take_token(tokens, Semicolon);
     Statement::Let {
@@ -584,16 +585,16 @@ fn parse(source: &str) -> Class {
     take_class(&mut cleaned_peekable_tokens)
 }
 
-fn prefix_precedence(token: TokenKind) -> Option<u8> {
-    match token {
+fn prefix_precedence(operator: OperatorVariant) -> Option<u8> {
+    match operator {
         Tilde => Some(20),
         Minus => Some(19),
         _ => None,
     }
 }
 
-fn infix_precedence(token: TokenKind) -> Option<(u8, u8)> {
-    match token {
+fn infix_precedence(operator: OperatorVariant) -> Option<(u8, u8)> {
+    match operator {
         Star => Some((17, 18)),
         Slash => Some((15, 16)),
         Plus => Some((13, 14)),

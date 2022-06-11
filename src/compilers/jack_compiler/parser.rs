@@ -47,10 +47,16 @@ enum SubroutineKind {
 }
 
 #[derive(Debug, PartialEq)]
-enum TermVariant {
+enum PrimitiveTermVariant {
     IntegerConstant(String),
+    StringConstant(String),
+    True,
+    False,
+    Null,
+    This,
+    Variable(String),
 }
-use TermVariant::*;
+use PrimitiveTermVariant::*;
 
 #[derive(Debug, PartialEq)]
 enum BinaryOperator {
@@ -73,7 +79,7 @@ enum UnaryOperator {
 
 #[derive(Debug, PartialEq)]
 enum Expression {
-    Term(TermVariant),
+    PrimitiveTerm(PrimitiveTermVariant),
     Binary {
         operator: BinaryOperator,
         lhs: Box<Expression>,
@@ -82,6 +88,11 @@ enum Expression {
     Unary {
         operator: UnaryOperator,
         operand: Box<Expression>,
+    },
+    SubroutineCall(SubroutineCall),
+    ArrayAccess {
+        var_name: String,
+        index: Box<Expression>,
     },
 }
 
@@ -172,7 +183,7 @@ fn expression_binding_power(
         }) => {
             let string = string.to_string();
             tokens.next();
-            Expression::Term(IntegerConstant(string))
+            Expression::PrimitiveTerm(IntegerConstant(string))
         }
         _ => return None,
     };
@@ -904,19 +915,27 @@ mod tests {
                             Statement::Let {
                                 var_name: "a".to_string(),
                                 array_index: None,
-                                value: Expression::Term(IntegerConstant("1234".to_string()))
+                                value: Expression::PrimitiveTerm(IntegerConstant(
+                                    "1234".to_string()
+                                ))
                             },
                             Statement::Let {
                                 var_name: "b".to_string(),
-                                array_index: Some(Expression::Term(IntegerConstant(
+                                array_index: Some(Expression::PrimitiveTerm(IntegerConstant(
                                     "22".to_string()
                                 ))),
-                                value: Expression::Term(IntegerConstant("123".to_string()))
+                                value: Expression::PrimitiveTerm(IntegerConstant(
+                                    "123".to_string()
+                                ))
                             },
                             Statement::If {
-                                condition: Expression::Term(IntegerConstant("1".to_string())),
+                                condition: Expression::PrimitiveTerm(IntegerConstant(
+                                    "1".to_string()
+                                )),
                                 if_statements: vec![Statement::While {
-                                    condition: Expression::Term(IntegerConstant("1".to_string())),
+                                    condition: Expression::PrimitiveTerm(IntegerConstant(
+                                        "1".to_string()
+                                    )),
                                     statements: vec![
                                         Statement::Do(SubroutineCall::Direct {
                                             subroutine_name: "foobar".to_string(),
@@ -924,16 +943,22 @@ mod tests {
                                         }),
                                         Statement::Do(SubroutineCall::Direct {
                                             subroutine_name: "foobar".to_string(),
-                                            arguments: vec![Expression::Term(IntegerConstant(
-                                                "1".to_string()
-                                            ))]
+                                            arguments: vec![Expression::PrimitiveTerm(
+                                                IntegerConstant("1".to_string())
+                                            )]
                                         }),
                                         Statement::Do(SubroutineCall::Direct {
                                             subroutine_name: "foobar".to_string(),
                                             arguments: vec![
-                                                Expression::Term(IntegerConstant("1".to_string())),
-                                                Expression::Term(IntegerConstant("2".to_string())),
-                                                Expression::Term(IntegerConstant("3".to_string()))
+                                                Expression::PrimitiveTerm(IntegerConstant(
+                                                    "1".to_string()
+                                                )),
+                                                Expression::PrimitiveTerm(IntegerConstant(
+                                                    "2".to_string()
+                                                )),
+                                                Expression::PrimitiveTerm(IntegerConstant(
+                                                    "3".to_string()
+                                                ))
                                             ]
                                         }),
                                         Statement::Do(SubroutineCall::Method {
@@ -944,23 +969,29 @@ mod tests {
                                         Statement::Do(SubroutineCall::Method {
                                             this_name: "foo".to_string(),
                                             method_name: "bar".to_string(),
-                                            arguments: vec![Expression::Term(IntegerConstant(
-                                                "1".to_string()
-                                            ))]
+                                            arguments: vec![Expression::PrimitiveTerm(
+                                                IntegerConstant("1".to_string())
+                                            )]
                                         }),
                                         Statement::Do(SubroutineCall::Method {
                                             this_name: "foo".to_string(),
                                             method_name: "bar".to_string(),
                                             arguments: vec![
-                                                Expression::Term(IntegerConstant("1".to_string())),
-                                                Expression::Term(IntegerConstant("2".to_string())),
-                                                Expression::Term(IntegerConstant("3".to_string()))
+                                                Expression::PrimitiveTerm(IntegerConstant(
+                                                    "1".to_string()
+                                                )),
+                                                Expression::PrimitiveTerm(IntegerConstant(
+                                                    "2".to_string()
+                                                )),
+                                                Expression::PrimitiveTerm(IntegerConstant(
+                                                    "3".to_string()
+                                                ))
                                             ]
                                         }),
                                     ]
                                 }],
                                 else_statements: Some(vec![Statement::Return(Some(
-                                    Expression::Term(IntegerConstant("123".to_string()))
+                                    Expression::PrimitiveTerm(IntegerConstant("123".to_string()))
                                 ))]),
                             }
                         ]
@@ -974,7 +1005,7 @@ mod tests {
     fn test_simple_expression() {
         assert_eq!(
             parse_expression("1"),
-            Expression::Term(IntegerConstant("1".to_string()))
+            Expression::PrimitiveTerm(IntegerConstant("1".to_string()))
         )
     }
 
@@ -984,8 +1015,8 @@ mod tests {
             parse_expression("1 + 2"),
             Expression::Binary {
                 operator: BinaryOperator::Plus,
-                lhs: Box::new(Expression::Term(IntegerConstant("1".to_string()))),
-                rhs: Box::new(Expression::Term(IntegerConstant("2".to_string()))),
+                lhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
             }
         )
     }
@@ -1019,14 +1050,16 @@ mod tests {
                                 operator: BinaryOperator::Plus,
                                 lhs: Box::new(Expression::Binary {
                                     operator: BinaryOperator::Plus,
-                                    lhs: Box::new(Expression::Term(IntegerConstant(
+                                    lhs: Box::new(Expression::PrimitiveTerm(IntegerConstant(
                                         "1".to_string()
                                     ))),
-                                    rhs: Box::new(Expression::Term(IntegerConstant(
+                                    rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant(
                                         "2".to_string()
                                     ))),
                                 }),
-                                rhs: Box::new(Expression::Term(IntegerConstant("3".to_string()))),
+                                rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                    "3".to_string()
+                                ))),
                             }
                         }]
                     }
@@ -1045,12 +1078,12 @@ mod tests {
                     operator: BinaryOperator::Plus,
                     lhs: Box::new(Expression::Binary {
                         operator: BinaryOperator::Plus,
-                        lhs: Box::new(Expression::Term(IntegerConstant("1".to_string()))),
-                        rhs: Box::new(Expression::Term(IntegerConstant("2".to_string()))),
+                        lhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                        rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                     }),
-                    rhs: Box::new(Expression::Term(IntegerConstant("3".to_string()))),
+                    rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
                 }),
-                rhs: Box::new(Expression::Term(IntegerConstant("4".to_string()))),
+                rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("4".to_string()))),
             }
         )
     }
@@ -1063,14 +1096,14 @@ mod tests {
                 operator: BinaryOperator::Plus,
                 lhs: Box::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
-                    lhs: Box::new(Expression::Term(IntegerConstant("1".to_string()))),
+                    lhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                     rhs: Box::new(Expression::Binary {
                         operator: BinaryOperator::Multiply,
-                        lhs: Box::new(Expression::Term(IntegerConstant("2".to_string()))),
-                        rhs: Box::new(Expression::Term(IntegerConstant("3".to_string()))),
+                        lhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                        rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
                     })
                 }),
-                rhs: Box::new(Expression::Term(IntegerConstant("4".to_string()))),
+                rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("4".to_string()))),
             }
         )
     }
@@ -1081,7 +1114,7 @@ mod tests {
             parse_expression("~1"),
             Expression::Unary {
                 operator: UnaryOperator::Not,
-                operand: Box::new(Expression::Term(IntegerConstant("1".to_string()))),
+                operand: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
             }
         )
     }
@@ -1094,11 +1127,11 @@ mod tests {
                 operator: BinaryOperator::Plus,
                 lhs: Box::new(Expression::Unary {
                     operator: UnaryOperator::Not,
-                    operand: Box::new(Expression::Term(IntegerConstant("1".to_string()))),
+                    operand: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                 }),
                 rhs: Box::new(Expression::Unary {
                     operator: UnaryOperator::Not,
-                    operand: Box::new(Expression::Term(IntegerConstant("2".to_string()))),
+                    operand: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                 }),
             }
         )

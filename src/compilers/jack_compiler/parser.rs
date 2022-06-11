@@ -182,6 +182,7 @@ fn expression_binding_power(
             Some(Token {
                 kind: Operator(op), ..
             }) => {
+                let op = op.clone();
                 let (lbp, rbp) = infix_precedence(op.clone()).expect("invalid infix operator");
                 if lbp < binding_power {
                     break;
@@ -189,8 +190,21 @@ fn expression_binding_power(
                 tokens.next();
                 let rhs = expression_binding_power(tokens, rbp)
                     .expect("expected rhs for binary operator");
+                let operator = match op {
+                    Plus => BinaryOperator::Plus,
+                    Minus => BinaryOperator::Minus,
+                    Star => BinaryOperator::Multiply,
+                    Slash => BinaryOperator::Divide,
+                    Ampersand => BinaryOperator::And,
+                    Pipe => BinaryOperator::Or,
+                    LessThan => BinaryOperator::LessThan,
+                    GreaterThan => BinaryOperator::GreaterThan,
+                    Equals => BinaryOperator::Equals,
+                    _ => panic!("invalid binary operator"),
+                };
+
                 lhs = Expression::Binary {
-                    operator: BinaryOperator::Plus, // TODO - get the correct operator
+                    operator,
                     lhs: Box::new(lhs),
                     rhs: Box::new(rhs),
                 };
@@ -694,23 +708,22 @@ fn infix_precedence(operator: OperatorVariant) -> Option<(u8, u8)> {
     }
 }
 
-// TODO - we won't need this function once we're done...
-fn parse_expression(source: &str) -> Expression {
-    let tokens = Tokenizer::new(token_defs()).tokenize(source);
-    let filtered = tokens.filter(|token| {
-        !matches!(
-            token.kind,
-            TokenKind::Whitespace | TokenKind::SingleLineComment | TokenKind::MultiLineComment
-        )
-    });
-    let cleaned_tokens: Box<dyn Iterator<Item = Token<TokenKind>>> = Box::new(filtered);
-    let mut cleaned_peekable_tokens = cleaned_tokens.peekable();
-    take_expression(&mut cleaned_peekable_tokens)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn parse_expression(source: &str) -> Expression {
+        let tokens = Tokenizer::new(token_defs()).tokenize(source);
+        let filtered = tokens.filter(|token| {
+            !matches!(
+                token.kind,
+                TokenKind::Whitespace | TokenKind::SingleLineComment | TokenKind::MultiLineComment
+            )
+        });
+        let cleaned_tokens: Box<dyn Iterator<Item = Token<TokenKind>>> = Box::new(filtered);
+        let mut cleaned_peekable_tokens = cleaned_tokens.peekable();
+        take_expression(&mut cleaned_peekable_tokens)
+    }
 
     #[test]
     fn test_simple_class() {
@@ -978,6 +991,51 @@ mod tests {
     }
 
     #[test]
+    fn test_simple_binary_expression_within_class() {
+        assert_eq!(
+            parse(
+                "
+            class foo {
+                method void bar () {
+                    let a = 1 + 2 + 3;
+                }
+            }
+            "
+            ),
+            Class {
+                name: "foo".to_string(),
+                var_declarations: vec![],
+                subroutine_declarations: vec![SubroutineDeclaration {
+                    subroutine_kind: SubroutineKind::Method,
+                    return_type: None,
+                    parameters: vec![],
+                    name: "bar".to_string(),
+                    body: SubroutineBody {
+                        var_declarations: vec![],
+                        statements: vec![Statement::Let {
+                            var_name: "a".to_string(),
+                            array_index: None,
+                            value: Expression::Binary {
+                                operator: BinaryOperator::Plus,
+                                lhs: Box::new(Expression::Binary {
+                                    operator: BinaryOperator::Plus,
+                                    lhs: Box::new(Expression::Term(IntegerConstant(
+                                        "1".to_string()
+                                    ))),
+                                    rhs: Box::new(Expression::Term(IntegerConstant(
+                                        "2".to_string()
+                                    ))),
+                                }),
+                                rhs: Box::new(Expression::Term(IntegerConstant("3".to_string()))),
+                            }
+                        }]
+                    }
+                }]
+            }
+        )
+    }
+
+    #[test]
     fn test_simple_left_associating_expression() {
         assert_eq!(
             parse_expression("1 + 2 + 3 + 4"),
@@ -993,6 +1051,55 @@ mod tests {
                     rhs: Box::new(Expression::Term(IntegerConstant("3".to_string()))),
                 }),
                 rhs: Box::new(Expression::Term(IntegerConstant("4".to_string()))),
+            }
+        )
+    }
+
+    #[test]
+    fn test_binary_precedence() {
+        assert_eq!(
+            parse_expression("1 + 2 * 3 + 4"),
+            Expression::Binary {
+                operator: BinaryOperator::Plus,
+                lhs: Box::new(Expression::Binary {
+                    operator: BinaryOperator::Plus,
+                    lhs: Box::new(Expression::Term(IntegerConstant("1".to_string()))),
+                    rhs: Box::new(Expression::Binary {
+                        operator: BinaryOperator::Multiply,
+                        lhs: Box::new(Expression::Term(IntegerConstant("2".to_string()))),
+                        rhs: Box::new(Expression::Term(IntegerConstant("3".to_string()))),
+                    })
+                }),
+                rhs: Box::new(Expression::Term(IntegerConstant("4".to_string()))),
+            }
+        )
+    }
+
+    #[test]
+    fn test_simple_unary_expression() {
+        assert_eq!(
+            parse_expression("~1"),
+            Expression::Unary {
+                operator: UnaryOperator::Not,
+                operand: Box::new(Expression::Term(IntegerConstant("1".to_string()))),
+            }
+        )
+    }
+
+    #[test]
+    fn test_simple_combined_unary_and_binary_expression() {
+        assert_eq!(
+            parse_expression("~1 + ~2"),
+            Expression::Binary {
+                operator: BinaryOperator::Plus,
+                lhs: Box::new(Expression::Unary {
+                    operator: UnaryOperator::Not,
+                    operand: Box::new(Expression::Term(IntegerConstant("1".to_string()))),
+                }),
+                rhs: Box::new(Expression::Unary {
+                    operator: UnaryOperator::Not,
+                    operand: Box::new(Expression::Term(IntegerConstant("2".to_string()))),
+                }),
             }
         )
     }

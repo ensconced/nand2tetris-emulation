@@ -1,3 +1,5 @@
+use std::fmt::Binary;
+
 use super::tokenizer::{
     token_defs,
     KeywordTokenVariant::{self, *},
@@ -48,13 +50,38 @@ enum SubroutineKind {
 enum TermVariant {
     IntegerConstant(String),
 }
+use TermVariant::*;
+
+#[derive(Debug, PartialEq)]
+enum BinaryOperator {
+    Plus,
+    Minus,
+    Multiply,
+    Divide,
+    And,
+    Or,
+    LessThan,
+    GreaterThan,
+    Equals,
+}
+
+#[derive(Debug, PartialEq)]
+enum UnaryOperator {
+    Minus,
+    Not,
+}
 
 #[derive(Debug, PartialEq)]
 enum Expression {
     Term(TermVariant),
-    Sum {
+    Binary {
+        operator: BinaryOperator,
         lhs: Box<Expression>,
         rhs: Box<Expression>,
+    },
+    Unary {
+        operator: UnaryOperator,
+        operand: Box<Expression>,
     },
 }
 
@@ -116,20 +143,79 @@ struct SubroutineDeclaration {
     body: SubroutineBody,
 }
 
-fn maybe_take_expression(tokens: &mut PeekableTokens<TokenKind>) -> Option<Expression> {
-    if let Some(Token {
-        kind: IntegerLiteral(string),
-        ..
-    }) = tokens.peek()
-    {
-        let result = Some(Expression::Term(TermVariant::IntegerConstant(
-            string.to_string(),
-        )));
-        tokens.next();
-        result
-    } else {
-        None
+fn expression_binding_power(
+    tokens: &mut PeekableTokens<TokenKind>,
+    binding_power: u8,
+) -> Option<Expression> {
+    let mut lhs = match tokens.peek() {
+        Some(Token {
+            kind: Operator(op), ..
+        }) => {
+            let op = op.clone();
+            let rbp = prefix_precedence(op.clone()).expect("invalid prefix operator");
+            tokens.next();
+            let operand =
+                expression_binding_power(tokens, rbp).expect("unary operator has no operand");
+            let operator = match op {
+                Minus => UnaryOperator::Minus,
+                Not => UnaryOperator::Not,
+                _ => panic!("invalid unary operator"),
+            };
+            Expression::Unary {
+                operator,
+                operand: Box::new(operand),
+            }
+        }
+        Some(Token {
+            kind: IntegerLiteral(string),
+            ..
+        }) => {
+            let string = string.to_string();
+            tokens.next();
+            Expression::Term(IntegerConstant(string))
+        }
+        _ => return None,
+    };
+
+    loop {
+        match tokens.peek() {
+            Some(Token {
+                kind: Operator(op), ..
+            }) => {
+                let (lbp, rbp) = infix_precedence(op.clone()).expect("invalid infix operator");
+                if lbp < binding_power {
+                    break;
+                }
+                tokens.next();
+                let rhs = expression_binding_power(tokens, rbp)
+                    .expect("expected rhs for binary operator");
+                lhs = Expression::Binary {
+                    operator: BinaryOperator::Plus, // TODO - get the correct operator
+                    lhs: Box::new(lhs),
+                    rhs: Box::new(rhs),
+                };
+            }
+            None => return Some(lhs),
+            _ => break,
+        }
     }
+
+    Some(lhs)
+}
+
+fn maybe_take_expression(tokens: &mut PeekableTokens<TokenKind>) -> Option<Expression> {
+    expression_binding_power(tokens, 0)
+    // if let Some(Token {
+    //     kind: IntegerLiteral(string),
+    //     ..
+    // }) = tokens.peek()
+    // {
+    //     let result = Some(Expression::Term(IntegerConstant(string.to_string())));
+    //     tokens.next();
+    //     result
+    // } else {
+    //     None
+    // }
 }
 
 fn take_class_keyword(tokens: &mut PeekableTokens<TokenKind>) {
@@ -805,27 +891,19 @@ mod tests {
                             Statement::Let {
                                 var_name: "a".to_string(),
                                 array_index: None,
-                                value: Expression::Term(TermVariant::IntegerConstant(
-                                    "1234".to_string()
-                                ))
+                                value: Expression::Term(IntegerConstant("1234".to_string()))
                             },
                             Statement::Let {
                                 var_name: "b".to_string(),
-                                array_index: Some(Expression::Term(TermVariant::IntegerConstant(
+                                array_index: Some(Expression::Term(IntegerConstant(
                                     "22".to_string()
                                 ))),
-                                value: Expression::Term(TermVariant::IntegerConstant(
-                                    "123".to_string()
-                                ))
+                                value: Expression::Term(IntegerConstant("123".to_string()))
                             },
                             Statement::If {
-                                condition: Expression::Term(TermVariant::IntegerConstant(
-                                    "1".to_string()
-                                )),
+                                condition: Expression::Term(IntegerConstant("1".to_string())),
                                 if_statements: vec![Statement::While {
-                                    condition: Expression::Term(TermVariant::IntegerConstant(
-                                        "1".to_string()
-                                    )),
+                                    condition: Expression::Term(IntegerConstant("1".to_string())),
                                     statements: vec![
                                         Statement::Do(SubroutineCall::Direct {
                                             subroutine_name: "foobar".to_string(),
@@ -833,22 +911,16 @@ mod tests {
                                         }),
                                         Statement::Do(SubroutineCall::Direct {
                                             subroutine_name: "foobar".to_string(),
-                                            arguments: vec![Expression::Term(
-                                                TermVariant::IntegerConstant("1".to_string())
-                                            )]
+                                            arguments: vec![Expression::Term(IntegerConstant(
+                                                "1".to_string()
+                                            ))]
                                         }),
                                         Statement::Do(SubroutineCall::Direct {
                                             subroutine_name: "foobar".to_string(),
                                             arguments: vec![
-                                                Expression::Term(TermVariant::IntegerConstant(
-                                                    "1".to_string()
-                                                )),
-                                                Expression::Term(TermVariant::IntegerConstant(
-                                                    "2".to_string()
-                                                )),
-                                                Expression::Term(TermVariant::IntegerConstant(
-                                                    "3".to_string()
-                                                ))
+                                                Expression::Term(IntegerConstant("1".to_string())),
+                                                Expression::Term(IntegerConstant("2".to_string())),
+                                                Expression::Term(IntegerConstant("3".to_string()))
                                             ]
                                         }),
                                         Statement::Do(SubroutineCall::Method {
@@ -859,31 +931,23 @@ mod tests {
                                         Statement::Do(SubroutineCall::Method {
                                             this_name: "foo".to_string(),
                                             method_name: "bar".to_string(),
-                                            arguments: vec![Expression::Term(
-                                                TermVariant::IntegerConstant("1".to_string())
-                                            )]
+                                            arguments: vec![Expression::Term(IntegerConstant(
+                                                "1".to_string()
+                                            ))]
                                         }),
                                         Statement::Do(SubroutineCall::Method {
                                             this_name: "foo".to_string(),
                                             method_name: "bar".to_string(),
                                             arguments: vec![
-                                                Expression::Term(TermVariant::IntegerConstant(
-                                                    "1".to_string()
-                                                )),
-                                                Expression::Term(TermVariant::IntegerConstant(
-                                                    "2".to_string()
-                                                )),
-                                                Expression::Term(TermVariant::IntegerConstant(
-                                                    "3".to_string()
-                                                ))
+                                                Expression::Term(IntegerConstant("1".to_string())),
+                                                Expression::Term(IntegerConstant("2".to_string())),
+                                                Expression::Term(IntegerConstant("3".to_string()))
                                             ]
                                         }),
                                     ]
                                 }],
                                 else_statements: Some(vec![Statement::Return(Some(
-                                    Expression::Term(TermVariant::IntegerConstant(
-                                        "123".to_string()
-                                    ))
+                                    Expression::Term(IntegerConstant("123".to_string()))
                                 ))]),
                             }
                         ]
@@ -891,5 +955,45 @@ mod tests {
                 }],
             }
         );
+    }
+
+    #[test]
+    fn test_simple_expression() {
+        assert_eq!(
+            parse_expression("1"),
+            Expression::Term(IntegerConstant("1".to_string()))
+        )
+    }
+
+    #[test]
+    fn test_simple_binary_expression() {
+        assert_eq!(
+            parse_expression("1 + 2"),
+            Expression::Binary {
+                operator: BinaryOperator::Plus,
+                lhs: Box::new(Expression::Term(IntegerConstant("1".to_string()))),
+                rhs: Box::new(Expression::Term(IntegerConstant("2".to_string()))),
+            }
+        )
+    }
+
+    #[test]
+    fn test_simple_left_associating_expression() {
+        assert_eq!(
+            parse_expression("1 + 2 + 3 + 4"),
+            Expression::Binary {
+                operator: BinaryOperator::Plus,
+                lhs: Box::new(Expression::Binary {
+                    operator: BinaryOperator::Plus,
+                    lhs: Box::new(Expression::Binary {
+                        operator: BinaryOperator::Plus,
+                        lhs: Box::new(Expression::Term(IntegerConstant("1".to_string()))),
+                        rhs: Box::new(Expression::Term(IntegerConstant("2".to_string()))),
+                    }),
+                    rhs: Box::new(Expression::Term(IntegerConstant("3".to_string()))),
+                }),
+                rhs: Box::new(Expression::Term(IntegerConstant("4".to_string()))),
+            }
+        )
     }
 }

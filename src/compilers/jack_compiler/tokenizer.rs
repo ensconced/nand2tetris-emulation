@@ -25,7 +25,7 @@ pub enum KeywordTokenVariant {
     Return,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum OperatorVariant {
     Plus,
     Minus,

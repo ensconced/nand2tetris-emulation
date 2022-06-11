@@ -154,38 +154,44 @@ struct SubroutineDeclaration {
     body: SubroutineBody,
 }
 
-fn expression_binding_power(
-    tokens: &mut PeekableTokens<TokenKind>,
-    binding_power: u8,
-) -> Option<Expression> {
-    let mut lhs = match tokens.peek() {
-        Some(Token {
-            kind: Operator(op), ..
-        }) => {
-            let op = op.clone();
-            let rbp = prefix_precedence(op.clone()).expect("invalid prefix operator");
-            tokens.next();
-            let operand =
-                expression_binding_power(tokens, rbp).expect("unary operator has no operand");
-            let operator = match op {
-                Minus => UnaryOperator::Minus,
-                Not => UnaryOperator::Not,
-                _ => panic!("invalid unary operator"),
-            };
-            Expression::Unary {
-                operator,
-                operand: Box::new(operand),
-            }
-        }
+fn maybe_take_primitive_expression(tokens: &mut PeekableTokens<TokenKind>) -> Option<Expression> {
+    match tokens.peek() {
         Some(Token {
             kind: IntegerLiteral(string),
             ..
         }) => {
             let string = string.to_string();
             tokens.next();
-            Expression::PrimitiveTerm(IntegerConstant(string))
+            Some(Expression::PrimitiveTerm(IntegerConstant(string)))
         }
-        _ => return None,
+        _ => None,
+    }
+}
+
+fn maybe_take_expression_with_binding_power(
+    tokens: &mut PeekableTokens<TokenKind>,
+    binding_power: u8,
+) -> Option<Expression> {
+    let mut lhs = if let Some(Token {
+        kind: Operator(op), ..
+    }) = tokens.peek()
+    {
+        let op = op.clone();
+        let rbp = prefix_precedence(op.clone()).expect("invalid prefix operator");
+        tokens.next();
+        let operand = maybe_take_expression_with_binding_power(tokens, rbp)
+            .expect("unary operator has no operand");
+        let operator = match op {
+            Minus => UnaryOperator::Minus,
+            Not => UnaryOperator::Not,
+            _ => panic!("invalid unary operator"),
+        };
+        Expression::Unary {
+            operator,
+            operand: Box::new(operand),
+        }
+    } else {
+        maybe_take_primitive_expression(tokens)?
     };
 
     loop {
@@ -199,7 +205,7 @@ fn expression_binding_power(
                     break;
                 }
                 tokens.next();
-                let rhs = expression_binding_power(tokens, rbp)
+                let rhs = maybe_take_expression_with_binding_power(tokens, rbp)
                     .expect("expected rhs for binary operator");
                 let operator = match op {
                     Plus => BinaryOperator::Plus,
@@ -226,21 +232,6 @@ fn expression_binding_power(
     }
 
     Some(lhs)
-}
-
-fn maybe_take_expression(tokens: &mut PeekableTokens<TokenKind>) -> Option<Expression> {
-    expression_binding_power(tokens, 0)
-    // if let Some(Token {
-    //     kind: IntegerLiteral(string),
-    //     ..
-    // }) = tokens.peek()
-    // {
-    //     let result = Some(Expression::Term(IntegerConstant(string.to_string())));
-    //     tokens.next();
-    //     result
-    // } else {
-    //     None
-    // }
 }
 
 fn take_class_keyword(tokens: &mut PeekableTokens<TokenKind>) {
@@ -276,12 +267,12 @@ fn take_identifier(tokens: &mut PeekableTokens<TokenKind>) -> String {
 }
 
 fn take_expression(tokens: &mut PeekableTokens<TokenKind>) -> Expression {
-    maybe_take_expression(tokens).expect("expected expression")
+    maybe_take_expression_with_binding_power(tokens, 0).expect("expected expression")
 }
 
 fn take_expression_list(tokens: &mut PeekableTokens<TokenKind>) -> Vec<Expression> {
     let mut result = Vec::new();
-    if let Some(expression) = maybe_take_expression(tokens) {
+    if let Some(expression) = maybe_take_expression_with_binding_power(tokens, 0) {
         result.push(expression);
         while let Some(Token { kind: Comma, .. }) = tokens.peek() {
             tokens.next();
@@ -444,7 +435,7 @@ fn take_do_statement(tokens: &mut PeekableTokens<TokenKind>) -> Statement {
 
 fn take_return_statement(tokens: &mut PeekableTokens<TokenKind>) -> Statement {
     tokens.next(); // "return" keyword
-    let expression = maybe_take_expression(tokens);
+    let expression = maybe_take_expression_with_binding_power(tokens, 0);
     take_token(tokens, Semicolon);
     Statement::Return(expression)
 }
@@ -1133,6 +1124,36 @@ mod tests {
                     operator: UnaryOperator::Not,
                     operand: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                 }),
+            }
+        )
+    }
+
+    #[test]
+    fn test_expression_with_subroutine_calls() {
+        assert_eq!(
+            parse_expression("1 + foo(1, baz.bar(1, 2), 3) + 2"),
+            Expression::Binary {
+                operator: BinaryOperator::Plus,
+                lhs: Box::new(Expression::Binary {
+                    operator: BinaryOperator::Plus,
+                    lhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                    rhs: Box::new(Expression::SubroutineCall(SubroutineCall::Direct {
+                        subroutine_name: "foo".to_string(),
+                        arguments: vec![
+                            Expression::PrimitiveTerm(IntegerConstant("1".to_string())),
+                            Expression::SubroutineCall(SubroutineCall::Method {
+                                this_name: "baz".to_string(),
+                                method_name: "bar".to_string(),
+                                arguments: vec![
+                                    Expression::PrimitiveTerm(IntegerConstant("1".to_string())),
+                                    Expression::PrimitiveTerm(IntegerConstant("2".to_string())),
+                                ]
+                            }),
+                            Expression::PrimitiveTerm(IntegerConstant("3".to_string())),
+                        ]
+                    })),
+                }),
+                rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
             }
         )
     }

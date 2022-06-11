@@ -1,8 +1,9 @@
-### vm compiler
+### jack - expression parsing
 
-- vm - enable parsing of whole files/directories (is it just a matter of parsing then concatenating the commands of all the input files?)
-- functions should include filename - check book
-- break game of life out into multiple files
+- variables
+- subroutine calls
+- array access
+- parenthesized expressions
 
 ### main program
 

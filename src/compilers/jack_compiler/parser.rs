@@ -1,5 +1,3 @@
-use std::fmt::Binary;
-
 use super::tokenizer::{
     token_defs,
     KeywordTokenVariant::{self, *},
@@ -54,7 +52,6 @@ enum PrimitiveTermVariant {
     False,
     Null,
     This,
-    Variable(String),
 }
 use PrimitiveTermVariant::*;
 
@@ -89,6 +86,7 @@ enum Expression {
         operator: UnaryOperator,
         operand: Box<Expression>,
     },
+    Variable(String),
     SubroutineCall(SubroutineCall),
     ArrayAccess {
         var_name: String,
@@ -155,17 +153,34 @@ struct SubroutineDeclaration {
 }
 
 fn maybe_take_primitive_expression(tokens: &mut PeekableTokens<TokenKind>) -> Option<Expression> {
-    match tokens.peek() {
-        Some(Token {
-            kind: IntegerLiteral(string),
-            ..
-        }) => {
-            let string = string.to_string();
+    let peeked_token = tokens.peek().map(|token| token.clone());
+    peeked_token.and_then(|token| match token.kind {
+        IntegerLiteral(string) => {
             tokens.next();
             Some(Expression::PrimitiveTerm(IntegerConstant(string)))
         }
+        StringLiteral(string) => {
+            tokens.next();
+            Some(Expression::PrimitiveTerm(StringConstant(string)))
+        }
+        Keyword(KeywordTokenVariant::True) => {
+            tokens.next();
+            Some(Expression::PrimitiveTerm(PrimitiveTermVariant::True))
+        }
+        Keyword(KeywordTokenVariant::False) => {
+            tokens.next();
+            Some(Expression::PrimitiveTerm(PrimitiveTermVariant::False))
+        }
+        Keyword(KeywordTokenVariant::Null) => {
+            tokens.next();
+            Some(Expression::PrimitiveTerm(PrimitiveTermVariant::Null))
+        }
+        Keyword(KeywordTokenVariant::This) => {
+            tokens.next();
+            Some(Expression::PrimitiveTerm(PrimitiveTermVariant::This))
+        }
         _ => None,
-    }
+    })
 }
 
 fn maybe_take_expression_with_binding_power(
@@ -182,8 +197,8 @@ fn maybe_take_expression_with_binding_power(
         let operand = maybe_take_expression_with_binding_power(tokens, rbp)
             .expect("unary operator has no operand");
         let operator = match op {
-            Minus => UnaryOperator::Minus,
-            Not => UnaryOperator::Not,
+            OperatorVariant::Minus => UnaryOperator::Minus,
+            OperatorVariant::Tilde => UnaryOperator::Not,
             _ => panic!("invalid unary operator"),
         };
         Expression::Unary {
@@ -1154,6 +1169,38 @@ mod tests {
                     })),
                 }),
                 rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+            }
+        )
+    }
+
+    #[test]
+    fn test_primitive_terms() {
+        assert_eq!(
+            parse_expression("1 + \"hello\" + true + false + null + this"),
+            Expression::Binary {
+                operator: BinaryOperator::Plus,
+                lhs: Box::new(Expression::Binary {
+                    operator: BinaryOperator::Plus,
+                    lhs: Box::new(Expression::Binary {
+                        operator: BinaryOperator::Plus,
+                        lhs: Box::new(Expression::Binary {
+                            operator: BinaryOperator::Plus,
+                            lhs: Box::new(Expression::Binary {
+                                operator: BinaryOperator::Plus,
+                                lhs: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                    "1".to_string()
+                                ))),
+                                rhs: Box::new(Expression::PrimitiveTerm(StringConstant(
+                                    "hello".to_string()
+                                ))),
+                            }),
+                            rhs: Box::new(Expression::PrimitiveTerm(PrimitiveTermVariant::True)),
+                        }),
+                        rhs: Box::new(Expression::PrimitiveTerm(PrimitiveTermVariant::False)),
+                    }),
+                    rhs: Box::new(Expression::PrimitiveTerm(PrimitiveTermVariant::Null)),
+                }),
+                rhs: Box::new(Expression::PrimitiveTerm(PrimitiveTermVariant::This))
             }
         )
     }

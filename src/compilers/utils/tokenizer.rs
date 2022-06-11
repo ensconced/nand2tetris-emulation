@@ -21,7 +21,7 @@ impl<LangTokenKind: Debug> Tokenizer<LangTokenKind> {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Token<LangTokenKind>
 where
     LangTokenKind: 'static,

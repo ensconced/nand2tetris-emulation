@@ -1,6 +1,6 @@
 use crate::compilers::utils::tokenizer::TokenDef;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum KeywordTokenVariant {
     Class,
     Constructor,
@@ -39,7 +39,7 @@ pub enum OperatorVariant {
     Tilde,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum TokenKind {
     Keyword(KeywordTokenVariant),
     IntegerLiteral(String),

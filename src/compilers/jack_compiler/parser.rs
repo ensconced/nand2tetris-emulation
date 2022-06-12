@@ -153,7 +153,7 @@ struct SubroutineDeclaration {
 }
 
 fn maybe_take_primitive_expression(tokens: &mut PeekableTokens<TokenKind>) -> Option<Expression> {
-    let peeked_token = tokens.peek().map(|token| token.clone());
+    let peeked_token = tokens.peek().cloned();
     peeked_token.and_then(|token| match token.kind {
         IntegerLiteral(string) => {
             tokens.next();
@@ -190,6 +190,19 @@ fn take_array_access(tokens: &mut PeekableTokens<TokenKind>, var_name: String) -
     Expression::ArrayAccess {
         var_name,
         index: Box::new(index),
+    }
+}
+
+fn maybe_take_parenthesized_expression(
+    tokens: &mut PeekableTokens<TokenKind>,
+) -> Option<Expression> {
+    if let Some(Token { kind: LParen, .. }) = tokens.peek() {
+        tokens.next();
+        let expr = take_expression(tokens);
+        take_token(tokens, RParen);
+        Some(expr)
+    } else {
+        None
     }
 }
 
@@ -245,7 +258,8 @@ fn maybe_take_expression_with_binding_power(
         }
     } else {
         maybe_take_primitive_expression(tokens)
-            .or_else(|| maybe_take_term_starting_with_identifier(tokens))?
+            .or_else(|| maybe_take_term_starting_with_identifier(tokens))
+            .or_else(|| maybe_take_parenthesized_expression(tokens))?
     };
 
     loop {
@@ -1309,6 +1323,22 @@ mod tests {
                     rhs: Box::new(Expression::PrimitiveTerm(PrimitiveTermVariant::Null)),
                 }),
                 rhs: Box::new(Expression::PrimitiveTerm(PrimitiveTermVariant::This))
+            }
+        )
+    }
+
+    #[test]
+    fn test_parenthesized_expression() {
+        assert_eq!(
+            parse_expression("(1 + 2) * 3"),
+            Expression::Binary {
+                operator: BinaryOperator::Multiply,
+                lhs: Box::new(Expression::Binary {
+                    operator: BinaryOperator::Plus,
+                    lhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                    rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                }),
+                rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
             }
         )
     }

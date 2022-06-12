@@ -183,6 +183,72 @@ fn maybe_take_primitive_expression(tokens: &mut PeekableTokens<TokenKind>) -> Op
     })
 }
 
+fn take_array_access(tokens: &mut PeekableTokens<TokenKind>, var_name: String) -> Expression {
+    take_token(tokens, LSquareBracket);
+    let index = take_expression(tokens);
+    take_token(tokens, RSquareBracket);
+    Expression::ArrayAccess {
+        var_name,
+        index: Box::new(index),
+    }
+}
+
+fn take_method_subroutine_call(
+    tokens: &mut PeekableTokens<TokenKind>,
+    this_name: String,
+) -> Expression {
+    take_token(tokens, Dot);
+    let method_name = take_identifier(tokens);
+    take_token(tokens, LParen);
+    let arguments = take_expression_list(tokens);
+    take_token(tokens, RParen);
+    Expression::SubroutineCall(SubroutineCall::Method {
+        this_name,
+        method_name,
+        arguments,
+    })
+}
+
+fn take_direct_subroutine_call(
+    tokens: &mut PeekableTokens<TokenKind>,
+    subroutine_name: String,
+) -> Expression {
+    take_token(tokens, LParen);
+    let arguments = take_expression_list(tokens);
+    take_token(tokens, RParen);
+    Expression::SubroutineCall(SubroutineCall::Direct {
+        subroutine_name,
+        arguments,
+    })
+}
+
+fn maybe_take_term_starting_with_identifier(
+    tokens: &mut PeekableTokens<TokenKind>,
+) -> Option<Expression> {
+    let p = tokens.peek();
+    if let Some(Token {
+        kind: Identifier(string),
+        ..
+    }) = p
+    {
+        let string = string.to_string();
+        let identifier = take_identifier(tokens);
+        match tokens.peek() {
+            Some(Token {
+                kind: LSquareBracket,
+                ..
+            }) => Some(take_array_access(tokens, identifier)),
+            Some(Token { kind: Dot, .. }) => Some(take_method_subroutine_call(tokens, identifier)),
+            Some(Token { kind: LParen, .. }) => {
+                Some(take_direct_subroutine_call(tokens, identifier))
+            }
+            _ => Some(Expression::Variable(string)),
+        }
+    } else {
+        None
+    }
+}
+
 fn maybe_take_expression_with_binding_power(
     tokens: &mut PeekableTokens<TokenKind>,
     binding_power: u8,
@@ -206,7 +272,8 @@ fn maybe_take_expression_with_binding_power(
             operand: Box::new(operand),
         }
     } else {
-        maybe_take_primitive_expression(tokens)?
+        maybe_take_primitive_expression(tokens)
+            .or_else(|| maybe_take_term_starting_with_identifier(tokens))?
     };
 
     loop {
@@ -1169,6 +1236,75 @@ mod tests {
                     })),
                 }),
                 rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+            }
+        )
+    }
+
+    #[test]
+    fn test_expression_with_subroutine_call_and_array_access() {
+        assert_eq!(
+            parse_expression("1 + foo(1, bar[1 + 2], 3) + 2"),
+            Expression::Binary {
+                operator: BinaryOperator::Plus,
+                lhs: Box::new(Expression::Binary {
+                    operator: BinaryOperator::Plus,
+                    lhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                    rhs: Box::new(Expression::SubroutineCall(SubroutineCall::Direct {
+                        subroutine_name: "foo".to_string(),
+                        arguments: vec![
+                            Expression::PrimitiveTerm(IntegerConstant("1".to_string())),
+                            Expression::ArrayAccess {
+                                var_name: "bar".to_string(),
+                                index: Box::new(Expression::Binary {
+                                    operator: BinaryOperator::Plus,
+                                    lhs: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                        "1".to_string()
+                                    ))),
+                                    rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                        "2".to_string()
+                                    ))),
+                                })
+                            },
+                            Expression::PrimitiveTerm(IntegerConstant("3".to_string())),
+                        ]
+                    })),
+                }),
+                rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+            }
+        )
+    }
+
+    #[test]
+    fn test_expression_with_variables_subroutine_calls_and_array_access() {
+        assert_eq!(
+            parse_expression("foo + bar[baz + buz.boz(qux, wox[123]) / bing]"),
+            Expression::Binary {
+                operator: BinaryOperator::Plus,
+                lhs: Box::new(Expression::Variable("foo".to_string())),
+                rhs: Box::new(Expression::ArrayAccess {
+                    var_name: "bar".to_string(),
+                    index: Box::new(Expression::Binary {
+                        operator: BinaryOperator::Plus,
+                        lhs: Box::new(Expression::Variable("baz".to_string())),
+                        rhs: Box::new(Expression::Binary {
+                            operator: BinaryOperator::Divide,
+                            lhs: Box::new(Expression::SubroutineCall(SubroutineCall::Method {
+                                this_name: "buz".to_string(),
+                                method_name: "boz".to_string(),
+                                arguments: vec![
+                                    Expression::Variable("qux".to_string()),
+                                    Expression::ArrayAccess {
+                                        var_name: "wox".to_string(),
+                                        index: Box::new(Expression::PrimitiveTerm(
+                                            IntegerConstant("123".to_string())
+                                        ))
+                                    }
+                                ]
+                            })),
+                            rhs: Box::new(Expression::Variable("bing".to_string()))
+                        })
+                    })
+                })
             }
         )
     }

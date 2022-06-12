@@ -10,8 +10,8 @@ use crate::compilers::utils::{
 };
 
 #[derive(Debug, PartialEq)]
-struct Class {
-    name: String,
+pub struct Class {
+    pub name: String,
     var_declarations: Vec<ClassVarDeclaration>,
     subroutine_declarations: Vec<SubroutineDeclaration>,
 }
@@ -742,19 +742,6 @@ fn take_class(tokens: &mut PeekableTokens<TokenKind>) -> Class {
     }
 }
 
-fn parse(source: &str) -> Class {
-    let tokens = Tokenizer::new(token_defs()).tokenize(source);
-    let filtered = tokens.filter(|token| {
-        !matches!(
-            token.kind,
-            TokenKind::Whitespace | TokenKind::SingleLineComment | TokenKind::MultiLineComment
-        )
-    });
-    let cleaned_tokens: Box<dyn Iterator<Item = Token<TokenKind>>> = Box::new(filtered);
-    let mut cleaned_peekable_tokens = cleaned_tokens.peekable();
-    take_class(&mut cleaned_peekable_tokens)
-}
-
 fn prefix_precedence(operator: OperatorVariant) -> Option<u8> {
     match operator {
         Tilde => Some(20),
@@ -776,6 +763,19 @@ fn infix_precedence(operator: OperatorVariant) -> Option<(u8, u8)> {
         Equals => Some((1, 2)),
         _ => None,
     }
+}
+
+pub fn parse(source: &str) -> Class {
+    let tokens = Tokenizer::new(token_defs()).tokenize(source);
+    let filtered = tokens.filter(|token| {
+        !matches!(
+            token.kind,
+            TokenKind::Whitespace | TokenKind::SingleLineComment | TokenKind::MultiLineComment
+        )
+    });
+    let cleaned_tokens: Box<dyn Iterator<Item = Token<TokenKind>>> = Box::new(filtered);
+    let mut cleaned_peekable_tokens = cleaned_tokens.peekable();
+    take_class(&mut cleaned_peekable_tokens)
 }
 
 #[cfg(test)]

@@ -2,38 +2,15 @@ mod codegen;
 mod parser;
 mod tokenizer;
 
-use std::{
-    ffi::{OsStr, OsString},
-    fs, io,
-    path::{Path, PathBuf},
-};
+use std::{ffi::OsStr, fs, io, path::Path};
 
+use super::utils::source_modules::get_source_modules;
 use codegen::CodeGenerator;
-use parser::parse_lines;
-
-use self::parser::Command;
-
-struct SourceModule {
-    filename: OsString,
-    source: String,
-}
+use parser::{parse_lines, Command};
 
 pub struct VMModule<'a> {
     filename: &'a OsStr,
     commands: Box<dyn Iterator<Item = Command> + 'a>,
-}
-
-impl SourceModule {
-    fn new(path: PathBuf) -> Self {
-        let source = fs::read_to_string(&path).expect("failed to read file to string");
-        Self {
-            source,
-            filename: path
-                .file_name()
-                .expect("file name should not terminate in \"..\"")
-                .to_owned(),
-        }
-    }
 }
 
 impl<'a> VMModule<'a> {
@@ -46,14 +23,7 @@ impl<'a> VMModule<'a> {
 }
 
 pub fn compile(src_path: &Path, dest_path: &Path) -> Result<(), io::Error> {
-    let source_modules = if fs::metadata(src_path)?.is_dir() {
-        fs::read_dir(src_path)?
-            .flatten()
-            .map(|entry| SourceModule::new(entry.path()))
-            .collect()
-    } else {
-        vec![SourceModule::new(src_path.to_owned())]
-    };
+    let source_modules = get_source_modules(src_path)?;
     let vm_modules: Vec<_> = source_modules
         .iter()
         .map(|source_module| VMModule::new(&source_module.filename, &source_module.source))
@@ -145,7 +115,7 @@ mod tests {
         );
         computer.tick_until(&|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 3
-                && nth_stack_value(&computer, 0) == 3
+                && nth_stack_value(computer, 0) == 3
         });
         computer.tick_until(&|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
@@ -174,7 +144,7 @@ mod tests {
         );
         computer.tick_until(&|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 2
-                && nth_stack_value(&computer, 0) == 2051
+                && nth_stack_value(computer, 0) == 2051
         });
         computer.tick_until(&|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 1
@@ -206,7 +176,7 @@ mod tests {
         );
         computer.tick_until(&|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 6
-                && nth_stack_value(&computer, 0) == 3
+                && nth_stack_value(computer, 0) == 3
         });
         computer.tick_until(&|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 5
@@ -252,9 +222,9 @@ mod tests {
         // initialize
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         // push first arguments to stack
-        computer.tick_until(&|computer| nth_stack_value(&computer, 0) == 3);
+        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 3);
         // 1 + 2 + 3 should make 6
-        computer.tick_until(&|computer| nth_stack_value(&computer, 0) == 6);
+        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 6);
     }
 
     #[test]
@@ -280,9 +250,9 @@ mod tests {
         // initialize
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         // push first arguments to stack
-        computer.tick_until(&|computer| nth_stack_value(&computer, 0) == 3);
+        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 3);
         // 1 + 2 + 3 should make 6
-        computer.tick_until(&|computer| nth_stack_value(&computer, 0) == 6);
+        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 6);
     }
 
     #[test]
@@ -336,6 +306,6 @@ mod tests {
         // initialize
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         // 1 + 2 + 3 should make 6
-        computer.tick_until(&|computer| nth_stack_value(&computer, 0) == 55);
+        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 55);
     }
 }

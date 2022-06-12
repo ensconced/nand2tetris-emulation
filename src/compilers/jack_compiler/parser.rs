@@ -193,35 +193,6 @@ fn take_array_access(tokens: &mut PeekableTokens<TokenKind>, var_name: String) -
     }
 }
 
-fn take_method_subroutine_call(
-    tokens: &mut PeekableTokens<TokenKind>,
-    this_name: String,
-) -> Expression {
-    take_token(tokens, Dot);
-    let method_name = take_identifier(tokens);
-    take_token(tokens, LParen);
-    let arguments = take_expression_list(tokens);
-    take_token(tokens, RParen);
-    Expression::SubroutineCall(SubroutineCall::Method {
-        this_name,
-        method_name,
-        arguments,
-    })
-}
-
-fn take_direct_subroutine_call(
-    tokens: &mut PeekableTokens<TokenKind>,
-    subroutine_name: String,
-) -> Expression {
-    take_token(tokens, LParen);
-    let arguments = take_expression_list(tokens);
-    take_token(tokens, RParen);
-    Expression::SubroutineCall(SubroutineCall::Direct {
-        subroutine_name,
-        arguments,
-    })
-}
-
 fn maybe_take_term_starting_with_identifier(
     tokens: &mut PeekableTokens<TokenKind>,
 ) -> Option<Expression> {
@@ -238,10 +209,11 @@ fn maybe_take_term_starting_with_identifier(
                 kind: LSquareBracket,
                 ..
             }) => Some(take_array_access(tokens, identifier)),
-            Some(Token { kind: Dot, .. }) => Some(take_method_subroutine_call(tokens, identifier)),
-            Some(Token { kind: LParen, .. }) => {
-                Some(take_direct_subroutine_call(tokens, identifier))
-            }
+            Some(Token {
+                kind: Dot | LParen, ..
+            }) => Some(Expression::SubroutineCall(take_subroutine_call(
+                tokens, identifier,
+            ))),
             _ => Some(Expression::Variable(string)),
         }
     } else {
@@ -364,8 +336,7 @@ fn take_expression_list(tokens: &mut PeekableTokens<TokenKind>) -> Vec<Expressio
     result
 }
 
-fn take_subroutine_call(tokens: &mut PeekableTokens<TokenKind>) -> SubroutineCall {
-    let name = take_identifier(tokens);
+fn take_subroutine_call(tokens: &mut PeekableTokens<TokenKind>, name: String) -> SubroutineCall {
     match tokens.peek() {
         Some(Token { kind: LParen, .. }) => {
             // Direct function call
@@ -510,7 +481,8 @@ fn take_while_statement(tokens: &mut PeekableTokens<TokenKind>) -> Statement {
 
 fn take_do_statement(tokens: &mut PeekableTokens<TokenKind>) -> Statement {
     tokens.next(); // "do" keyword
-    let subroutine_call = take_subroutine_call(tokens);
+    let identifier = take_identifier(tokens);
+    let subroutine_call = take_subroutine_call(tokens, identifier);
     take_token(tokens, Semicolon);
     Statement::Do(subroutine_call)
 }

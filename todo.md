@@ -1,9 +1,5 @@
 ### jack - expression parsing
 
-- variables
-- subroutine calls
-- array access
-
 - parenthesized expressions
 
 ### main program

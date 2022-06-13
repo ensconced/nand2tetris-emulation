@@ -12,8 +12,8 @@ use crate::compilers::utils::{
 #[derive(Debug, PartialEq)]
 pub struct Class {
     pub name: String,
-    var_declarations: Vec<ClassVarDeclaration>,
-    subroutine_declarations: Vec<SubroutineDeclaration>,
+    pub var_declarations: Vec<ClassVarDeclaration>,
+    pub subroutine_declarations: Vec<SubroutineDeclaration>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -31,14 +31,14 @@ enum Type {
 }
 
 #[derive(Debug, PartialEq)]
-struct ClassVarDeclaration {
-    type_name: Type,
-    qualifier: ClassVarDeclarationQualifier,
-    var_names: Vec<String>,
+pub struct ClassVarDeclaration {
+    pub type_name: Type,
+    pub qualifier: ClassVarDeclarationQualifier,
+    pub var_names: Vec<String>,
 }
 
 #[derive(Debug, PartialEq)]
-enum SubroutineKind {
+pub enum SubroutineKind {
     Constructor,
     Function,
     Method,
@@ -144,12 +144,12 @@ struct SubroutineBody {
     statements: Vec<Statement>,
 }
 #[derive(Debug, PartialEq)]
-struct SubroutineDeclaration {
-    subroutine_kind: SubroutineKind,
-    return_type: Option<Type>,
-    parameters: Vec<Parameter>,
-    name: String,
-    body: SubroutineBody,
+pub struct SubroutineDeclaration {
+    pub subroutine_kind: SubroutineKind,
+    pub return_type: Option<Type>,
+    pub parameters: Vec<Parameter>,
+    pub name: String,
+    pub body: SubroutineBody,
 }
 
 fn maybe_take_primitive_expression(tokens: &mut PeekableTokens<TokenKind>) -> Option<Expression> {

@@ -11,10 +11,10 @@ use std::{fs, path::Path};
 pub fn assemble(source: String, rom_depth: usize) -> String {
     let first_pass_result = first_pass(parse_lines(&source));
     let mut code_generator = CodeGenerator::new(first_pass_result);
-    let mut machine_codes = code_generator.generate();
+    let mut machine_instructions = code_generator.generate();
     let mut result = String::new();
     for _ in 0..rom_depth {
-        if let Some(machine_code) = machine_codes.next() {
+        if let Some(machine_code) = machine_instructions.next() {
             result.push_str(&machine_code);
             result.push('\n');
         } else {

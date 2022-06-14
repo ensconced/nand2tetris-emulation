@@ -33,14 +33,18 @@ impl CodeGenerator {
         todo!()
     }
 
-    pub fn vm_code(mut self) -> String {
+    fn compile_subroutines(&mut self) {
         for subroutine in &self.class.subroutine_declarations {
-            match &subroutine.subroutine_kind {
+            match subroutine.subroutine_kind {
                 SubroutineKind::Constructor => self.compile_constructor(subroutine),
                 SubroutineKind::Function => self.compile_function(subroutine),
                 SubroutineKind::Method => self.compile_method(subroutine),
             }
         }
+    }
+
+    pub fn vm_code(&mut self) -> String {
+        self.compile_subroutines();
         todo!()
     }
 }

@@ -17,13 +17,13 @@ pub struct Class {
 }
 
 #[derive(Debug, PartialEq)]
-enum ClassVarDeclarationQualifier {
+pub enum ClassVarDeclarationKind {
     Static,
     Field,
 }
 
 #[derive(Debug, PartialEq)]
-enum Type {
+pub enum Type {
     Int,
     Char,
     Boolean,
@@ -33,7 +33,7 @@ enum Type {
 #[derive(Debug, PartialEq)]
 pub struct ClassVarDeclaration {
     pub type_name: Type,
-    pub qualifier: ClassVarDeclarationQualifier,
+    pub qualifier: ClassVarDeclarationKind,
     pub var_names: Vec<String>,
 }
 
@@ -95,9 +95,9 @@ enum Expression {
 }
 
 #[derive(Debug, PartialEq)]
-struct Parameter {
-    type_name: Type,
-    var_name: String,
+pub struct Parameter {
+    pub type_name: Type,
+    pub var_name: String,
 }
 
 #[derive(Debug, PartialEq)]
@@ -139,9 +139,9 @@ struct VarDeclaration {
 }
 
 #[derive(Debug, PartialEq)]
-struct SubroutineBody {
-    var_declarations: Vec<VarDeclaration>,
-    statements: Vec<Statement>,
+pub struct SubroutineBody {
+    pub var_declarations: Vec<VarDeclaration>,
+    pub statements: Vec<Statement>,
 }
 #[derive(Debug, PartialEq)]
 pub struct SubroutineDeclaration {
@@ -632,14 +632,14 @@ fn take_class_subroutine_declarations(
 
 fn take_class_var_declaration_qualifier(
     tokens: &mut PeekableTokens<TokenKind>,
-) -> ClassVarDeclarationQualifier {
+) -> ClassVarDeclarationKind {
     match tokens.next() {
         Some(Token {
             kind: Keyword(keyword),
             ..
         }) => match keyword {
-            Static => ClassVarDeclarationQualifier::Static,
-            Field => ClassVarDeclarationQualifier::Field,
+            Static => ClassVarDeclarationKind::Static,
+            Field => ClassVarDeclarationKind::Field,
             _ => panic!("expected var declaration qualifier",),
         },
         _ => panic!("expected var declaration qualifier",),
@@ -819,7 +819,7 @@ mod tests {
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![ClassVarDeclaration {
-                    qualifier: ClassVarDeclarationQualifier::Static,
+                    qualifier: ClassVarDeclarationKind::Static,
                     type_name: Type::Int,
                     var_names: vec!["bar".to_string()]
                 }],
@@ -843,17 +843,17 @@ mod tests {
                 name: "foo".to_string(),
                 var_declarations: vec![
                     ClassVarDeclaration {
-                        qualifier: ClassVarDeclarationQualifier::Static,
+                        qualifier: ClassVarDeclarationKind::Static,
                         type_name: Type::Int,
                         var_names: vec!["bar".to_string()]
                     },
                     ClassVarDeclaration {
-                        qualifier: ClassVarDeclarationQualifier::Field,
+                        qualifier: ClassVarDeclarationKind::Field,
                         type_name: Type::Char,
                         var_names: vec!["baz".to_string(), "buz".to_string(), "boz".to_string()]
                     },
                     ClassVarDeclaration {
-                        qualifier: ClassVarDeclarationQualifier::Field,
+                        qualifier: ClassVarDeclarationKind::Field,
                         type_name: Type::Boolean,
                         var_names: vec!["a".to_string(), "b".to_string(), "c".to_string()]
                     }

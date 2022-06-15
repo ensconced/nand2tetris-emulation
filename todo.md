@@ -12,6 +12,8 @@
 - mandelbrot
 - tetris
 - game of life
+- asteriods
+- snake
 - game selector
 
 ### hardware
@@ -31,6 +33,7 @@
 
 - add print instruction, only included when compilation is targeting the emulator
 - report stack overflows etc in emulator
+- improve indentation of emitted vm and asm code
 
 ### refactoring
 

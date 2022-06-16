@@ -66,6 +66,7 @@ impl CodeGenerator {
         array_index: Option<Expression>,
         value: Expression,
     ) -> String {
+        // TODO - check types
         todo!()
     }
 

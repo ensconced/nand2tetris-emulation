@@ -12,7 +12,7 @@
 - mandelbrot
 - tetris
 - game of life
-- asteriods
+- asteroids
 - snake
 - game selector
 

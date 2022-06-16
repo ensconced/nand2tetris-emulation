@@ -45,7 +45,7 @@ pub enum SubroutineKind {
 }
 
 #[derive(Debug, PartialEq)]
-enum PrimitiveTermVariant {
+pub enum PrimitiveTermVariant {
     IntegerConstant(String),
     StringConstant(String),
     True,
@@ -56,7 +56,7 @@ enum PrimitiveTermVariant {
 use PrimitiveTermVariant::*;
 
 #[derive(Debug, PartialEq)]
-enum BinaryOperator {
+pub enum BinaryOperator {
     Plus,
     Minus,
     Multiply,
@@ -69,7 +69,7 @@ enum BinaryOperator {
 }
 
 #[derive(Debug, PartialEq)]
-enum UnaryOperator {
+pub enum UnaryOperator {
     Minus,
     Not,
 }

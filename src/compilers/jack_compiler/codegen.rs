@@ -1,34 +1,48 @@
 use super::parser::{
-    Class, ClassVarDeclaration, ClassVarDeclarationKind, Expression, Parameter, Statement,
-    SubroutineBody, SubroutineCall, SubroutineDeclaration, SubroutineKind, Type, VarDeclaration,
+    BinaryOperator, Class, ClassVarDeclaration, ClassVarDeclarationKind, Expression, Parameter,
+    PrimitiveTermVariant, Statement, SubroutineBody, SubroutineCall, SubroutineDeclaration,
+    SubroutineKind, Type, UnaryOperator, VarDeclaration,
 };
 use std::collections::HashMap;
+
+enum SymbolKind {
+    Local,
+    Parameter,
+    Field,
+    Static,
+}
 
 struct Symbol {
     offset: usize,
     symbol_type: Type,
+    kind: SymbolKind,
 }
 
 pub struct CodeGenerator {
     class_fields: HashMap<String, Symbol>,
     class_statics: HashMap<String, Symbol>,
+    subroutine_while_count: usize,
     subroutine_parameters: HashMap<String, Symbol>,
     subroutine_vars: HashMap<String, Symbol>,
+    subroutine_kind: Option<SubroutineKind>,
 }
 
 impl CodeGenerator {
     pub fn new() -> Self {
         CodeGenerator {
+            subroutine_while_count: 0,
             class_fields: HashMap::new(),
             class_statics: HashMap::new(),
             subroutine_parameters: HashMap::new(),
             subroutine_vars: HashMap::new(),
+            subroutine_kind: None,
         }
     }
 
     fn clear_subroutine(&mut self) {
         self.subroutine_parameters.clear();
         self.subroutine_vars.clear();
+        self.subroutine_while_count = 0;
     }
 
     fn compile_constructor(
@@ -51,6 +65,7 @@ impl CodeGenerator {
                     Symbol {
                         offset: self.subroutine_vars.len(),
                         symbol_type: var_declaration.type_name,
+                        kind: SymbolKind::Local,
                     },
                 );
             }
@@ -84,12 +99,154 @@ impl CodeGenerator {
         todo!()
     }
 
+    fn compile_array_access_expression(&mut self, var_name: String, index: Expression) -> String {
+        todo!()
+    }
+
+    fn compile_binary_expression(
+        &mut self,
+        operator: BinaryOperator,
+        lhs: Expression,
+        rhs: Expression,
+    ) -> String {
+        todo!()
+    }
+
+    fn compile_primitive_term_expression(
+        &mut self,
+        primitive_term: PrimitiveTermVariant,
+    ) -> String {
+        todo!()
+    }
+
+    fn compile_direct_subroutine_call_expression(
+        &mut self,
+        subroutine_name: String,
+        arguments: Vec<Expression>,
+    ) -> String {
+        todo!()
+    }
+
+    fn compile_method_subroutine_call_expression(
+        &mut self,
+        this_name: String,
+        method_name: String,
+        arguments: Vec<Expression>,
+    ) -> String {
+        todo!()
+    }
+
+    fn compile_subroutine_call_expression(&mut self, subroutine_call: SubroutineCall) -> String {
+        match subroutine_call {
+            SubroutineCall::Direct {
+                subroutine_name,
+                arguments,
+            } => self.compile_direct_subroutine_call_expression(subroutine_name, arguments),
+            SubroutineCall::Method {
+                this_name,
+                method_name,
+                arguments,
+            } => self.compile_method_subroutine_call_expression(this_name, method_name, arguments),
+        }
+    }
+
+    fn compile_unary_expression(&mut self, operator: UnaryOperator, operand: Expression) -> String {
+        let perform_op = match operator {
+            UnaryOperator::Minus => "neg",
+            UnaryOperator::Not => "not",
+        };
+
+        format!(
+            "
+        {push_value}
+        {perform_op}
+        ",
+            push_value = self.compile_expression(operand),
+            perform_op = perform_op
+        )
+    }
+
+    fn resolve_symbol(&mut self, var_name: String) -> Option<&Symbol> {
+        self.subroutine_vars
+            .get(&var_name)
+            .or_else(|| self.subroutine_parameters.get(&var_name))
+            .or_else(|| {
+                if let Some(SubroutineKind::Method | SubroutineKind::Constructor) =
+                    self.subroutine_kind
+                {
+                    self.class_fields.get(&var_name)
+                } else {
+                    None
+                }
+            })
+            .or_else(|| self.class_statics.get(&var_name))
+    }
+
+    fn compile_variable_expression(&mut self, var_name: String) -> String {
+        let symbol = self
+            .resolve_symbol(var_name)
+            .unwrap_or_else(|| panic!("failed to resolve variable {}", var_name));
+
+        let symbol_kind = match symbol.kind {
+            SymbolKind::Local => "local",
+            SymbolKind::Parameter => "argument",
+            SymbolKind::Field => "this",
+            SymbolKind::Static => "static",
+        };
+
+        format!("push {} {}", symbol_kind, symbol.offset)
+    }
+
+    fn compile_expression(&mut self, expression: Expression) -> String {
+        match expression {
+            Expression::ArrayAccess { var_name, index } => {
+                self.compile_array_access_expression(var_name, *index)
+            }
+            Expression::Binary { operator, lhs, rhs } => {
+                self.compile_binary_expression(operator, *lhs, *rhs)
+            }
+            Expression::PrimitiveTerm(primitive_term) => {
+                self.compile_primitive_term_expression(primitive_term)
+            }
+            Expression::SubroutineCall(subroutine_call) => {
+                self.compile_subroutine_call_expression(subroutine_call)
+            }
+            Expression::Unary { operator, operand } => {
+                self.compile_unary_expression(operator, *operand)
+            }
+            Expression::Variable(var_name) => self.compile_variable_expression(var_name),
+        }
+    }
+
+    fn compile_statements(&mut self, statements: Vec<Statement>) -> String {
+        let compiled_statements: Vec<_> = statements
+            .into_iter()
+            .map(|statement| self.compile_statement(statement))
+            .collect();
+        compiled_statements.join("\n")
+    }
+
     fn compile_while_statement(
         &mut self,
         condition: Expression,
         statements: Vec<Statement>,
     ) -> String {
-        todo!()
+        let result = format!(
+            "
+        label start_while_{while_idx}
+          {condition}
+          not
+          if-goto end_while_{while_idx}
+          {body}
+          goto start_while_{while_idx}
+          label end_while_{while_idx}
+        ",
+            while_idx = self.subroutine_while_count,
+            condition = self.compile_expression(condition),
+            body = self.compile_statements(statements)
+        );
+        self.subroutine_while_count += 1;
+        result
     }
 
     fn compile_statement(&mut self, statement: Statement) -> String {
@@ -134,6 +291,7 @@ impl CodeGenerator {
                 Symbol {
                     offset: self.subroutine_parameters.len(),
                     symbol_type: parameter.type_name,
+                    kind: SymbolKind::Parameter,
                 },
             );
         }
@@ -173,10 +331,16 @@ impl CodeGenerator {
     ) -> String {
         let parts: Vec<_> = subroutine_declarations
             .into_iter()
-            .map(|subroutine| match subroutine.subroutine_kind {
-                SubroutineKind::Constructor => self.compile_constructor(subroutine, &class_name),
-                SubroutineKind::Function => self.compile_function(subroutine, &class_name),
-                SubroutineKind::Method => self.compile_method(subroutine, &class_name),
+            .map(|subroutine| {
+                self.subroutine_kind = Some(subroutine.subroutine_kind);
+
+                match subroutine.subroutine_kind {
+                    SubroutineKind::Constructor => {
+                        self.compile_constructor(subroutine, &class_name)
+                    }
+                    SubroutineKind::Function => self.compile_function(subroutine, &class_name),
+                    SubroutineKind::Method => self.compile_method(subroutine, &class_name),
+                }
             })
             .collect();
         parts.join("\n")
@@ -184,9 +348,9 @@ impl CodeGenerator {
 
     fn compile_var_declarations(&mut self, var_declarations: Vec<ClassVarDeclaration>) {
         for var_declaration in var_declarations {
-            let hashmap = match var_declaration.qualifier {
-                ClassVarDeclarationKind::Static => self.class_statics,
-                ClassVarDeclarationKind::Field => self.class_fields,
+            let (hashmap, symbol_kind) = match var_declaration.qualifier {
+                ClassVarDeclarationKind::Static => (self.class_statics, SymbolKind::Static),
+                ClassVarDeclarationKind::Field => (self.class_fields, SymbolKind::Field),
             };
             for var_name in var_declaration.var_names {
                 hashmap.insert(
@@ -194,6 +358,7 @@ impl CodeGenerator {
                     Symbol {
                         offset: hashmap.len(),
                         symbol_type: var_declaration.type_name,
+                        kind: symbol_kind,
                     },
                 );
             }

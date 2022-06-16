@@ -1,39 +1,34 @@
 use super::parser::{
-    Class, ClassVarDeclaration, ClassVarDeclarationKind, Parameter, SubroutineBody,
-    SubroutineDeclaration, SubroutineKind, Type,
+    Class, ClassVarDeclaration, ClassVarDeclarationKind, Expression, Parameter, Statement,
+    SubroutineBody, SubroutineCall, SubroutineDeclaration, SubroutineKind, Type, VarDeclaration,
 };
 use std::collections::HashMap;
 
-struct ClassSymbol {
+struct Symbol {
     offset: usize,
-    field_type: Type,
-}
-struct SubroutineSymbol {
-    offset: usize,
-    field_type: Type,
+    symbol_type: Type,
 }
 
 pub struct CodeGenerator {
-    class_field_count: usize,
-    class_static_count: usize,
-    class_fields: HashMap<String, ClassSymbol>,
-    class_statics: HashMap<String, ClassSymbol>,
-    subroutine_parameters: HashMap<String, SubroutineSymbol>,
+    class_fields: HashMap<String, Symbol>,
+    class_statics: HashMap<String, Symbol>,
+    subroutine_parameters: HashMap<String, Symbol>,
+    subroutine_vars: HashMap<String, Symbol>,
 }
 
 impl CodeGenerator {
     pub fn new() -> Self {
         CodeGenerator {
-            class_field_count: 0,
-            class_static_count: 0,
             class_fields: HashMap::new(),
             class_statics: HashMap::new(),
             subroutine_parameters: HashMap::new(),
+            subroutine_vars: HashMap::new(),
         }
     }
 
     fn clear_subroutine(&mut self) {
         self.subroutine_parameters.clear();
+        self.subroutine_vars.clear();
     }
 
     fn compile_constructor(
@@ -48,18 +43,96 @@ impl CodeGenerator {
         todo!()
     }
 
-    fn compile_method_body(&mut self, method_body: SubroutineBody) -> String {
-        // TODO - when compiling body, should check return statements against return type
+    fn compile_subroutine_var_declarations(&mut self, var_declarations: Vec<VarDeclaration>) {
+        for var_declaration in var_declarations {
+            for var_name in var_declaration.var_names {
+                self.subroutine_vars.insert(
+                    var_name,
+                    Symbol {
+                        offset: self.subroutine_vars.len(),
+                        symbol_type: var_declaration.type_name,
+                    },
+                );
+            }
+        }
+    }
+    fn compile_do_statement(&mut self, subroutine_call: SubroutineCall) -> String {
         todo!()
     }
 
+    fn compile_let_statement(
+        &mut self,
+        var_name: String,
+        array_index: Option<Expression>,
+        value: Expression,
+    ) -> String {
+        todo!()
+    }
+
+    fn compile_if_statement(
+        &mut self,
+        condition: Expression,
+        if_statements: Vec<Statement>,
+        else_statements: Option<Vec<Statement>>,
+    ) -> String {
+        todo!()
+    }
+
+    fn compile_return_statement(&mut self, return_value: Option<Expression>) -> String {
+        // TODO - check return statements against return type
+        todo!()
+    }
+
+    fn compile_while_statement(
+        &mut self,
+        condition: Expression,
+        statements: Vec<Statement>,
+    ) -> String {
+        todo!()
+    }
+
+    fn compile_statement(&mut self, statement: Statement) -> String {
+        match statement {
+            Statement::Do(subroutine_call) => self.compile_do_statement(subroutine_call),
+            Statement::Let {
+                var_name,
+                array_index,
+                value,
+            } => self.compile_let_statement(var_name, array_index, value),
+            Statement::If {
+                condition,
+                if_statements,
+                else_statements,
+            } => self.compile_if_statement(condition, if_statements, else_statements),
+            Statement::Return(expression) => self.compile_return_statement(expression),
+            Statement::While {
+                condition,
+                statements,
+            } => self.compile_while_statement(condition, statements),
+        }
+    }
+
+    fn compile_method_body(
+        &mut self,
+        method_body: SubroutineBody,
+        return_type: Option<Type>,
+    ) -> String {
+        self.compile_subroutine_var_declarations(method_body.var_declarations);
+        let compiled_statements: Vec<_> = method_body
+            .statements
+            .into_iter()
+            .map(|statement| self.compile_statement(statement))
+            .collect();
+        compiled_statements.join("\n")
+    }
+
     fn compile_method_parameters(&mut self, parameters: Vec<Parameter>) {
-        for (idx, parameter) in parameters.into_iter().enumerate() {
+        for parameter in parameters {
             self.subroutine_parameters.insert(
                 parameter.var_name,
-                SubroutineSymbol {
-                    offset: idx + 1,
-                    field_type: parameter.type_name,
+                Symbol {
+                    offset: self.subroutine_parameters.len(),
+                    symbol_type: parameter.type_name,
                 },
             );
         }
@@ -87,7 +160,7 @@ impl CodeGenerator {
             function_name = method.name,
             class_name = class_name,
             params_len = param_count + 1,
-            body = self.compile_method_body(method.body),
+            body = self.compile_method_body(method.body, method.return_type),
             implicit_return = implicit_return
         )
     }
@@ -110,19 +183,18 @@ impl CodeGenerator {
 
     fn compile_var_declarations(&mut self, var_declarations: Vec<ClassVarDeclaration>) {
         for var_declaration in var_declarations {
-            let (hashmap, var_count) = match var_declaration.qualifier {
-                ClassVarDeclarationKind::Static => (self.class_statics, &self.class_static_count),
-                ClassVarDeclarationKind::Field => (self.class_fields, &self.class_field_count),
+            let hashmap = match var_declaration.qualifier {
+                ClassVarDeclarationKind::Static => self.class_statics,
+                ClassVarDeclarationKind::Field => self.class_fields,
             };
             for var_name in var_declaration.var_names {
                 hashmap.insert(
                     var_name,
-                    ClassSymbol {
-                        offset: self.class_field_count,
-                        field_type: var_declaration.type_name,
+                    Symbol {
+                        offset: hashmap.len(),
+                        symbol_type: var_declaration.type_name,
                     },
                 );
-                *var_count += 1;
             }
         }
     }

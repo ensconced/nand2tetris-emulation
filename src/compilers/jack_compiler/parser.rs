@@ -75,7 +75,7 @@ enum UnaryOperator {
 }
 
 #[derive(Debug, PartialEq)]
-enum Expression {
+pub enum Expression {
     PrimitiveTerm(PrimitiveTermVariant),
     Binary {
         operator: BinaryOperator,
@@ -101,7 +101,7 @@ pub struct Parameter {
 }
 
 #[derive(Debug, PartialEq)]
-enum SubroutineCall {
+pub enum SubroutineCall {
     Direct {
         subroutine_name: String,
         arguments: Vec<Expression>,
@@ -114,7 +114,7 @@ enum SubroutineCall {
 }
 
 #[derive(Debug, PartialEq)]
-enum Statement {
+pub enum Statement {
     Let {
         var_name: String,
         array_index: Option<Expression>,
@@ -133,9 +133,9 @@ enum Statement {
     Return(Option<Expression>),
 }
 #[derive(Debug, PartialEq)]
-struct VarDeclaration {
-    type_name: Type,
-    var_names: Vec<String>,
+pub struct VarDeclaration {
+    pub type_name: Type,
+    pub var_names: Vec<String>,
 }
 
 #[derive(Debug, PartialEq)]

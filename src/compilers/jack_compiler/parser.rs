@@ -22,7 +22,7 @@ pub enum ClassVarDeclarationKind {
     Field,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Type {
     Int,
     Char,
@@ -37,7 +37,7 @@ pub struct ClassVarDeclaration {
     pub var_names: Vec<String>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum SubroutineKind {
     Constructor,
     Function,

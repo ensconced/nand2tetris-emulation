@@ -14,8 +14,8 @@ mod tokenizer;
 
 fn compile_source_module(source_module: &SourceModule) -> String {
     let class = parse(&source_module.source);
-    let code_generator = CodeGenerator::new(class);
-    code_generator.vm_code()
+    let mut code_generator = CodeGenerator::new();
+    code_generator.vm_code(class)
 }
 
 fn compile(src_path: &Path, dest_path: &Path) {

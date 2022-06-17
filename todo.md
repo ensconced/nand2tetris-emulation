@@ -2,6 +2,7 @@
 
 - code to compile entire input directory - reuse what we already have from vm compiler
 - testing setup - basically call functions and test what ends up on the stack using similar within_n_ticks code as for vm testing?
+- typechecking
 - codegen for subroutines...
 - write barebones versions of key stdlib functions in Jack - e.g. Sys.init, Memory.alloc, String.appendChar, String.new etc to allow testing
 - write full stdlib

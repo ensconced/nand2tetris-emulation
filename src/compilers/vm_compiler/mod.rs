@@ -1,4 +1,4 @@
-mod codegen;
+pub mod codegen;
 mod parser;
 mod tokenizer;
 
@@ -14,7 +14,7 @@ pub struct VMModule<'a> {
 }
 
 impl<'a> VMModule<'a> {
-    fn new(filename: &'a OsStr, source: &'a str) -> Self {
+    pub fn new(filename: &'a OsStr, source: &'a str) -> Self {
         Self {
             filename,
             commands: Box::new(parse_lines(source)),
@@ -36,46 +36,7 @@ pub fn compile(src_path: &Path, dest_path: &Path) -> Result<(), io::Error> {
 mod tests {
     use super::*;
 
-    use crate::compilers::assembler::assemble;
-    use crate::{emulator::computer::Computer, emulator::config, emulator::generate_rom};
-
-    fn program_computer(vm_code: &str) -> Computer {
-        let vm_modules = vec![VMModule::new(
-            Path::new("testpath").file_name().unwrap(),
-            vm_code,
-        )];
-        let code_generator = CodeGenerator::new();
-        let asm = code_generator.generate_asm(vm_modules);
-        let machine_code = assemble(asm, config::ROM_DEPTH);
-        Computer::new(generate_rom::from_string(machine_code))
-    }
-
-    fn stack_pointer(computer: &Computer) -> i16 {
-        computer.ram.lock().unwrap()[0]
-    }
-
-    fn this(computer: &Computer, offset: usize) -> i16 {
-        let pointer_to_this = pointer(computer, 0);
-        let ram = computer.ram.lock().unwrap();
-        ram[pointer_to_this as usize + offset]
-    }
-
-    fn pointer(computer: &Computer, offset: usize) -> i16 {
-        let ram = computer.ram.lock().unwrap();
-        ram[3 + offset]
-    }
-
-    fn static_variable(computer: &Computer, offset: usize) -> i16 {
-        let ram = computer.ram.lock().unwrap();
-        ram[16 + offset]
-    }
-
-    fn nth_stack_value(computer: &Computer, n: usize) -> i16 {
-        let ram = computer.ram.lock().unwrap();
-        ram[ram[0] as usize - (1 + n)]
-    }
-
-    const INITIAL_STACK_POINTER_ADDRESS: i16 = 261;
+    use crate::compilers::utils::testing::*;
 
     #[test]
     fn test_initialization() {

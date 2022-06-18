@@ -37,7 +37,7 @@ pub struct ClassVarDeclaration {
     pub var_names: Vec<String>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum SubroutineKind {
     Constructor,
     Function,

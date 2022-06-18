@@ -137,7 +137,7 @@ impl Computer {
             } else {
                 &[]
             };
-            let heap = &ram[2048..2148];
+            let heap = &ram[2048..2148]; // just show start of heap
             let temp = format!("{:?}", &ram[5..=12]);
             let debug_info = DebugInfo {
                 pc: self.cpu.pc,

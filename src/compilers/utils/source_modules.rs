@@ -1,7 +1,6 @@
 use std::{
     ffi::OsString,
-    fs::{self, Metadata},
-    io,
+    fs, io,
     path::{Path, PathBuf},
 };
 

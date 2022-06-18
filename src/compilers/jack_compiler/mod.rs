@@ -2,7 +2,7 @@ use crate::compilers::jack_compiler::codegen::CodeGenerator;
 
 use self::parser::parse;
 
-use super::utils::source_modules::{get_source_modules, SourceModule};
+use super::utils::source_modules::get_source_modules;
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -12,16 +12,16 @@ mod codegen;
 mod parser;
 mod tokenizer;
 
-fn compile_source(source: &str) -> String {
+pub fn compile(source: &str) -> String {
     let class = parse(source);
     let mut code_generator = CodeGenerator::new();
     code_generator.vm_code(class)
 }
 
-fn compile(src_path: &Path, dest_path: &Path) {
+pub fn compile_files(src_path: &Path, dest_path: &Path) {
     let source_modules = get_source_modules(src_path).expect("failed to get source modules");
     for source_module in source_modules {
-        let vm_code = compile_source(&source_module.source);
+        let vm_code = compile(&source_module.source);
         let mut module_dest_path = if source_module.entrypoint_is_dir {
             dest_path.join(source_module.filename)
         } else {
@@ -34,18 +34,66 @@ fn compile(src_path: &Path, dest_path: &Path) {
 
 #[cfg(test)]
 mod tests {
-    use super::compile_source;
+    use crate::compilers::utils::testing::*;
 
-    // #[test]
-    // fn test_foo() {
-    //     let source = "
-    //         class foo {
-    //             method void bar () {
-    //                 var int a;
-    //                 let a = 1 + 2 + 3;
-    //             }
-    //         }
-    //     ";
-    //     assert_eq!(compile_source(source), "asdf");
-    // }
+    #[test]
+    fn test_addition() {
+        let mut computer = computer_from_jack_code(
+            "
+            class Sys {
+                function void init () {
+                    var int a;
+                    let a = 1000 + 1000 + 1000;
+                }
+            }
+        ",
+        );
+        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 3000);
+    }
+
+    #[test]
+    fn test_function_calling() {
+        let mut computer = computer_from_jack_code(
+            "
+            class Sys {
+                function void init () {
+                    return add(1000, 1000) + 3;
+                }
+
+                function int add(int a, int b) {
+                    return a + b;
+                }
+            }
+        ",
+        );
+        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 2000);
+        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 2003);
+    }
+
+    #[test]
+    fn test_fibonacci() {
+        let mut computer = computer_from_jack_code(
+            "
+            class Sys {
+                function void init () {
+                    return fibonacci(30);
+                }
+
+                function int fibonacci(int n) {
+                    if (n = 0) {
+                        return 0;
+                    }
+                    if (n = 1) {
+                        return 1;
+                    }
+                    return fibonacci(n - 1) + fibonacci(n - 2);
+                }
+            }
+        ",
+        );
+        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 28657);
+    }
 }

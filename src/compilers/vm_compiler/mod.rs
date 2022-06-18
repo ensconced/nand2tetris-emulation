@@ -1,19 +1,19 @@
-pub mod codegen;
+mod codegen;
 mod parser;
 mod tokenizer;
 
 use std::{ffi::OsStr, fs, io, path::Path};
 
 use super::utils::source_modules::get_source_modules;
-use codegen::CodeGenerator;
+pub use codegen::CodeGenerator;
 use parser::{parse_lines, Command};
 
-pub struct VMModule<'a> {
+pub struct ParsedModule<'a> {
     filename: &'a OsStr,
     commands: Box<dyn Iterator<Item = Command> + 'a>,
 }
 
-impl<'a> VMModule<'a> {
+impl<'a> ParsedModule<'a> {
     pub fn new(filename: &'a OsStr, source: &'a str) -> Self {
         Self {
             filename,
@@ -26,7 +26,7 @@ pub fn compile(src_path: &Path, dest_path: &Path) -> Result<(), io::Error> {
     let source_modules = get_source_modules(src_path)?;
     let vm_modules: Vec<_> = source_modules
         .iter()
-        .map(|source_module| VMModule::new(&source_module.filename, &source_module.source))
+        .map(|source_module| ParsedModule::new(&source_module.filename, &source_module.source))
         .collect();
     let code_generator = CodeGenerator::new();
     fs::write(dest_path, code_generator.generate_asm(vm_modules))
@@ -34,19 +34,17 @@ pub fn compile(src_path: &Path, dest_path: &Path) -> Result<(), io::Error> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use crate::compilers::utils::testing::*;
 
     #[test]
     fn test_initialization() {
-        let mut computer = program_computer("");
+        let mut computer = computer_from_vm_code("");
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
     }
 
     #[test]
     fn test_push_constant() {
-        let mut computer = program_computer(
+        let mut computer = computer_from_vm_code(
             "
         function Sys.init 0
         push constant 123
@@ -60,7 +58,7 @@ mod tests {
 
     #[test]
     fn test_pop_push_static() {
-        let mut computer = program_computer(
+        let mut computer = computer_from_vm_code(
             "
             function Sys.init 0
             push constant 1
@@ -94,7 +92,7 @@ mod tests {
 
     #[test]
     fn test_pop_push_this() {
-        let mut computer = program_computer(
+        let mut computer = computer_from_vm_code(
             "
             function Sys.init 0
             push constant 1234
@@ -118,7 +116,7 @@ mod tests {
 
     #[test]
     fn test_arithmetic() {
-        let mut computer = program_computer(
+        let mut computer = computer_from_vm_code(
             "
             function Sys.init 0
             push constant 6
@@ -164,7 +162,7 @@ mod tests {
 
     #[test]
     fn test_add_function() {
-        let mut computer = program_computer(
+        let mut computer = computer_from_vm_code(
             "
             function somefile.add 0
             push argument 0
@@ -190,7 +188,7 @@ mod tests {
 
     #[test]
     fn test_sys_init_with_local() {
-        let mut computer = program_computer(
+        let mut computer = computer_from_vm_code(
             "
             function somefile.add 0
             push argument 0
@@ -218,7 +216,7 @@ mod tests {
 
     #[test]
     fn test_fibonacci() {
-        let mut computer = program_computer(
+        let mut computer = computer_from_vm_code(
             "
             function somefile.add 0
             push argument 0

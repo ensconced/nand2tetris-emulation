@@ -13,7 +13,7 @@ use super::{
         PointerSegmentVariant::{self, *},
         UnaryArithmeticCommandVariant::*,
     },
-    VMModule,
+    ParsedModule,
 };
 
 fn string_lines(source: &str) -> impl Iterator<Item = String> {
@@ -685,7 +685,7 @@ impl CodeGenerator {
             Flow(flow_command) => self.compile_flow_command(flow_command),
         }
     }
-    pub fn generate_asm(mut self, vm_modules: Vec<VMModule>) -> String {
+    pub fn generate_asm(mut self, vm_modules: Vec<ParsedModule>) -> String {
         let mut result = Vec::new();
         for vm_module in vm_modules {
             for command in vm_module.commands {

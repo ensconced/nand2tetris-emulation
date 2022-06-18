@@ -1,19 +1,28 @@
 use crate::compilers::{
     assembler::assemble,
-    vm_compiler::{codegen::CodeGenerator, VMModule},
+    jack_compiler,
+    vm_compiler::{self, ParsedModule},
 };
 use crate::{emulator::computer::Computer, emulator::config, emulator::generate_rom};
 use std::path::Path;
 
-pub fn program_computer(vm_code: &str) -> Computer {
-    let vm_modules = vec![VMModule::new(
+pub const INITIAL_STACK_POINTER_ADDRESS: i16 = 261;
+
+pub fn computer_from_vm_code(vm_code: &str) -> Computer {
+    let vm_modules = vec![ParsedModule::new(
         Path::new("testpath").file_name().unwrap(),
         vm_code,
     )];
-    let code_generator = CodeGenerator::new();
-    let asm = code_generator.generate_asm(vm_modules);
+    let vm_code_generator = vm_compiler::CodeGenerator::new();
+    let asm = vm_code_generator.generate_asm(vm_modules);
     let machine_code = assemble(asm, config::ROM_DEPTH);
     Computer::new(generate_rom::from_string(machine_code))
+}
+
+pub fn computer_from_jack_code(jack_code: &str) -> Computer {
+    let vm_code = jack_compiler::compile(jack_code);
+    println!("{}", vm_code);
+    computer_from_vm_code(&vm_code)
 }
 
 pub fn stack_pointer(computer: &Computer) -> i16 {
@@ -40,5 +49,3 @@ pub fn nth_stack_value(computer: &Computer, n: usize) -> i16 {
     let ram = computer.ram.lock().unwrap();
     ram[ram[0] as usize - (1 + n)]
 }
-
-pub const INITIAL_STACK_POINTER_ADDRESS: i16 = 261;

@@ -8,7 +8,6 @@ use crate::compilers::utils::{
     },
     tokenizer::Token,
 };
-use std::iter::Peekable;
 
 #[derive(PartialEq, Debug)]
 pub enum UnaryArithmeticCommandVariant {

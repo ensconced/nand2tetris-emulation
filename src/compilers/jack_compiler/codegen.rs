@@ -1,7 +1,7 @@
 use super::parser::{
     BinaryOperator, Class, ClassVarDeclaration, ClassVarDeclarationKind, Expression, Parameter,
-    PrimitiveTermVariant, Statement, SubroutineBody, SubroutineCall, SubroutineDeclaration,
-    SubroutineKind, Type, UnaryOperator, VarDeclaration,
+    PrimitiveTermVariant, Statement, SubroutineCall, SubroutineDeclaration, SubroutineKind, Type,
+    UnaryOperator, VarDeclaration,
 };
 use std::collections::HashMap;
 
@@ -220,7 +220,7 @@ impl CodeGenerator {
             PrimitiveTermVariant::True => "push 0\nnot".to_string(),
             PrimitiveTermVariant::IntegerConstant(int_string) => {
                 format!(
-                    "push {}",
+                    "push constant {}",
                     int_string
                         .parse::<i16>()
                         .unwrap_or_else(|_| panic!("{} is not valid 16 bit int", int_string))
@@ -470,9 +470,9 @@ impl CodeGenerator {
     fn compile_subroutine_parameters(&mut self, parameters: Vec<Parameter>) {
         for parameter in parameters {
             let offset = if self.subroutine_kind == Some(SubroutineKind::Method) {
-                self.subroutine_parameters.len()
-            } else {
                 self.subroutine_parameters.len() + 1
+            } else {
+                self.subroutine_parameters.len()
             };
 
             self.subroutine_parameters.insert(
@@ -531,7 +531,7 @@ impl CodeGenerator {
                 format!(
                     "
                 function {class_name}.{function_name} {locals_count}
-                  push {instance_size}
+                  push constant {instance_size}
                   call Memory.alloc 1
                   pop pointer 0
                   {compiled_statements}

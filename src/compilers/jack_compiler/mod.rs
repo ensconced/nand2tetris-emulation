@@ -36,16 +36,16 @@ fn compile(src_path: &Path, dest_path: &Path) {
 mod tests {
     use super::compile_source;
 
-    #[test]
-    fn test_foo() {
-        let source = "
-            class foo {
-                method void bar () {
-                    var int a;
-                    let a = 1 + 2 + 3;
-                }
-            }
-        ";
-        assert_eq!(compile_source(source), "asdf");
-    }
+    // #[test]
+    // fn test_foo() {
+    //     let source = "
+    //         class foo {
+    //             method void bar () {
+    //                 var int a;
+    //                 let a = 1 + 2 + 3;
+    //             }
+    //         }
+    //     ";
+    //     assert_eq!(compile_source(source), "asdf");
+    // }
 }

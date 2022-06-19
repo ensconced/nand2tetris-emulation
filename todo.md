@@ -1,8 +1,10 @@
 ### Jack codegen
 
+- implement proper Sys class - Sys.init should init other stdlib classes then call Main.main
+- implement Memory.dealloc
+- implement better allocation algo
 - code to compile entire input directory - reuse what we already have from vm compiler
-- testing setup - basically call functions and test what ends up on the stack using similar within_n_ticks code as for vm testing?
-- typechecking
+- typechecking? but will need to allow some coercions - e.g. obj to array for Memory.dealloc, array to obj for constructors.
 - check arg count equals param count? might be difficult - would need to look across classes sometimes...
 - codegen for subroutines...
 - write barebones versions of key stdlib functions in Jack - e.g. Sys.init, Memory.alloc, String.appendChar, String.new etc to allow testing

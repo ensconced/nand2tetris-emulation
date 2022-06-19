@@ -1,9 +1,13 @@
 use std::ops::Deref;
 
+use std::path::Path;
+
 use crate::compilers::{
     assembler::assemble, jack_compiler, utils::source_modules::SourceModule, vm_compiler,
 };
 use crate::{emulator::computer::Computer, emulator::config, emulator::generate_rom};
+
+use super::source_modules::get_source_modules;
 
 pub const INITIAL_STACK_POINTER_ADDRESS: i16 = 261;
 
@@ -25,7 +29,21 @@ pub fn computer_from_vm_code(vm_code_sources: Vec<&str>) -> Computer {
 }
 
 pub fn computer_from_jack_code(jack_code: Vec<&str>) -> Computer {
-    let vm_code: Vec<_> = jack_code.into_iter().map(jack_compiler::compile).collect();
+    let std_lib_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("std_lib");
+
+    let std_lib_source: Vec<_> = get_source_modules(&std_lib_dir)
+        .expect("failed to get stdlib modules")
+        .into_iter()
+        .map(|stdlib_module| stdlib_module.source)
+        .collect();
+
+    let vm_code: Vec<_> = std_lib_source
+        .iter()
+        .map(|source| source.deref())
+        .chain(jack_code.into_iter())
+        .map(jack_compiler::compile)
+        .collect();
+
     computer_from_vm_code(vm_code.iter().map(|x| x.deref()).collect())
 }
 

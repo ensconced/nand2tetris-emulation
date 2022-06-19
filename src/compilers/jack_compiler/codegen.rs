@@ -95,7 +95,7 @@ impl CodeGenerator {
         value: Expression,
     ) -> String {
         let compiled_value = self.compile_expression(value);
-        let compiled_var = self.compile_variable(var_name);
+        let compiled_var = self.compile_variable(&var_name);
 
         if let Some(idx) = array_index {
             let compiled_idx = self.compile_expression(idx);
@@ -169,7 +169,7 @@ impl CodeGenerator {
     }
 
     fn compile_array_access_expression(&mut self, var_name: String, index: Expression) -> String {
-        let array_var = self.compile_variable(var_name);
+        let array_var = self.compile_variable(&var_name);
         let push_index = self.compile_expression(index);
         format!(
             "
@@ -298,21 +298,44 @@ impl CodeGenerator {
         method_name: String,
         arguments: Vec<Expression>,
     ) -> String {
-        let symbol = self.resolve_symbol(&this_name);
-        match symbol.symbol_type.clone() {
-            Type::ClassName(this_class) => {
-                let arg_count = arguments.len() + 1;
-                let this = self.compile_variable(this_name);
-                let push_arguments = self.compile_push_arguments(arguments);
-                format!(
-                    "
-                  push {this}
-                  {push_arguments}
-                  call {this_class}.{method_name} {arg_count}
-                "
-                )
+        let arg_count = arguments.len();
+        let push_arguments = self.compile_push_arguments(arguments);
+
+        if let Some(symbol) = self.maybe_resolve_symbol(&this_name) {
+            println!(
+                "resolved symbol: this_name: {}, method_name: {}",
+                &this_name, &method_name
+            );
+
+            // Treat it as a method.
+            match symbol.symbol_type.clone() {
+                Type::ClassName(this_class) => {
+                    let arg_count_with_this = arg_count + 1;
+                    let this = self.compile_variable(&this_name);
+                    format!(
+                        "
+                        push {this}
+                        {push_arguments}
+                        call {this_class}.{method_name} {arg_count_with_this}
+                        "
+                    )
+                }
+                other_type => panic!("cannot call method on {:?}", other_type),
             }
-            other_type => panic!("cannot call method on {:?}", other_type),
+        } else {
+            println!(
+                "failed to resolve symbol: this_name: {}, method_name: {}",
+                &this_name, &method_name
+            );
+            // Treat it as constructor or function. Could be on this class or on
+            // a different class. These are not resolved by the jack compiler -
+            // resolution happens later, in the vm compiler.
+            format!(
+                "
+              {push_arguments}
+              call {this_name}.{method_name} {arg_count}
+            "
+            )
         }
     }
 
@@ -361,7 +384,7 @@ impl CodeGenerator {
         )
     }
 
-    fn resolve_symbol(&mut self, var_name: &String) -> &Symbol {
+    fn maybe_resolve_symbol(&mut self, var_name: &str) -> Option<&Symbol> {
         self.subroutine_vars
             .get(var_name)
             .or_else(|| self.subroutine_parameters.get(var_name))
@@ -375,11 +398,15 @@ impl CodeGenerator {
                 }
             })
             .or_else(|| self.class_statics.get(var_name))
+    }
+
+    fn resolve_symbol(&mut self, var_name: &str) -> &Symbol {
+        self.maybe_resolve_symbol(var_name)
             .unwrap_or_else(|| panic!("failed to resolve symbol for {}", var_name))
     }
 
-    fn compile_variable(&mut self, var_name: String) -> String {
-        let symbol = self.resolve_symbol(&var_name);
+    fn compile_variable(&mut self, var_name: &str) -> String {
+        let symbol = self.resolve_symbol(var_name);
 
         let symbol_kind = match symbol.kind {
             SymbolKind::Local => "local",
@@ -409,7 +436,7 @@ impl CodeGenerator {
                 self.compile_unary_expression(operator, *operand)
             }
             Expression::Variable(var_name) => {
-                format!("push {}", self.compile_variable(var_name))
+                format!("push {}", self.compile_variable(&var_name))
             }
         }
     }
@@ -497,9 +524,9 @@ impl CodeGenerator {
         self.compile_subroutine_parameters(subroutine.parameters);
 
         let implicit_return = if subroutine.return_type.is_none() {
-            "push constant 0"
+            "push constant 0\nreturn"
         } else {
-            ""
+            "return"
         };
 
         let locals_count =

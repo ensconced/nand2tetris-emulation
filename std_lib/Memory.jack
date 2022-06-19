@@ -1,0 +1,35 @@
+class Memory {
+  static Array memory;
+  static int next_free_heap_address;
+
+  // For internal use only.
+  function void init() {
+    let memory = 0;
+    let next_free_heap_address = 2048;
+  }
+
+  function int peek(int address) {
+    return memory[address];
+  }
+
+  function void poke(int address, int value) {
+    let memory[address] = value;
+  }
+
+  // Finds and allocates from the heap a memory block of the specified size and
+  // returns a reference to its base address.
+  // There is no no guard against overflowing the heap.
+  function Array alloc(int size) {
+    // TODO - proper implementation
+    var int result;
+    let result = next_free_heap_address;
+    let next_free_heap_address = next_free_heap_address + size;
+    return result;
+  }
+
+  // De-allocates the given object and frees its memory space.
+  // The argument can be an Array, or any other class instance.
+  function void deAlloc(Array object) {
+    // not yet implemented!
+  }
+}

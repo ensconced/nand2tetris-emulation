@@ -144,4 +144,40 @@ mod tests {
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         computer.tick_until(&|computer| nth_stack_value(computer, 0) == 3382);
     }
+
+    #[test]
+    fn test_class_methods() {
+        let mut computer = computer_from_jack_code(vec![
+            "
+            class Sys {
+                function void init () {
+                    var Rectangle rect;
+
+                    do Memory.init();
+
+                    let rect = Rectangle.new(4, 5);
+                    do rect.perimeter();
+                    return;
+                }
+            }
+        ",
+            "
+            class Rectangle {
+                field int width, height;
+
+                constructor Rectangle new(int w, int h) {
+                    let width = w;
+                    let height = h;
+                    return this;
+                }
+
+                method int perimeter() {
+                    return width + width + height + height;
+                }
+            }
+        ",
+        ]);
+        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 18);
+    }
 }

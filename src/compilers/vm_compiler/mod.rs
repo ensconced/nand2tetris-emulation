@@ -4,7 +4,7 @@ mod tokenizer;
 
 use std::{ffi::OsString, fs, io, path::Path};
 
-use super::utils::source_modules::get_source_modules;
+use super::utils::source_modules::{get_source_modules, SourceModule};
 use parser::{parse_lines, Command};
 
 pub struct ParsedModule<'a> {
@@ -12,24 +12,16 @@ pub struct ParsedModule<'a> {
     commands: Box<dyn Iterator<Item = Command> + 'a>,
 }
 
-impl<'a> ParsedModule<'a> {
-    pub fn from_source<T: Into<OsString>>(filename: T, source: &'a str) -> Self {
-        Self {
-            filename: filename.into(),
-            commands: Box::new(parse_lines(source)),
-        }
+pub fn parse<'a>(source_module: &'a SourceModule) -> ParsedModule<'a> {
+    ParsedModule {
+        filename: source_module.filename.to_owned().into(),
+        commands: Box::new(parse_lines(&source_module.source)),
     }
 }
 
 pub fn compile(src_path: &Path, dest_path: &Path) -> Result<(), io::Error> {
     let source_modules = get_source_modules(src_path)?;
-    let parsed_modules: Vec<_> = source_modules
-        .iter()
-        .map(|source_module| {
-            ParsedModule::from_source(&source_module.filename, &source_module.source)
-        })
-        .collect();
-    let asm = codegen::generate_asm(parsed_modules);
+    let asm = codegen::generate_asm(source_modules.iter().map(parse).collect());
     fs::write(dest_path, asm)
 }
 
@@ -39,18 +31,18 @@ mod tests {
 
     #[test]
     fn test_initialization() {
-        let mut computer = computer_from_vm_code("");
+        let mut computer = computer_from_vm_code(vec![""]);
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
     }
 
     #[test]
     fn test_push_constant() {
-        let mut computer = computer_from_vm_code(
+        let mut computer = computer_from_vm_code(vec![
             "
         function Sys.init 0
         push constant 123
         ",
-        );
+        ]);
         computer.tick_until(&|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 1
                 && nth_stack_value(computer, 0) == 123
@@ -59,7 +51,7 @@ mod tests {
 
     #[test]
     fn test_pop_push_static() {
-        let mut computer = computer_from_vm_code(
+        let mut computer = computer_from_vm_code(vec![
             "
             function Sys.init 0
             push constant 1
@@ -72,7 +64,7 @@ mod tests {
             push static 100
             push static 200
         ",
-        );
+        ]);
         computer.tick_until(&|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 3
                 && nth_stack_value(computer, 0) == 3
@@ -93,7 +85,7 @@ mod tests {
 
     #[test]
     fn test_pop_push_this() {
-        let mut computer = computer_from_vm_code(
+        let mut computer = computer_from_vm_code(vec![
             "
             function Sys.init 0
             push constant 1234
@@ -101,7 +93,7 @@ mod tests {
             pop pointer 0
             pop this 2
             ",
-        );
+        ]);
         computer.tick_until(&|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 2
                 && nth_stack_value(computer, 0) == 2051
@@ -117,7 +109,7 @@ mod tests {
 
     #[test]
     fn test_arithmetic() {
-        let mut computer = computer_from_vm_code(
+        let mut computer = computer_from_vm_code(vec![
             "
             function Sys.init 0
             push constant 6
@@ -133,7 +125,7 @@ mod tests {
             eq
             pop constant 0
             ",
-        );
+        ]);
         computer.tick_until(&|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 6
                 && nth_stack_value(computer, 0) == 3
@@ -163,7 +155,7 @@ mod tests {
 
     #[test]
     fn test_add_function() {
-        let mut computer = computer_from_vm_code(
+        let mut computer = computer_from_vm_code(vec![
             "
             function somefile.add 0
             push argument 0
@@ -178,7 +170,7 @@ mod tests {
             push constant 3
             call somefile.add 2
             ",
-        );
+        ]);
         // initialize
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         // push first arguments to stack
@@ -189,7 +181,7 @@ mod tests {
 
     #[test]
     fn test_sys_init_with_local() {
-        let mut computer = computer_from_vm_code(
+        let mut computer = computer_from_vm_code(vec![
             "
             function somefile.add 0
             push argument 0
@@ -206,7 +198,7 @@ mod tests {
             push local 0
             call somefile.add 2
             ",
-        );
+        ]);
         // initialize
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         // push first arguments to stack
@@ -217,7 +209,7 @@ mod tests {
 
     #[test]
     fn test_fibonacci() {
-        let mut computer = computer_from_vm_code(
+        let mut computer = computer_from_vm_code(vec![
             "
             function somefile.add 0
             push argument 0
@@ -262,7 +254,7 @@ mod tests {
             push constant 10
             call somefile.fibonacci 1
             ",
-        );
+        ]);
         // initialize
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         // 1 + 2 + 3 should make 6

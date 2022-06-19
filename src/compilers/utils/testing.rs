@@ -1,21 +1,32 @@
-use crate::compilers::{assembler::assemble, jack_compiler, vm_compiler};
+use std::ops::Deref;
+
+use crate::compilers::{
+    assembler::assemble, jack_compiler, utils::source_modules::SourceModule, vm_compiler,
+};
 use crate::{emulator::computer::Computer, emulator::config, emulator::generate_rom};
 
 pub const INITIAL_STACK_POINTER_ADDRESS: i16 = 261;
 
-pub fn computer_from_vm_code(vm_code: &str) -> Computer {
-    let parsed_vm_modules = vec![vm_compiler::ParsedModule::from_source(
-        "some_filename",
-        vm_code,
-    )];
+pub fn computer_from_vm_code(vm_code_sources: Vec<&str>) -> Computer {
+    let source_modules: Vec<_> = vm_code_sources
+        .into_iter()
+        .map(|vm_code| SourceModule {
+            filename: "some_filename".into(),
+            source: vm_code.to_owned(),
+            entrypoint_is_dir: false,
+        })
+        .collect();
+
+    let parsed_vm_modules: Vec<_> = source_modules.iter().map(vm_compiler::parse).collect();
+
     let asm = vm_compiler::codegen::generate_asm(parsed_vm_modules);
     let machine_code = assemble(asm, config::ROM_DEPTH);
     Computer::new(generate_rom::from_string(machine_code))
 }
 
-pub fn computer_from_jack_code(jack_code: &str) -> Computer {
-    let vm_code = jack_compiler::compile(jack_code);
-    computer_from_vm_code(&vm_code)
+pub fn computer_from_jack_code(jack_code: Vec<&str>) -> Computer {
+    let vm_code: Vec<_> = jack_code.into_iter().map(jack_compiler::compile).collect();
+    computer_from_vm_code(vm_code.iter().map(|x| x.deref()).collect())
 }
 
 pub fn stack_pointer(computer: &Computer) -> i16 {

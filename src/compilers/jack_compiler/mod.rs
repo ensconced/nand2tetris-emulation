@@ -41,7 +41,7 @@ mod tests {
 
     #[test]
     fn test_addition() {
-        let mut computer = computer_from_jack_code(
+        let mut computer = computer_from_jack_code(vec![
             "
             class Sys {
                 function void init () {
@@ -50,14 +50,14 @@ mod tests {
                 }
             }
         ",
-        );
+        ]);
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         computer.tick_until(&|computer| nth_stack_value(computer, 0) == 3000);
     }
 
     #[test]
     fn test_function_calling() {
-        let mut computer = computer_from_jack_code(
+        let mut computer = computer_from_jack_code(vec![
             "
             class Sys {
                 function void init () {
@@ -69,7 +69,7 @@ mod tests {
                 }
             }
         ",
-        );
+        ]);
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         computer.tick_until(&|computer| nth_stack_value(computer, 0) == 2000);
         computer.tick_until(&|computer| nth_stack_value(computer, 0) == 2003);
@@ -77,7 +77,7 @@ mod tests {
 
     #[test]
     fn test_fibonacci() {
-        let mut computer = computer_from_jack_code(
+        let mut computer = computer_from_jack_code(vec![
             "
             class Sys {
                 function void init () {
@@ -95,14 +95,14 @@ mod tests {
                 }
             }
         ",
-        );
+        ]);
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         computer.tick_until(&|computer| nth_stack_value(computer, 0) == 28657);
     }
 
     #[test]
     fn test_sum_even_fibonaccis() {
-        let mut computer = computer_from_jack_code(
+        let mut computer = computer_from_jack_code(vec![
             "
             class Sys {
                 function void init () {
@@ -140,7 +140,7 @@ mod tests {
                 }
             }
         ",
-        );
+        ]);
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         computer.tick_until(&|computer| nth_stack_value(computer, 0) == 3382);
     }

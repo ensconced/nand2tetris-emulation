@@ -1,20 +1,14 @@
-use crate::compilers::{
-    assembler::assemble,
-    jack_compiler,
-    vm_compiler::{self, ParsedModule},
-};
+use crate::compilers::{assembler::assemble, jack_compiler, vm_compiler};
 use crate::{emulator::computer::Computer, emulator::config, emulator::generate_rom};
-use std::path::Path;
 
 pub const INITIAL_STACK_POINTER_ADDRESS: i16 = 261;
 
 pub fn computer_from_vm_code(vm_code: &str) -> Computer {
-    let vm_modules = vec![ParsedModule::new(
-        Path::new("testpath").file_name().unwrap(),
+    let vm_modules = vec![vm_compiler::ParsedModule::from_source(
+        "some_filename",
         vm_code,
     )];
-    let vm_code_generator = vm_compiler::CodeGenerator::new();
-    let asm = vm_code_generator.generate_asm(vm_modules);
+    let asm = vm_compiler::codegen::generate_asm(vm_modules);
     let machine_code = assemble(asm, config::ROM_DEPTH);
     Computer::new(generate_rom::from_string(machine_code))
 }

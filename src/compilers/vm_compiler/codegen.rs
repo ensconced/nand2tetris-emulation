@@ -221,7 +221,7 @@ fn push_from_constant(index: u16) -> Vec<String> {
     .collect()
 }
 
-pub struct CodeGenerator {
+struct CodeGenerator {
     after_set_to_false_count: u32,
     return_address_count: u32,
     current_function: Option<String>,
@@ -685,16 +685,18 @@ impl CodeGenerator {
             Flow(flow_command) => self.compile_flow_command(flow_command),
         }
     }
-    pub fn generate_asm(mut self, vm_modules: Vec<ParsedModule>) -> String {
-        let mut result = Vec::new();
-        for vm_module in vm_modules {
-            for command in vm_module.commands {
-                for asm_instruction in self.compile_vm_command(command, vm_module.filename) {
-                    result.push(asm_instruction);
-                }
+}
+
+pub fn generate_asm(vm_modules: Vec<ParsedModule>) -> String {
+    let mut code_generator = CodeGenerator::new();
+    let mut result = Vec::new();
+    for vm_module in vm_modules {
+        for command in vm_module.commands {
+            for asm_instruction in code_generator.compile_vm_command(command, &vm_module.filename) {
+                result.push(asm_instruction);
             }
         }
-        let v: Vec<_> = prelude().chain(result.into_iter()).collect();
-        v.join("\n")
     }
+    let v: Vec<_> = prelude().chain(result.into_iter()).collect();
+    v.join("\n")
 }

@@ -1,22 +1,21 @@
-mod codegen;
+pub mod codegen;
 mod parser;
 mod tokenizer;
 
-use std::{ffi::OsStr, fs, io, path::Path};
+use std::{ffi::OsString, fs, io, path::Path};
 
 use super::utils::source_modules::get_source_modules;
-pub use codegen::CodeGenerator;
 use parser::{parse_lines, Command};
 
 pub struct ParsedModule<'a> {
-    filename: &'a OsStr,
+    filename: OsString,
     commands: Box<dyn Iterator<Item = Command> + 'a>,
 }
 
 impl<'a> ParsedModule<'a> {
-    pub fn new(filename: &'a OsStr, source: &'a str) -> Self {
+    pub fn from_source<T: Into<OsString>>(filename: T, source: &'a str) -> Self {
         Self {
-            filename,
+            filename: filename.into(),
             commands: Box::new(parse_lines(source)),
         }
     }
@@ -24,12 +23,14 @@ impl<'a> ParsedModule<'a> {
 
 pub fn compile(src_path: &Path, dest_path: &Path) -> Result<(), io::Error> {
     let source_modules = get_source_modules(src_path)?;
-    let vm_modules: Vec<_> = source_modules
+    let parsed_modules: Vec<_> = source_modules
         .iter()
-        .map(|source_module| ParsedModule::new(&source_module.filename, &source_module.source))
+        .map(|source_module| {
+            ParsedModule::from_source(&source_module.filename, &source_module.source)
+        })
         .collect();
-    let code_generator = CodeGenerator::new();
-    fs::write(dest_path, code_generator.generate_asm(vm_modules))
+    let asm = codegen::generate_asm(parsed_modules);
+    fs::write(dest_path, asm)
 }
 
 #[cfg(test)]

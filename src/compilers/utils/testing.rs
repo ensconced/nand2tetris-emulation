@@ -21,7 +21,6 @@ pub fn computer_from_vm_code(vm_code: &str) -> Computer {
 
 pub fn computer_from_jack_code(jack_code: &str) -> Computer {
     let vm_code = jack_compiler::compile(jack_code);
-    println!("{}", vm_code);
     computer_from_vm_code(&vm_code)
 }
 

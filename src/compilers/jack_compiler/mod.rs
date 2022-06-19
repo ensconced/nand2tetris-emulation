@@ -2,7 +2,7 @@ use crate::compilers::jack_compiler::codegen::CodeGenerator;
 
 use self::parser::parse;
 
-use super::utils::source_modules::get_source_modules;
+use super::utils::source_modules::{get_source_modules, SourceModule};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -16,6 +16,13 @@ pub fn compile(source: &str) -> String {
     let class = parse(source);
     let mut code_generator = CodeGenerator::new();
     code_generator.vm_code(class)
+}
+
+fn compile_modules(modules: &[SourceModule]) -> Vec<String> {
+    modules
+        .iter()
+        .map(|module| compile(&module.source))
+        .collect()
 }
 
 pub fn compile_files(src_path: &Path, dest_path: &Path) {
@@ -95,5 +102,50 @@ mod tests {
         );
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         computer.tick_until(&|computer| nth_stack_value(computer, 0) == 28657);
+    }
+
+    #[test]
+    fn test_sum_even_fibonaccis() {
+        let mut computer = computer_from_jack_code(
+            "
+            class Sys {
+                function void init () {
+                    do sum_even_fibonacci_numbers();
+                }
+
+                function void sum_even_fibonacci_numbers () {
+                    var int sum, i, fib;
+                    let sum = 0;
+                    let i = 0;
+
+                    while (i < 20) {
+                        let fib = fibonacci(i);
+                        if (is_even(fib)) {
+                            let sum = sum + fib;
+                        }
+                        let i = i + 1;
+                    }
+
+                    return sum;
+                }
+
+                function int fibonacci(int n) {
+                    if (n = 0) {
+                        return 0;
+                    }
+                    if (n = 1) {
+                        return 1;
+                    }
+                    return fibonacci(n - 1) + fibonacci(n - 2);
+                }
+
+                function bool is_even(int n) {
+                    return (n & 1) = 0;
+                }
+            }
+        ",
+        );
+        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 3382);
     }
 }

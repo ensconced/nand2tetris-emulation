@@ -19,7 +19,7 @@ struct Symbol {
     kind: SymbolKind,
 }
 
-pub struct CodeGenerator {
+struct CodeGenerator {
     class_name: Option<String>,
     class_fields: HashMap<String, Symbol>,
     class_statics: HashMap<String, Symbol>,
@@ -579,10 +579,11 @@ impl CodeGenerator {
 
         instance_size
     }
+}
 
-    pub fn vm_code(&mut self, class: Class) -> String {
-        self.class_name = Some(class.name.clone());
-        let instance_size = self.compile_var_declarations(class.var_declarations);
-        self.compile_subroutines(class.subroutine_declarations, instance_size)
-    }
+pub fn generate_vm_code(class: Class) -> String {
+    let mut code_generator = CodeGenerator::new();
+    code_generator.class_name = Some(class.name.clone());
+    let class_instance_size = code_generator.compile_var_declarations(class.var_declarations);
+    code_generator.compile_subroutines(class.subroutine_declarations, class_instance_size)
 }

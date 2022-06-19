@@ -4,11 +4,11 @@ use crate::{emulator::computer::Computer, emulator::config, emulator::generate_r
 pub const INITIAL_STACK_POINTER_ADDRESS: i16 = 261;
 
 pub fn computer_from_vm_code(vm_code: &str) -> Computer {
-    let vm_modules = vec![vm_compiler::ParsedModule::from_source(
+    let parsed_vm_modules = vec![vm_compiler::ParsedModule::from_source(
         "some_filename",
         vm_code,
     )];
-    let asm = vm_compiler::codegen::generate_asm(vm_modules);
+    let asm = vm_compiler::codegen::generate_asm(parsed_vm_modules);
     let machine_code = assemble(asm, config::ROM_DEPTH);
     Computer::new(generate_rom::from_string(machine_code))
 }

@@ -1,5 +1,3 @@
-use crate::compilers::jack_compiler::codegen::CodeGenerator;
-
 use self::parser::parse;
 
 use super::utils::source_modules::{get_source_modules, SourceModule};
@@ -13,9 +11,7 @@ mod parser;
 mod tokenizer;
 
 pub fn compile(source: &str) -> String {
-    let class = parse(source);
-    let mut code_generator = CodeGenerator::new();
-    code_generator.vm_code(class)
+    codegen::generate_vm_code(parse(source))
 }
 
 fn compile_modules(modules: &[SourceModule]) -> Vec<String> {

@@ -180,4 +180,22 @@ mod tests {
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         computer.tick_until(&|computer| nth_stack_value(computer, 0) == 18);
     }
+
+    #[test]
+    fn test_multiplication() {
+        let mut computer = computer_from_jack_code(vec![
+            "
+            class Sys {
+                function void init () {
+                    var int a, b;
+                    let a = 333 * 83;
+                    let b = 10 * -2;
+                }
+            }
+        ",
+        ]);
+        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 333 * 83);
+        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 10 * -2);
+    }
 }

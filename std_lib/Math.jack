@@ -82,5 +82,20 @@ class Math {
   }
 
   // Integer part of the square root
-  function int sqrt(int x) {}
+  function int sqrt(int x) {
+    // use binary search
+    var int y, offset, with_offset;
+    let y = 0;
+    let offset = 255;
+
+    while (offset >= 1) {
+      let with_offset = y + offset;
+       if (with_offset * with_offset <= x) {
+        let y = with_offset;
+      }
+      let offset = offset / 2;
+    }
+
+    return y;
+  }
 }

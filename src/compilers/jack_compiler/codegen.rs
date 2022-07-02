@@ -323,10 +323,6 @@ impl CodeGenerator {
                 other_type => panic!("cannot call method on {:?}", other_type),
             }
         } else {
-            println!(
-                "failed to resolve symbol: this_name: {}, method_name: {}",
-                &this_name, &method_name
-            );
             // Treat it as constructor or function. Could be on this class or on
             // a different class. These are not resolved by the jack compiler -
             // resolution happens later, in the vm compiler.

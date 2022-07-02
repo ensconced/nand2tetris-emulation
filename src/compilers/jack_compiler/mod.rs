@@ -201,4 +201,44 @@ mod tests {
         computer.tick_until(&|computer| nth_stack_value(computer, 0) == 10 * -2);
         computer.tick_until(&|computer| nth_stack_value(computer, 0) == -123 * -123);
     }
+
+    #[test]
+    fn test_abs() {
+        let mut computer = computer_from_jack_code(vec![
+            "
+            class Sys {
+                function void init () {
+                    var int a, b, c, d;
+                    let a = Math.abs(1234) + Math.abs(-1234);
+                    let b = Math.abs(-999) + Math.abs(999);
+                }
+            }
+        ",
+        ]);
+        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 1234 + 1234);
+        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 999 + 999);
+    }
+
+    #[test]
+    fn test_division() {
+        let mut computer = computer_from_jack_code(vec![
+            "
+            class Sys {
+                function void init () {
+                    var int a, b, c, d;
+                    let a = 4191 / -3;
+                    let b = 1234 / 123;
+                    let c = -5198 / 182;
+                    let c = 9099 / 33;
+                }
+            }
+        ",
+        ]);
+        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 4191 / -3);
+        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 1234 / 123);
+        computer.tick_until(&|computer| nth_stack_value(computer, 0) == -5198 / 182);
+        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 9099 / 33);
+    }
 }

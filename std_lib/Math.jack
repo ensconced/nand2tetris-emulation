@@ -30,8 +30,40 @@ class Math {
     return result;
   }
 
+  function int abs(int x) {
+    if (x < 0) {
+      return -x;
+    }
+    return x;
+  }
+
   // Returns the integer part of x/y.
-  function int divide(int x, int y) {}
+  function int divide(int x, int y) {
+    var int absx, absy;
+
+    let absx = abs(x);
+    let absy = abs(y);
+
+    if (x < 0 = y < 0) {
+      return divide_non_negatives(absx, absy);
+    }
+    return -divide_non_negatives(absx, absy);
+  }
+
+  function int divide_non_negatives(int x, int y) {
+    var int quotient_for_double_divisor, double_divisor, remainder;
+    if (y > x) {
+      return 0;
+    }
+    let double_divisor = 2 * y;
+    let quotient_for_double_divisor = divide(x, double_divisor);
+    let remainder = x - quotient_for_double_divisor * double_divisor;
+    if (remainder < y) {
+      return 2 * quotient_for_double_divisor;
+    } else {
+      return 2 * quotient_for_double_divisor + 1;
+    }
+  }
 
   function int min(int x, int y) {
     if (x < y) {

@@ -1,0 +1,31 @@
+class String {
+  field int base_pointer, length;
+
+  constructor String new(int max_length) {
+    let base_pointer = Memory.alloc(max_length);
+    let length = 0;
+    return this;
+  }
+
+  method void dispose() {
+    do Memory.deAlloc(base_pointer);
+    do Memory.deAlloc(this);
+  }
+
+  method char charAt(int j) {
+    return base_pointer[j];
+  }
+
+  method int length() {
+    return length;
+  }
+
+  method void setCharAt(int j, char c) {
+    let base_pointer[j] = c;
+  }
+
+  method void appendChar(char c) {
+    let base_pointer[length] = c;
+    let length = length + 1;
+  }
+}

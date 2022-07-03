@@ -263,4 +263,26 @@ mod tests {
         computer.tick_until(&|computer| nth_stack_value(computer, 0) == 100);
         computer.tick_until(&|computer| nth_stack_value(computer, 0) == 121);
     }
+
+    #[test]
+    fn test_string() {
+        let mut computer = computer_from_jack_code(vec![
+            "
+            class Sys {
+                function void init () {
+                    var int a;
+                    do Memory.init();
+                    let a = \"hello\";
+                    do Memory.usage();
+                }
+            }
+            ",
+        ]);
+        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        for char in "hello".encode_utf16() {
+            computer.tick_until(&|computer| nth_stack_value(computer, 0) == char as i16);
+        }
+        // expect memory usage to be 2 for string itself, plus 5 for the underlying buffer
+        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 7);
+    }
 }

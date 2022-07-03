@@ -1,6 +1,10 @@
 class Memory {
-  static Array memory;
+  static int memory;
   static int next_free_heap_address;
+
+  function int usage() {
+    return next_free_heap_address - 2048;
+  }
 
   // For internal use only.
   function void init() {
@@ -18,8 +22,8 @@ class Memory {
 
   // Finds and allocates from the heap a memory block of the specified size and
   // returns a reference to its base address.
-  // There is no no guard against overflowing the heap.
-  function Array alloc(int size) {
+  // There is no guard against overflowing the heap.
+  function int alloc(int size) {
     // TODO - proper implementation
     var int result;
     let result = next_free_heap_address;
@@ -28,8 +32,8 @@ class Memory {
   }
 
   // De-allocates the given object and frees its memory space.
-  // The argument can be an Array, or any other class instance.
-  function void deAlloc(Array object) {
+  // The argument is a pointer to an array or any class instance.
+  function void deAlloc(int object) {
     // not yet implemented!
   }
 }

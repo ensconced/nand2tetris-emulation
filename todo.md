@@ -1,5 +1,5 @@
-### Jack codegen
-
+- check actual contents of heap in tests
+- don't bother with Array class for now - just use Memory directly?
 - figure out limits of current algo for two's complement multiplication - is there a simple failing example for a small negative number?
 - booth's algo? or...read this: https://pages.cs.wisc.edu/~markhill/cs354/Fall2008/beyond354/int.mult.html ?
 - implement proper Sys class - Sys.init should init other stdlib classes then call Main.main

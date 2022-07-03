@@ -241,4 +241,26 @@ mod tests {
         computer.tick_until(&|computer| nth_stack_value(computer, 0) == -5198 / 182);
         computer.tick_until(&|computer| nth_stack_value(computer, 0) == 9099 / 33);
     }
+
+    #[test]
+    fn test_sqrt() {
+        let mut computer = computer_from_jack_code(vec![
+            "
+            class Sys {
+                function void init () {
+                    var int a, b, c, d;
+                    let a = Math.sqrt(144);
+                    let b = Math.sqrt(100);
+                    let c = Math.sqrt(10000);
+                    let d = Math.sqrt(14641);
+                }
+            }
+        ",
+        ]);
+        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 12);
+        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 10);
+        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 100);
+        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 121);
+    }
 }

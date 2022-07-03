@@ -91,8 +91,8 @@ class Math {
     while (offset >= 1) {
       let with_offset = y + offset;
        if (with_offset * with_offset <= x) {
-        let y = with_offset;
-      }
+         let y = with_offset;
+       }
       let offset = offset / 2;
     }
 

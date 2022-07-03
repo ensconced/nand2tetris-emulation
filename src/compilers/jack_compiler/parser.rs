@@ -64,7 +64,9 @@ pub enum BinaryOperator {
     And,
     Or,
     LessThan,
+    LessThanOrEquals,
     GreaterThan,
+    GreaterThanOrEquals,
     Equals,
 }
 
@@ -283,7 +285,9 @@ fn maybe_take_expression_with_binding_power(
                     Ampersand => BinaryOperator::And,
                     Pipe => BinaryOperator::Or,
                     LessThan => BinaryOperator::LessThan,
+                    LessThanOrEquals => BinaryOperator::LessThanOrEquals,
                     GreaterThan => BinaryOperator::GreaterThan,
+                    GreaterThanOrEquals => BinaryOperator::GreaterThanOrEquals,
                     Equals => BinaryOperator::Equals,
                     _ => panic!("invalid binary operator"),
                 };
@@ -752,12 +756,14 @@ fn prefix_precedence(operator: OperatorVariant) -> Option<u8> {
 
 fn infix_precedence(operator: OperatorVariant) -> Option<(u8, u8)> {
     match operator {
-        Star => Some((17, 18)),
-        Slash => Some((15, 16)),
-        Plus => Some((13, 14)),
-        Minus => Some((11, 12)),
-        LessThan => Some((9, 10)),
-        GreaterThan => Some((7, 8)),
+        Star => Some((21, 22)),
+        Slash => Some((19, 20)),
+        Plus => Some((17, 18)),
+        Minus => Some((15, 16)),
+        LessThan => Some((13, 14)),
+        LessThanOrEquals => Some((11, 12)),
+        GreaterThan => Some((9, 10)),
+        GreaterThanOrEquals => Some((7, 8)),
         Ampersand => Some((5, 6)),
         Pipe => Some((3, 4)),
         Equals => Some((1, 2)),

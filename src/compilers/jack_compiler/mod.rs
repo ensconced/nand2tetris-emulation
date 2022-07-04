@@ -11,7 +11,9 @@ mod parser;
 mod tokenizer;
 
 pub fn compile(source: &str) -> String {
-    codegen::generate_vm_code(parse(source))
+    let result = codegen::generate_vm_code(parse(source));
+    println!("{}", &result);
+    result
 }
 
 fn compile_modules(modules: &[SourceModule]) -> Vec<String> {
@@ -52,7 +54,7 @@ mod tests {
         ",
         ]);
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 3000);
+        computer.tick_until(&|computer| peek_stack(computer) == 3000);
     }
 
     #[test]
@@ -71,8 +73,8 @@ mod tests {
         ",
         ]);
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 2000);
-        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 2003);
+        computer.tick_until(&|computer| peek_stack(computer) == 2000);
+        computer.tick_until(&|computer| peek_stack(computer) == 2003);
     }
 
     #[test]
@@ -97,7 +99,7 @@ mod tests {
         ",
         ]);
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 28657);
+        computer.tick_until(&|computer| peek_stack(computer) == 28657);
     }
 
     #[test]
@@ -142,7 +144,7 @@ mod tests {
         ",
         ]);
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 3382);
+        computer.tick_until(&|computer| peek_stack(computer) == 3382);
     }
 
     #[test]
@@ -178,7 +180,7 @@ mod tests {
         ",
         ]);
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 18);
+        computer.tick_until(&|computer| peek_stack(computer) == 18);
     }
 
     #[test]
@@ -197,9 +199,9 @@ mod tests {
         ",
         ]);
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 333 * 83);
-        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 10 * -2);
-        computer.tick_until(&|computer| nth_stack_value(computer, 0) == -123 * -123);
+        computer.tick_until(&|computer| peek_stack(computer) == 333 * 83);
+        computer.tick_until(&|computer| peek_stack(computer) == 10 * -2);
+        computer.tick_until(&|computer| peek_stack(computer) == -123 * -123);
     }
 
     #[test]
@@ -216,8 +218,8 @@ mod tests {
         ",
         ]);
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 1234 + 1234);
-        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 999 + 999);
+        computer.tick_until(&|computer| peek_stack(computer) == 1234 + 1234);
+        computer.tick_until(&|computer| peek_stack(computer) == 999 + 999);
     }
 
     #[test]
@@ -236,10 +238,10 @@ mod tests {
         ",
         ]);
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 4191 / -3);
-        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 1234 / 123);
-        computer.tick_until(&|computer| nth_stack_value(computer, 0) == -5198 / 182);
-        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 9099 / 33);
+        computer.tick_until(&|computer| peek_stack(computer) == 4191 / -3);
+        computer.tick_until(&|computer| peek_stack(computer) == 1234 / 123);
+        computer.tick_until(&|computer| peek_stack(computer) == -5198 / 182);
+        computer.tick_until(&|computer| peek_stack(computer) == 9099 / 33);
     }
 
     #[test]
@@ -258,10 +260,10 @@ mod tests {
         ",
         ]);
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 12);
-        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 10);
-        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 100);
-        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 121);
+        computer.tick_until(&|computer| peek_stack(computer) == 12);
+        computer.tick_until(&|computer| peek_stack(computer) == 10);
+        computer.tick_until(&|computer| peek_stack(computer) == 100);
+        computer.tick_until(&|computer| peek_stack(computer) == 121);
     }
 
     #[test]
@@ -279,10 +281,12 @@ mod tests {
             ",
         ]);
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        for char in "hello".encode_utf16() {
-            computer.tick_until(&|computer| nth_stack_value(computer, 0) == char as i16);
+        let chars: Vec<_> = "hello".encode_utf16().map(|x| x as i16).collect();
+        for char in chars.iter() {
+            computer.tick_until(&|computer| peek_stack(computer) == *char);
         }
         // expect memory usage to be 2 for string itself, plus 5 for the underlying buffer
-        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 7);
+        computer.tick_until(&|computer| peek_stack(computer) == 7);
+        computer.tick_until(&|computer| heap_includes(computer, &chars));
     }
 }

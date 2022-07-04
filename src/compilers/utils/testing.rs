@@ -71,3 +71,13 @@ pub fn nth_stack_value(computer: &Computer, n: usize) -> i16 {
     let ram = computer.ram.lock().unwrap();
     ram[ram[0] as usize - (1 + n)]
 }
+
+pub fn peek_stack(computer: &Computer) -> i16 {
+    nth_stack_value(computer, 0)
+}
+
+pub fn heap_includes(computer: &Computer, values: &[i16]) -> bool {
+    let ram = computer.ram.lock().unwrap();
+    let heap = &ram[2048..16384];
+    (0..heap.len()).any(|heap_idx| heap.iter().skip(heap_idx).take(values.len()).eq(values))
+}

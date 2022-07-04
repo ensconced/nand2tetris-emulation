@@ -249,7 +249,7 @@ impl CodeGenerator {
                             // this little trick.
                             format!(
                                 "
-                            push that 0
+                            push temp 0
                             push constant {}
                             not
                             call String.appendChar 2
@@ -260,7 +260,7 @@ impl CodeGenerator {
                         } else {
                             format!(
                                 "
-                            push that 0
+                            push temp 0
                             push constant {}
                             call String.appendChar 2
                             pop constant 0
@@ -278,7 +278,7 @@ impl CodeGenerator {
                     "
                   push constant {length}
                   call String.new 1
-                  pop pointer 1
+                  pop temp 0
                   {joined_append_chars}
                 "
                 )

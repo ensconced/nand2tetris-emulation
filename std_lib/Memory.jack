@@ -1,40 +1,63 @@
-class Memory {
-  static int memory;
-  static int next_free_heap_address;
+/*
+  Maintains a "free list" - i.e. a list of free blocks of memory.
+  Each block has a 2-word header.
+  The first word of the header is the number of words of memory contained by the block.
+  The second word of the header is a pointer to the next free block, or zero if it's the last block in the list.
+*/
 
-  function int usage() {
-    return next_free_heap_address - 2048;
-  }
+class Memory {
+  static int head;
 
   // For internal use only.
   function void init() {
-    let memory = 0;
-    let next_free_heap_address = 2048;
-  }
+    var int total_available_memory;
 
-  function int peek(int address) {
-    return memory[address];
-  }
-
-  function void poke(int address, int value) {
-    let memory[address] = value;
+    // To start with, the free list has a single entry consisting of the entire heap.
+    let head = 2048;
+    let total_available_memory = 16384 - 2048 - 2;
+    let head[0] = total_available_memory;
+    let head[1] = 0;
   }
 
   // Finds and allocates from the heap a memory block of the specified size and
-  // returns a reference to its base address.
-  // There is no guard against overflowing the heap.
+  // returns a reference to its base address. Returns zero if failed to allocate.
   function int alloc(int size) {
-    // TODO - proper implementation
-    var int result;
-    let result = next_free_heap_address;
-    let next_free_heap_address = next_free_heap_address + size;
-    return result;
+    var int result, current, next, block_size, remaining_words_in_block, prev;
+    let current = head;
+
+    // Iterate through the free list until we find a big enough block.
+    while (current[0] < size) {
+      let next = current[1];
+      if (next = 0) {
+        // TODO - attempt to defrag
+        return 0;
+      }
+      let prev = current;
+      let current = next;
+    }
+
+    // We managed to find a suitable block.
+    let block_size = current[0];
+    let remaining_words_in_block = block_size - size;
+    if (remaining_words_in_block = 0) {
+      // We need to remove the block from the free list completely.
+      if (prev) {
+        let prev[1] = current[1];
+      } else {
+        // We are removing the first block in the list.
+        let head = current[1];
+      }
+    } else {
+      // We only need to adjust the size of the block.
+      let current[0] = remaining_words_in_block;
+    }
+
+    return current + 2;
   }
 
   // De-allocates the given object and frees its memory space.
   // The argument is a pointer to an array or any class instance.
   function void deAlloc(int object) {
-    // TODO - implement this propertly
-    let next_free_heap_address = 2048;
+    // not yet implemented!
   }
 }

@@ -11,9 +11,7 @@ mod parser;
 mod tokenizer;
 
 pub fn compile(source: &str) -> String {
-    let result = codegen::generate_vm_code(parse(source));
-    println!("{}", &result);
-    result
+    codegen::generate_vm_code(parse(source))
 }
 
 fn compile_modules(modules: &[SourceModule]) -> Vec<String> {
@@ -276,10 +274,7 @@ mod tests {
                     do Memory.init();
 
                     let a = \"hello\";
-                    do Memory.usage();
-
                     do a.dispose();
-                    do Memory.usage();
                 }
             }
             ",
@@ -290,7 +285,5 @@ mod tests {
             computer.tick_until(&|computer| peek_stack(computer) == *char);
         }
         computer.tick_until(&|computer| heap_includes(computer, &chars));
-        // expect memory usage to be 2 for string itself, plus 5 for the underlying buffer
-        computer.tick_until(&|computer| peek_stack(computer) == 7);
     }
 }

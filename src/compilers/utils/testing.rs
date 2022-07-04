@@ -76,6 +76,10 @@ pub fn peek_stack(computer: &Computer) -> i16 {
     nth_stack_value(computer, 0)
 }
 
+pub fn statics_includes(computer: &Computer, value: i16) -> bool {
+    (0..240).any(|static_idx| static_variable(computer, static_idx) == value)
+}
+
 pub fn heap_includes(computer: &Computer, values: &[i16]) -> bool {
     let ram = computer.ram.lock().unwrap();
     let heap = &ram[2048..16384];

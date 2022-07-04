@@ -34,6 +34,7 @@ class Memory {
   // De-allocates the given object and frees its memory space.
   // The argument is a pointer to an array or any class instance.
   function void deAlloc(int object) {
-    // not yet implemented!
+    // TODO - implement this propertly
+    let next_free_heap_address = 2048;
   }
 }

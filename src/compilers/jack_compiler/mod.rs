@@ -272,17 +272,20 @@ mod tests {
             "
             class Sys {
                 function void init () {
-                    var int a;
+                    var String a;
                     do Memory.init();
 
                     let a = \"hello\";
+                    do Memory.usage();
+
+                    do a.dispose();
                     do Memory.usage();
                 }
             }
             ",
         ]);
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        let chars: Vec<_> = "hello".encode_utf16().map(|x| x as i16).collect();
+        let chars: Vec<_> = "hello".encode_utf16().map(|ch| ch as i16).collect();
         for char in chars.iter() {
             computer.tick_until(&|computer| peek_stack(computer) == *char);
         }

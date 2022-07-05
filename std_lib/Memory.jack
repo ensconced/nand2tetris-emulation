@@ -1,7 +1,7 @@
 /*
   Maintains a "free list" - i.e. a list of free blocks of memory.
   Each block has a 2-word header.
-  The first word of the header is the number of words of memory contained by the block.
+  The first word of the header is the total size of the block, including the header.
   The second word of the header is a pointer to the next free block, or zero if it's the last block in the list.
 */
 
@@ -14,44 +14,73 @@ class Memory {
 
     // To start with, the free list has a single entry consisting of the entire heap.
     let head = 2048;
-    let total_available_memory = 16384 - 2048 - 2;
+    let total_available_memory = 16384 - 2048;
     let head[0] = total_available_memory;
     let head[1] = 0;
+  }
+
+  // Attempts to defragment the heap.
+  // If successful, returns the new head pointer.
+  // If unsuccessful, returns zero.
+  function int defrag() {
+    // TODO
+    return 0;
+  }
+
+  function bool should_replace_entire_block(int block, int size) {
+    // The "+ 1" is to account for the extra word to store the size of the allocated block.
+    return block[0] = size + 1;
+  }
+
+  function bool should_partially_replace_block(int block, int size) {
+    // The "- 2" is to ensure there is sufficient space remaining to still create a valid block header.
+    // The "+ 1" is to account for the extra word to store the size of the allocated block.
+    return block[0] - 2 >= size + 1;
   }
 
   // Finds and allocates from the heap a memory block of the specified size and
   // returns a reference to its base address. Returns zero if failed to allocate.
   function int alloc(int size) {
-    var int result, current, next, block_size, remaining_words_in_block, prev;
-    let current = head;
+    var int current_block, next, prev_block, size_remaining;
 
-    // Iterate through the free list until we find a big enough block.
-    while (current[0] < size) {
-      let next = current[1];
-      if (next = 0) {
-        // TODO - attempt to defrag, then try again
-        return 0;
-      }
-      let prev = current;
-      let current = next;
+    if (size = 0) {
+      return 0;
     }
 
-    // We managed to find a suitable block.
-    let block_size = current[0];
-    let remaining_words_in_block = block_size - size;
-    if (remaining_words_in_block = 0) {
-      // We need to remove the block from the free list completely.
-      if (prev) {
-        let prev[1] = current[1];
+    let prev_block = 0;
+    let current_block = head;
+
+    while (true) {
+      if (should_replace_entire_block(current_block, size)) {
+        if (prev_block) {
+          let prev_block[1] = current_block[1];
+        } else {
+          // We're replacing the first block in the list.
+          let head = current_block[1];
+        }
+        return current_block + 1;
       } else {
-        // We are removing the first block in the list.
-        let head = current[1];
+        if (should_partially_replace_block(current_block, size)) {
+          let size_remaining = current_block[0] - size + 1;
+          let current_block[0] = size_remaining;
+          let current_block[size_remaining] = size + 1;
+          return current_block + size_remaining + 1;
+        }
       }
-      return current + 2;
-    } else {
-      // We only need to adjust the size of the block.
-      let current[0] = remaining_words_in_block;
-      return current + 2 + remaining_words_in_block;
+
+      let next = current_block[1];
+      let prev_block = current_block;
+      let current_block = next;
+
+      if (next = 0) {
+        let head = defrag();
+        if (head) {
+          let prev_block = 0;
+          let current_block = head;
+        } else {
+          return 0;
+        }
+      }
     }
   }
 

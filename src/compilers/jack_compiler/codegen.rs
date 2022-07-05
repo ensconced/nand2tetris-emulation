@@ -218,8 +218,10 @@ impl CodeGenerator {
         primitive_term: PrimitiveTermVariant,
     ) -> String {
         match primitive_term {
-            PrimitiveTermVariant::False | PrimitiveTermVariant::Null => "push 0".to_string(),
-            PrimitiveTermVariant::True => "push 0\nnot".to_string(),
+            PrimitiveTermVariant::False | PrimitiveTermVariant::Null => {
+                "push constant 0".to_string()
+            }
+            PrimitiveTermVariant::True => "push constant 0\nnot".to_string(),
             PrimitiveTermVariant::IntegerConstant(int_string) => {
                 format!(
                     "push constant {}",

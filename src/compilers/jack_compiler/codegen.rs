@@ -282,6 +282,7 @@ impl CodeGenerator {
                   call String.new 1
                   pop temp 0
                   {joined_append_chars}
+                  push temp 0
                 "
                 )
             }
@@ -306,11 +307,6 @@ impl CodeGenerator {
         let push_arguments = self.compile_push_arguments(arguments);
 
         if let Some(symbol) = self.maybe_resolve_symbol(&this_name) {
-            println!(
-                "resolved symbol: this_name: {}, method_name: {}",
-                &this_name, &method_name
-            );
-
             // Treat it as a method.
             match symbol.symbol_type.clone() {
                 Type::ClassName(this_class) => {

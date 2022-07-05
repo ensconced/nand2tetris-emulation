@@ -61,7 +61,7 @@ class Memory {
         return current_block + 1;
       } else {
         if (should_partially_replace_block(current_block, size)) {
-          let size_remaining = current_block[0] - size + 1;
+          let size_remaining = current_block[0] - (size + 1);
           let current_block[0] = size_remaining;
           let current_block[size_remaining] = size + 1;
           return current_block + size_remaining + 1;
@@ -88,8 +88,7 @@ class Memory {
   // The argument is a pointer to an array or any class instance.
   function void deAlloc(int object) {
     // Set size of block.
-    let object[-1] = object[0] + 1;
-
+    let object[-1] = object[-1] + 1;
     // Add block at head of list.
     let object[0] = head;
     let head = object - 1;

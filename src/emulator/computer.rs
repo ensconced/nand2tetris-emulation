@@ -5,7 +5,13 @@ use std::{
 
 use tabled::{Style, Table, Tabled};
 
-const DEBUG: bool = false;
+enum DebugMode {
+    Verbose,
+    Heap,
+    None,
+}
+
+const DEBUG_MODE: DebugMode = DebugMode::None;
 
 pub fn bit(instruction: i16, idx: u32) -> u16 {
     (instruction as u16 & (2u16).pow(idx)) >> idx
@@ -129,29 +135,37 @@ impl Computer {
     pub fn tick(&mut self) {
         let prev_reg_a = self.cpu.reg_a;
         let instruction = self.rom[self.cpu.pc as usize];
-        if DEBUG {
-            let ram = self.ram.lock().unwrap();
-            let sp = ram[0];
-            let stack = if sp >= 256 {
-                &ram[256..ram[0] as usize]
-            } else {
-                &[]
-            };
-            let heap = &ram[2048..2148]; // just show start of heap
-            let temp = format!("{:?}", &ram[5..=12]);
-            println!("{:?}", &ram[16..26]);
-            let debug_info = DebugInfo {
-                pc: self.cpu.pc,
-                sp: ram[0],
-                lcl: ram[1],
-                arg: ram[2],
-                this: ram[3],
-                that: ram[4],
-                stack: format!("{:?}", stack),
-                heap: format!("{:?}", heap),
-                temp: format!("{:?}", temp),
-            };
-            debug_info.display();
+        match DEBUG_MODE {
+            DebugMode::Verbose => {
+                let ram = self.ram.lock().unwrap();
+                let sp = ram[0];
+                let stack = if sp >= 256 {
+                    &ram[256..ram[0] as usize]
+                } else {
+                    &[]
+                };
+                let heap = &ram[2048..2148]; // just show start of heap
+                let temp = format!("{:?}", &ram[5..=12]);
+                println!("{:?}", &ram[16..26]);
+                let debug_info = DebugInfo {
+                    pc: self.cpu.pc,
+                    sp: ram[0],
+                    lcl: ram[1],
+                    arg: ram[2],
+                    this: ram[3],
+                    that: ram[4],
+                    stack: format!("{:?}", stack),
+                    heap: format!("{:?}", heap),
+                    temp: format!("{:?}", temp),
+                };
+                debug_info.display();
+            }
+            DebugMode::Heap => {
+                let ram = self.ram.lock().unwrap();
+                let heap = &ram[2048..16384]; // log entire heap
+                println!("{:?}", heap);
+            }
+            DebugMode::None => {}
         }
         let addr = self.cpu.reg_a.0 as usize % self.ram.lock().unwrap().len();
         let in_m = Wrapping(self.ram.lock().unwrap()[addr]);

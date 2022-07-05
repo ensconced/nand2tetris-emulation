@@ -265,7 +265,7 @@ mod tests {
     }
 
     #[test]
-    fn test_string() {
+    fn test_string_alloc() {
         let mut computer = computer_from_jack_code(vec![
             "
             class Sys {
@@ -284,6 +284,35 @@ mod tests {
         for char in chars.iter() {
             computer.tick_until(&|computer| peek_stack(computer) == *char);
         }
+        computer.tick_until(&|computer| heap_includes(computer, &chars));
+    }
+
+    #[test]
+    fn test_string_dealloc() {
+        let mut computer = computer_from_jack_code(vec![
+            "
+            class Sys {
+                function void init () {
+                    var String a;
+                    var int i, str;
+                    do Memory.init();
+
+                    let a = \"hello\";
+                    do a.dispose();
+                    let a = \"howdy\";
+                    do a.dispose();
+                    let a = \"heyya\";
+                    do a.dispose();
+                }
+            }
+            ",
+        ]);
+        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        let chars: Vec<_> = "hello".encode_utf16().map(|ch| ch as i16).collect();
+        computer.tick_until(&|computer| heap_includes(computer, &chars));
+        let chars: Vec<_> = "howdy".encode_utf16().map(|ch| ch as i16).collect();
+        computer.tick_until(&|computer| heap_includes(computer, &chars));
+        let chars: Vec<_> = "heyya".encode_utf16().map(|ch| ch as i16).collect();
         computer.tick_until(&|computer| heap_includes(computer, &chars));
     }
 }

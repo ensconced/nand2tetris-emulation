@@ -29,7 +29,7 @@ class Memory {
     while (current[0] < size) {
       let next = current[1];
       if (next = 0) {
-        // TODO - attempt to defrag
+        // TODO - attempt to defrag, then try again
         return 0;
       }
       let prev = current;
@@ -47,12 +47,12 @@ class Memory {
         // We are removing the first block in the list.
         let head = current[1];
       }
+      return current + 2;
     } else {
       // We only need to adjust the size of the block.
       let current[0] = remaining_words_in_block;
+      return current + 2 + remaining_words_in_block;
     }
-
-    return current + 2;
   }
 
   // De-allocates the given object and frees its memory space.

@@ -288,7 +288,7 @@ mod tests {
     }
 
     #[test]
-    fn test_string_dealloc() {
+    fn test_dealloc() {
         let mut computer = computer_from_jack_code(vec![
             "
             class Sys {
@@ -297,39 +297,11 @@ mod tests {
                     var int i, str, count, arr;
                     do Memory.init();
 
-                    let count = 10;
+                    let count = 14334;
                     let arr = Memory.alloc(count);
-
                     let i = 0;
                     while (i < count) {
-                        let arr[i] = \"hellothere\";
-                        let i = i + 1;
-                    }
-
-                    let i = 0;
-                    while (i < count) {
-                        let a = arr[i];
-                        do a.dispose();
-                        let i = i + 1;
-                    }
-
-                    let i = 0;
-                    while (i < count) {
-                        let arr[i] = \"howdythere\";
-                        let i = i + 1;
-                    }
-
-                    let i = 0;
-                    while (i < count) {
-                        let a = arr[i];
-                        do a.dispose();
-                        let i = i + 1;
-                    }
-
-
-                    let i = 0;
-                    while (i < count) {
-                        let arr[i] = \"heyyathere\";
+                        let arr[i] = i;
                         let i = i + 1;
                     }
                 }
@@ -337,11 +309,7 @@ mod tests {
             ",
         ]);
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        let chars: Vec<_> = "hellothere".encode_utf16().map(|ch| ch as i16).collect();
-        computer.tick_until(&|computer| heap_includes(computer, &chars));
-        let chars: Vec<_> = "howdythere".encode_utf16().map(|ch| ch as i16).collect();
-        computer.tick_until(&|computer| heap_includes(computer, &chars));
-        let chars: Vec<_> = "heyyathere".encode_utf16().map(|ch| ch as i16).collect();
-        computer.tick_until(&|computer| heap_includes(computer, &chars));
+        let nums: Vec<_> = (0..14334).into_iter().collect();
+        computer.tick_until(&|computer| heap_includes(computer, &nums));
     }
 }

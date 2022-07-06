@@ -294,25 +294,54 @@ mod tests {
             class Sys {
                 function void init () {
                     var String a;
-                    var int i, str;
+                    var int i, str, count, arr;
                     do Memory.init();
 
-                    let a = \"hello\";
-                    do a.dispose();
-                    let a = \"howdy\";
-                    do a.dispose();
-                    let a = \"heyya\";
-                    do a.dispose();
+                    let count = 10;
+                    let arr = Memory.alloc(count);
+
+                    let i = 0;
+                    while (i < count) {
+                        let arr[i] = \"hellothere\";
+                        let i = i + 1;
+                    }
+
+                    let i = 0;
+                    while (i < count) {
+                        let a = arr[i];
+                        do a.dispose();
+                        let i = i + 1;
+                    }
+
+                    let i = 0;
+                    while (i < count) {
+                        let arr[i] = \"howdythere\";
+                        let i = i + 1;
+                    }
+
+                    let i = 0;
+                    while (i < count) {
+                        let a = arr[i];
+                        do a.dispose();
+                        let i = i + 1;
+                    }
+
+
+                    let i = 0;
+                    while (i < count) {
+                        let arr[i] = \"heyyathere\";
+                        let i = i + 1;
+                    }
                 }
             }
             ",
         ]);
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        let chars: Vec<_> = "hello".encode_utf16().map(|ch| ch as i16).collect();
+        let chars: Vec<_> = "hellothere".encode_utf16().map(|ch| ch as i16).collect();
         computer.tick_until(&|computer| heap_includes(computer, &chars));
-        let chars: Vec<_> = "howdy".encode_utf16().map(|ch| ch as i16).collect();
+        let chars: Vec<_> = "howdythere".encode_utf16().map(|ch| ch as i16).collect();
         computer.tick_until(&|computer| heap_includes(computer, &chars));
-        let chars: Vec<_> = "heyya".encode_utf16().map(|ch| ch as i16).collect();
+        let chars: Vec<_> = "heyyathere".encode_utf16().map(|ch| ch as i16).collect();
         computer.tick_until(&|computer| heap_includes(computer, &chars));
     }
 }

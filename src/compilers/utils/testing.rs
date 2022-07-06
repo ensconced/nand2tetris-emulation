@@ -85,3 +85,7 @@ pub fn heap_includes(computer: &Computer, values: &[i16]) -> bool {
     let heap = &ram[2048..16384];
     (0..heap.len()).any(|heap_idx| heap.iter().skip(heap_idx).take(values.len()).eq(values))
 }
+
+pub fn program_completed(computer: &Computer) -> bool {
+    computer.cpu.pc == 2
+}

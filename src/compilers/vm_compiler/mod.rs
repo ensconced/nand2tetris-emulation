@@ -13,7 +13,6 @@ pub struct ParsedModule<'a> {
 }
 
 pub fn parse<'a>(source_module: &'a SourceModule) -> ParsedModule<'a> {
-    println!("{}", source_module.source);
     ParsedModule {
         filename: source_module.filename.to_owned().into(),
         commands: Box::new(parse_lines(&source_module.source)),

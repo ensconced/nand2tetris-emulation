@@ -297,19 +297,22 @@ mod tests {
                     var int i, str, count, arr;
                     do Memory.init();
 
-                    let count = 14334;
+                    let count = 14335;
                     let arr = Memory.alloc(count);
                     let i = 0;
                     while (i < count) {
                         let arr[i] = i;
                         let i = i + 1;
                     }
+                    do Memory.deAlloc(arr);
                 }
             }
             ",
         ]);
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        let nums: Vec<_> = (0..14334).into_iter().collect();
-        computer.tick_until(&|computer| heap_includes(computer, &nums));
+        let nums: Vec<_> = (0..14335).into_iter().collect();
+        // computer.tick_until(&|computer| heap_includes(computer, &nums));
+        computer.tick_until(&program_completed);
+        println!("{:?}", &computer.ram.lock().unwrap()[2048..16384])
     }
 }

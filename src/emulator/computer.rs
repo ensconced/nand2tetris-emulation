@@ -1,6 +1,9 @@
+use itertools::Itertools;
+
 use std::{
     num::Wrapping,
     sync::{Arc, Mutex},
+    thread::current,
 };
 
 use tabled::{Style, Table, Tabled};
@@ -11,7 +14,23 @@ enum DebugMode {
     None,
 }
 
-const DEBUG_MODE: DebugMode = DebugMode::Heap;
+const DEBUG_MODE: DebugMode = DebugMode::None;
+
+fn display_heap(heap: &[i16]) {
+    let groups = heap.iter().group_by(|x| **x == 0);
+    print!("[");
+    for (is_zero, group) in groups.into_iter() {
+        let v: Vec<_> = group.collect();
+        if is_zero && v.len() > 1 {
+            print!("0 x {}, ", v.len());
+        } else {
+            for elem in v.into_iter() {
+                print!("{}, ", elem);
+            }
+        }
+    }
+    println!("]")
+}
 
 pub fn bit(instruction: i16, idx: u32) -> u16 {
     (instruction as u16 & (2u16).pow(idx)) >> idx
@@ -162,8 +181,7 @@ impl Computer {
             }
             DebugMode::Heap => {
                 let ram = self.ram.lock().unwrap();
-                let heap = &ram[2048..16384]; // log entire heap
-                println!("{:?}", heap);
+                display_heap(&ram[2048..16384]);
             }
             DebugMode::None => {}
         }

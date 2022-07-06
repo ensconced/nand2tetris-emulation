@@ -12,6 +12,7 @@ opt-level = 3
 [dependencies]
 cargo-llvm-cov = "0.4.8"
 clap = { version = "3.1.13", features = ["derive"] }
+itertools = "0.10.3"
 minifb = "0.23.0"
 regex = "1.5.5"
 tabled = "0.7.0"

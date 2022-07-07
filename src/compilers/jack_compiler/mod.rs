@@ -358,37 +358,42 @@ mod tests {
     }
 
     #[test]
-    fn test_many_small_arrays_repeated_alloc() {
+    fn test_alloc_many_small_arrays() {
         let mut computer = computer_from_jack_code(vec![
             "
             class Sys {
                 function void init () {
                     var String a;
-                    var int i, j, count, arr, arr_arr, arr_length;
+                    var int inner_idx, outer_idx, val, count, arr, arr_length;
                     do Memory.init();
 
                     let arr_length = 1000;
                     let count = 14;
+                    let outer_idx = 0;
+                    let val = 0;
 
-                    let arr_arr = Memory.alloc(count);
-                    let i = 0;
-                    while (i < count) {
+
+                    while (outer_idx < count) {
                         let arr = Memory.alloc(arr_length);
-                        let j = 0;
-                        while (j < count) {
-                            let arr[j] = j;
-                            let j = j + 1;
+                        let inner_idx = 0;
+                        while (inner_idx < arr_length) {
+                            let arr[inner_idx] = val;
+                            let inner_idx = inner_idx + 1;
+                            let val = val + 1;
                         }
-                        let arr_arr[i] = arr;
-                        let i = i + 1;
+                        let outer_idx = outer_idx + 1;
                     }
+
                 }
             }
             ",
         ]);
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         computer.tick_until(&program_completed);
-        let nums: Vec<_> = (0..1000).into_iter().cycle().take(1000 * 14).collect();
-        assert!(heap_includes(&computer, &nums));
+        for outer_idx in 0..14 {
+            let start = outer_idx * 1000;
+            let nums: Vec<_> = (start..start + 1000).into_iter().collect();
+            assert!(heap_includes(&computer, &nums));
+        }
     }
 }

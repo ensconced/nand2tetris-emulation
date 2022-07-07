@@ -288,7 +288,7 @@ mod tests {
     }
 
     #[test]
-    fn test_dealloc() {
+    fn test_single_big_array_alloc() {
         let mut computer = computer_from_jack_code(vec![
             "
             class Sys {
@@ -304,15 +304,91 @@ mod tests {
                         let arr[i] = i;
                         let i = i + 1;
                     }
-                    do Memory.deAlloc(arr);
                 }
             }
             ",
         ]);
         computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         let nums: Vec<_> = (0..14335).into_iter().collect();
-        // computer.tick_until(&|computer| heap_includes(computer, &nums));
         computer.tick_until(&program_completed);
-        println!("{:?}", &computer.ram.lock().unwrap()[2048..16384])
+        computer.tick_until(&|computer| heap_includes(computer, &nums));
+    }
+
+    #[test]
+    fn test_single_big_array_repeated_alloc() {
+        let mut computer = computer_from_jack_code(vec![
+            "
+            class Sys {
+                function void init () {
+                    var String a;
+                    var int i, count, arr;
+                    do Memory.init();
+
+                    let count = 14335;
+                    let arr = Memory.alloc(count);
+                    let i = 0;
+                    while (i < count) {
+                        let arr[i] = i;
+                        let i = i + 1;
+                    }
+                    do Memory.deAlloc(arr);
+
+                    let arr = Memory.alloc(count);
+                    let i = 0;
+                    while (i < count) {
+                        let arr[i] = -i;
+                        let i = i + 1;
+                    }
+                    do Memory.deAlloc(arr);
+
+                    let arr = Memory.alloc(count);
+                    let i = 0;
+                    while (i < count) {
+                        let arr[i] = i + 100;
+                        let i = i + 1;
+                    }
+                }
+            }
+            ",
+        ]);
+        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        computer.tick_until(&program_completed);
+        let nums: Vec<_> = (0..14335).into_iter().map(|x| x + 100).collect();
+        assert!(heap_includes(&computer, &nums));
+    }
+
+    #[test]
+    fn test_many_small_arrays_repeated_alloc() {
+        let mut computer = computer_from_jack_code(vec![
+            "
+            class Sys {
+                function void init () {
+                    var String a;
+                    var int i, j, count, arr, arr_arr, arr_length;
+                    do Memory.init();
+
+                    let arr_length = 1000;
+                    let count = 14;
+
+                    let arr_arr = Memory.alloc(count);
+                    let i = 0;
+                    while (i < count) {
+                        let arr = Memory.alloc(arr_length);
+                        let j = 0;
+                        while (j < count) {
+                            let arr[j] = j;
+                            let j = j + 1;
+                        }
+                        let arr_arr[i] = arr;
+                        let i = i + 1;
+                    }
+                }
+            }
+            ",
+        ]);
+        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        computer.tick_until(&program_completed);
+        let nums: Vec<_> = (0..1000).into_iter().cycle().take(1000 * 14).collect();
+        assert!(heap_includes(&computer, &nums));
     }
 }

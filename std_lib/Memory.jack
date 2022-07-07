@@ -87,8 +87,6 @@ class Memory {
   // De-allocates the given object and frees its memory space.
   // The argument is a pointer to an array or any class instance.
   function void deAlloc(int object) {
-    // Set size of block.
-    let object[-1] = object[-1] + 1;
     // Add block at head of list.
     let object[0] = head;
     let head = object - 1;

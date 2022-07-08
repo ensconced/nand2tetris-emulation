@@ -308,7 +308,6 @@ mod tests {
             }
             ",
         ]);
-        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         let nums: Vec<_> = (0..14335).into_iter().collect();
         computer.tick_until(&program_completed);
         computer.tick_until(&|computer| heap_includes(computer, &nums));
@@ -351,7 +350,6 @@ mod tests {
             }
             ",
         ]);
-        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         computer.tick_until(&program_completed);
         let nums: Vec<_> = (0..14335).into_iter().map(|x| x + 100).collect();
         assert!(heap_includes(&computer, &nums));
@@ -388,7 +386,6 @@ mod tests {
             }
             ",
         ]);
-        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         computer.tick_until(&program_completed);
         for outer_idx in 0..14 {
             let start = outer_idx * 1000;
@@ -404,48 +401,54 @@ mod tests {
             class Sys {
                 function void init () {
                     var String a;
-                    var int inner_idx, outer_idx, val, count, arr, arr_length, arr_arr;
+                    var int inner_idx, outer_idx, middle_idx, val, count, arr, arr_length, arr_arr, rounds;
                     do Memory.init();
 
                     let arr_length = 1000;
                     let count = 14;
                     let arr_arr = Memory.alloc(count);
+                    let rounds = 10;
 
 
                     let outer_idx = 0;
-                    let val = 0;
+                    while (outer_idx < rounds) {
+                        let middle_idx = 0;
+                        let val = 0;
 
-                    while (outer_idx < count) {
-                        let arr = Memory.alloc(arr_length);
-                        let arr_arr[outer_idx] = arr;
-                        let inner_idx = 0;
-                        while (inner_idx < arr_length) {
-                            let arr[inner_idx] = val;
-                            let inner_idx = inner_idx + 1;
-                            let val = val + 1;
+                        while (middle_idx < count) {
+                            let arr = Memory.alloc(arr_length);
+                            let arr_arr[middle_idx] = arr;
+                            let inner_idx = 0;
+                            while (inner_idx < arr_length) {
+                                if (outer_idx = rounds - 1) {
+                                    let arr[inner_idx] = val * 2;
+                                } else {
+                                    let arr[inner_idx] = val;
+                                }
+                                let inner_idx = inner_idx + 1;
+                                let val = val + 1;
+                            }
+                            let middle_idx = middle_idx + 1;
+                        }
+
+                        let middle_idx = 0;
+                        if (outer_idx < rounds - 1) {
+                            while (middle_idx < count) {
+                                do Memory.deAlloc(arr_arr[middle_idx]);
+                                let middle_idx = middle_idx + 1;
+                            }
                         }
                         let outer_idx = outer_idx + 1;
                     }
-
-                    let outer_idx = 0;
-                    while (outer_idx < count) {
-                        do Memory.deAlloc(arr_arr[outer_idx]);
-                        let outer_idx = outer_idx + 1;
-                    }
-
-
                 }
             }
             ",
         ]);
-        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        computer.tick_until(&|computer| {
-            (0..14).all(|outer_idx| {
-                let start = outer_idx * 1000;
-                let nums: Vec<_> = (start..start + 1000).into_iter().collect();
-                heap_includes(computer, &nums)
-            })
-        });
         computer.tick_until(&program_completed);
+        assert!((0..14).all(|outer_idx| {
+            let start = outer_idx * 1000;
+            let nums: Vec<_> = (start..start + 1000).into_iter().map(|x| x * 2).collect();
+            heap_includes(&computer, &nums)
+        }));
     }
 }

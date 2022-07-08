@@ -1,3 +1,4 @@
+- stress-test integer division
 - stress-test repeated alloc / dealloc with small arrays
 - stress-test repeated alloc / dealloc with arrays of decreasing size
 - stress-test repeated alloc / dealloc with arrays of increasing size! - requires defragmentation

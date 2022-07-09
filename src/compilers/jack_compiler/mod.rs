@@ -411,7 +411,7 @@ mod tests {
                     let arr = Memory.alloc(length_per_array);
                     let i = 0;
                     while (i < length_per_array) {
-                        let arr[i] = val;
+                        let arr[i] = 100;
                         let i = i + 1;
                     }
                     return arr;

@@ -452,7 +452,7 @@ mod tests {
 
                     while (val < count) {
                         let nested_arr = create_arrays(val);
-                        do dealloc_all(nested_arr);
+                        // do dealloc_all(nested_arr);
                         let val = val + 1;
                     }
                 }

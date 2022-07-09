@@ -1,4 +1,3 @@
-- stress-test integer division
 - stress-test repeated alloc / dealloc with small arrays
 - stress-test repeated alloc / dealloc with arrays of decreasing size
 - stress-test repeated alloc / dealloc with arrays of increasing size! - requires defragmentation
@@ -7,7 +6,7 @@
 - booth's algo? or...read this: https://pages.cs.wisc.edu/~markhill/cs354/Fall2008/beyond354/int.mult.html ?
 - implement proper Sys class - Sys.init should init other stdlib classes then call Main.main
 - code to compile entire input directory - reuse what we already have from vm compiler
-- typechecking? but will need to allow some coercions - e.g. obj to array for Memory.dealloc, array to obj for constructors.
+- typechecking? but will need to allow some coercions - e.g. obj to int for Memory.dealloc, array to obj for constructors.
 - check arg count equals param count? might be difficult - would need to look across classes sometimes...
 - codegen for subroutines...
 - write full stdlib
@@ -47,6 +46,7 @@
 - add print instruction, only included when compilation is targeting the emulator
 - report stack overflows etc in emulator
 - improve indentation of emitted vm and asm code
+- consolidate various debugging tools
 
 ### refactoring
 

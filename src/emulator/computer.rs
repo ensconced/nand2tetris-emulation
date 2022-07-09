@@ -194,7 +194,7 @@ impl Computer {
     }
 
     pub fn tick_until(&mut self, predicate: &dyn Fn(&Computer) -> bool) {
-        let max_ticks = 1000000000;
+        let max_ticks: usize = 10_000_000_000;
         for _ in 0..=max_ticks {
             if predicate(self) {
                 return;

@@ -37,6 +37,8 @@ pub fn compile_files(src_path: &Path, dest_path: &Path) {
 
 #[cfg(test)]
 mod tests {
+    use std::iter;
+
     use crate::compilers::utils::testing::*;
 
     #[test]
@@ -226,11 +228,12 @@ mod tests {
             "
             class Sys {
                 function void init () {
-                    var int a, b, c, d;
+                    var int a;
+
                     let a = 4191 / -3;
-                    let b = 1234 / 123;
-                    let c = -5198 / 182;
-                    let c = 9099 / 33;
+                    let a = 1234 / 123;
+                    let a = -5198 / 182;
+                    let a = 9099 / 33;
                 }
             }
         ",
@@ -399,56 +402,68 @@ mod tests {
         let mut computer = computer_from_jack_code(vec![
             "
             class Sys {
+                static int array_count;
+                static int length_per_array;
+
+                function int create_single_array(int val) {
+                    var int arr, i;
+
+                    let arr = Memory.alloc(length_per_array);
+                    let i = 0;
+                    while (i < length_per_array) {
+                        let arr[i] = val;
+                        let i = i + 1;
+                    }
+                    return arr;
+                }
+
+                function int create_arrays(int val) {
+                    var int nested_arr, i, arr;
+
+                    let nested_arr = Memory.alloc(array_count);
+                    let i = 0;
+                    while (i < array_count) {
+                        let arr = create_single_array(val);
+                        let nested_arr[i] = arr;
+                        let i = i + 1;
+                    }
+                    return nested_arr;
+                }
+
+                function void dealloc_all(int nested_arr) {
+                     var int i;
+                     let i = 0;
+                     while (i < array_count) {
+                        do Memory.deAlloc(nested_arr[i]);
+                     }
+                     do Memory.deAlloc(nested_arr);
+                }
+
                 function void init () {
-                    var String a;
-                    var int inner_idx, outer_idx, middle_idx, val, count, arr, arr_length, arr_arr, rounds;
+                    var int val, count, nested_arr;
                     do Memory.init();
 
-                    let arr_length = 1000;
-                    let count = 14;
-                    let arr_arr = Memory.alloc(count);
-                    let rounds = 10;
+                    let array_count = 1000;
+                    let length_per_array = 10;
 
+                    let count = 10;
+                    let val = 0;
 
-                    let outer_idx = 0;
-                    while (outer_idx < rounds) {
-                        let middle_idx = 0;
-                        let val = 0;
-
-                        while (middle_idx < count) {
-                            let arr = Memory.alloc(arr_length);
-                            let arr_arr[middle_idx] = arr;
-                            let inner_idx = 0;
-                            while (inner_idx < arr_length) {
-                                if (outer_idx = rounds - 1) {
-                                    let arr[inner_idx] = val * 2;
-                                } else {
-                                    let arr[inner_idx] = val;
-                                }
-                                let inner_idx = inner_idx + 1;
-                                let val = val + 1;
-                            }
-                            let middle_idx = middle_idx + 1;
-                        }
-
-                        let middle_idx = 0;
-                        if (outer_idx < rounds - 1) {
-                            while (middle_idx < count) {
-                                do Memory.deAlloc(arr_arr[middle_idx]);
-                                let middle_idx = middle_idx + 1;
-                            }
-                        }
-                        let outer_idx = outer_idx + 1;
+                    while (val < count) {
+                        let nested_arr = create_arrays(val);
+                        do dealloc_all(nested_arr);
+                        let val = val + 1;
                     }
                 }
             }
             ",
         ]);
         computer.tick_until(&program_completed);
-        assert!((0..14).all(|outer_idx| {
-            let start = outer_idx * 1000;
-            let nums: Vec<_> = (start..start + 1000).into_iter().map(|x| x * 2).collect();
-            heap_includes(&computer, &nums)
-        }));
+        let nums: Vec<_> = iter::once(11)
+            .chain(iter::once(9).cycle().take(10))
+            .cycle()
+            .take(11 * 1000)
+            .collect();
+        assert!(heap_includes(&computer, &nums));
     }
 }

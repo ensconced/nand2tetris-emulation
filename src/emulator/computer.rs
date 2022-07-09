@@ -3,7 +3,6 @@ use itertools::Itertools;
 use std::{
     num::Wrapping,
     sync::{Arc, Mutex},
-    thread::current,
 };
 
 use tabled::{Style, Table, Tabled};

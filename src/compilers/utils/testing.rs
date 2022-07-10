@@ -14,14 +14,13 @@ pub const INITIAL_STACK_POINTER_ADDRESS: i16 = 261;
 pub fn computer_from_vm_code(vm_code_sources: Vec<&str>) -> Computer {
     let source_modules: Vec<_> = vm_code_sources
         .into_iter()
-        .map(|vm_code| {
-            println!("{}", vm_code);
-
-            SourceModule {
-                filename: "some_filename".into(),
-                source: vm_code.to_owned(),
-                entrypoint_is_dir: false,
-            }
+        .enumerate()
+        .map(|(idx, vm_code)| SourceModule {
+            // All filenames have to be unique due to the way that static variables work!
+            // TODO - just use the original filenames where they exist...
+            filename: format!("some_filename_{idx}").into(),
+            source: vm_code.to_owned(),
+            entrypoint_is_dir: false,
         })
         .collect();
 

@@ -13,7 +13,7 @@ enum DebugMode {
     None,
 }
 
-const DEBUG_MODE: DebugMode = DebugMode::Heap;
+const DEBUG_MODE: DebugMode = DebugMode::Verbose;
 
 fn display_heap(heap: &[i16]) {
     let groups = heap.iter().group_by(|x| **x == 0);
@@ -164,7 +164,7 @@ impl Computer {
                 };
                 let heap = &ram[2048..2148]; // just show start of heap
                 let temp = format!("{:?}", &ram[5..=12]);
-                println!("{:?}", &ram[16..26]);
+                println!("statics: {:?}", &ram[16..26]);
                 let debug_info = DebugInfo {
                     pc: self.cpu.pc,
                     sp: ram[0],

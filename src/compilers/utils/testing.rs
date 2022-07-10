@@ -14,22 +14,16 @@ pub const INITIAL_STACK_POINTER_ADDRESS: i16 = 261;
 pub fn computer_from_vm_code(vm_code_sources: Vec<&str>) -> Computer {
     let source_modules: Vec<_> = vm_code_sources
         .into_iter()
-        .map(|vm_code| {
-            println!("{}", vm_code);
-
-            SourceModule {
-                filename: "some_filename".into(),
-                source: vm_code.to_owned(),
-                entrypoint_is_dir: false,
-            }
+        .map(|vm_code| SourceModule {
+            filename: "some_filename".into(),
+            source: vm_code.to_owned(),
+            entrypoint_is_dir: false,
         })
         .collect();
 
     let parsed_vm_modules: Vec<_> = source_modules.iter().map(vm_compiler::parse).collect();
 
     let asm = vm_compiler::codegen::generate_asm(parsed_vm_modules);
-    println!("{}", &asm);
-
     let machine_code = assemble(asm, config::ROM_DEPTH);
     Computer::new(generate_rom::from_string(machine_code))
 }

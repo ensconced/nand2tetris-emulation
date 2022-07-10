@@ -464,11 +464,81 @@ mod tests {
             ",
         ]);
         computer.tick_until(&program_completed);
-        // println!("{:?}", &computer.ram.lock().unwrap()[2048..16384]);
         let nums: Vec<_> = iter::once(60)
             .chain(iter::once(9).cycle().take(59))
             .cycle()
             .take(11 * 235)
+            .collect();
+        assert!(heap_includes(&computer, &nums));
+    }
+
+    #[test]
+    fn test_alloc_and_dealloc_arrays_prime_factors_decreasing() {
+        let mut computer = computer_from_jack_code(vec![
+            "
+
+            class Sys {
+                function void alloc(int chunk_size, int fill_val) {
+                    var int arr_size, arr_count, i, j, arr;
+
+                    let arr_size = chunk_size - 1;
+                    let arr_count = 14336 / chunk_size;
+
+                    let i = 0;
+
+                    while (i < arr_count) {
+                        let arr = Memory.alloc(arr_size);
+                        let j = 0;
+                        while (j < arr_size) {
+                            let arr[j] = fill_val;
+                            let j = j + 1;
+                        }
+                        let i = i + 1;
+                    }
+                }
+
+                function void dealloc(int chunk_size) {
+                    var int i;
+                    let i = 0;
+                    while (i < 14336) {
+                        do Memory.deAlloc(2048 + i + 1);
+                        let i = i + chunk_size;
+                    }
+                }
+
+                function void alloc_dealloc(int chunk_size, int fill_val) {
+                    do alloc(chunk_size, fill_val);
+                    do dealloc(chunk_size);
+                }
+
+                function void init () {
+                    do Memory.init();
+
+                    // This is obviously a tedious way to write the code, but I'm avoiding using
+                    // any extra heap allocation which would interfere with the tests.
+                    // Note that the numbers are specially chosen to always fill the heap, and to
+                    // avoid any need for defragmentation.
+                    do alloc_dealloc(14336, 0);
+                    do alloc_dealloc(7168, 1);
+                    do alloc_dealloc(3584, 2);
+                    do alloc_dealloc(1792, 3);
+                    do alloc_dealloc(896, 4);
+                    do alloc_dealloc(448, 5);
+                    do alloc_dealloc(224, 6);
+                    do alloc_dealloc(112, 7);
+                    do alloc_dealloc(56, 8);
+                    do alloc_dealloc(28, 9);
+                    do alloc_dealloc(14, 10);
+                    do alloc(7, 11);
+                }
+            }
+            ",
+        ]);
+        computer.tick_until(&program_completed);
+        let nums: Vec<_> = iter::once(7)
+            .chain(iter::repeat(11).take(6))
+            .cycle()
+            .take(14336)
             .collect();
         assert!(heap_includes(&computer, &nums));
     }

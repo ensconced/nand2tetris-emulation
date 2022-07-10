@@ -13,7 +13,7 @@ enum DebugMode {
     None,
 }
 
-const DEBUG_MODE: DebugMode = DebugMode::Verbose;
+const DEBUG_MODE: DebugMode = DebugMode::None;
 
 fn display_heap(heap: &[i16]) {
     let groups = heap.iter().group_by(|x| **x == 0);

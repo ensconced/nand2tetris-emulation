@@ -1,3 +1,34 @@
+### Debug planning
+
+### Phase 1 - output JSON file explaining compiler output
+
+compiler outputs something like this:
+
+{
+"jack": [jack modules]
+"vm_code": [vm modules] // each vm code line points back to a line of jack code
+"asm": [asm lines] // each asm line points back to a line of vm code
+}
+
+### Phase 2 - visualise compiler output
+
+- add web frontend to visualize JSON data
+
+### Phase 3 - post hoc runtime debugging
+
+- initial MVP would be post hoc runtime debugging - run and record PC / other state on each tick, import this into debugger
+- add stepping ability
+  - step line of jack code
+  - step line of vm code
+  - step asm instruction
+
+### Phase 4 - realtime runtime debugging
+
+- disadvantage of post hoc approach is that might need to collect huge amounts of data if program runs for a long time...
+- so instead just do it in realtime
+
+# TODO
+
 - stress-test repeated alloc / dealloc with small arrays
 - stress-test repeated alloc / dealloc with arrays of decreasing size
 - stress-test repeated alloc / dealloc with arrays of increasing size! - requires defragmentation

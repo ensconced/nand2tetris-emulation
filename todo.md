@@ -29,10 +29,9 @@ compiler outputs something like this:
 
 # TODO
 
-- stress-test repeated alloc / dealloc with small arrays
 - stress-test repeated alloc / dealloc with arrays of decreasing size
 - stress-test repeated alloc / dealloc with arrays of increasing size! - requires defragmentation
-- don't bother with Array class for now - just use Memory directly?
+- stress-test repeated alloc / dealloc with arrays of (seeded) randomly generated sizes! - requires defragmentation
 - figure out limits of current algo for two's complement multiplication - is there a simple failing example for a small negative number?
 - booth's algo? or...read this: https://pages.cs.wisc.edu/~markhill/cs354/Fall2008/beyond354/int.mult.html ?
 - implement proper Sys class - Sys.init should init other stdlib classes then call Main.main
@@ -48,6 +47,7 @@ compiler outputs something like this:
 - pointers
 - typechecking? might be tricky...
 - break/continue
+- more in stdlib - arrays/vectors with push method
 
 ### programs
 

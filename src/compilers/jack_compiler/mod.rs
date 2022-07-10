@@ -411,7 +411,7 @@ mod tests {
                     let arr = Memory.alloc(length_per_array);
                     let i = 0;
                     while (i < length_per_array) {
-                        let arr[i] = 100;
+                        let arr[i] = val;
                         let i = i + 1;
                     }
                     return arr;
@@ -441,18 +441,22 @@ mod tests {
                 }
 
                 function void init () {
-                    var int val, count, nested_arr;
+                    var int val, rounds, nested_arr;
                     do Memory.init();
 
-                    let array_count = 10;
-                    let length_per_array = 1;
+                    // NB these numbers are chosen specially to completely fill the heap.
+                    let array_count = 235;
+                    let length_per_array = 59;
 
-                    let count = 1;
+                    let rounds = 10;
                     let val = 0;
 
-                    while (val < count) {
+                    while (val < rounds) {
                         let nested_arr = create_arrays(val);
-                        do dealloc_all(nested_arr);
+                        // don't dealloc the last one
+                        if (val < rounds - 1) {
+                            do dealloc_all(nested_arr);
+                        }
                         let val = val + 1;
                     }
                 }
@@ -460,11 +464,12 @@ mod tests {
             ",
         ]);
         computer.tick_until(&program_completed);
-        // let nums: Vec<_> = iter::once(11)
-        //     .chain(iter::once(9).cycle().take(10))
-        //     .cycle()
-        //     .take(11 * 1000)
-        //     .collect();
-        // assert!(heap_includes(&computer, &nums));
+        // println!("{:?}", &computer.ram.lock().unwrap()[2048..16384]);
+        let nums: Vec<_> = iter::once(60)
+            .chain(iter::once(9).cycle().take(59))
+            .cycle()
+            .take(11 * 235)
+            .collect();
+        assert!(heap_includes(&computer, &nums));
     }
 }

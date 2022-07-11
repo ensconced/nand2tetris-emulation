@@ -126,7 +126,7 @@ impl IO {
             if t.as_millis() >= 16 {
                 for (pixel_idx, pixel) in self.buffer.iter_mut().enumerate() {
                     let word_idx = pixel_idx / WORD_SIZE;
-                    let word = ram.lock().unwrap()[word_idx + 16384];
+                    let word = ram.lock().unwrap()[word_idx + 18432];
                     let bit_position_in_word = 15 - (pixel_idx % 16);
                     *pixel = if bit(word, bit_position_in_word as u32) == 0 {
                         0xff000000

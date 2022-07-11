@@ -85,7 +85,7 @@ pub fn statics_includes(computer: &Computer, value: i16) -> bool {
 
 pub fn heap_includes(computer: &Computer, values: &[i16]) -> bool {
     let ram = computer.ram.lock().unwrap();
-    let heap = &ram[2048..16384];
+    let heap = &ram[2048..18432];
     (0..heap.len()).any(|heap_idx| heap.iter().skip(heap_idx).take(values.len()).eq(values))
 }
 

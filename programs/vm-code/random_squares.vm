@@ -10,7 +10,7 @@
 
 function Sys.init 1
   // initialize screen pointer
-  push constant 16384
+  push constant 18432
   pop static 2
 
   // initialize keyboard
@@ -187,7 +187,7 @@ function draw_square 1
 
 
 function offset_screen_pointer 2
-  push constant 16384
+  push constant 18432
   pop local 0 // result
 
   // y offset

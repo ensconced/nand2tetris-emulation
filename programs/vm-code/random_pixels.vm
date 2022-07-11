@@ -8,7 +8,7 @@
 
 function Sys.init 3
   // initialize screen pointer
-  push constant 16384
+  push constant 18432
   pop static 2
 
   // initialize keyboard

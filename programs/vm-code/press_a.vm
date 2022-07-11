@@ -1,6 +1,6 @@
 function Sys.init 0
 // THIS is screen
-push constant 16384
+push constant 18432
 pop pointer 0
 
 // THAT is keyboard

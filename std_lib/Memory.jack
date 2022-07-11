@@ -14,7 +14,7 @@ class Memory {
 
     // To start with, the free list has a single entry consisting of the entire heap.
     let head = 2048;
-    let total_available_memory = 16384 - 2048;
+    let total_available_memory = 18432 - 2048;
     let head[0] = total_available_memory;
     let head[1] = 0;
   }

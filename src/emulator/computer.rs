@@ -180,7 +180,7 @@ impl Computer {
             }
             DebugMode::Heap => {
                 let ram = self.ram.lock().unwrap();
-                display_heap(&ram[2048..16384]);
+                display_heap(&ram[2048..18432]);
             }
             DebugMode::None => {}
         }

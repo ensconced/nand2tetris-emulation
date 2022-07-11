@@ -14,7 +14,7 @@ function Sys.init 1
   pop static 2
 
   // initialize keyboard
-  push constant 24576
+  push constant 26624
   pop pointer 1
 
   // initialize xoffset
@@ -115,7 +115,7 @@ function key_changed 1
   // local 0 is currentkey
 
   // get currentkey
-  push constant 24576
+  push constant 26624
   pop pointer 1
   push that 0
   pop local 0

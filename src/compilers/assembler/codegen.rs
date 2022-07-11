@@ -29,7 +29,7 @@ fn predefined_symbol_code(sym: &str) -> Option<usize> {
         "R14" => Some(14),
         "R15" => Some(15),
         "SCREEN" => Some(16384),
-        "KBD" => Some(24576),
+        "KBD" => Some(26624),
         _ => None,
     }
 }

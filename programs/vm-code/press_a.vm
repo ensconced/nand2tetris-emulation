@@ -4,7 +4,7 @@ push constant 16384
 pop pointer 0
 
 // THAT is keyboard
-push constant 24576
+push constant 26624
 pop pointer 1
 
 label startloop

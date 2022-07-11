@@ -30,6 +30,7 @@ compiler outputs something like this:
 # TODO
 
 - modify architecure to allow heap of size 16k - this means I will be diverging from the book and from the verilog implementation!
+- implement buddy algorithm for heap allocation
 - stress-test repeated alloc / dealloc with arrays of decreasing size
 - stress-test repeated alloc / dealloc with arrays of increasing size! - requires defragmentation
 - stress-test repeated alloc / dealloc with arrays of (seeded) randomly generated sizes! - requires defragmentation

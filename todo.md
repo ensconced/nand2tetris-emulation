@@ -33,6 +33,8 @@ compiler outputs something like this:
 - stress-test repeated alloc / dealloc with arrays of decreasing size
 - stress-test repeated alloc / dealloc with arrays of increasing size! - requires defragmentation
 - stress-test repeated alloc / dealloc with arrays of (seeded) randomly generated sizes! - requires defragmentation
+- allow use of e.g. var int[4] foo; to declare fixed-length arrays to be allocated in static section, or on stack. this would make the code in Memory.jack much neater
+- make statics and stack sections bigger!
 - figure out limits of current algo for two's complement multiplication - is there a simple failing example for a small negative number?
 - booth's algo? or...read this: https://pages.cs.wisc.edu/~markhill/cs354/Fall2008/beyond354/int.mult.html ?
 - implement proper Sys class - Sys.init should init other stdlib classes then call Main.main

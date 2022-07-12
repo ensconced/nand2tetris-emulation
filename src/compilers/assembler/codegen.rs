@@ -257,7 +257,7 @@ mod tests {
         };
         let mut code_generator = CodeGenerator::new(first_pass_result);
         let instruction = code_generator.generate().next().unwrap();
-        assert_eq!(instruction, "0100000000000000");
+        assert_eq!(instruction, "0100100000000000");
     }
 
     #[test]

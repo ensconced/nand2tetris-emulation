@@ -39,7 +39,7 @@
 
 
 class Memory {
-  static int avail, min_block_order,
+  static int avail, min_block_order;
 
   function void setAvailListHead(int block_order, int ptr) {
     let avail[block_order - min_block_order] = ptr;
@@ -60,13 +60,13 @@ class Memory {
 
     let block_order = min_block_order;
     while (block_order < 14) {
-      setAvailListHead(block_order, 0);
+      do setAvailListHead(block_order, 0);
       let block_order = block_order + 1;
     }
 
     // To begin with, there is a single block of order 14,
     // with its base at address 2048.
-    setAvailListHead(block_order, heap_base);
+    do setAvailListHead(block_order, heap_base);
 
     // Set block header
     let heap_base[0] = true;
@@ -97,10 +97,21 @@ class Memory {
     }
   }
 
-  function int pop_first_free_block(int required_order) {
+  function void push_free_block(int block, int order) {
+    var int head_ptr, head;
+
+    let head_ptr = avail + order - min_block_order;
+    let head = head_ptr[0];
+    let head[2] = block;
+    let block[1] = head;
+    let block[2] = 0;
+    let head_ptr[0] = block;
+  }
+
+  function int pop_free_block(int order) {
     var int head_ptr, head, new_head;
 
-    let head_ptr = avail + required_order - min_block_order;
+    let head_ptr = avail + order - min_block_order;
     let head = head_ptr[0];
     if (head) {
       let new_head = head[1];
@@ -112,7 +123,7 @@ class Memory {
     return head;
   }
 
-  function int half_block(int block) {
+  function int split_block(int block) {
     var int half_size, new_block, block_order, new_block_order;
 
     let block_order = block[3];
@@ -124,26 +135,24 @@ class Memory {
     let new_block[3] = new_block_order;
     let new_block[0] = true;
 
-    do remove_block(block, block_order);
-    do add_block(new_block, new_block_order);
-    do add_block(block, new_block_order);
+    do push_free_block(new_block, new_block_order);
   }
 
   function int get_block(int required_order) {
-    var int block, idx;
+    var int block, bigger_block, idx;
 
-    let block = pop_first_free_block(required_order);
+    let block = pop_free_block(required_order);
     if (block) {
       return block;
     }
 
-    if (order = 14) {
+    if (required_order = 14) {
       return 0;
     }
 
-    let bigger_block = pop_first_free_block(required_order + 1);
+    let bigger_block = get_block(required_order + 1);
     if (bigger_block) {
-      return half_block(bigger_block);
+      return split_block(bigger_block);
     }
     return 0;
   }
@@ -152,7 +161,7 @@ class Memory {
     var int order, order_size;
 
     let order = 2;
-    let order_size = 4
+    let order_size = 4;
     while (order_size < size) {
       let order = order + 1;
       let order_size = order_size + order_size;

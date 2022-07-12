@@ -41,12 +41,8 @@
 class Memory {
   static int avail, min_block_order;
 
-  function void setAvailListHead(int block_order, int ptr) {
-    let avail[block_order - min_block_order] = ptr;
-  }
-
   function void init() {
-    var int block_order, heap_base, screen, i;
+    var int block_order, heap_base, screen, i, new_avail;
 
     // Free blocks have 4-word header. So the smallest blocks
     // will be 4 words long, which is an order of 2.
@@ -58,15 +54,16 @@ class Memory {
 
     let heap_base = 2048;
 
+    // Init avail list. All lists for order < 14 are empty i.e. just a null pointer.
     let block_order = min_block_order;
     while (block_order < 14) {
-      do setAvailListHead(block_order, 0);
+      let avail[block_order - min_block_order] = 0;
       let block_order = block_order + 1;
     }
 
     // To begin with, there is a single block of order 14,
     // with its base at address 2048.
-    do setAvailListHead(block_order, heap_base);
+    let avail[block_order - min_block_order] = heap_base;
 
     // Set block header
     let heap_base[0] = true;
@@ -76,8 +73,9 @@ class Memory {
 
     // We're all initialized, so now we can use alloc to get some heap memory
     // to use for the overheads required by the allocation algorithm itself.
-    let avail = alloc(13);
-    do copy(avail, screen, 13);
+    let new_avail = alloc(13);
+    do copy(new_avail, screen, 13);
+    let avail = new_avail;
 
     // Don't leave a mess on the screen!
     let i = 0;

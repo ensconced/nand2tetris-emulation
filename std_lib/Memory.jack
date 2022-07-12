@@ -96,27 +96,27 @@ class Memory {
   }
 
   function void push_free_block(int block, int order) {
-    var int head_ptr, head;
+    var int head_location, head;
 
-    let head_ptr = avail + order - min_block_order;
-    let head = head_ptr[0];
+    let head_location = avail + order - min_block_order;
+    let head = head_location[0];
     let head[2] = block;
     let block[1] = head;
     let block[2] = 0;
-    let head_ptr[0] = block;
+    let head_location[0] = block;
   }
 
   function int pop_free_block(int order) {
-    var int head_ptr, head, new_head;
+    var int head_location, head, new_head;
 
-    let head_ptr = avail + order - min_block_order;
-    let head = head_ptr[0];
+    let head_location = avail + order - min_block_order;
+    let head = head_location[0];
     if (head) {
       let new_head = head[1];
       if (new_head) {
         let new_head[2] = 0;
       }
-      let head_ptr[0] = new_head;
+      let head_location[0] = new_head;
     }
     return head;
   }
@@ -134,6 +134,7 @@ class Memory {
     let new_block[0] = true;
 
     do push_free_block(new_block, new_block_order);
+    return block;
   }
 
   function int get_block(int required_order) {
@@ -167,12 +168,15 @@ class Memory {
     return order;
   }
 
-  function void alloc(int requested_size) {
+  function int alloc(int requested_size) {
     var int free_block;
 
     let free_block = get_block(get_order(requested_size + 1));
-    let free_block[0] = false;
-    return free_block + 1;
+    if (free_block) {
+      let free_block[0] = false;
+      return free_block + 1;
+    }
+    return 0;
   }
 
   function void deAlloc(int ptr) {

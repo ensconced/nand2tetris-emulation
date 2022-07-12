@@ -30,6 +30,7 @@ compiler outputs something like this:
 # TODO
 
 - implement buddy algorithm for heap allocation
+- add SCREEN variable for use in jack code
 - stress-test repeated alloc / dealloc with arrays of decreasing size
 - stress-test repeated alloc / dealloc with arrays of increasing size! - requires defragmentation
 - stress-test repeated alloc / dealloc with arrays of (seeded) randomly generated sizes! - requires defragmentation

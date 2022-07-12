@@ -1,48 +1,171 @@
 /*
   Heap allocator using the "Buddy memory algorithm".
   See https://en.wikipedia.org/wiki/Buddy_memory_allocation
+  There is also a good desciption of the algorithm in Knuth's The Art of Computer Programming Vol 1.
 
-  This algorithm works very nicely when your heap begins at memory address 0.
-  Ours begins at address 2048, which makes it all slightly more awkward, but it
-  still works.
+  The algorithm involves maintaining a number of lists of free blocks. Each list contains
+  blocks of a different size. The lists are doubly linked to make it easy to remove a block from any
+  position within a list, provided a pointer to the base of the block. Another important aspect
+  of the algorithm is that each block (excepting the original single block which covers the entire heap)
+  has a "buddy" block. It's easy to find the buddy of any given block, provided a pointer to its base,
+  without needing to iterate through any lists at all, just by doing some pointer arithmetic.
+
+  Free blocks have a 4-word header consisting of:
+   - a boolean field set to true, indicating that the block is free
+   - the forward pointer to the next block
+   - the backward pointer to the previous block
+   - a field indicating the order of the block
+
+  Allocated blocks only need one field in their header:
+   - a boolean field set to false, indicating that the block is not free
+
+  The buddy algorithm works very nicely when your heap begins at memory address 0. Knuth's description
+  assumes this is the case. Ours however begins at address 2048, which makes it all slightly more awkward,
+  but it still works if we take account of this offset.
+
+  The algorithm has some overheads in terms of memory usage. Specifically, it requires
+  13 words of memory, to hold the heads for each of the 13 avail lists. We could
+  just use 13 static variables but this would make a significant impact on the space remaining
+  in the static segment for usage in user programs. It would also make the code here annoying
+  verbose. Another alternative would be to have a dedicated section of system memory for these
+  overheads, but it would feel wrong to modify the architecure just to accomodate this algorithm.
+  So here I have taken another approach. To start with, I use the screen memory for the overheads.
+  Then I initialize the allocator. Then I use the initialized allocator to allocate a block of
+  memory to use for its own overheads, and copy the overheads over from screen memory
+  into this block. Hence I kind of bootstrap the allocator then use it to allocate some memory
+  for itself which is kind of cool. Then I zero out the screen memory again.
+  I guess this the the screen might briefly flicker on startup but I don't really care about that.
 */
 
 
 class Memory {
-  static int free_4s_head,
-             free_4s_tail,
-             free_8s_head,
-             free_8s_tail,
-             free_16s_head,
-             free_16s_tail,
-             free_32s_head,
-             free_32s_tail,
-             free_64s_head,
-             free_64s_tail,
-             free_128s_head,
-             free_128s_tail,
-             free_256s_head,
-             free_256s_tail,
-             free_512s_head,
-             free_512s_tail,
-             free_1024s_head,
-             free_1024s_tail,
-             free_2048s_head,
-             free_2048s_tail,
-             free_4096s_head,
-             free_4096s_tail,
-             free_8192s_head,
-             free_8192s_tail,
-             free_16ks_head;
-             free_16ks_tail;
+  static int avail, min_block_order,
 
-
-  function void init() {
-
+  function void setAvailListHead(int block_order, int ptr) {
+    let avail[block_order - min_block_order] = ptr;
   }
 
-  function void alloc(int size) {
+  function void init() {
+    var int block_order, heap_base, screen, i;
 
+    // Free blocks have 4-word header. So the smallest blocks
+    // will be 4 words long, which is an order of 2.
+    let min_block_order = 2;
+
+    // Initially, use the screen memory.
+    let screen = 18432;
+    let avail = screen;
+
+    let heap_base = 2048;
+
+    let block_order = min_block_order;
+    while (block_order < 14) {
+      setAvailListHead(block_order, 0);
+      let block_order = block_order + 1;
+    }
+
+    // To begin with, there is a single block of order 14,
+    // with its base at address 2048.
+    setAvailListHead(block_order, heap_base);
+
+    // Set block header
+    let heap_base[0] = true;
+    let heap_base[1] = 0;
+    let heap_base[2] = 0;
+    let heap_base[3] = 14;
+
+    // We're all initialized, so now we can use alloc to get some heap memory
+    // to use for the overheads required by the allocation algorithm itself.
+    let avail = alloc(13);
+    do copy(avail, screen, 13);
+
+    // Don't leave a mess on the screen!
+    let i = 0;
+    while (i < 13) {
+      let screen[i] = 0;
+      let i = i + 1;
+    }
+  }
+
+  function void copy(int dest, int src, int count) {
+    var int i;
+
+    let i = 0;
+    while (i < count) {
+      let dest[i] = src[i];
+      let i = i + 1;
+    }
+  }
+
+  function int pop_first_free_block(int required_order) {
+    var int head_ptr, head, new_head;
+
+    let head_ptr = avail + required_order - min_block_order;
+    let head = head_ptr[0];
+    if (head) {
+      let new_head = head[1];
+      if (new_head) {
+        let new_head[2] = 0;
+      }
+      let head_ptr[0] = new_head;
+    }
+    return head;
+  }
+
+  function int half_block(int block) {
+    var int half_size, new_block, block_order, new_block_order;
+
+    let block_order = block[3];
+    let new_block_order = block_order - 1;
+    let half_size = Math.pow2(new_block_order);
+    let new_block = block + half_size;
+
+    let block[3] = new_block_order;
+    let new_block[3] = new_block_order;
+    let new_block[0] = true;
+
+    do remove_block(block, block_order);
+    do add_block(new_block, new_block_order);
+    do add_block(block, new_block_order);
+  }
+
+  function int get_block(int required_order) {
+    var int block, idx;
+
+    let block = pop_first_free_block(required_order);
+    if (block) {
+      return block;
+    }
+
+    if (order = 14) {
+      return 0;
+    }
+
+    let bigger_block = pop_first_free_block(required_order + 1);
+    if (bigger_block) {
+      return half_block(bigger_block);
+    }
+    return 0;
+  }
+
+  function int get_order(int size) {
+    var int order, order_size;
+
+    let order = 2;
+    let order_size = 4
+    while (order_size < size) {
+      let order = order + 1;
+      let order_size = order_size + order_size;
+    }
+    return order;
+  }
+
+  function void alloc(int requested_size) {
+    var int free_block;
+
+    let free_block = get_block(get_order(requested_size + 1));
+    let free_block[0] = false;
+    return free_block + 1;
   }
 
   function void deAlloc(int ptr) {

@@ -547,9 +547,10 @@ mod tests {
 
                     do Memory.init();
 
-                    let rounds = 1000;
-                    let array_count = 150;
-                    let array_length = 2;
+                    let rounds = 1;
+                    // TODO - why can't we take this up to 500? I think that should be doable????
+                    let array_count = 250;
+                    let array_length = 20;
                     let nested_arr = Memory.alloc(array_count);
 
                     let i = 0;
@@ -582,9 +583,12 @@ mod tests {
             ",
         ]);
         computer.tick_until(&program_completed);
+        println!("{:?}", &computer.ram.lock().unwrap()[2048..18432]);
+
+        let sequence: Vec<_> = repeat_n(9, 20).collect();
         assert_eq!(
-            count_nonoverlapping_sequences_in_heap(&computer, &[999, 2]),
-            150
+            count_nonoverlapping_sequences_in_heap(&computer, &sequence),
+            500
         );
     }
 }

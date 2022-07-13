@@ -117,6 +117,7 @@ pub fn count_nonoverlapping_sequences_in_heap(computer: &Computer, needle: &[i16
 
 pub fn heap_avail_list(computer: &Computer) -> HashMap<usize, Vec<i16>> {
     let mut result = HashMap::new();
+
     let ram = computer.ram.lock().unwrap();
     let avail_list = &ram[2050..2050 + 13];
     for (idx, &list_head) in avail_list.iter().enumerate() {

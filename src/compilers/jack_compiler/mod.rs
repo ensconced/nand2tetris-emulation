@@ -551,17 +551,17 @@ mod tests {
                     let array_length = 2;
 
                     let nested_arr = Memory.alloc(array_count);
-                    // let j = 0;
-                    // while (j < array_count) {
-                    //     let arr = Memory.alloc(array_length);
-                    //     let k = 0;
-                    //     // TODO - this causes an error - reinstate it and find out what's going on!
-                    //     // while (k < array_length) {
-                    //     //     let arr[j] = 1;
-                    //     //     let k = k + 1;
-                    //     // }
-                    //     let j = j + 1;
-                    // }
+                    let j = 0;
+                    while (j < array_count) {
+                        let arr = Memory.alloc(array_length);
+                        let k = 0;
+                        // TODO - this causes an error - reinstate it and find out what's going on!
+                        // while (k < array_length) {
+                        //     let arr[j] = 1;
+                        //     let k = k + 1;
+                        // }
+                        let j = j + 1;
+                    }
                 }
             }
             ",

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::iter;
 use std::ops::Deref;
 
@@ -90,7 +91,7 @@ pub fn heap_includes(computer: &Computer, values: &[i16]) -> bool {
     (0..heap.len()).any(|heap_idx| heap.iter().skip(heap_idx).take(values.len()).eq(values))
 }
 
-fn count_nonoverlapping_sequences(haystack: &[i16], needle: &[i16]) -> usize {
+fn count_nonoverlapping_sequences<T: PartialEq>(haystack: &[T], needle: &[T]) -> usize {
     let mut count = 0;
     let mut match_len = 0;
     for val in haystack {
@@ -112,6 +113,22 @@ pub fn count_nonoverlapping_sequences_in_heap(computer: &Computer, needle: &[i16
     let ram = computer.ram.lock().unwrap();
     let heap = &ram[2048..18432];
     count_nonoverlapping_sequences(heap, needle)
+}
+
+pub fn heap_avail_list(computer: &Computer) -> HashMap<usize, Vec<i16>> {
+    let mut result = HashMap::new();
+    let ram = computer.ram.lock().unwrap();
+    let avail_list = &ram[2050..2050 + 13];
+    for (idx, &list_head) in avail_list.iter().enumerate() {
+        let mut current = list_head;
+        let mut free_blocks = Vec::new();
+        while current != 0 {
+            free_blocks.push(current);
+            current = ram[list_head as usize + 2];
+        }
+        result.insert(idx + 2, free_blocks);
+    }
+    result
 }
 
 pub fn program_completed(computer: &Computer) -> bool {

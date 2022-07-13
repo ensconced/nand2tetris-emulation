@@ -96,10 +96,10 @@ class Memory {
     }
   }
 
-  function void pushFreeBlock(int block, int order) {
+  function void pushFreeBlock(int block) {
     var int head_location, head;
 
-    let head_location = avail + order - min_block_order;
+    let head_location = avail + block[1] - min_block_order;
     let head = head_location[0];
     if (head) {
       let head[3] = block;
@@ -136,7 +136,7 @@ class Memory {
     let new_block[1] = new_block_order;
     let new_block[0] = true;
 
-    do pushFreeBlock(new_block, new_block_order);
+    do pushFreeBlock(new_block);
     return block;
   }
 
@@ -184,8 +184,14 @@ class Memory {
     return 0;
   }
 
-  function int findBuddy(int block, int block_order) {
-    var int offset_block, block_size, offset_buddy;
+  function int findFreeBuddy(int block) {
+    var int offset_block, block_size, offset_buddy, buddy, block_order;
+
+    let block_order = block[1];
+
+    if (block_order > 13) {
+      return 0;
+    }
 
     let offset_block = block - 2048;
     let block_size = Math.pow2(block_order);
@@ -196,13 +202,17 @@ class Memory {
     } else {
       let offset_buddy = offset_block + block_size;
     }
-    return offset_buddy + 2048;
+    let buddy = offset_buddy + 2048;
+    if (buddy[0]) {
+      return buddy;
+    }
+    return 0;
   }
 
-  function void removeFreeBlock(int block, int block_order) {
+  function void removeFreeBlock(int block) {
     var int head_location, prev_location, next_location;
 
-    let head_location = avail + block_order - min_block_order;
+    let head_location = avail + block[1] - min_block_order;
 
     let prev_location = block[3];
     if (prev_location) {
@@ -215,33 +225,28 @@ class Memory {
     }
   }
 
-  function void mergeBuddies(int freed_block, int buddy_block, int block_order) {
+  function int mergeBuddies(int freed_block, int buddy_block) {
     var int merged_block, new_block_order;
 
-    do removeFreeBlock(buddy_block, block_order);
-
+    do removeFreeBlock(buddy_block);
     let merged_block = Math.min(freed_block, buddy_block);
-    let merged_block[0] = true;
-    let new_block_order = block_order + 1;
-    let merged_block[1] = new_block_order;
-    do pushFreeBlock(merged_block, new_block_order);
+    let merged_block[1] = freed_block[1] + 1;
+    return merged_block;
   }
 
   function void deAlloc(int ptr) {
-    var int block, block_order, buddy;
+    var int block, free_buddy;
 
     let block = ptr - 2;
-    let block_order = block[1];
-
-    if (~(block_order = 14)) {
-      let buddy = findBuddy(block, block_order);
-      if (buddy[0]) {
-        do mergeBuddies(block, buddy, block_order);
-        return;
-      }
+    while (true) {
+        let free_buddy = findFreeBuddy(block);
+        if (free_buddy) {
+          let block = mergeBuddies(block, free_buddy, block[1]);
+        } else {
+          let block[0] = true;
+          do pushFreeBlock(block);
+          return;
+        }
     }
-
-    let block[0] = true;
-    do pushFreeBlock(block, block_order);
   }
 }

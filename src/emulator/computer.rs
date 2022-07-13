@@ -1,5 +1,3 @@
-use itertools::Itertools;
-
 use std::{
     num::Wrapping,
     sync::{Arc, Mutex},
@@ -15,18 +13,35 @@ enum DebugMode {
 
 const DEBUG_MODE: DebugMode = DebugMode::None;
 
-fn succinct_print(slice: &[i16]) -> String {
-    let mut result = String::new();
-    let groups = slice.iter().group_by(|x| **x == 0);
-    result.push('[');
-    for (is_zero, group) in groups.into_iter() {
-        let v: Vec<_> = group.collect();
-        if is_zero && v.len() > 1 {
-            result.extend(format!("0 x {}, ", v.len()).chars());
-        } else {
-            for elem in v.into_iter() {
-                result.extend(format!("{}, ", elem).chars());
+fn group_consecutive_identical_elements<T: PartialEq + Copy>(slice: &[T]) -> Vec<Vec<T>> {
+    let mut result = Vec::new();
+    let mut current_group = Vec::new();
+    let mut prev_val: Option<T> = None;
+    for val in slice {
+        if let Some(prev) = prev_val {
+            if prev == *val {
+                current_group.push(*val);
+            } else {
+                result.push(current_group);
+                current_group = vec![*val];
             }
+        } else {
+            current_group.push(*val);
+        }
+        prev_val = Some(*val);
+    }
+    result.push(current_group);
+    result
+}
+
+fn debug_print_slice(slice: &[i16]) -> String {
+    let mut result = String::new();
+    result.push('[');
+    for group in group_consecutive_identical_elements(slice) {
+        if group.len() > 1 {
+            result.extend(format!("{} x {}, ", group[0], group.len()).chars());
+        } else {
+            result.extend(format!("{}, ", group[0]).chars());
         }
     }
     result.push(']');
@@ -176,16 +191,29 @@ impl Computer {
                     arg: ram[2],
                     this: ram[3],
                     that: ram[4],
-                    stack: succinct_print(stack),
-                    heap: succinct_print(heap),
-                    screen: succinct_print(screen),
+                    stack: debug_print_slice(stack),
+                    heap: debug_print_slice(heap),
+                    screen: debug_print_slice(screen),
                     temp,
                 };
                 debug_info.display();
             }
             DebugMode::Heap => {
                 let ram = self.ram.lock().unwrap();
-                succinct_print(&ram[2048..18432]);
+                for block_order in 2..=14 {
+                    let block_size = 2_usize.pow(block_order);
+                    print!("FREE {}-WORD BLOCKS: ", block_size);
+                    let mut next = ram[2048 + block_order as usize] as usize;
+                    while next != 0 {
+                        print!(
+                            "{}: {},",
+                            next,
+                            debug_print_slice(&ram[next..next + block_size])
+                        );
+                        next = ram[next + 2] as usize;
+                    }
+                }
+                println!();
             }
             DebugMode::None => {}
         }
@@ -213,6 +241,14 @@ impl Computer {
 #[allow(overflowing_literals, unused_imports)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_group_consecutive_identical_elements() {
+        assert_eq!(
+            group_consecutive_identical_elements(&[1, 2, 2, 3, 3, 3, 4, 1]),
+            vec![vec![1], vec![2, 2], vec![3, 3, 3], vec![4], vec![1]]
+        );
+    }
 
     #[test]
     fn test_get_bit() {

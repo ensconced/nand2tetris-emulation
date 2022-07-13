@@ -37,7 +37,7 @@ pub fn compile_files(src_path: &Path, dest_path: &Path) {
 
 #[cfg(test)]
 mod tests {
-    use std::iter;
+    use std::{collections::HashMap, iter};
 
     use itertools::repeat_n;
 
@@ -293,74 +293,6 @@ mod tests {
     }
 
     #[test]
-    fn test_single_big_array_alloc() {
-        let mut computer = computer_from_jack_code(vec![
-            "
-            class Sys {
-                function void init () {
-                    var String a;
-                    var int i, str, count, arr;
-                    do Memory.init();
-
-                    let count = 14335;
-                    let arr = Memory.alloc(count);
-                    let i = 0;
-                    while (i < count) {
-                        let arr[i] = i;
-                        let i = i + 1;
-                    }
-                }
-            }
-            ",
-        ]);
-        let nums: Vec<_> = (0..14335).into_iter().collect();
-        computer.tick_until(&program_completed);
-        computer.tick_until(&|computer| heap_includes(computer, &nums));
-    }
-
-    #[test]
-    fn test_single_big_array_repeated_alloc() {
-        let mut computer = computer_from_jack_code(vec![
-            "
-            class Sys {
-                function void init () {
-                    var String a;
-                    var int i, count, arr;
-                    do Memory.init();
-
-                    let count = 14335;
-                    let arr = Memory.alloc(count);
-                    let i = 0;
-                    while (i < count) {
-                        let arr[i] = i;
-                        let i = i + 1;
-                    }
-                    do Memory.deAlloc(arr);
-
-                    let arr = Memory.alloc(count);
-                    let i = 0;
-                    while (i < count) {
-                        let arr[i] = -i;
-                        let i = i + 1;
-                    }
-                    do Memory.deAlloc(arr);
-
-                    let arr = Memory.alloc(count);
-                    let i = 0;
-                    while (i < count) {
-                        let arr[i] = i + 100;
-                        let i = i + 1;
-                    }
-                }
-            }
-            ",
-        ]);
-        computer.tick_until(&program_completed);
-        let nums: Vec<_> = (0..14335).into_iter().map(|x| x + 100).collect();
-        assert!(heap_includes(&computer, &nums));
-    }
-
-    #[test]
     fn test_alloc_many_small_arrays() {
         let mut computer = computer_from_jack_code(vec![
             "
@@ -400,139 +332,39 @@ mod tests {
     }
 
     #[test]
-    fn test_alloc_and_dealloc_many_small_arrays() {
+    fn test_memory_init() {
         let mut computer = computer_from_jack_code(vec![
             "
             class Sys {
-                static int array_count;
-                static int length_per_array;
-
-                function int create_single_array(int val) {
-                    var int arr, i;
-
-                    let arr = Memory.alloc(length_per_array);
-                    let i = 0;
-                    while (i < length_per_array) {
-                        let arr[i] = val;
-                        let i = i + 1;
-                    }
-                    return arr;
-                }
-
-                function int create_arrays(int val) {
-                    var int nested_arr, i, arr;
-
-                    let nested_arr = Memory.alloc(array_count);
-                    let i = 0;
-                    while (i < array_count) {
-                        let arr = create_single_array(val);
-                        let nested_arr[i] = arr;
-                        let i = i + 1;
-                    }
-                    return nested_arr;
-                }
-
-                function void dealloc_all(int nested_arr) {
-                     var int i;
-                     let i = 0;
-                     while (i < array_count) {
-                        do Memory.deAlloc(nested_arr[i]);
-                        let i = i + 1;
-                     }
-                     do Memory.deAlloc(nested_arr);
-                }
-
                 function void init () {
-                    var int val, rounds, nested_arr;
                     do Memory.init();
-
-                    let array_count = 6;
-                    let length_per_array = 2000;
-
-                    let val = 1234;
-
-                    let nested_arr = create_arrays(val);
-                    do dealloc_all(nested_arr);
-                    let val = 5678;
-                    let nested_arr = create_arrays(val);
-                    do create_arrays(val);
                 }
             }
             ",
         ]);
         computer.tick_until(&program_completed);
-        let arr: Vec<_> = repeat_n(5678, 2000).collect();
-        assert_eq!(count_nonoverlapping_sequences_in_heap(&computer, &arr), 6);
-    }
 
-    #[test]
-    fn test_alloc_and_dealloc_arrays_prime_factors_decreasing() {
-        let mut computer = computer_from_jack_code(vec![
-            "
+        //   left: `{14: [], 7: [2176], 3: [], 11: [4096], 6: [2112], 12: [6144], 4: [2064], 5: [2080], 10: [3072], 13: [10240], 8: [2304], 9: [2560], 2: []}`,
 
-            class Sys {
-                function void alloc(int chunk_size, int fill_val) {
-                    var int arr_size, arr_count, i, j, arr;
-
-                    let arr_size = chunk_size - 1;
-                    let arr_count = 14336 / chunk_size;
-
-                    let i = 0;
-
-                    while (i < arr_count) {
-                        let arr = Memory.alloc(arr_size);
-                        let j = 0;
-                        while (j < arr_size) {
-                            let arr[j] = fill_val;
-                            let j = j + 1;
-                        }
-                        let i = i + 1;
-                    }
-                }
-
-                function void dealloc(int chunk_size) {
-                    var int i;
-                    let i = 0;
-                    while (i < 14336) {
-                        do Memory.deAlloc(2048 + i + 1);
-                        let i = i + chunk_size;
-                    }
-                }
-
-                function void alloc_dealloc(int chunk_size, int fill_val) {
-                    do alloc(chunk_size, fill_val);
-                    do dealloc(chunk_size);
-                }
-
-                function void init () {
-                    do Memory.init();
-
-                    // This is obviously a tedious way to write the code, but I'm avoiding using
-                    // any extra heap allocation which would interfere with the tests.
-                    // Note that the numbers are specially chosen to always fill the heap, and to
-                    // avoid any need for defragmentation.
-                    do alloc_dealloc(14336, 0);
-                    do alloc_dealloc(7168, 1);
-                    do alloc_dealloc(3584, 2);
-                    do alloc_dealloc(1792, 3);
-                    do alloc_dealloc(896, 4);
-                    do alloc_dealloc(448, 5);
-                    do alloc_dealloc(224, 6);
-                    do alloc_dealloc(112, 7);
-                    do alloc_dealloc(56, 8);
-                    do alloc_dealloc(28, 9);
-                    do alloc_dealloc(14, 10);
-                    do alloc(7, 11);
-                }
-            }
-            ",
-        ]);
-        computer.tick_until(&program_completed);
-        let nums: Vec<_> = iter::once(7)
-            .chain(iter::repeat(11).take(6))
-            .cycle()
-            .take(14336)
-            .collect();
-        assert!(heap_includes(&computer, &nums));
+        assert_eq!(
+            heap_avail_list(&computer),
+            vec![
+                (2, vec![]),
+                (3, vec![]),
+                (4, vec![2064]),
+                (5, vec![2080]),
+                (6, vec![2112]),
+                (7, vec![2176]),
+                (8, vec![2304]),
+                (9, vec![2560]),
+                (10, vec![3072]),
+                (11, vec![4096]),
+                (12, vec![6144]),
+                (13, vec![10240]),
+                (14, vec![]),
+            ]
+            .into_iter()
+            .collect()
+        );
     }
 }

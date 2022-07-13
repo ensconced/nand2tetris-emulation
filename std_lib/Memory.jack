@@ -100,7 +100,9 @@ class Memory {
 
     let head_location = avail + order - min_block_order;
     let head = head_location[0];
-    let head[2] = block;
+    if (head) {
+      let head[2] = block;
+    }
     let block[1] = head;
     let block[2] = 0;
     let head_location[0] = block;

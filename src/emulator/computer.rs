@@ -13,22 +13,24 @@ enum DebugMode {
     None,
 }
 
-const DEBUG_MODE: DebugMode = DebugMode::Verbose;
+const DEBUG_MODE: DebugMode = DebugMode::None;
 
-fn display_heap(heap: &[i16]) {
-    let groups = heap.iter().group_by(|x| **x == 0);
-    print!("[");
+fn succinct_print(slice: &[i16]) -> String {
+    let mut result = String::new();
+    let groups = slice.iter().group_by(|x| **x == 0);
+    result.push('[');
     for (is_zero, group) in groups.into_iter() {
         let v: Vec<_> = group.collect();
         if is_zero && v.len() > 1 {
-            print!("0 x {}, ", v.len());
+            result.extend(format!("0 x {}, ", v.len()).chars());
         } else {
             for elem in v.into_iter() {
-                print!("{}, ", elem);
+                result.extend(format!("{}, ", elem).chars());
             }
         }
     }
-    println!("]")
+    result.push(']');
+    result
 }
 
 pub fn bit(instruction: i16, idx: u32) -> u16 {
@@ -120,6 +122,7 @@ struct DebugInfo {
     temp: String,
     stack: String,
     heap: String,
+    screen: String,
 }
 
 impl DebugInfo {
@@ -162,7 +165,8 @@ impl Computer {
                 } else {
                     &[]
                 };
-                let heap = &ram[2048..2148]; // just show start of heap
+                let heap = &ram[2048..18432];
+                let screen = &ram[18432..26624];
                 let temp = format!("{:?}", &ram[5..=12]);
                 println!("statics: {:?}", &ram[16..26]);
                 let debug_info = DebugInfo {
@@ -172,15 +176,16 @@ impl Computer {
                     arg: ram[2],
                     this: ram[3],
                     that: ram[4],
-                    stack: format!("{:?}", stack),
-                    heap: format!("{:?}", heap),
-                    temp: format!("{:?}", temp),
+                    stack: succinct_print(stack),
+                    heap: succinct_print(heap),
+                    screen: succinct_print(screen),
+                    temp,
                 };
                 debug_info.display();
             }
             DebugMode::Heap => {
                 let ram = self.ram.lock().unwrap();
-                display_heap(&ram[2048..18432]);
+                succinct_print(&ram[2048..18432]);
             }
             DebugMode::None => {}
         }

@@ -140,7 +140,7 @@ class Memory {
   }
 
   function int get_block(int required_order) {
-    var int block, bigger_block, idx;
+    var int block, bigger_block;
 
     let block = pop_free_block(required_order);
     if (block) {

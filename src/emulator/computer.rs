@@ -13,7 +13,7 @@ enum DebugMode {
     None,
 }
 
-const DEBUG_MODE: DebugMode = DebugMode::None;
+const DEBUG_MODE: DebugMode = DebugMode::Heap;
 
 fn succinct_print(slice: &[i16]) -> String {
     let mut result = String::new();

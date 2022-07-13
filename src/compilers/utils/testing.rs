@@ -1,3 +1,4 @@
+use std::iter;
 use std::ops::Deref;
 
 use std::path::Path;
@@ -89,6 +90,53 @@ pub fn heap_includes(computer: &Computer, values: &[i16]) -> bool {
     (0..heap.len()).any(|heap_idx| heap.iter().skip(heap_idx).take(values.len()).eq(values))
 }
 
+fn count_nonoverlapping_sequences(haystack: &[i16], needle: &[i16]) -> usize {
+    let mut count = 0;
+    let mut match_len = 0;
+    for val in haystack {
+        if *val == needle[match_len] {
+            if match_len == needle.len() - 1 {
+                count += 1;
+                match_len = 0;
+            } else {
+                match_len += 1;
+            }
+        } else {
+            match_len = 0;
+        }
+    }
+    count
+}
+
+pub fn count_nonoverlapping_sequences_in_heap(computer: &Computer, needle: &[i16]) -> usize {
+    let ram = computer.ram.lock().unwrap();
+    let heap = &ram[2048..18432];
+    count_nonoverlapping_sequences(heap, needle)
+}
+
 pub fn program_completed(computer: &Computer) -> bool {
     computer.cpu.pc == 2
+}
+
+#[cfg(test)]
+mod tests {
+    use super::count_nonoverlapping_sequences;
+
+    #[test]
+    fn test_count_nonoverlapping_sequences() {
+        let haystack = [1, 2, 3, 4, 1, 2, 3];
+        let needle = [1, 2, 3];
+        let result = count_nonoverlapping_sequences(&haystack, &needle);
+        assert_eq!(result, 2);
+
+        let haystack = [1, 2, 4, 3];
+        let needle = [1, 2, 3];
+        let result = count_nonoverlapping_sequences(&haystack, &needle);
+        assert_eq!(result, 0);
+
+        let haystack = [1, 2, 4, 3, 1, 2, 1, 2, 1, 2, 3, 1, 2];
+        let needle = [1, 2, 3];
+        let result = count_nonoverlapping_sequences(&haystack, &needle);
+        assert_eq!(result, 1);
+    }
 }

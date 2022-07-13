@@ -39,6 +39,8 @@ pub fn compile_files(src_path: &Path, dest_path: &Path) {
 mod tests {
     use std::iter;
 
+    use itertools::repeat_n;
+
     use crate::compilers::utils::testing::*;
 
     #[test]
@@ -444,9 +446,8 @@ mod tests {
                     var int val, rounds, nested_arr;
                     do Memory.init();
 
-                    // NB these numbers are chosen specially to completely fill the heap.
-                    let array_count = 235;
-                    let length_per_array = 59;
+                    let array_count = 20;
+                    let length_per_array = 50;
 
                     let rounds = 10;
                     let val = 0;
@@ -464,12 +465,8 @@ mod tests {
             ",
         ]);
         computer.tick_until(&program_completed);
-        let nums: Vec<_> = iter::once(60)
-            .chain(iter::once(9).cycle().take(59))
-            .cycle()
-            .take(11 * 235)
-            .collect();
-        assert!(heap_includes(&computer, &nums));
+        let arr: Vec<_> = repeat_n(9, 50).collect();
+        assert_eq!(count_nonoverlapping_sequences_in_heap(&computer, &arr), 20);
     }
 
     #[test]

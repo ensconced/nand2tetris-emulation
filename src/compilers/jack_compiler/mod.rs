@@ -344,14 +344,97 @@ mod tests {
         ]);
         computer.tick_until(&program_completed);
 
-        //   left: `{14: [], 7: [2176], 3: [], 11: [4096], 6: [2112], 12: [6144], 4: [2064], 5: [2080], 10: [3072], 13: [10240], 8: [2304], 9: [2560], 2: []}`,
-
         assert_eq!(
             heap_avail_list(&computer),
             vec![
                 (2, vec![]),
                 (3, vec![]),
                 (4, vec![2064]),
+                (5, vec![2080]),
+                (6, vec![2112]),
+                (7, vec![2176]),
+                (8, vec![2304]),
+                (9, vec![2560]),
+                (10, vec![3072]),
+                (11, vec![4096]),
+                (12, vec![6144]),
+                (13, vec![10240]),
+                (14, vec![]),
+            ]
+            .into_iter()
+            .collect()
+        );
+    }
+
+    #[test]
+    fn test_memory_alloc_4_word_block() {
+        let mut computer = computer_from_jack_code(vec![
+            "
+            class Sys {
+                function void init () {
+                    var int ptr;
+
+                    do Memory.init();
+
+                    // This should use a 4-word block.
+                    let ptr = Memory.alloc(2);
+                }
+            }
+            ",
+        ]);
+        computer.tick_until(&program_completed);
+
+        // To generate a 4-word block, we have to split a 16-word block into 2
+        // 8-word blocks, then split one of those again.
+
+        assert_eq!(
+            heap_avail_list(&computer),
+            vec![
+                (2, vec![2068]),
+                (3, vec![2072]),
+                (4, vec![]),
+                (5, vec![2080]),
+                (6, vec![2112]),
+                (7, vec![2176]),
+                (8, vec![2304]),
+                (9, vec![2560]),
+                (10, vec![3072]),
+                (11, vec![4096]),
+                (12, vec![6144]),
+                (13, vec![10240]),
+                (14, vec![]),
+            ]
+            .into_iter()
+            .collect()
+        );
+    }
+
+    #[test]
+    fn test_memory_alloc_8_word_block() {
+        let mut computer = computer_from_jack_code(vec![
+            "
+            class Sys {
+                function void init () {
+                    var int ptr;
+
+                    do Memory.init();
+
+                    // This should use a 8-word block.
+                    let ptr = Memory.alloc(5);
+                }
+            }
+            ",
+        ]);
+        computer.tick_until(&program_completed);
+
+        // To generate an 8-word block, we have to split a 16-word block.
+
+        assert_eq!(
+            heap_avail_list(&computer),
+            vec![
+                (2, vec![]),
+                (3, vec![2072]),
+                (4, vec![]),
                 (5, vec![2080]),
                 (6, vec![2112]),
                 (7, vec![2176]),

@@ -553,7 +553,7 @@ mod tests {
                     let nested_arr = Memory.alloc(array_count);
                     let j = 0;
                     // while (j < array_count) {
-                    while (j < 140) {
+                    while (j < 148) {
                         let arr = Memory.alloc(array_length);
                         let k = 0;
                         // TODO - this causes an error - reinstate it and find out what's going on!
@@ -574,8 +574,8 @@ mod tests {
                 (4, vec![]),
                 (8, vec![]),
                 (16, vec![]),
-                (32, vec![]),
-                (64, vec![2880]),
+                (32, vec![2912]),
+                (64, vec![]),
                 (128, vec![2944]),
                 (256, vec![]),
                 (512, vec![]),

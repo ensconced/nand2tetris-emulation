@@ -185,7 +185,7 @@ impl Computer {
             }
             DebugMode::Heap => {
                 let ram = self.ram.lock().unwrap();
-                println!("{}", succinct_print(&ram[2048..18432]));
+                succinct_print(&ram[2048..18432]);
             }
             DebugMode::None => {}
         }

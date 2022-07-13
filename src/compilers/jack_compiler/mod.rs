@@ -446,27 +446,23 @@ mod tests {
                     var int val, rounds, nested_arr;
                     do Memory.init();
 
-                    let array_count = 20;
-                    let length_per_array = 50;
+                    let array_count = 6;
+                    let length_per_array = 2000;
 
-                    let rounds = 10;
-                    let val = 0;
+                    let val = 1234;
 
-                    while (val < rounds) {
-                        let nested_arr = create_arrays(val);
-                        // don't dealloc the last one
-                        if (val < rounds - 1) {
-                            do dealloc_all(nested_arr);
-                        }
-                        let val = val + 1;
-                    }
+                    let nested_arr = create_arrays(val);
+                    do dealloc_all(nested_arr);
+                    let val = 5678;
+                    let nested_arr = create_arrays(val);
+                    do create_arrays(val);
                 }
             }
             ",
         ]);
         computer.tick_until(&program_completed);
-        let arr: Vec<_> = repeat_n(9, 50).collect();
-        assert_eq!(count_nonoverlapping_sequences_in_heap(&computer, &arr), 20);
+        let arr: Vec<_> = repeat_n(5678, 2000).collect();
+        assert_eq!(count_nonoverlapping_sequences_in_heap(&computer, &arr), 6);
     }
 
     #[test]

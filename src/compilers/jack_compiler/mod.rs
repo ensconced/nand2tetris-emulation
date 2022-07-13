@@ -556,10 +556,10 @@ mod tests {
                         let arr = Memory.alloc(array_length);
                         let k = 0;
                         // TODO - this causes an error - reinstate it and find out what's going on!
-                        // while (k < array_length) {
-                        //     let arr[j] = 1;
-                        //     let k = k + 1;
-                        // }
+                        while (k < array_length) {
+                            let arr[j] = 1;
+                            let k = k + 1;
+                        }
                         let j = j + 1;
                     }
                 }

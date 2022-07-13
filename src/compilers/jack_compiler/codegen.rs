@@ -104,8 +104,10 @@ impl CodeGenerator {
                 push {compiled_var}
                 {compiled_idx}
                 add
-                pop pointer 1
+                pop temp 1
                 {compiled_value}
+                push temp 1
+                pop pointer 1
                 pop that 0
             "
             )

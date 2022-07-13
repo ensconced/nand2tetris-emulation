@@ -1,0 +1,1010 @@
+function Math.init 0
+
+push constant 0
+return
+
+function Math.abs 0
+
+push argument 0
+push constant 0
+lt
+
+if-goto if_statements_0
+
+push argument 0
+return
+
+goto end_if_0
+
+label if_statements_0
+
+push argument 0
+neg
+
+return
+
+label end_if_0
+
+return
+
+function Math.multiply 4
+
+push argument 0
+pop local 0
+
+push constant 0
+pop local 1
+
+push constant 0
+pop local 2
+
+push constant 1
+pop local 3
+
+label start_while_0
+
+push local 1
+push constant 16
+lt
+
+not
+if-goto end_while_0
+
+push argument 1
+push local 3
+and
+
+push local 3
+eq
+
+if-goto if_statements_0
+
+goto end_if_0
+
+label if_statements_0
+
+push local 2
+push local 0
+add
+
+pop local 2
+
+label end_if_0
+
+push local 0
+push local 0
+add
+
+pop local 0
+
+push local 3
+push local 3
+add
+
+pop local 3
+
+push local 1
+push constant 1
+add
+
+pop local 1
+
+goto start_while_0
+label end_while_0
+
+push local 2
+return
+
+return
+
+function Math.abs 0
+
+push argument 0
+push constant 0
+lt
+
+if-goto if_statements_0
+
+goto end_if_0
+
+label if_statements_0
+
+push argument 0
+neg
+
+return
+
+label end_if_0
+
+push argument 0
+return
+
+return
+
+function Math.divide 2
+
+push argument 0
+call Math.abs 1
+
+pop local 0
+
+push argument 1
+call Math.abs 1
+
+pop local 1
+
+push argument 0
+push constant 0
+lt
+
+push argument 1
+push constant 0
+lt
+
+eq
+
+if-goto if_statements_0
+
+goto end_if_0
+
+label if_statements_0
+
+push local 0
+push local 1
+call Math.divide_non_negatives 2
+
+return
+
+label end_if_0
+
+push local 0
+push local 1
+call Math.divide_non_negatives 2
+
+neg
+
+return
+
+return
+
+function Math.divide_non_negatives 3
+
+push argument 1
+push argument 0
+gt
+
+if-goto if_statements_0
+
+goto end_if_0
+
+label if_statements_0
+
+push constant 0
+return
+
+label end_if_0
+
+push constant 2
+push argument 1
+call Math.multiply 2
+
+pop local 1
+
+push argument 0
+push local 1
+call Math.divide 2
+
+pop local 0
+
+push argument 0
+
+push local 0
+push local 1
+call Math.multiply 2
+
+sub
+
+pop local 2
+
+push local 2
+push argument 1
+lt
+
+if-goto if_statements_1
+
+push constant 2
+push local 0
+call Math.multiply 2
+
+push constant 1
+add
+
+return
+
+goto end_if_1
+
+label if_statements_1
+
+push constant 2
+push local 0
+call Math.multiply 2
+
+return
+
+label end_if_1
+
+return
+
+function Math.min 0
+
+push argument 0
+push argument 1
+lt
+
+if-goto if_statements_0
+
+push argument 1
+return
+
+goto end_if_0
+
+label if_statements_0
+
+push argument 0
+return
+
+label end_if_0
+
+return
+
+function Math.max 0
+
+push argument 0
+push argument 1
+gt
+
+if-goto if_statements_0
+
+push argument 1
+return
+
+goto end_if_0
+
+label if_statements_0
+
+push argument 0
+return
+
+label end_if_0
+
+return
+
+function Math.sqrt 3
+
+push constant 0
+pop local 0
+
+push constant 127
+pop local 1
+
+label start_while_0
+
+push local 1
+push constant 1
+lt
+not
+
+not
+if-goto end_while_0
+
+push local 0
+push local 1
+add
+
+pop local 2
+
+push local 2
+push local 2
+call Math.multiply 2
+
+push argument 0
+gt
+not
+
+if-goto if_statements_0
+
+goto end_if_0
+
+label if_statements_0
+
+push local 2
+pop local 0
+
+label end_if_0
+
+push local 1
+push constant 2
+call Math.divide 2
+
+pop local 1
+
+goto start_while_0
+label end_while_0
+
+push local 0
+return
+
+return
+
+function Math.pow2 2
+
+push constant 1
+pop local 0
+
+push constant 0
+pop local 1
+
+label start_while_0
+
+push local 1
+push argument 0
+lt
+
+not
+if-goto end_while_0
+
+push local 0
+push local 0
+add
+
+pop local 0
+
+push local 1
+push constant 1
+add
+
+pop local 1
+
+goto start_while_0
+label end_while_0
+
+push local 0
+return
+
+return
+
+function Memory.init 5
+
+push constant 2
+pop static 1
+
+push constant 18432
+pop local 2
+
+push local 2
+pop static 0
+
+push constant 2048
+pop local 1
+
+push static 1
+pop local 0
+
+label start_while_0
+
+push local 0
+push constant 14
+lt
+
+not
+if-goto end_while_0
+
+push static 0
+
+push local 0
+push static 1
+sub
+
+add
+pop pointer 1
+push constant 0
+pop that 0
+
+push local 0
+push constant 1
+add
+
+pop local 0
+
+goto start_while_0
+label end_while_0
+
+push static 0
+
+push local 0
+push static 1
+sub
+
+add
+pop pointer 1
+push local 1
+pop that 0
+
+push local 1
+push constant 0
+add
+pop pointer 1
+push constant 0
+not
+pop that 0
+
+push local 1
+push constant 1
+add
+pop pointer 1
+push constant 0
+pop that 0
+
+push local 1
+push constant 2
+add
+pop pointer 1
+push constant 0
+pop that 0
+
+push local 1
+push constant 3
+add
+pop pointer 1
+push constant 14
+pop that 0
+
+push constant 13
+call Memory.alloc 1
+
+pop local 4
+
+push local 4
+push local 2
+push constant 13
+call Memory.copy 3
+
+pop constant 0
+
+push local 4
+pop static 0
+
+push constant 0
+pop local 3
+
+label start_while_1
+
+push local 3
+push constant 13
+lt
+
+not
+if-goto end_while_1
+
+push local 2
+push local 3
+add
+pop pointer 1
+push constant 0
+pop that 0
+
+push local 3
+push constant 1
+add
+
+pop local 3
+
+goto start_while_1
+label end_while_1
+
+push constant 0
+return
+
+function Memory.copy 1
+
+push constant 0
+pop local 0
+
+label start_while_0
+
+push local 0
+push argument 2
+lt
+
+not
+if-goto end_while_0
+
+push argument 0
+push local 0
+add
+pop pointer 1
+
+push argument 1
+push local 0
+add
+pop pointer 1
+push that 0
+
+pop that 0
+
+push local 0
+push constant 1
+add
+
+pop local 0
+
+goto start_while_0
+label end_while_0
+
+push constant 0
+return
+
+function Memory.push_free_block 2
+
+push static 0
+push argument 1
+add
+
+push static 1
+sub
+
+pop local 0
+
+push local 0
+push constant 0
+add
+pop pointer 1
+push that 0
+
+pop local 1
+
+push local 1
+if-goto if_statements_0
+
+goto end_if_0
+
+label if_statements_0
+
+push local 1
+push constant 2
+add
+pop pointer 1
+push argument 0
+pop that 0
+
+label end_if_0
+
+push argument 0
+push constant 1
+add
+pop pointer 1
+push local 1
+pop that 0
+
+push argument 0
+push constant 2
+add
+pop pointer 1
+push constant 0
+pop that 0
+
+push local 0
+push constant 0
+add
+pop pointer 1
+push argument 0
+pop that 0
+
+push constant 0
+return
+
+function Memory.pop_free_block 3
+
+push static 0
+push argument 0
+add
+
+push static 1
+sub
+
+pop local 0
+
+push local 0
+push constant 0
+add
+pop pointer 1
+push that 0
+
+pop local 1
+
+push local 1
+if-goto if_statements_0
+
+goto end_if_0
+
+label if_statements_0
+
+push local 1
+push constant 1
+add
+pop pointer 1
+push that 0
+
+pop local 2
+
+push local 2
+if-goto if_statements_1
+
+goto end_if_1
+
+label if_statements_1
+
+push local 2
+push constant 2
+add
+pop pointer 1
+push constant 0
+pop that 0
+
+label end_if_1
+
+push local 0
+push constant 0
+add
+pop pointer 1
+push local 2
+pop that 0
+
+label end_if_0
+
+push local 1
+return
+
+return
+
+function Memory.split_block 4
+
+push argument 0
+push constant 3
+add
+pop pointer 1
+push that 0
+
+pop local 2
+
+push local 2
+push constant 1
+sub
+
+pop local 3
+
+push local 3
+call Math.pow2 1
+
+pop local 0
+
+push argument 0
+push local 0
+add
+
+pop local 1
+
+push argument 0
+push constant 3
+add
+pop pointer 1
+push local 3
+pop that 0
+
+push local 1
+push constant 3
+add
+pop pointer 1
+push local 3
+pop that 0
+
+push local 1
+push constant 0
+add
+pop pointer 1
+push constant 0
+not
+pop that 0
+
+push local 1
+push local 3
+call Memory.push_free_block 2
+
+pop constant 0
+
+push argument 0
+return
+
+return
+
+function Memory.get_block 2
+
+push argument 0
+call Memory.pop_free_block 1
+
+pop local 0
+
+push local 0
+if-goto if_statements_0
+
+goto end_if_0
+
+label if_statements_0
+
+push local 0
+return
+
+label end_if_0
+
+push argument 0
+push constant 14
+eq
+
+if-goto if_statements_1
+
+goto end_if_1
+
+label if_statements_1
+
+push constant 0
+return
+
+label end_if_1
+
+push argument 0
+push constant 1
+add
+
+call Memory.get_block 1
+
+pop local 1
+
+push local 1
+if-goto if_statements_2
+
+goto end_if_2
+
+label if_statements_2
+
+push local 1
+call Memory.split_block 1
+
+return
+
+label end_if_2
+
+push constant 0
+return
+
+return
+
+function Memory.get_order 2
+
+push constant 2
+pop local 0
+
+push constant 4
+pop local 1
+
+label start_while_0
+
+push local 1
+push argument 0
+lt
+
+not
+if-goto end_while_0
+
+push local 0
+push constant 1
+add
+
+pop local 0
+
+push local 1
+push local 1
+add
+
+pop local 1
+
+goto start_while_0
+label end_while_0
+
+push local 0
+return
+
+return
+
+function Memory.alloc 1
+
+push argument 0
+push constant 1
+add
+
+call Memory.get_order 1
+
+call Memory.get_block 1
+
+pop local 0
+
+push local 0
+if-goto if_statements_0
+
+goto end_if_0
+
+label if_statements_0
+
+push local 0
+push constant 0
+add
+pop pointer 1
+push constant 0
+pop that 0
+
+push local 0
+push constant 1
+add
+
+return
+
+label end_if_0
+
+push constant 0
+return
+
+return
+
+function Memory.deAlloc 0
+
+push constant 0
+return
+
+function String.new 0
+push constant 2
+call Memory.alloc 1
+pop pointer 0
+
+push argument 0
+call Memory.alloc 1
+
+pop this 0
+
+push constant 0
+pop this 1
+
+push pointer 0
+return
+
+return
+
+function String.dispose 0
+push argument 0
+pop pointer 0
+
+push this 0
+call Memory.deAlloc 1
+
+pop constant 0
+
+push pointer 0
+call Memory.deAlloc 1
+
+pop constant 0
+
+push constant 0
+return
+
+function String.charAt 0
+push argument 0
+pop pointer 0
+
+push this 0
+push argument 1
+add
+pop pointer 1
+push that 0
+
+return
+
+return
+
+function String.length 0
+push argument 0
+pop pointer 0
+
+push this 1
+return
+
+return
+
+function String.setCharAt 0
+push argument 0
+pop pointer 0
+
+push this 0
+push argument 1
+add
+pop pointer 1
+push argument 2
+pop that 0
+
+push constant 0
+return
+
+function String.appendChar 0
+push argument 0
+pop pointer 0
+
+push this 0
+push this 1
+add
+pop pointer 1
+push argument 1
+pop that 0
+
+push this 1
+push constant 1
+add
+
+pop this 1
+
+push constant 0
+return
+
+function Sys.init 1
+
+call Memory.init 0
+
+pop constant 0
+
+push constant 5
+call String.new 1
+pop temp 0
+
+push temp 0
+push constant 104
+call String.appendChar 2
+pop constant 0
+
+push temp 0
+push constant 101
+call String.appendChar 2
+pop constant 0
+
+push temp 0
+push constant 108
+call String.appendChar 2
+pop constant 0
+
+push temp 0
+push constant 108
+call String.appendChar 2
+pop constant 0
+
+push temp 0
+push constant 111
+call String.appendChar 2
+pop constant 0
+
+push temp 0
+
+pop local 0
+
+push local 0
+
+call String.dispose 1
+
+pop constant 0
+
+push constant 0
+return

@@ -101,12 +101,12 @@ impl CodeGenerator {
             let compiled_idx = self.compile_expression(idx);
             format!(
                 "
+                {compiled_value}
+
                 push {compiled_var}
                 {compiled_idx}
                 add
-                pop temp 1
-                {compiled_value}
-                push temp 1
+
                 pop pointer 1
                 pop that 0
             "

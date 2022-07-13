@@ -11,9 +11,7 @@ mod parser;
 mod tokenizer;
 
 pub fn compile(source: &str) -> String {
-    let vm_code = codegen::generate_vm_code(parse(source));
-    println!("{}", vm_code);
-    vm_code
+    codegen::generate_vm_code(parse(source))
 }
 
 fn compile_modules(modules: &[SourceModule]) -> Vec<String> {

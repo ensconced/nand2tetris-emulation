@@ -548,14 +548,13 @@ mod tests {
                     do Memory.init();
 
                     let array_count = 150;
-                    let array_length = 2;
+                    let array_length = 20;
 
                     let nested_arr = Memory.alloc(array_count);
                     let j = 0;
                     while (j < array_count) {
                         let arr = Memory.alloc(array_length);
                         let k = 0;
-                        // TODO - this causes an error - reinstate it and find out what's going on!
                         while (k < array_length) {
                             let arr[k] = 1;
                             let k = k + 1;

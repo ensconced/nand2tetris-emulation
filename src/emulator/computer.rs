@@ -40,7 +40,7 @@ fn debug_print_slice(slice: &[i16]) -> String {
     for group in group_consecutive_identical_elements(slice) {
         if group.len() > 1 {
             result.extend(format!("{} x {}, ", group[0], group.len()).chars());
-        } else {
+        } else if group.len() == 1 {
             result.extend(format!("{}, ", group[0]).chars());
         }
     }

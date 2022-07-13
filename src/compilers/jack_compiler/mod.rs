@@ -410,7 +410,7 @@ mod tests {
     }
 
     #[test]
-    fn test_memory_alloc_8_word_block() {
+    fn test_memory_alloc_dealloc_without_merge() {
         let mut computer = computer_from_jack_code(vec![
             "
             class Sys {
@@ -419,21 +419,19 @@ mod tests {
 
                     do Memory.init();
 
-                    // This should use a 8-word block.
-                    let ptr = Memory.alloc(5);
+                    // This should use an existing 16-word block.
+                    let ptr = Memory.alloc(12);
                 }
             }
             ",
         ]);
         computer.tick_until(&program_completed);
 
-        // To generate an 8-word block, we have to split a 16-word block.
-
         assert_eq!(
             heap_avail_list(&computer),
             vec![
                 (2, vec![]),
-                (3, vec![2072]),
+                (3, vec![]),
                 (4, vec![]),
                 (5, vec![2080]),
                 (6, vec![2112]),

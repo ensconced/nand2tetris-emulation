@@ -553,7 +553,7 @@ mod tests {
                     let nested_arr = Memory.alloc(array_count);
                     let j = 0;
                     // while (j < array_count) {
-                    while (j < 7) {
+                    while (j < 8) {
                         let arr = Memory.alloc(array_length);
                         let k = 0;
                         // TODO - this causes an error - reinstate it and find out what's going on!
@@ -571,7 +571,7 @@ mod tests {
         assert_eq!(
             heap_avail_list(&computer),
             vec![
-                (4, vec![2092]),
+                (4, vec![]),
                 (8, vec![]),
                 (16, vec![2096]),
                 (32, vec![]),

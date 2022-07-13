@@ -12,12 +12,13 @@
 
   Free blocks have a 4-word header consisting of:
    - a boolean field set to true, indicating that the block is free
+   - a field indicating the order of the block
    - the forward pointer to the next block
    - the backward pointer to the previous block
-   - a field indicating the order of the block
 
-  Allocated blocks only need one field in their header:
+  Allocated blocks have a 2-work header consisting of:
    - a boolean field set to false, indicating that the block is not free
+   - a field indicating the order of the block
 
   The buddy algorithm works very nicely when your heap begins at memory address 0. Knuth's description
   assumes this is the case. Ours however begins at address 2048, which makes it all slightly more awkward,
@@ -67,9 +68,9 @@ class Memory {
 
     // Set block header
     let heap_base[0] = true;
-    let heap_base[1] = 0;
+    let heap_base[1] = 14;
     let heap_base[2] = 0;
-    let heap_base[3] = 14;
+    let heap_base[3] = 0;
 
     // We're all initialized, so now we can use alloc to get some heap memory
     // to use for the overheads required by the allocation algorithm itself.
@@ -101,10 +102,10 @@ class Memory {
     let head_location = avail + order - min_block_order;
     let head = head_location[0];
     if (head) {
-      let head[2] = block;
+      let head[3] = block;
     }
-    let block[1] = head;
-    let block[2] = 0;
+    let block[2] = head;
+    let block[3] = 0;
     let head_location[0] = block;
   }
 
@@ -114,9 +115,9 @@ class Memory {
     let head_location = avail + order - min_block_order;
     let head = head_location[0];
     if (head) {
-      let new_head = head[1];
+      let new_head = head[2];
       if (new_head) {
-        let new_head[2] = 0;
+        let new_head[3] = 0;
       }
       let head_location[0] = new_head;
     }
@@ -126,13 +127,13 @@ class Memory {
   function int split_block(int block) {
     var int half_size, new_block, block_order, new_block_order;
 
-    let block_order = block[3];
+    let block_order = block[1];
     let new_block_order = block_order - 1;
     let half_size = Math.pow2(new_block_order);
     let new_block = block + half_size;
 
-    let block[3] = new_block_order;
-    let new_block[3] = new_block_order;
+    let block[1] = new_block_order;
+    let new_block[1] = new_block_order;
     let new_block[0] = true;
 
     do push_free_block(new_block, new_block_order);
@@ -171,16 +172,42 @@ class Memory {
   }
 
   function int alloc(int requested_size) {
-    var int free_block;
+    var int free_block, block_order;
 
-    let free_block = get_block(get_order(requested_size + 1));
+    let block_order = get_order(requested_size + 2);
+    let free_block = get_block(block_order);
     if (free_block) {
       let free_block[0] = false;
-      return free_block + 1;
+      let free_block[2] = block_order;
+      return free_block + 2;
     }
     return 0;
   }
 
-  function void deAlloc(int ptr) {
+  function int findBuddy(int block, int block_order) {
+    var int offset_block, block_size, offset_buddy;
+
+    let offset_block = block - 2048;
+    let block_size = Math.pow2(block_order);
+    // This operation would be much easier and more performant
+    // if we had bitwise XOR in hardware.
+    if (offset_block & block_size) {
+      let offset_buddy = offset_block - block_size;
+    } else {
+      let offset_buddy = offset_block + block_size;
+    }
+    return offset_buddy + 2048;
+  }
+
+  function void deAlloc(int block) {
+    // var int block_order;
+
+    // let block_order = block[3];
+
+    // find buddy
+
+    // if buddy is also free, merge with buddy and add new combined block to free list
+
+    // else just add this block to free list
   }
 }

@@ -126,7 +126,7 @@ pub fn heap_avail_list(computer: &Computer) -> HashMap<usize, Vec<i16>> {
             free_blocks.push(current);
             current = ram[list_head as usize + 2];
         }
-        result.insert(idx + 2, free_blocks);
+        result.insert(2_usize.pow(idx as u32 + 2), free_blocks);
     }
     result
 }

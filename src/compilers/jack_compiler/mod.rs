@@ -543,48 +543,48 @@ mod tests {
             "
             class Sys {
                 function void init () {
-                    var int nested_arr, array_count, array_length, arr, j, k;
+                    var int nested_arr, array_count, array_length, rounds, arr, i, j, k;
 
                     do Memory.init();
 
+                    let rounds = 1000;
                     let array_count = 150;
-                    let array_length = 20;
-
+                    let array_length = 2;
                     let nested_arr = Memory.alloc(array_count);
-                    let j = 0;
-                    while (j < array_count) {
-                        let arr = Memory.alloc(array_length);
-                        let k = 0;
-                        while (k < array_length) {
-                            let arr[k] = 1;
-                            let k = k + 1;
+
+                    let i = 0;
+                    while (i < rounds) {
+                        let j = 0;
+                        while (j < array_count) {
+                            let arr = Memory.alloc(array_length);
+                            let nested_arr[j] = arr;
+                            let k = 0;
+                            while (k < array_length) {
+                                let arr[k] = i;
+                                let k = k + 1;
+                            }
+                            let j = j + 1;
                         }
-                        let j = j + 1;
+
+                        let j = 0;
+                        if (i < rounds - 1) {
+                            while (j < array_count) {
+                                do Memory.deAlloc(nested_arr[j]);
+                                let j = j + 1;
+                            }
+                        }
+
+                        let i = i + 1;
                     }
+
                 }
             }
             ",
         ]);
         computer.tick_until(&program_completed);
         assert_eq!(
-            heap_avail_list(&computer),
-            vec![
-                (4, vec![]),
-                (8, vec![2920]),
-                (16, vec![2928]),
-                (32, vec![]),
-                (64, vec![]),
-                (128, vec![2944]),
-                (256, vec![]),
-                (512, vec![]),
-                (1024, vec![3072]),
-                (2048, vec![4096]),
-                (4096, vec![6144]),
-                (8192, vec![10240]),
-                (16384, vec![]),
-            ]
-            .into_iter()
-            .collect()
+            count_nonoverlapping_sequences_in_heap(&computer, &[999, 2]),
+            150
         );
     }
 }

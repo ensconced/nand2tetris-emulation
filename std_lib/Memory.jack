@@ -217,6 +217,8 @@ class Memory {
     let prev_location = block[3];
     if (prev_location) {
       let prev_location[2] = block[2];
+    } else {
+      let head_location[0] = 0;
     }
 
     let next_location = block[2];

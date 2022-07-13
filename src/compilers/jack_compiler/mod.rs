@@ -421,6 +421,7 @@ mod tests {
 
                     // This should use an existing 16-word block.
                     let ptr = Memory.alloc(12);
+                    do Memory.deAlloc(ptr);
                 }
             }
             ",
@@ -432,11 +433,150 @@ mod tests {
             vec![
                 (2, vec![]),
                 (3, vec![]),
-                (4, vec![]),
+                (4, vec![2064]),
                 (5, vec![2080]),
                 (6, vec![2112]),
                 (7, vec![2176]),
                 (8, vec![2304]),
+                (9, vec![2560]),
+                (10, vec![3072]),
+                (11, vec![4096]),
+                (12, vec![6144]),
+                (13, vec![10240]),
+                (14, vec![]),
+            ]
+            .into_iter()
+            .collect()
+        );
+    }
+
+    #[test]
+    fn test_memory_alloc_dealloc_with_single_merge() {
+        let mut computer = computer_from_jack_code(vec![
+            "
+            class Sys {
+                function void init () {
+                    var int ptr;
+
+                    do Memory.init();
+
+                    // This should cause a 16-word block to be split into 2 8-word blocks.
+                    let ptr = Memory.alloc(5);
+                    do Memory.deAlloc(ptr);
+                }
+            }
+            ",
+        ]);
+        computer.tick_until(&program_completed);
+
+        assert_eq!(
+            heap_avail_list(&computer),
+            vec![
+                (2, vec![]),
+                (3, vec![]),
+                (4, vec![2064]),
+                (5, vec![2080]),
+                (6, vec![2112]),
+                (7, vec![2176]),
+                (8, vec![2304]),
+                (9, vec![2560]),
+                (10, vec![3072]),
+                (11, vec![4096]),
+                (12, vec![6144]),
+                (13, vec![10240]),
+                (14, vec![]),
+            ]
+            .into_iter()
+            .collect()
+        );
+    }
+
+    #[test]
+    fn test_memory_alloc_dealloc_with_multiple_merges() {
+        let mut computer = computer_from_jack_code(vec![
+            "
+            class Sys {
+                function void init () {
+                    var int ptr;
+
+                    do Memory.init();
+
+                    // This should cause a 4-word block to be formed by
+                    // splitting a 16-word block into 8-word blocks, then
+                    // splitting again.
+                    let ptr = Memory.alloc(2);
+
+                    // On deAlloc, the 4-word blocks should merge together, and
+                    // then the 8-word blocks should merge back together too.
+                    do Memory.deAlloc(ptr);
+                }
+            }
+            ",
+        ]);
+        computer.tick_until(&program_completed);
+
+        assert_eq!(
+            heap_avail_list(&computer),
+            vec![
+                (2, vec![]),
+                (3, vec![]),
+                (4, vec![2064]),
+                (5, vec![2080]),
+                (6, vec![2112]),
+                (7, vec![2176]),
+                (8, vec![2304]),
+                (9, vec![2560]),
+                (10, vec![3072]),
+                (11, vec![4096]),
+                (12, vec![6144]),
+                (13, vec![10240]),
+                (14, vec![]),
+            ]
+            .into_iter()
+            .collect()
+        );
+    }
+
+    #[test]
+    fn test_memory_alloc_small_array_stress_test() {
+        let mut computer = computer_from_jack_code(vec![
+            "
+            class Sys {
+                function void init () {
+                    var int nested_arr, array_count, array_length, arr, j, k;
+
+                    do Memory.init();
+
+                    let array_count = 150;
+                    let array_length = 2;
+
+                    let nested_arr = Memory.alloc(array_count);
+                    // let j = 0;
+                    // while (j < array_count) {
+                    //     let arr = Memory.alloc(array_length);
+                    //     let k = 0;
+                    //     // TODO - this causes an error - reinstate it and find out what's going on!
+                    //     // while (k < array_length) {
+                    //     //     let arr[j] = 1;
+                    //     //     let k = k + 1;
+                    //     // }
+                    //     let j = j + 1;
+                    // }
+                }
+            }
+            ",
+        ]);
+        computer.tick_until(&program_completed);
+        assert_eq!(
+            heap_avail_list(&computer),
+            vec![
+                (2, vec![]),
+                (3, vec![]),
+                (4, vec![2064]),
+                (5, vec![2080]),
+                (6, vec![2112]),
+                (7, vec![2176]),
+                (8, vec![]),
                 (9, vec![2560]),
                 (10, vec![3072]),
                 (11, vec![4096]),

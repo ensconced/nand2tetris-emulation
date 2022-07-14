@@ -203,7 +203,7 @@ class Memory {
       let offset_buddy = offset_block + block_size;
     }
     let buddy = offset_buddy + 2048;
-    if (buddy[0]) {
+    if (buddy[0] & buddy[1] = block_order) {
       return buddy;
     }
     return 0;
@@ -218,7 +218,7 @@ class Memory {
     if (prev_location) {
       let prev_location[2] = block[2];
     } else {
-      let head_location[0] = 0;
+      let head_location[0] = block[2];
     }
 
     let next_location = block[2];

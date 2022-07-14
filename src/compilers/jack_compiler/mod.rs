@@ -638,6 +638,7 @@ mod tests {
                         do Memory.deAlloc(ptrs[i]);
                         let i = i + 1;
                     }
+                    do Memory.deAlloc(ptrs);
                 }
 
                 function void init () {
@@ -659,6 +660,27 @@ mod tests {
 
         // step over Memory.init call
         step_over(&mut computer);
+
+        assert_eq!(
+            heap_avail_list(&computer),
+            vec![
+                (4, vec![]),
+                (8, vec![]),
+                (16, vec![2064]),
+                (32, vec![2080]),
+                (64, vec![2112]),
+                (128, vec![2176]),
+                (256, vec![2304]),
+                (512, vec![2560]),
+                (1024, vec![3072]),
+                (2048, vec![4096]),
+                (4096, vec![6144]),
+                (8192, vec![10240]),
+                (16384, vec![]),
+            ]
+            .into_iter()
+            .collect()
+        );
 
         // step over Memory.alloc call for ptrs
         step_over(&mut computer);
@@ -766,7 +788,7 @@ mod tests {
                 (4, vec![]),
                 (8, vec![]),
                 (16, vec![2064]),
-                (32, vec![]),
+                (32, vec![2080]),
                 (64, vec![2112]),
                 (128, vec![]),
                 (256, vec![]),
@@ -789,7 +811,7 @@ mod tests {
                 (4, vec![]),
                 (8, vec![]),
                 (16, vec![2064]),
-                (32, vec![2176]),
+                (32, vec![2176, 2080]),
                 (64, vec![2112]),
                 (128, vec![]),
                 (256, vec![]),
@@ -812,7 +834,7 @@ mod tests {
                 (4, vec![]),
                 (8, vec![]),
                 (16, vec![2064]),
-                (32, vec![]),
+                (32, vec![2080]),
                 (64, vec![2176, 2112]),
                 (128, vec![]),
                 (256, vec![]),
@@ -834,7 +856,7 @@ mod tests {
                 (4, vec![]),
                 (8, vec![]),
                 (16, vec![2064]),
-                (32, vec![2240]),
+                (32, vec![2240, 2080]),
                 (64, vec![2176, 2112]),
                 (128, vec![]),
                 (256, vec![]),
@@ -849,25 +871,128 @@ mod tests {
             .collect()
         );
 
+        // step into Memory.deAlloc
         // TODO - what is going wrong in here???
+        // The free block at 2112 should not be getting removed...
         step_in(&mut computer);
+        assert_eq!(top_frame_arg(&computer, 0), 2274);
+
+        // findFreeBuddy should return the buddy
+        step_over(&mut computer);
+        assert_eq!(peek_stack(&computer), 2240);
+
+        // mergeBuddies should return pointer to merged block
+        step_over(&mut computer);
+        assert_eq!(peek_stack(&computer), 2240);
+
+        // block at 2240 should now have been removed
+        assert_eq!(
+            heap_avail_list(&computer),
+            vec![
+                (4, vec![]),
+                (8, vec![]),
+                (16, vec![2064]),
+                (32, vec![2080]),
+                (64, vec![2176, 2112]),
+                (128, vec![]),
+                (256, vec![]),
+                (512, vec![]),
+                (1024, vec![]),
+                (2048, vec![]),
+                (4096, vec![]),
+                (8192, vec![]),
+                (16384, vec![]),
+            ]
+            .into_iter()
+            .collect()
+        );
+
+        // findFreeBuddy should then get called again, and should again find a buddy
+        step_over(&mut computer);
+        assert_eq!(peek_stack(&computer), 2176);
+
+        // step in to mergeBuddies
+        step_in(&mut computer);
+
+        // step in to removeFreeBlock
+        step_in(&mut computer);
+        assert_eq!(top_frame_arg(&computer, 0), 2176);
+        // step out of removeFreeBlock
         step_out(&mut computer);
 
+        // step out of mergeBuddies
+        step_out(&mut computer);
+        // mergeBuddies should return pointer to merged block
+        assert_eq!(peek_stack(&computer), 2176);
+
+        // block at 2176 should now have been removed...but actually BOTH
+        // of the 64-word blocks have been removed!!!
+        // assert_eq!(
+        //     heap_avail_list(&computer),
+        //     vec![
+        //         (4, vec![]),
+        //         (8, vec![]),
+        //         (16, vec![2064]),
+        //         (32, vec![]),
+        //         (64, vec![2112]),
+        //         (128, vec![]),
+        //         (256, vec![]),
+        //         (512, vec![]),
+        //         (1024, vec![]),
+        //         (2048, vec![]),
+        //         (4096, vec![]),
+        //         (8192, vec![]),
+        //         (16384, vec![]),
+        //     ]
+        //     .into_iter()
+        //     .collect()
+        // );
+
+        // we should call findFreeBuddy again, but this time we can't merge any more
+        step_over(&mut computer);
+        assert_eq!(peek_stack(&computer), 0);
+
+        // then pushFreeBlock should get called
+        step_over(&mut computer);
+
+        // step_out(&mut computer);
+
+        // assert_eq!(
+        //     heap_avail_list(&computer),
+        //     vec![
+        //         (4, vec![]),
+        //         (8, vec![]),
+        //         (16, vec![2064]),
+        //         (32, vec![]),
+        //         (64, vec![2112]),
+        //         (128, vec![2176]),
+        //         (256, vec![]),
+        //         (512, vec![]),
+        //         (1024, vec![]),
+        //         (2048, vec![]),
+        //         (4096, vec![]),
+        //         (8192, vec![]),
+        //         (16384, vec![]),
+        //     ]
+        //     .into_iter()
+        //     .collect()
+        // );
+        tick_until(&mut computer, &program_completed);
         assert_eq!(
             heap_avail_list(&computer),
             vec![
                 (4, vec![]),
                 (8, vec![]),
                 (16, vec![2064]),
-                (32, vec![]),
+                (32, vec![2080]),
                 (64, vec![2112]),
                 (128, vec![2176]),
-                (256, vec![]),
-                (512, vec![]),
-                (1024, vec![]),
-                (2048, vec![]),
-                (4096, vec![]),
-                (8192, vec![]),
+                (256, vec![2304]),
+                (512, vec![2560]),
+                (1024, vec![3072]),
+                (2048, vec![4096]),
+                (4096, vec![6144]),
+                (8192, vec![10240]),
                 (16384, vec![]),
             ]
             .into_iter()

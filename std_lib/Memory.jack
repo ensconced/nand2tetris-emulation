@@ -27,7 +27,7 @@
   The algorithm has some overheads in terms of memory usage. Specifically, it requires
   13 words of memory, to hold the heads for each of the 13 avail lists. We could
   just use 13 static variables but this would make a significant impact on the space remaining
-  in the static segment for usage in user programs. It would also make the code here annoying
+  in the static segment for usage in user programs. It would also make the code here annoyingly
   verbose. Another alternative would be to have a dedicated section of system memory for these
   overheads, but it would feel wrong to modify the architecure just to accomodate this algorithm.
   So here I have taken another approach. To start with, I use the screen memory for the overheads.

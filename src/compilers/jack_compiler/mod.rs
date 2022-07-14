@@ -597,13 +597,6 @@ mod tests {
             frame_stack_depth(computer) == 1 && top_frame_local(computer, 0) == 511
         });
         tick_until(&mut computer, &program_completed);
-        // println!("{:?}", &computer.ram.lock().unwrap()[2048..18432]);
-
-        // let sequence: Vec<_> = repeat_n(9, 20).collect();
-        // assert_eq!(
-        //     count_nonoverlapping_sequences_in_heap(&computer, &sequence),
-        //     500
-        // );
     }
 
     #[test]

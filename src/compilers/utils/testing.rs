@@ -152,6 +152,11 @@ pub fn top_frame_local(computer: &Computer, local_idx: usize) -> i16 {
     ram[ram[1] as usize + local_idx]
 }
 
+pub fn top_frame_arg(computer: &Computer, arg_idx: usize) -> i16 {
+    let ram = computer.ram.lock().unwrap();
+    ram[ram[2] as usize + arg_idx]
+}
+
 #[cfg(test)]
 mod tests {
     use super::count_nonoverlapping_sequences;

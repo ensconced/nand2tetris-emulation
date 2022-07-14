@@ -224,17 +224,6 @@ impl Computer {
             self.ram.lock().unwrap()[prev_reg_a.0 as usize] = self.cpu.out_m.0;
         }
     }
-
-    pub fn tick_until(&mut self, predicate: &dyn Fn(&Computer) -> bool) {
-        let max_ticks: usize = 10_000_000_000;
-        for _ in 0..=max_ticks {
-            if predicate(self) {
-                return;
-            }
-            self.tick();
-        }
-        panic!("predicate was not true within {} ticks", max_ticks);
-    }
 }
 
 #[cfg(test)]

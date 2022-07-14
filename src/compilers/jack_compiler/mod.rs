@@ -55,8 +55,10 @@ mod tests {
             }
         ",
         ]);
-        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        computer.tick_until(&|computer| peek_stack(computer) == 3000);
+        tick_until(&mut computer, &|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
+        });
+        tick_until(&mut computer, &|computer| peek_stack(computer) == 3000);
     }
 
     #[test]
@@ -74,9 +76,11 @@ mod tests {
             }
         ",
         ]);
-        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        computer.tick_until(&|computer| peek_stack(computer) == 2000);
-        computer.tick_until(&|computer| peek_stack(computer) == 2003);
+        tick_until(&mut computer, &|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
+        });
+        tick_until(&mut computer, &|computer| peek_stack(computer) == 2000);
+        tick_until(&mut computer, &|computer| peek_stack(computer) == 2003);
     }
 
     #[test]
@@ -100,8 +104,10 @@ mod tests {
             }
         ",
         ]);
-        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        computer.tick_until(&|computer| peek_stack(computer) == 28657);
+        tick_until(&mut computer, &|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
+        });
+        tick_until(&mut computer, &|computer| peek_stack(computer) == 28657);
     }
 
     #[test]
@@ -145,8 +151,10 @@ mod tests {
             }
         ",
         ]);
-        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        computer.tick_until(&|computer| peek_stack(computer) == 3382);
+        tick_until(&mut computer, &|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
+        });
+        tick_until(&mut computer, &|computer| peek_stack(computer) == 3382);
     }
 
     #[test]
@@ -181,8 +189,10 @@ mod tests {
             }
         ",
         ]);
-        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        computer.tick_until(&|computer| peek_stack(computer) == 18);
+        tick_until(&mut computer, &|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
+        });
+        tick_until(&mut computer, &|computer| peek_stack(computer) == 18);
     }
 
     #[test]
@@ -200,10 +210,14 @@ mod tests {
             }
         ",
         ]);
-        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        computer.tick_until(&|computer| peek_stack(computer) == 333 * 83);
-        computer.tick_until(&|computer| peek_stack(computer) == 10 * -2);
-        computer.tick_until(&|computer| peek_stack(computer) == -123 * -123);
+        tick_until(&mut computer, &|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
+        });
+        tick_until(&mut computer, &|computer| peek_stack(computer) == 333 * 83);
+        tick_until(&mut computer, &|computer| peek_stack(computer) == 10 * -2);
+        tick_until(&mut computer, &|computer| {
+            peek_stack(computer) == -123 * -123
+        });
     }
 
     #[test]
@@ -219,9 +233,13 @@ mod tests {
             }
         ",
         ]);
-        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        computer.tick_until(&|computer| peek_stack(computer) == 1234 + 1234);
-        computer.tick_until(&|computer| peek_stack(computer) == 999 + 999);
+        tick_until(&mut computer, &|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
+        });
+        tick_until(&mut computer, &|computer| {
+            peek_stack(computer) == 1234 + 1234
+        });
+        tick_until(&mut computer, &|computer| peek_stack(computer) == 999 + 999);
     }
 
     #[test]
@@ -240,11 +258,17 @@ mod tests {
             }
         ",
         ]);
-        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        computer.tick_until(&|computer| peek_stack(computer) == 4191 / -3);
-        computer.tick_until(&|computer| peek_stack(computer) == 1234 / 123);
-        computer.tick_until(&|computer| peek_stack(computer) == -5198 / 182);
-        computer.tick_until(&|computer| peek_stack(computer) == 9099 / 33);
+        tick_until(&mut computer, &|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
+        });
+        tick_until(&mut computer, &|computer| peek_stack(computer) == 4191 / -3);
+        tick_until(&mut computer, &|computer| {
+            peek_stack(computer) == 1234 / 123
+        });
+        tick_until(&mut computer, &|computer| {
+            peek_stack(computer) == -5198 / 182
+        });
+        tick_until(&mut computer, &|computer| peek_stack(computer) == 9099 / 33);
     }
 
     #[test]
@@ -262,11 +286,13 @@ mod tests {
             }
         ",
         ]);
-        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        computer.tick_until(&|computer| peek_stack(computer) == 12);
-        computer.tick_until(&|computer| peek_stack(computer) == 10);
-        computer.tick_until(&|computer| peek_stack(computer) == 100);
-        computer.tick_until(&|computer| peek_stack(computer) == 121);
+        tick_until(&mut computer, &|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
+        });
+        tick_until(&mut computer, &|computer| peek_stack(computer) == 12);
+        tick_until(&mut computer, &|computer| peek_stack(computer) == 10);
+        tick_until(&mut computer, &|computer| peek_stack(computer) == 100);
+        tick_until(&mut computer, &|computer| peek_stack(computer) == 121);
     }
 
     #[test]
@@ -284,12 +310,14 @@ mod tests {
             }
             ",
         ]);
-        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        tick_until(&mut computer, &|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
+        });
         let chars: Vec<_> = "hello".encode_utf16().map(|ch| ch as i16).collect();
         for char in chars.iter() {
-            computer.tick_until(&|computer| peek_stack(computer) == *char);
+            tick_until(&mut computer, &|computer| peek_stack(computer) == *char);
         }
-        computer.tick_until(&|computer| heap_includes(computer, &chars));
+        tick_until(&mut computer, &|computer| heap_includes(computer, &chars));
     }
 
     #[test]
@@ -323,7 +351,7 @@ mod tests {
             }
             ",
         ]);
-        computer.tick_until(&program_completed);
+        tick_until(&mut computer, &program_completed);
         for outer_idx in 0..14 {
             let start = outer_idx * 1000;
             let nums: Vec<_> = (start..start + 1000).into_iter().collect();
@@ -342,7 +370,7 @@ mod tests {
             }
             ",
         ]);
-        computer.tick_until(&program_completed);
+        tick_until(&mut computer, &program_completed);
 
         assert_eq!(
             heap_avail_list(&computer),
@@ -382,7 +410,7 @@ mod tests {
             }
             ",
         ]);
-        computer.tick_until(&program_completed);
+        tick_until(&mut computer, &program_completed);
 
         // To generate a 4-word block, we have to split a 16-word block into 2
         // 8-word blocks, then split one of those again.
@@ -426,7 +454,7 @@ mod tests {
             }
             ",
         ]);
-        computer.tick_until(&program_completed);
+        tick_until(&mut computer, &program_completed);
 
         assert_eq!(
             heap_avail_list(&computer),
@@ -467,7 +495,7 @@ mod tests {
             }
             ",
         ]);
-        computer.tick_until(&program_completed);
+        tick_until(&mut computer, &program_completed);
 
         assert_eq!(
             heap_avail_list(&computer),
@@ -513,7 +541,7 @@ mod tests {
             }
             ",
         ]);
-        computer.tick_until(&program_completed);
+        tick_until(&mut computer, &program_completed);
 
         assert_eq!(
             heap_avail_list(&computer),
@@ -565,10 +593,10 @@ mod tests {
             ",
         ]);
         // We should be able to allocate 511 arrays. This means the variable i should reach 511.
-        computer.tick_until(&|computer| {
+        tick_until(&mut computer, &|computer| {
             frame_stack_depth(computer) == 1 && top_frame_local(computer, 0) == 511
         });
-        computer.tick_until(&program_completed);
+        tick_until(&mut computer, &program_completed);
         // println!("{:?}", &computer.ram.lock().unwrap()[2048..18432]);
 
         // let sequence: Vec<_> = repeat_n(9, 20).collect();
@@ -627,7 +655,7 @@ mod tests {
         ]);
 
         // init stuff
-        computer.tick_until(&|computer| frame_stack_depth(computer) == 1);
+        tick_until(&mut computer, &|computer| frame_stack_depth(computer) == 1);
 
         // step over Memory.init call
         step_over(&mut computer);
@@ -707,61 +735,120 @@ mod tests {
             .collect()
         );
 
-        // step in to the next call to Memory.deAlloc and check the arg
-        step_in(&mut computer);
-        assert_eq!(top_frame_arg(&computer, 0), 2114);
-
-        // check that findFreeBuddy returns the buddy
+        // step over the next call to Memory.deAlloc
         step_over(&mut computer);
-        assert_eq!(peek_stack(&computer), 2080);
+        assert_eq!(
+            heap_avail_list(&computer),
+            vec![
+                (4, vec![]),
+                (8, vec![]),
+                (16, vec![2064]),
+                (32, vec![2112, 2080]),
+                (64, vec![]),
+                (128, vec![]),
+                (256, vec![]),
+                (512, vec![]),
+                (1024, vec![]),
+                (2048, vec![]),
+                (4096, vec![]),
+                (8192, vec![]),
+                (16384, vec![]),
+            ]
+            .into_iter()
+            .collect()
+        );
 
-        // check that mergeBuddies merges the buddies
-        // step_over(&mut computer);
-        // assert_eq!(
-        //     heap_avail_list(&computer),
-        //     vec![
-        //         (4, vec![]),
-        //         (8, vec![]),
-        //         (16, vec![2064]),
-        //         (32, vec![]),
-        //         (64, vec![2080]),
-        //         (128, vec![]),
-        //         (256, vec![]),
-        //         (512, vec![]),
-        //         (1024, vec![]),
-        //         (2048, vec![]),
-        //         (4096, vec![]),
-        //         (8192, vec![]),
-        //         (16384, vec![]),
-        //     ]
-        //     .into_iter()
-        //     .collect()
-        // );
+        // step over the next call to Memory.deAlloc
+        step_over(&mut computer);
+        assert_eq!(
+            heap_avail_list(&computer),
+            vec![
+                (4, vec![]),
+                (8, vec![]),
+                (16, vec![2064]),
+                (32, vec![]),
+                (64, vec![2112]),
+                (128, vec![]),
+                (256, vec![]),
+                (512, vec![]),
+                (1024, vec![]),
+                (2048, vec![]),
+                (4096, vec![]),
+                (8192, vec![]),
+                (16384, vec![]),
+            ]
+            .into_iter()
+            .collect()
+        );
 
-        // Check deallocation completed successfully. ptrs is still allocated,
-        // so there should still be a 32-word block reserved for that, plus a
-        // 16-word block reserved for the allocator overheads.
-        // assert_eq!(
-        //     heap_avail_list(&computer),
-        //     vec![
-        //         (4, vec![]),
-        //         (8, vec![]),
-        //         (16, vec![]),
-        //         (32, vec![]),
-        //         (64, vec![2112]),
-        //         (128, vec![2176]),
-        //         (256, vec![2304]),
-        //         (512, vec![2560]),
-        //         (1024, vec![3072]),
-        //         (2048, vec![4096]),
-        //         (4096, vec![6144]),
-        //         (8192, vec![10240]),
-        //         (16384, vec![]),
-        //     ]
-        //     .into_iter()
-        //     .collect()
-        // );
+        // step over the next call to Memory.deAlloc
+        step_over(&mut computer);
+        assert_eq!(
+            heap_avail_list(&computer),
+            vec![
+                (4, vec![]),
+                (8, vec![]),
+                (16, vec![2064]),
+                (32, vec![2176]),
+                (64, vec![2112]),
+                (128, vec![]),
+                (256, vec![]),
+                (512, vec![]),
+                (1024, vec![]),
+                (2048, vec![]),
+                (4096, vec![]),
+                (8192, vec![]),
+                (16384, vec![]),
+            ]
+            .into_iter()
+            .collect()
+        );
 
-        computer.tick_until(&program_completed);
+        // step over the next call to Memory.deAlloc
+        step_over(&mut computer);
+        assert_eq!(
+            heap_avail_list(&computer),
+            vec![
+                (4, vec![]),
+                (8, vec![]),
+                (16, vec![2064]),
+                (32, vec![]),
+                (64, vec![2176, 2112]),
+                (128, vec![]),
+                (256, vec![]),
+                (512, vec![]),
+                (1024, vec![]),
+                (2048, vec![]),
+                (4096, vec![]),
+                (8192, vec![]),
+                (16384, vec![]),
+            ]
+            .into_iter()
+            .collect()
+        );
+
+        for _ in 0..5 {
+            step_over(&mut computer);
+        }
+        assert_eq!(
+            heap_avail_list(&computer),
+            vec![
+                (4, vec![]),
+                (8, vec![]),
+                (16, vec![2064]),
+                (32, vec![2368]),
+                (64, vec![2304]),
+                (128, vec![2176]),
+                (256, vec![]),
+                (512, vec![]),
+                (1024, vec![]),
+                (2048, vec![]),
+                (4096, vec![]),
+                (8192, vec![]),
+                (16384, vec![]),
+            ]
+            .into_iter()
+            .collect()
+        );
     }
 }

@@ -32,7 +32,9 @@ mod tests {
     #[test]
     fn test_initialization() {
         let mut computer = computer_from_vm_code(vec![""]);
-        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        tick_until(&mut computer, &|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
+        });
     }
 
     #[test]
@@ -43,7 +45,7 @@ mod tests {
         push constant 123
         ",
         ]);
-        computer.tick_until(&|computer| {
+        tick_until(&mut computer, &|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 1
                 && nth_stack_value(computer, 0) == 123
         });
@@ -65,17 +67,17 @@ mod tests {
             push static 200
         ",
         ]);
-        computer.tick_until(&|computer| {
+        tick_until(&mut computer, &|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 3
                 && nth_stack_value(computer, 0) == 3
         });
-        computer.tick_until(&|computer| {
+        tick_until(&mut computer, &|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
                 && static_variable(computer, 0) == 3
                 && static_variable(computer, 1) == 2
                 && static_variable(computer, 2) == 1
         });
-        computer.tick_until(&|computer| {
+        tick_until(&mut computer, &|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 3
                 && nth_stack_value(computer, 0) == 1
                 && nth_stack_value(computer, 1) == 2
@@ -94,15 +96,15 @@ mod tests {
             pop this 2
             ",
         ]);
-        computer.tick_until(&|computer| {
+        tick_until(&mut computer, &|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 2
                 && nth_stack_value(computer, 0) == 2051
         });
-        computer.tick_until(&|computer| {
+        tick_until(&mut computer, &|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 1
                 && pointer(computer, 0) == 2051
         });
-        computer.tick_until(&|computer| {
+        tick_until(&mut computer, &|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS && this(computer, 2) == 1234
         });
     }
@@ -126,31 +128,33 @@ mod tests {
             pop constant 0
             ",
         ]);
-        computer.tick_until(&|computer| {
+        tick_until(&mut computer, &|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 6
                 && nth_stack_value(computer, 0) == 3
         });
-        computer.tick_until(&|computer| {
+        tick_until(&mut computer, &|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 5
                 && nth_stack_value(computer, 0) == 5
         });
-        computer.tick_until(&|computer| {
+        tick_until(&mut computer, &|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 4
                 && nth_stack_value(computer, 0) == -1
         });
-        computer.tick_until(&|computer| {
+        tick_until(&mut computer, &|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 3
                 && nth_stack_value(computer, 0) == 3
         });
-        computer.tick_until(&|computer| {
+        tick_until(&mut computer, &|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 2
                 && nth_stack_value(computer, 0) == 5
         });
-        computer.tick_until(&|computer| {
+        tick_until(&mut computer, &|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 1
                 && nth_stack_value(computer, 0) == 0
         });
-        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        tick_until(&mut computer, &|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
+        });
     }
 
     #[test]
@@ -172,11 +176,13 @@ mod tests {
             ",
         ]);
         // initialize
-        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        tick_until(&mut computer, &|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
+        });
         // push first arguments to stack
-        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 3);
+        tick_until(&mut computer, &|computer| nth_stack_value(computer, 0) == 3);
         // 1 + 2 + 3 should make 6
-        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 6);
+        tick_until(&mut computer, &|computer| nth_stack_value(computer, 0) == 6);
     }
 
     #[test]
@@ -200,11 +206,13 @@ mod tests {
             ",
         ]);
         // initialize
-        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        tick_until(&mut computer, &|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
+        });
         // push first arguments to stack
-        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 3);
+        tick_until(&mut computer, &|computer| nth_stack_value(computer, 0) == 3);
         // 1 + 2 + 3 should make 6
-        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 6);
+        tick_until(&mut computer, &|computer| nth_stack_value(computer, 0) == 6);
     }
 
     #[test]
@@ -256,8 +264,12 @@ mod tests {
             ",
         ]);
         // initialize
-        computer.tick_until(&|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        tick_until(&mut computer, &|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
+        });
         // 1 + 2 + 3 should make 6
-        computer.tick_until(&|computer| nth_stack_value(computer, 0) == 55);
+        tick_until(&mut computer, &|computer| {
+            nth_stack_value(computer, 0) == 55
+        });
     }
 }

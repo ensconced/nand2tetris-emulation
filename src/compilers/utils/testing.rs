@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::iter;
 use std::ops::Deref;
 
 use std::path::Path;
@@ -125,7 +124,7 @@ pub fn heap_avail_list(computer: &Computer) -> HashMap<usize, Vec<i16>> {
         let mut free_blocks = Vec::new();
         while current != 0 {
             free_blocks.push(current);
-            current = ram[list_head as usize + 2];
+            current = ram[current as usize + 2];
         }
         result.insert(2_usize.pow(idx as u32 + 2), free_blocks);
     }
@@ -149,7 +148,7 @@ pub fn frame_stack_depth(computer: &Computer) -> usize {
 
 pub fn step_in(computer: &mut Computer) {
     let start_frame_depth = frame_stack_depth(computer);
-    computer.tick_until(&|comp| {
+    tick_until(computer, &|comp| {
         let current_frame_depth = frame_stack_depth(comp);
         if current_frame_depth < start_frame_depth {
             panic!("returned from function without calling anything");
@@ -160,7 +159,9 @@ pub fn step_in(computer: &mut Computer) {
 
 pub fn step_out(computer: &mut Computer) {
     let start_frame_depth = frame_stack_depth(computer);
-    computer.tick_until(&|comp| frame_stack_depth(comp) == start_frame_depth - 1)
+    tick_until(computer, &|comp| {
+        frame_stack_depth(comp) == start_frame_depth - 1
+    })
 }
 
 pub fn step_over(computer: &mut Computer) {
@@ -176,6 +177,35 @@ pub fn top_frame_local(computer: &Computer, local_idx: usize) -> i16 {
 pub fn top_frame_arg(computer: &Computer, arg_idx: usize) -> i16 {
     let ram = computer.ram.lock().unwrap();
     ram[ram[2] as usize + arg_idx]
+}
+
+pub fn tick_until(computer: &mut Computer, predicate: &dyn Fn(&Computer) -> bool) {
+    let max_ticks: usize = 10_000_000_000;
+    for _ in 0..=max_ticks {
+        if predicate(computer) {
+            return;
+        }
+        computer.tick();
+    }
+    panic!("predicate was not true within {} ticks", max_ticks);
+}
+
+pub fn tick_within_stack_frame_until(
+    computer: &mut Computer,
+    predicate: &dyn Fn(&Computer) -> bool,
+) {
+    let initial_depth = frame_stack_depth(computer);
+    let max_ticks: usize = 10_000_000_000;
+    for _ in 0..=max_ticks {
+        if predicate(computer) {
+            return;
+        }
+        if frame_stack_depth(computer) != initial_depth {
+            panic!("predicate was never fulfilled within the stack frame");
+        }
+        computer.tick();
+    }
+    panic!("predicate was not true within {} ticks", max_ticks);
 }
 
 #[cfg(test)]

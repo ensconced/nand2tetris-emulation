@@ -668,30 +668,75 @@ mod tests {
             .collect()
         );
 
-        // step into dealloc_arrays
-        step_in(&mut computer);
-
-        // step into Memory.deAlloc
-        step_in(&mut computer);
+        step_in(&mut computer); // step into dealloc_arrays
+        step_in(&mut computer); // step into Memory.deAlloc
 
         // the first allocated array is in the first available 32-word block
         assert_eq!(top_frame_arg(&computer, 0), 2082);
 
-        // step into findFreeBuddy
+        // findFreeBuddy should be called with the correct pointer
         step_in(&mut computer);
-
-        // the block ptr should be passed in to findFreeBuddy
         assert_eq!(top_frame_arg(&computer, 0), 2080);
 
         // in this first case it should fail to find a buddy - so findFreeBuddy should return 0
         step_out(&mut computer);
-        computer.tick_until(&|computer| peek_stack(computer) == 0);
+        assert_eq!(peek_stack(&computer), 0);
 
-        // step into pushFreeBlock
+        // step out of Memory.deAlloc
+        step_out(&mut computer);
+
+        // The 32-word block should now be freed
+        assert_eq!(
+            heap_avail_list(&computer),
+            vec![
+                (4, vec![]),
+                (8, vec![]),
+                (16, vec![2064]),
+                (32, vec![2080]),
+                (64, vec![]),
+                (128, vec![]),
+                (256, vec![]),
+                (512, vec![]),
+                (1024, vec![]),
+                (2048, vec![]),
+                (4096, vec![]),
+                (8192, vec![]),
+                (16384, vec![]),
+            ]
+            .into_iter()
+            .collect()
+        );
+
+        // step in to the next call to Memory.deAlloc and check the arg
         step_in(&mut computer);
+        assert_eq!(top_frame_arg(&computer, 0), 2114);
 
-        // the block ptr should get passed in
-        assert_eq!(top_frame_arg(&computer, 0), 2080);
+        // check that findFreeBuddy returns the buddy
+        step_over(&mut computer);
+        assert_eq!(peek_stack(&computer), 2080);
+
+        // check that mergeBuddies merges the buddies
+        // step_over(&mut computer);
+        // assert_eq!(
+        //     heap_avail_list(&computer),
+        //     vec![
+        //         (4, vec![]),
+        //         (8, vec![]),
+        //         (16, vec![2064]),
+        //         (32, vec![]),
+        //         (64, vec![2080]),
+        //         (128, vec![]),
+        //         (256, vec![]),
+        //         (512, vec![]),
+        //         (1024, vec![]),
+        //         (2048, vec![]),
+        //         (4096, vec![]),
+        //         (8192, vec![]),
+        //         (16384, vec![]),
+        //     ]
+        //     .into_iter()
+        //     .collect()
+        // );
 
         // Check deallocation completed successfully. ptrs is still allocated,
         // so there should still be a 32-word block reserved for that, plus a

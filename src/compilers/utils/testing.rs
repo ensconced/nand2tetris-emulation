@@ -136,6 +136,22 @@ pub fn program_completed(computer: &Computer) -> bool {
     computer.cpu.pc == 2
 }
 
+pub fn frame_stack_depth(computer: &Computer) -> usize {
+    let mut result = 0;
+    let ram = computer.ram.lock().unwrap();
+    let mut lcl_ptr = ram[1];
+    while lcl_ptr >= 256 {
+        lcl_ptr = ram[lcl_ptr as usize - 4];
+        result += 1;
+    }
+    result
+}
+
+pub fn top_frame_local(computer: &Computer, local_idx: usize) -> i16 {
+    let ram = computer.ram.lock().unwrap();
+    ram[ram[1] as usize + local_idx]
+}
+
 #[cfg(test)]
 mod tests {
     use super::count_nonoverlapping_sequences;

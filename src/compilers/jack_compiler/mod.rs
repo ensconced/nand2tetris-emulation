@@ -543,52 +543,108 @@ mod tests {
             "
             class Sys {
                 function void init () {
-                    var int nested_arr, array_count, array_length, rounds, arr, i, j, k;
+                    var int i, j, ptr;
 
                     do Memory.init();
 
-                    let rounds = 1;
-                    // TODO - why can't we take this up to 500? I think that should be doable????
-                    let array_count = 250;
-                    let array_length = 20;
-                    let nested_arr = Memory.alloc(array_count);
-
-                    let i = 0;
-                    while (i < rounds) {
-                        let j = 0;
-                        while (j < array_count) {
-                            let arr = Memory.alloc(array_length);
-                            let nested_arr[j] = arr;
-                            let k = 0;
-                            while (k < array_length) {
-                                let arr[k] = i;
-                                let k = k + 1;
-                            }
-                            let j = j + 1;
-                        }
-
-                        let j = 0;
-                        if (i < rounds - 1) {
-                            while (j < array_count) {
-                                do Memory.deAlloc(nested_arr[j]);
+                    while (true) {
+                        let ptr = Memory.alloc(20);
+                        if (ptr) {
+                            let j = 0;
+                            while (j < 20) {
+                                let ptr[j] = 1234;
                                 let j = j + 1;
                             }
+                        } else {
+                            return;
                         }
-
                         let i = i + 1;
                     }
-
                 }
             }
             ",
         ]);
+        // We should be able to allocate 511 arrays. This means the variable i should reach 511.
+        computer.tick_until(&|computer| {
+            frame_stack_depth(computer) == 1 && top_frame_local(computer, 0) == 511
+        });
         computer.tick_until(&program_completed);
-        println!("{:?}", &computer.ram.lock().unwrap()[2048..18432]);
+        // println!("{:?}", &computer.ram.lock().unwrap()[2048..18432]);
 
-        let sequence: Vec<_> = repeat_n(9, 20).collect();
+        // let sequence: Vec<_> = repeat_n(9, 20).collect();
+        // assert_eq!(
+        //     count_nonoverlapping_sequences_in_heap(&computer, &sequence),
+        //     500
+        // );
+    }
+
+    #[test]
+    fn test_memory_alloc_dealloc_small_array_stress_test() {
+        let mut computer = computer_from_jack_code(vec![
+            "
+            class Sys {
+                static int ptrs, ptr_count;
+
+                function void alloc_arrays() {
+                    var int i, j, ptr;
+
+                    let i = 0;
+                    while (i < ptr_count) {
+                        let ptr = Memory.alloc(20);
+                        let ptrs[i] = ptr;
+                        let j = 0;
+                        while (j < 20) {
+                            let ptr[j] = 1234;
+                            let j = j + 1;
+                        }
+                        let i = i + 1;
+                    }
+                }
+
+                function void dealloc_arrays() {
+                    var int i;
+
+                    let i = 0;
+
+                    while (i < ptr_count) {
+                        do Memory.deAlloc(ptrs[i]);
+                        let i = i + 1;
+                    }
+                }
+
+                function void init () {
+                    var int i, j, ptr;
+
+                    let ptr_count = 495;
+                    do Memory.init();
+
+                    let ptrs = Memory.alloc(ptr_count);
+                    do alloc_arrays();
+                    do dealloc_arrays();
+                }
+            }
+            ",
+        ]);
+        // step over Memory.init call
+        computer.tick_until(&|computer| frame_stack_depth(computer) == 2);
+        computer.tick_until(&|computer| frame_stack_depth(computer) == 1);
+
+        // step over Memory.alloc call for ptrs
+        computer.tick_until(&|computer| frame_stack_depth(computer) == 2);
+        computer.tick_until(&|computer| frame_stack_depth(computer) == 1);
+
+        // step over alloc_arrays call
+        computer.tick_until(&|computer| frame_stack_depth(computer) == 2);
+        computer.tick_until(&|computer| frame_stack_depth(computer) == 1);
+
+        // check arrays were properly allocated
+        let sequence: Vec<_> = repeat_n(1234, 20).collect();
         assert_eq!(
             count_nonoverlapping_sequences_in_heap(&computer, &sequence),
-            500
+            495
         );
+
+        computer.tick_until(&program_completed);
+        // println!("{:?}", &computer.ram.lock().unwrap()[2048..18432]);
     }
 }

@@ -827,17 +827,40 @@ mod tests {
             .collect()
         );
 
-        for _ in 0..5 {
-            step_over(&mut computer);
-        }
+        step_over(&mut computer);
         assert_eq!(
             heap_avail_list(&computer),
             vec![
                 (4, vec![]),
                 (8, vec![]),
                 (16, vec![2064]),
-                (32, vec![2368]),
-                (64, vec![2304]),
+                (32, vec![2240]),
+                (64, vec![2176, 2112]),
+                (128, vec![]),
+                (256, vec![]),
+                (512, vec![]),
+                (1024, vec![]),
+                (2048, vec![]),
+                (4096, vec![]),
+                (8192, vec![]),
+                (16384, vec![]),
+            ]
+            .into_iter()
+            .collect()
+        );
+
+        // TODO - what is going wrong in here???
+        step_in(&mut computer);
+        step_out(&mut computer);
+
+        assert_eq!(
+            heap_avail_list(&computer),
+            vec![
+                (4, vec![]),
+                (8, vec![]),
+                (16, vec![2064]),
+                (32, vec![]),
+                (64, vec![2112]),
                 (128, vec![2176]),
                 (256, vec![]),
                 (512, vec![]),

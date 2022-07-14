@@ -147,6 +147,27 @@ pub fn frame_stack_depth(computer: &Computer) -> usize {
     result
 }
 
+pub fn step_in(computer: &mut Computer) {
+    let start_frame_depth = frame_stack_depth(computer);
+    computer.tick_until(&|comp| {
+        let current_frame_depth = frame_stack_depth(comp);
+        if current_frame_depth < start_frame_depth {
+            panic!("returned from function without calling anything");
+        }
+        current_frame_depth == start_frame_depth + 1
+    })
+}
+
+pub fn step_out(computer: &mut Computer) {
+    let start_frame_depth = frame_stack_depth(computer);
+    computer.tick_until(&|comp| frame_stack_depth(comp) == start_frame_depth - 1)
+}
+
+pub fn step_over(computer: &mut Computer) {
+    step_in(computer);
+    step_out(computer);
+}
+
 pub fn top_frame_local(computer: &Computer, local_idx: usize) -> i16 {
     let ram = computer.ram.lock().unwrap();
     ram[ram[1] as usize + local_idx]

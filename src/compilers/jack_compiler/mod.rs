@@ -625,17 +625,18 @@ mod tests {
             }
             ",
         ]);
-        // step over Memory.init call
-        computer.tick_until(&|computer| frame_stack_depth(computer) == 2);
+
+        // init stuff
         computer.tick_until(&|computer| frame_stack_depth(computer) == 1);
+
+        // step over Memory.init call
+        step_over(&mut computer);
 
         // step over Memory.alloc call for ptrs
-        computer.tick_until(&|computer| frame_stack_depth(computer) == 2);
-        computer.tick_until(&|computer| frame_stack_depth(computer) == 1);
+        step_over(&mut computer);
 
         // step over alloc_arrays call
-        computer.tick_until(&|computer| frame_stack_depth(computer) == 2);
-        computer.tick_until(&|computer| frame_stack_depth(computer) == 1);
+        step_over(&mut computer);
 
         // check arrays were properly allocated
         let sequence: Vec<_> = repeat_n(1234, 20).collect();
@@ -668,13 +669,29 @@ mod tests {
         );
 
         // step into dealloc_arrays
-        computer.tick_until(&|computer| frame_stack_depth(computer) == 2);
+        step_in(&mut computer);
 
         // step into Memory.deAlloc
-        computer.tick_until(&|computer| frame_stack_depth(computer) == 3);
+        step_in(&mut computer);
 
         // the first allocated array is in the first available 32-word block
         assert_eq!(top_frame_arg(&computer, 0), 2082);
+
+        // step into findFreeBuddy
+        step_in(&mut computer);
+
+        // the block ptr should be passed in to findFreeBuddy
+        assert_eq!(top_frame_arg(&computer, 0), 2080);
+
+        // in this first case it should fail to find a buddy - so findFreeBuddy should return 0
+        step_out(&mut computer);
+        computer.tick_until(&|computer| peek_stack(computer) == 0);
+
+        // step into pushFreeBlock
+        step_in(&mut computer);
+
+        // the block ptr should get passed in
+        assert_eq!(top_frame_arg(&computer, 0), 2080);
 
         // Check deallocation completed successfully. ptrs is still allocated,
         // so there should still be a 32-word block reserved for that, plus a

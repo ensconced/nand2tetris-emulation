@@ -728,4 +728,81 @@ mod tests {
             .collect()
         );
     }
+
+    #[test]
+    fn test_string_erase_last_char() {
+        let mut computer = computer_from_jack_code(vec![
+            "
+            class Sys {
+                static String str;
+
+                function void setupString() {
+                    let str = \"hello there\";
+                }
+
+                function void removeChars(String str_ptr) {
+                  do str_ptr.eraseLastChar();
+                  do str_ptr.eraseLastChar();
+                }
+
+                function void init () {
+                    do Memory.init();
+
+                    do setupString();
+                    do removeChars(str);
+                }
+            }
+            ",
+        ]);
+
+        tick_until(&mut computer, &|computer| frame_stack_depth(computer) == 1);
+
+        step_over(&mut computer); // step over Memory.init();
+        step_over(&mut computer); // step over setupString
+        step_in(&mut computer); // step into removeChars
+        assert_eq!(
+            string_from_pointer(&computer, top_frame_arg(&computer, 0)),
+            "hello there"
+        );
+        step_over(&mut computer); // step over eraseLastChar()
+        assert_eq!(
+            string_from_pointer(&computer, top_frame_arg(&computer, 0)),
+            "hello ther"
+        );
+        step_over(&mut computer); // step over eraseLastChar()
+        assert_eq!(
+            string_from_pointer(&computer, top_frame_arg(&computer, 0)),
+            "hello the"
+        );
+    }
+
+    #[test]
+    fn test_string_int_value() {
+        let mut computer = computer_from_jack_code(vec![
+            "
+            class Sys {
+                static String str;
+
+                function void setupString() {
+                    let str = \"1234\";
+                }
+
+                function void init () {
+                    var int i;
+
+                    do Memory.init();
+                    do setupString();
+                    let i = str.intValue();
+                }
+            }
+            ",
+        ]);
+
+        tick_until(&mut computer, &|computer| frame_stack_depth(computer) == 1);
+
+        step_over(&mut computer); // step over Memory.init();
+        step_over(&mut computer); // step over setupString
+        step_over(&mut computer); // step over str.intValue();
+        assert_eq!(peek_stack(&computer), 1234);
+    }
 }

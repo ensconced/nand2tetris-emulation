@@ -200,12 +200,21 @@ pub fn tick_within_stack_frame_until(
         if predicate(computer) {
             return;
         }
-        if frame_stack_depth(computer) != initial_depth {
+        if frame_stack_depth(computer) < initial_depth {
             panic!("predicate was never fulfilled within the stack frame");
         }
         computer.tick();
     }
     panic!("predicate was not true within {} ticks", max_ticks);
+}
+
+pub fn string_from_pointer(computer: &Computer, pointer: i16) -> String {
+    let ram = computer.ram.lock().unwrap();
+    let str_length = ram[pointer as usize + 1] as usize;
+    let buffer_base = ram[pointer as usize] as usize;
+    let str_buffer = &ram[buffer_base..buffer_base + str_length];
+    let u16_buffer: Vec<_> = str_buffer.iter().map(|&x| x as u16).collect();
+    String::from_utf16(&u16_buffer).unwrap()
 }
 
 #[cfg(test)]

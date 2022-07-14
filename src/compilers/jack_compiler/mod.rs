@@ -606,7 +606,7 @@ mod tests {
             class Sys {
                 static int ptrs, ptr_count;
 
-                function void alloc_arrays() {
+                function void alloc_arrays(int fill_value) {
                     var int i, j, ptr;
 
                     let i = 0;
@@ -615,7 +615,7 @@ mod tests {
                         let ptrs[i] = ptr;
                         let j = 0;
                         while (j < 20) {
-                            let ptr[j] = 1234;
+                            let ptr[j] = fill_value;
                             let j = j + 1;
                         }
                         let i = i + 1;
@@ -631,18 +631,25 @@ mod tests {
                         do Memory.deAlloc(ptrs[i]);
                         let i = i + 1;
                     }
-                    do Memory.deAlloc(ptrs);
                 }
 
                 function void init () {
-                    var int i, j, ptr;
+                    var int ptr, i, rounds;
 
                     let ptr_count = 495;
                     do Memory.init();
 
                     let ptrs = Memory.alloc(ptr_count);
-                    do alloc_arrays();
-                    do dealloc_arrays();
+
+                    let rounds = 10;
+                    let i = 0;
+                    while (i < rounds) {
+                        do alloc_arrays(i);
+                        do dealloc_arrays();
+                        let i = i + 1;
+                    }
+
+                    do Memory.deAlloc(ptrs);
                 }
             }
             ",
@@ -657,11 +664,18 @@ mod tests {
         // step over Memory.alloc call for ptrs
         step_over(&mut computer);
 
-        // step over alloc_arrays call
+        for _ in 0..9 {
+            // step over alloc_arrays call
+            step_over(&mut computer);
+            // step over dealloc_arrays call
+            step_over(&mut computer);
+        }
+
+        // step over final alloc_arrays call
         step_over(&mut computer);
 
         // check arrays were properly allocated
-        let sequence: Vec<_> = repeat_n(1234, 20).collect();
+        let sequence: Vec<_> = repeat_n(9, 20).collect();
         assert_eq!(
             count_nonoverlapping_sequences_in_heap(&computer, &sequence),
             495
@@ -690,7 +704,6 @@ mod tests {
             .collect()
         );
 
-        step_over(&mut computer); // step into dealloc_arrays
         tick_until(&mut computer, &program_completed);
 
         // heap should be back to how it was after the initial Memory.init

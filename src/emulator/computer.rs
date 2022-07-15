@@ -5,13 +5,11 @@ use std::{
 
 use tabled::{Style, Table, Tabled};
 
-enum DebugMode {
+pub enum DebugMode {
     Verbose,
     Heap,
     None,
 }
-
-const DEBUG_MODE: DebugMode = DebugMode::None;
 
 fn group_consecutive_identical_elements<T: PartialEq + Copy>(slice: &[T]) -> Vec<Vec<T>> {
     let mut result = Vec::new();
@@ -150,6 +148,7 @@ impl DebugInfo {
 
 pub struct Computer {
     rom: [i16; 32768],
+    pub debug_mode: DebugMode,
     pub ram: Arc<Mutex<[i16; 32768]>>,
     pub cpu: Cpu,
 }
@@ -157,6 +156,7 @@ pub struct Computer {
 impl Computer {
     pub fn new(rom: [i16; 32768]) -> Self {
         Self {
+            debug_mode: DebugMode::None,
             rom,
             ram: Arc::new(Mutex::new([0; 32768])),
             cpu: Cpu {
@@ -171,7 +171,7 @@ impl Computer {
     pub fn tick(&mut self) {
         let prev_reg_a = self.cpu.reg_a;
         let instruction = self.rom[self.cpu.pc as usize];
-        match DEBUG_MODE {
+        match self.debug_mode {
             DebugMode::Verbose => {
                 let ram = self.ram.lock().unwrap();
                 let sp = ram[0];
@@ -200,20 +200,7 @@ impl Computer {
             }
             DebugMode::Heap => {
                 let ram = self.ram.lock().unwrap();
-                for block_order in 2..=14 {
-                    let block_size = 2_usize.pow(block_order);
-                    print!("FREE {}-WORD BLOCKS: ", block_size);
-                    let mut next = ram[2048 + block_order as usize] as usize;
-                    while next != 0 {
-                        print!(
-                            "{}: {},",
-                            next,
-                            debug_print_slice(&ram[next..next + block_size])
-                        );
-                        next = ram[next + 2] as usize;
-                    }
-                }
-                println!();
+                println!("{}", debug_print_slice(&ram[2048..18432]));
             }
             DebugMode::None => {}
         }

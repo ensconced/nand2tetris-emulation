@@ -37,11 +37,11 @@ pub fn compile_files(src_path: &Path, dest_path: &Path) {
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::HashMap, iter};
+    use std::{collections::HashMap, fmt::Debug, iter};
 
     use itertools::repeat_n;
 
-    use crate::compilers::utils::testing::*;
+    use crate::{compilers::utils::testing::*, emulator::computer::DebugMode};
 
     #[test]
     fn test_addition() {
@@ -834,7 +834,7 @@ mod tests {
             string_from_pointer(&computer, static_var(&computer, 2)),
             "1234"
         );
-        step_over(&mut computer); // step over setInt
+        tick_until(&mut computer, &program_completed);
         assert_eq!(
             string_from_pointer(&computer, static_var(&computer, 2)),
             "5678"

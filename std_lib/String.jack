@@ -54,16 +54,35 @@ class String {
     return result;
   }
 
+  method void reverse() {
+    var int i, swp;
+
+    let i = 0;
+
+    while (i < length / 2)  {
+      let swp = buffer[i];
+      let buffer[i] = buffer[length - 1 - i];
+      let buffer[length - 1 - i] = swp;
+      let i = i + 1;
+    }
+  }
+
   method void setInt(int j) {
     var int remainder, divided;
+    var String foo;
+
+    // TODO - this is pretty awkward, but the current syntactical
+    // rules don't allow calling a method on this directly.
+    let foo = this;
 
     let length = 0;
     while (j > 0) {
       let divided = j / 10;
       let remainder = j - divided * 10;
       let j = divided;
-      do appendChar(remainder + 48);
+      do foo.appendChar(remainder + 48);
     }
+    do foo.reverse();
   }
 
   function char backSpace() {

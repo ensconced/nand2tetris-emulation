@@ -1,5 +1,6 @@
 mod compilers;
 mod emulator;
+mod fonts;
 
 use clap::{Parser, Subcommand};
 use compilers::{assembler::assemble_file, vm_compiler};

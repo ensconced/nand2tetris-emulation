@@ -13,9 +13,10 @@ struct GlyphUnicodeInfo {
 }
 
 #[derive(PartialEq, Debug)]
-pub struct PSF {
-    glyphs: Vec<[u8; 9]>,
-    unicode_info: Vec<GlyphUnicodeInfo>,
+pub struct Glyph {
+    bitmap: [u8; 9],
+    individual_codepoints: Vec<u16>,
+    codepoint_sequences: Vec<Vec<u16>>,
 }
 
 const GLYPH_COUNT_IS_512_MASK: u8 = 0x01;
@@ -52,7 +53,7 @@ fn take_codepoints_up_to(bytes: &mut impl Iterator<Item = u8>, end: u16) -> Vec<
     result
 }
 
-fn take_codepoints(codepoints: &mut iter::Peekable<impl Iterator<Item = u16>>) -> Vec<u16> {
+fn take_codepoints(codepoints: &mut Peekable<impl Iterator<Item = u16>>) -> Vec<u16> {
     let mut result = Vec::new();
     while let Some(&codepoint) = codepoints.peek() {
         if codepoint == 0xFFFF || codepoint == 0xFFFE {
@@ -65,23 +66,21 @@ fn take_codepoints(codepoints: &mut iter::Peekable<impl Iterator<Item = u16>>) -
 }
 
 fn maybe_take_codepoint_sequence(
-    codepoints: &mut iter::Peekable<impl Iterator<Item = u16>>,
+    codepoints: &mut Peekable<impl Iterator<Item = u16>>,
 ) -> Option<Vec<u16>> {
     if let Some(&codepoint) = codepoints.peek() {
         if codepoint == 0xFFFE {
             codepoints.next();
             Some(take_codepoints(codepoints))
         } else {
-            panic!("expected 0xFFFE");
+            None
         }
     } else {
         None
     }
 }
 
-fn take_codepoint_sequences(
-    codepoints: &mut iter::Peekable<impl Iterator<Item = u16>>,
-) -> Vec<Vec<u16>> {
+fn take_codepoint_sequences(codepoints: &mut Peekable<impl Iterator<Item = u16>>) -> Vec<Vec<u16>> {
     let mut result = Vec::new();
     while let Some(seq) = maybe_take_codepoint_sequence(codepoints) {
         result.push(seq);
@@ -89,11 +88,24 @@ fn take_codepoint_sequences(
     result
 }
 
+fn take_term(codepoints: &mut Peekable<impl Iterator<Item = u16>>) {
+    if let Some(&codepoint) = codepoints.peek() {
+        if codepoint == 0xFFFF {
+            codepoints.next();
+        } else {
+            panic!("expected 0xFFFF");
+        }
+    } else {
+        panic!("expected 0xFFFF");
+    }
+}
+
 fn take_glyph_unicode_description(
-    codepoints: &mut iter::Peekable<impl Iterator<Item = u16>>,
+    codepoints: &mut Peekable<impl Iterator<Item = u16>>,
 ) -> GlyphUnicodeInfo {
     let individual_codepoints = take_codepoints(codepoints);
     let codepoint_sequences = take_codepoint_sequences(codepoints);
+    take_term(codepoints);
     GlyphUnicodeInfo {
         individual_codepoints,
         codepoint_sequences,
@@ -116,7 +128,7 @@ fn take_unicode_info(
         .collect()
 }
 
-pub fn parse_psf_file() -> PSF {
+pub fn parse_psf_file() -> Vec<Glyph> {
     let mut bytes = fs::read("./fonts/zap-vga09.psf").unwrap().into_iter();
     let magic0 = bytes.next().unwrap();
     assert_eq!(magic0, 0x36);
@@ -136,10 +148,21 @@ pub fn parse_psf_file() -> PSF {
 
     let unicode_info = take_unicode_info(&mut bytes, glyph_count);
 
-    PSF {
-        glyphs,
-        unicode_info,
-    }
+    iter::zip(glyphs, unicode_info)
+        .map(
+            |(
+                bitmap,
+                GlyphUnicodeInfo {
+                    individual_codepoints,
+                    codepoint_sequences,
+                },
+            )| Glyph {
+                bitmap,
+                individual_codepoints,
+                codepoint_sequences,
+            },
+        )
+        .collect()
 }
 
 #[cfg(test)]
@@ -148,9 +171,15 @@ mod tests {
 
     #[test]
     fn test_parse_psf_file() {
-        let psf = parse_psf_file();
-        for glyph in psf.glyphs {
-            for line in glyph {
+        let glyphs = parse_psf_file();
+        for glyph in glyphs {
+            for codepoint in glyph.individual_codepoints {
+                println!("{}", char::from_u32(codepoint as u32).unwrap());
+            }
+
+            // we ignore the codepoint sequences
+
+            for line in glyph.bitmap {
                 for bit_idx in (0..8).rev() {
                     if 2_u8.pow(bit_idx) & line == 0 {
                         print!(" ");

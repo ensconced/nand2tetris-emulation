@@ -2,9 +2,12 @@
 // a description of the file format can be found here https://www.win.tue.nl/~aeb/linux/kbd/font-formats-1.html
 
 use std::{
+    collections::HashMap,
     fs,
     iter::{self, Peekable},
 };
+
+use itertools::Itertools;
 
 #[derive(PartialEq, Debug)]
 struct GlyphUnicodeInfo {
@@ -128,7 +131,7 @@ fn take_unicode_info(
         .collect()
 }
 
-pub fn parse_psf_file() -> Vec<Glyph> {
+fn parse_psf_file() -> HashMap<u16, [u8; 9]> {
     let mut bytes = fs::read("./fonts/zap-vga09.psf").unwrap().into_iter();
     let magic0 = bytes.next().unwrap();
     assert_eq!(magic0, 0x36);
@@ -148,47 +151,122 @@ pub fn parse_psf_file() -> Vec<Glyph> {
 
     let unicode_info = take_unicode_info(&mut bytes, glyph_count);
 
-    iter::zip(glyphs, unicode_info)
-        .map(
-            |(
-                bitmap,
-                GlyphUnicodeInfo {
-                    individual_codepoints,
-                    codepoint_sequences,
-                },
-            )| Glyph {
-                bitmap,
+    let glyphs = iter::zip(glyphs, unicode_info).map(
+        |(
+            bitmap,
+            GlyphUnicodeInfo {
                 individual_codepoints,
                 codepoint_sequences,
             },
-        )
-        .collect()
-}
+        )| Glyph {
+            bitmap,
+            individual_codepoints,
+            codepoint_sequences,
+        },
+    );
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+    let mut result = HashMap::new();
 
-    #[test]
-    fn test_parse_psf_file() {
-        let glyphs = parse_psf_file();
-        for glyph in glyphs {
-            for codepoint in glyph.individual_codepoints {
-                println!("{}", char::from_u32(codepoint as u32).unwrap());
-            }
-
-            // we ignore the codepoint sequences
-
-            for line in glyph.bitmap {
-                for bit_idx in (0..8).rev() {
-                    if 2_u8.pow(bit_idx) & line == 0 {
-                        print!(" ");
-                    } else {
-                        print!("█");
-                    }
-                }
-                println!();
-            }
+    for glyph in glyphs {
+        for codepoint in glyph
+            .individual_codepoints
+            .into_iter()
+            .filter(|&codepoint| codepoint < 128 || codepoint == 0xFFFD)
+        {
+            result.insert(codepoint, glyph.bitmap);
         }
     }
+
+    result
 }
+
+pub fn glyphs_class() -> String {
+    let glyph_map = parse_psf_file();
+    let glyph_allocations: Vec<_> = glyph_map
+        .into_iter()
+        .map(|(codepoint, bitmap)| {
+            if codepoint < 32 {
+                panic!("unexpected glyph for codepoint < 32");
+            }
+            let arr_idx = if codepoint == 0xFFFD {
+                0
+            } else {
+                codepoint - 32
+            };
+
+            // The height of the glyphs is nominally 9, but the bottom line of
+            // each glyph is actually always blank, at least for the subset of
+            // glyphs that I'm using. This means I can ignore the remainder here
+            // when converting the bytes into 16-bit chunks.
+            let sixteen_bit_chunks = bitmap.chunks_exact(2);
+            let words = sixteen_bit_chunks
+                .map(|chunk| i16::from_be_bytes(<[u8; 2]>::try_from(chunk).unwrap()));
+
+            let bitmap_allocation = words
+                .into_iter()
+                .enumerate()
+                .map(|(idx, word)| format!("let bitmap[{}] = {};", idx, word))
+                .join("\n");
+
+            format!(
+                "
+          let bitmap = Memory.alloc(4);
+          {}
+          let arr[{}] = bitmap;
+        ",
+                bitmap_allocation, arr_idx
+            )
+        })
+        .collect();
+
+    format!(
+        "
+    class Glyphs {{
+        static int arr;
+
+        function void init() {{
+            var int bitmap, i;
+
+
+            // I'm taking advantage here of the fact that the first 32 ascii
+            // characters do not have glyphs in my font. This helps me fit everything
+            // into a 128-word block of memory.
+            let arr = Memory.alloc(126);
+            // Initialize arr to all null pointers
+            let i = 0;
+            while (i < 126) {{
+                let arr[i] = 0;
+                let i = i + 1;
+            }}
+            {}
+        }}
+
+        function int glyph(int codepoint) {{
+            var int glyph_ptr;
+
+            if (codepoint < 32) {{
+                return 0;
+            }}
+            let glyph_ptr = arr[codepoint - 32];
+            if (glyph_ptr) {{
+                return glyph_ptr;
+            }}
+            return arr[0]; // glyph for 0xFFFD codepoint - unicode replacement character
+        }}
+    }}
+    ",
+        glyph_allocations.join("\n")
+    )
+}
+
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     use crate::compilers::jack_compiler::compile;
+
+//     // #[test]
+//     // fn test_glyph_module_compiles() {
+//     //     // just check that the output compiles
+//     //     compile(&glyphs_class());
+//     // }
+// }

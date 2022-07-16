@@ -30,6 +30,8 @@ compiler outputs something like this:
 # TODO
 
 - write full stdlib
+- implement hashmap module
+- implement vector module
 - add SCREEN variable for use in jack code
 - allow use of e.g. var int[4] foo; to declare fixed-length arrays to be allocated in static section, or on stack. this could make the code in Memory.jack much neater
 - make statics and stack sections bigger!

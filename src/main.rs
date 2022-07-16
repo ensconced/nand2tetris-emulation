@@ -5,7 +5,8 @@ mod fonts;
 use clap::{Parser, Subcommand};
 use compilers::{assembler::assemble_file, vm_compiler};
 use emulator::run::run;
-use std::path::Path;
+use fonts::glyphs_class;
+use std::{fs, path::Path};
 
 #[derive(Parser, Debug)]
 #[clap()]
@@ -28,6 +29,8 @@ enum Commands {
     },
     /// Run machine code on emulator
     Run { file_path_maybe: Option<String> },
+    /// Generate glyphs stdlib module from fonts file
+    GenerateGlyphs,
 }
 
 fn main() {
@@ -60,6 +63,9 @@ fn main() {
             let file_path = file_path_maybe.as_ref().expect("path is required");
             println!("running {}", file_path);
             run(file_path);
+        }
+        Commands::GenerateGlyphs => {
+            fs::write("./std_lib/Glyphs.jack", glyphs_class()).unwrap();
         }
     }
 }

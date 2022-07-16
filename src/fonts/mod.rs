@@ -180,6 +180,18 @@ fn parse_psf_file() -> HashMap<u16, [u8; 9]> {
     result
 }
 
+fn safe_jack_number_string(num: i16) -> String {
+    if num == -32768 {
+        // This is a special case because while -32768 is a valid i16, 32768 is not.
+        // If the jack compiler sees -32768, it treats that as a unary neg operation on
+        // a positive int 32768. But then it will realise that 32768 is not a valid i16
+        // and panic. To get around this we use an overflow.
+        "32767 + 1".to_string()
+    } else {
+        num.to_string()
+    }
+}
+
 pub fn glyphs_class() -> String {
     let glyph_map = parse_psf_file();
     let glyph_allocations: Vec<_> = glyph_map
@@ -199,8 +211,9 @@ pub fn glyphs_class() -> String {
             // glyphs that I'm using. This means I can ignore the remainder here
             // when converting the bytes into 16-bit chunks.
             let sixteen_bit_chunks = bitmap.chunks_exact(2);
-            let words = sixteen_bit_chunks
-                .map(|chunk| i16::from_be_bytes(<[u8; 2]>::try_from(chunk).unwrap()));
+            let words = sixteen_bit_chunks.map(|chunk| {
+                safe_jack_number_string(i16::from_be_bytes(<[u8; 2]>::try_from(chunk).unwrap()))
+            });
 
             let bitmap_allocation = words
                 .into_iter()
@@ -259,14 +272,21 @@ pub fn glyphs_class() -> String {
     )
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use crate::compilers::jack_compiler::compile;
+#[cfg(test)]
+mod tests {
+    use std::num::Wrapping;
 
-//     // #[test]
-//     // fn test_glyph_module_compiles() {
-//     //     // just check that the output compiles
-//     //     compile(&glyphs_class());
-//     // }
-// }
+    use super::*;
+    use crate::compilers::jack_compiler::compile;
+
+    #[test]
+    fn test_glyph_module_compiles() {
+        // just check that the output compiles
+        compile(&glyphs_class());
+    }
+
+    #[test]
+    fn test_safe_jack_number_string() {
+        assert_eq!(Wrapping(32767_i16) + Wrapping(1), Wrapping(-32768));
+    }
+}

@@ -9,6 +9,7 @@ use parser::parse_lines;
 use std::{fs, path::Path};
 
 pub fn assemble(source: String, rom_depth: usize) -> String {
+    println!("{}", &source);
     let first_pass_result = first_pass(parse_lines(&source));
     let mut code_generator = CodeGenerator::new(first_pass_result);
     let mut machine_instructions = code_generator.generate();

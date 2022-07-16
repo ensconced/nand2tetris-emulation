@@ -171,7 +171,7 @@ impl CodeGenerator {
                     if let Ok(num_16) = i16::try_from(index) {
                         format!("{:016b}", num_16)
                     } else {
-                        panic!("failed to resolve symbolic a-command to valid index");
+                        panic!("failed to resolve symbolic a-command {} to valid index", sym);
                     }
                 }
                 L { identifier: _ } => {

@@ -1,5 +1,5 @@
 use regex::Regex;
-use std::{fmt::Debug, iter};
+use std::fmt::Debug;
 
 pub struct Tokenizer<LangTokenKind> {
     token_defs: Vec<TokenDef<LangTokenKind>>,
@@ -11,14 +11,14 @@ impl<LangTokenKind: Debug> Tokenizer<LangTokenKind> {
     }
 
     pub fn tokenize(&self, source: &str) -> Box<dyn Iterator<Item = Token<LangTokenKind>>> {
-        if let Some(first_token) = get_first_token(source, &self.token_defs) {
+        let mut remainder = source.to_string();
+        let mut result = Vec::new();
+        while let Some(first_token) = get_first_token(&remainder, &self.token_defs) {
             let len = first_token.length;
-            let remainder: String = source.chars().skip(len).collect();
-            // TODO - the recursion here is causing a stack overflow...
-            Box::new(iter::once(first_token).chain(self.tokenize(&remainder)))
-        } else {
-            Box::new(iter::empty())
+            result.push(first_token);
+            remainder = remainder.chars().skip(len).collect();
         }
+        Box::new(result.into_iter())
     }
 }
 

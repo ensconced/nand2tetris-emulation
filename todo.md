@@ -1,3 +1,48 @@
+- now that we have the jack compiler, we don't actually need to a textual
+  representations for vm code (or even for asm I suppose) - these could just be
+  data structures within the rust code i.e. more like intermediate
+  representations than their own languages per se - this would probably allow
+  tidying up a lot of code!
+
+- this in turn will allow me to turn the compilation process into less of a series
+  of translations from one language to another, and more like a series of transformations
+  of one data structure - i.e. it should be easier to keep information around so you know
+  which bit of jack code each bit of vm code corresponds to, and which bit of vm code
+  each bit of asm corresponds to etc. this should help a lot both with debugging and
+  with possible later visualisation stuff AND with my attempts to reduce the emitted code size.
+
+jack code ->
+parsed jack code ->
+parsed jack code, decorated with vm instructions ->
+parsed jack code, decorated with vm instructions, and each vm instruction decorated with asm instructions
+
+the goal for the visualisation thing would include something like this https://twitter.com/dgryski/status/1547952259828330498/photo/1
+
+## STEPS
+
+- abolish textual ASM - just use a decorated version of the parsed VM code
+- abolish textual vm code - just use a decorated version of the parsed jack code
+
+### optimizations
+
+- improve emitted code size
+- in order to do this, need to better be able to analyze where bloat is
+- first step for this is to keep info during compilation on where code is coming from
+- keep this info in some kind of data structure
+- later can serialize this (using serde?) to JSON
+
+### debugging
+
+- add print instruction, only included when compilation is targeting the emulator
+- report stack overflows etc in emulator
+- improve indentation of emitted vm and asm code
+- consolidate various debugging tools
+
+### refactoring
+
+- make error handling and reporting more consistent in parsers
+- maybe get rid of clap and parse cli args myself
+
 ### Debug planning
 
 ### Phase 1 - output JSON file explaining compiler output
@@ -69,19 +114,3 @@ compiler outputs something like this:
 - bitshift?
 - ethernet...?
 - graphics: fix flickering by assigning a "don't draw" register which programs can use to flag when frame buffer is in an inconsistent state, and which the computer will read to decide whether or not to actually refresh the screen. will need to figure out how to make this work on the fpga too!
-
-### optimizations
-
-- improve emitted code size
-
-### debugging
-
-- add print instruction, only included when compilation is targeting the emulator
-- report stack overflows etc in emulator
-- improve indentation of emitted vm and asm code
-- consolidate various debugging tools
-
-### refactoring
-
-- make error handling and reporting more consistent in parsers
-- maybe get rid of clap and parse cli args myself

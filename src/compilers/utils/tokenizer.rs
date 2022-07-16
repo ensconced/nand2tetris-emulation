@@ -14,6 +14,7 @@ impl<LangTokenKind: Debug> Tokenizer<LangTokenKind> {
         if let Some(first_token) = get_first_token(source, &self.token_defs) {
             let len = first_token.length;
             let remainder: String = source.chars().skip(len).collect();
+            // TODO - the recursion here is causing a stack overflow...
             Box::new(iter::once(first_token).chain(self.tokenize(&remainder)))
         } else {
             Box::new(iter::empty())

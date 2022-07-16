@@ -261,7 +261,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "failed to resolve symbolic a-command to valid index")]
+    #[should_panic(expected = "failed to resolve symbolic a-command foo to valid index")]
     fn test_too_big_symbolic_a_command_code() {
         let first_pass_result = FirstPassResult {
             resolved_symbols: HashMap::from([("foo".to_string(), 1000000)]),

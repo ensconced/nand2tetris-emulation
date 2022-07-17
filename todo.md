@@ -28,6 +28,8 @@ the goal for the visualisation thing would include something like this https://t
 - add references from asm instructions to their owning vm instruction node
 - same again for asm -> machine code stage
 
+- restore Glyphs.jack.todo!!
+
 ### optimizations
 
 - improve emitted code size

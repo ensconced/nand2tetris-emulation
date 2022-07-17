@@ -612,24 +612,45 @@ impl CodeGenerator {
         &mut self,
         condition: Expression,
         statements: Vec<Statement>,
-    ) -> String {
+    ) -> Vec<Command> {
         let while_idx = self.subroutine_while_count;
         self.subroutine_while_count += 1;
         let condition = self.compile_expression(condition);
         let body = self.compile_statements(statements);
 
-        let result = format!(
-            "
-        label start_while_{while_idx}
-          {condition}
-          not
-          if-goto end_while_{while_idx}
-          {body}
-          goto start_while_{while_idx}
-          label end_while_{while_idx}
-        "
-        );
-        result
+        vec![Command::Flow(FlowCommandVariant::Label(format!(
+            "start_while_{}",
+            while_idx
+        )))]
+        .into_iter()
+        .chain(condition.into_iter())
+        .chain(
+            vec![
+                Command::Arithmetic(ArithmeticCommandVariant::Unary(
+                    UnaryArithmeticCommandVariant::Not,
+                )),
+                Command::Flow(FlowCommandVariant::IfGoTo(format!(
+                    "end_while_{}",
+                    while_idx
+                ))),
+            ]
+            .into_iter(),
+        )
+        .chain(body.into_iter())
+        .chain(
+            vec![
+                Command::Flow(FlowCommandVariant::GoTo(format!(
+                    "start_while_{}",
+                    while_idx
+                ))),
+                Command::Flow(FlowCommandVariant::Label(format!(
+                    "end_while_{}",
+                    while_idx
+                ))),
+            ]
+            .into_iter(),
+        )
+        .collect()
     }
 
     fn compile_statement(&mut self, statement: Statement) -> Vec<Command> {
@@ -683,9 +704,15 @@ impl CodeGenerator {
         self.compile_subroutine_parameters(subroutine.parameters);
 
         let implicit_return = if subroutine.return_type.is_none() {
-            "push constant 0\nreturn"
+            vec![
+                Command::Memory(MemoryCommandVariant::Push(
+                    MemorySegmentVariant::Constant,
+                    0,
+                )),
+                Command::Function(FunctionCommandVariant::ReturnFrom),
+            ]
         } else {
-            "return"
+            vec![Command::Function(FunctionCommandVariant::ReturnFrom)]
         };
 
         let locals_count =
@@ -697,34 +724,51 @@ impl CodeGenerator {
         let function_name = subroutine.name;
 
         match subroutine.subroutine_kind {
-            SubroutineKind::Function => format!(
-                "
-                function {class_name}.{function_name} {locals_count}
-                  {compiled_statements}
-                  {implicit_return}
-                  "
-            ),
-            SubroutineKind::Method => format!(
-                "
-                function {class_name}.{function_name} {locals_count}
-                  push argument 0
-                  pop pointer 0
-                  {compiled_statements}
-                  {implicit_return}
-            "
-            ),
-            SubroutineKind::Constructor => {
-                format!(
-                    "
-                function {class_name}.{function_name} {locals_count}
-                  push constant {instance_size}
-                  call Memory.alloc 1
-                  pop pointer 0
-                  {compiled_statements}
-                  {implicit_return}
-            "
-                )
-            }
+            SubroutineKind::Function => vec![Command::Function(FunctionCommandVariant::Define(
+                format!("{}.{}", class_name, function_name),
+                locals_count as u16,
+            ))]
+            .into_iter()
+            .chain(compiled_statements.into_iter())
+            .chain(implicit_return.into_iter())
+            .collect(),
+            SubroutineKind::Method => vec![
+                Command::Function(FunctionCommandVariant::Define(
+                    format!("{}.{}", class_name, function_name),
+                    locals_count as u16,
+                )),
+                Command::Memory(MemoryCommandVariant::Push(
+                    MemorySegmentVariant::PointerSegment(PointerSegmentVariant::Argument),
+                    0,
+                )),
+                Command::Memory(MemoryCommandVariant::Pop(
+                    MemorySegmentVariant::OffsetSegment(OffsetSegmentVariant::Pointer),
+                    0,
+                )),
+            ]
+            .into_iter()
+            .chain(compiled_statements.into_iter())
+            .chain(implicit_return.into_iter())
+            .collect(),
+            SubroutineKind::Constructor => vec![
+                Command::Function(FunctionCommandVariant::Define(
+                    format!("{}.{}", class_name, function_name),
+                    locals_count as u16,
+                )),
+                Command::Memory(MemoryCommandVariant::Push(
+                    MemorySegmentVariant::Constant,
+                    instance_size as u16,
+                )),
+                Command::Function(FunctionCommandVariant::Call("Memory.alloc".to_string(), 1)),
+                Command::Memory(MemoryCommandVariant::Pop(
+                    MemorySegmentVariant::OffsetSegment(OffsetSegmentVariant::Pointer),
+                    0,
+                )),
+            ]
+            .into_iter()
+            .chain(compiled_statements.into_iter())
+            .chain(implicit_return.into_iter())
+            .collect(),
         }
     }
 
@@ -737,7 +781,7 @@ impl CodeGenerator {
             .into_iter()
             .map(|subroutine| self.compile_subroutine(subroutine, instance_size))
             .flatten()
-            .collect();
+            .collect()
     }
 
     fn compile_var_declarations(&mut self, var_declarations: Vec<ClassVarDeclaration>) -> usize {

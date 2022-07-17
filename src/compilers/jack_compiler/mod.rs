@@ -1,6 +1,9 @@
 use self::parser::parse;
 
-use super::utils::source_modules::{get_source_modules, SourceModule};
+use super::{
+    utils::source_modules::{get_source_modules, SourceModule},
+    vm_compiler::parser::Command,
+};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -10,29 +13,15 @@ mod codegen;
 mod parser;
 mod tokenizer;
 
-pub fn compile(source: &str) -> String {
+pub fn compile(source: &str) -> Vec<Command> {
     codegen::generate_vm_code(parse(source))
 }
 
-fn compile_modules(modules: &[SourceModule]) -> Vec<String> {
+fn compile_modules(modules: &[SourceModule]) -> Vec<Vec<Command>> {
     modules
         .iter()
         .map(|module| compile(&module.source))
         .collect()
-}
-
-pub fn compile_files(src_path: &Path, dest_path: &Path) {
-    let source_modules = get_source_modules(src_path).expect("failed to get source modules");
-    for source_module in source_modules {
-        let vm_code = compile(&source_module.source);
-        let mut module_dest_path = if source_module.entrypoint_is_dir {
-            dest_path.join(source_module.filename)
-        } else {
-            PathBuf::from(dest_path)
-        };
-        module_dest_path.set_extension("vm");
-        fs::write(module_dest_path, vm_code).expect("failed to write compilation output")
-    }
 }
 
 #[cfg(test)]

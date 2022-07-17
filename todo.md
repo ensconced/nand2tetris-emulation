@@ -20,8 +20,13 @@ the goal for the visualisation thing would include something like this https://t
 
 ## STEPS
 
-- abolish textual ASM - just use a decorated version of the parsed VM code
-- abolish textual vm code - just use a decorated version of the parsed jack code
+### groundwork for code size analysis
+
+- abolish textual vm code - instead go directly from jack AST to "parsed" vm instructions - bypass the textual vmcode stage
+- add references from vm instructions to their owning node from the jack AST
+- abolish textual ASM - instead go directly from "parsed" vm instructions to "parsed" asm instructions
+- add references from asm instructions to their owning vm instruction node
+- same again for asm -> machine code stage
 
 ### optimizations
 

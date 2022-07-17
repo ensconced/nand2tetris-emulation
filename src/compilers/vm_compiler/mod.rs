@@ -1,5 +1,5 @@
 pub mod codegen;
-mod parser;
+pub mod parser;
 mod tokenizer;
 
 use std::{ffi::OsString, fs, io, path::Path};

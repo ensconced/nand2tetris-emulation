@@ -3,6 +3,8 @@ use std::ops::Deref;
 
 use std::path::Path;
 
+use crate::compilers::vm_compiler::parser::Command;
+use crate::compilers::vm_compiler::ParsedModule;
 use crate::compilers::{
     assembler::assemble, jack_compiler, utils::source_modules::SourceModule, vm_compiler,
 };
@@ -32,6 +34,21 @@ pub fn computer_from_vm_code(vm_code_sources: Vec<&str>) -> Computer {
     Computer::new(generate_rom::from_string(machine_code))
 }
 
+pub fn computer_from_vm_instructions(vm_command_sources: Vec<Vec<Command>>) -> Computer {
+    let parsed_vm_modules: Vec<_> = vm_command_sources
+        .into_iter()
+        .enumerate()
+        .map(|(idx, commands)| ParsedModule {
+            filename: format!("some_filename_{idx}").into(),
+            commands: Box::new(commands.into_iter()),
+        })
+        .collect();
+
+    let asm = vm_compiler::codegen::generate_asm(parsed_vm_modules);
+    let machine_code = assemble(asm, config::ROM_DEPTH);
+    Computer::new(generate_rom::from_string(machine_code))
+}
+
 pub fn computer_from_jack_code(jack_code: Vec<&str>) -> Computer {
     let std_lib_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("std_lib");
 
@@ -41,14 +58,14 @@ pub fn computer_from_jack_code(jack_code: Vec<&str>) -> Computer {
         .map(|stdlib_module| stdlib_module.source)
         .collect();
 
-    let vm_code: Vec<_> = std_lib_source
-        .iter()
-        .map(|source| source.deref())
-        .chain(jack_code.into_iter())
-        .map(jack_compiler::compile)
-        .collect();
-
-    computer_from_vm_code(vm_code.iter().map(|x| x.deref()).collect())
+    computer_from_vm_instructions(
+        std_lib_source
+            .iter()
+            .map(|source| source.deref())
+            .chain(jack_code.into_iter())
+            .map(jack_compiler::compile)
+            .collect(),
+    )
 }
 
 pub fn stack_pointer(computer: &Computer) -> i16 {

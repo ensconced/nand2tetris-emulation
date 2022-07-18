@@ -8,8 +8,8 @@ use super::utils::source_modules::{get_source_modules, SourceModule};
 use parser::{parse_lines, Command};
 
 pub struct ParsedModule<'a> {
-    filename: OsString,
-    commands: Box<dyn Iterator<Item = Command> + 'a>,
+    pub filename: OsString,
+    pub commands: Box<dyn Iterator<Item = Command> + 'a>,
 }
 
 pub fn parse<'a>(source_module: &'a SourceModule) -> ParsedModule<'a> {
@@ -31,7 +31,7 @@ mod tests {
 
     #[test]
     fn test_initialization() {
-        let mut computer = computer_from_vm_code(vec![""]);
+        let mut computer = computer_from_vm_code(vec![]);
         tick_until(&mut computer, &|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
         });

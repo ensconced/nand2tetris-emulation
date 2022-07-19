@@ -321,9 +321,12 @@ impl CodeGenerator {
         primitive_term: PrimitiveTermVariant,
     ) -> Vec<Command> {
         match primitive_term {
-            PrimitiveTermVariant::False | PrimitiveTermVariant::Null => vec![Command::Memory(
-                MemoryCommandVariant::Push(MemorySegmentVariant::Constant, 0),
-            )],
+            PrimitiveTermVariant::False | PrimitiveTermVariant::Null => {
+                vec![Command::Memory(MemoryCommandVariant::Push(
+                    MemorySegmentVariant::Constant,
+                    0,
+                ))]
+            }
             PrimitiveTermVariant::True => vec![
                 Command::Memory(MemoryCommandVariant::Push(
                     MemorySegmentVariant::Constant,

@@ -9,6 +9,13 @@ use crate::compilers::utils::{
     tokenizer::{Token, Tokenizer},
 };
 
+pub enum JackNode<'a> {
+    ClassNode(&'a Class),
+    ClassVarDeclarationNode(&'a ClassVarDeclaration),
+    ExpressionNode(&'a Expression),
+    SubroutineCall(&'a SubroutineCall),
+}
+
 #[derive(Debug, PartialEq)]
 pub struct Class {
     pub name: String,

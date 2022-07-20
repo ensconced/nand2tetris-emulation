@@ -1,15 +1,16 @@
 use crate::compilers::vm_compiler::parser::{
     ArithmeticCommandVariant, BinaryArithmeticCommandVariant, Command, FlowCommandVariant,
     FunctionCommandVariant, MemoryCommandVariant, MemorySegmentVariant, OffsetSegmentVariant,
-    PointerSegmentVariant, UnaryArithmeticCommandVariant,
+    PointerSegmentVariant, UnaryArithmeticCommandVariant, CommandWithOrigin
 };
 
 use super::parser::{
     BinaryOperator, Class, ClassVarDeclaration, ClassVarDeclarationKind, Expression, Parameter,
     PrimitiveTermVariant, Statement, SubroutineCall, SubroutineDeclaration, SubroutineKind, Type,
-    UnaryOperator, VarDeclaration,
+    UnaryOperator, VarDeclaration, JackNode,
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
+
 
 #[derive(Clone, PartialEq)]
 enum SymbolKind {
@@ -85,13 +86,14 @@ impl CodeGenerator {
         count
     }
     fn compile_do_statement(&mut self, subroutine_call: SubroutineCall) -> Vec<Command> {
+        let pop_return_val = Command::Memory(MemoryCommandVariant::Pop(
+                        MemorySegmentVariant::Constant,
+                    0,
+                ));
         self.compile_subroutine_call_expression(subroutine_call)
             .into_iter()
             .chain(
-                vec![Command::Memory(MemoryCommandVariant::Pop(
-                    MemorySegmentVariant::Constant,
-                    0,
-                ))]
+                   vec![pop_return_val]
                 .into_iter(),
             )
             .collect()
@@ -603,11 +605,10 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_statements(&mut self, statements: Vec<Statement>) -> Vec<Command> {
+    fn compile_statements(&mut self, statements: Vec<Statement>) -> Vec<CommandWithOrigin> {
         statements
             .into_iter()
-            .map(|statement| self.compile_statement(statement))
-            .flatten()
+            .flat_map(|statement| self.compile_statement(statement))
             .collect()
     }
 
@@ -656,8 +657,8 @@ impl CodeGenerator {
         .collect()
     }
 
-    fn compile_statement(&mut self, statement: Statement) -> Vec<Command> {
-        match statement {
+    fn compile_statement(&mut self, statement: Statement) -> Vec<CommandWithOrigin> {
+        let command = match statement {
             Statement::Do(subroutine_call) => self.compile_do_statement(subroutine_call),
             Statement::Let {
                 var_name,
@@ -674,7 +675,7 @@ impl CodeGenerator {
                 condition,
                 statements,
             } => self.compile_while_statement(condition, statements),
-        }
+        };
     }
 
     fn compile_subroutine_parameters(&mut self, parameters: Vec<Parameter>) {
@@ -700,11 +701,14 @@ impl CodeGenerator {
         &mut self,
         subroutine: SubroutineDeclaration,
         instance_size: usize,
-    ) -> Vec<Command> {
+    ) -> Vec<CommandWithOrigin> {
+
         self.clear_subroutine();
         self.subroutine_kind = Some(subroutine.subroutine_kind);
 
         self.compile_subroutine_parameters(subroutine.parameters);
+
+        let jack_node = Rc::new(JackNode::SubroutineDeclaration(subroutine));
 
         let implicit_return = if subroutine.return_type.is_none() {
             vec![
@@ -733,7 +737,10 @@ impl CodeGenerator {
             ))]
             .into_iter()
             .chain(compiled_statements.into_iter())
-            .chain(implicit_return.into_iter())
+            .chain(implicit_return.into_iter().map(|command| CommandWithOrigin {
+                command,
+                origin: jack_node.clone()
+            }))
             .collect(),
             SubroutineKind::Method => vec![
                 Command::Function(FunctionCommandVariant::Define(
@@ -782,8 +789,7 @@ impl CodeGenerator {
     ) -> Vec<Command> {
         subroutine_declarations
             .into_iter()
-            .map(|subroutine| self.compile_subroutine(subroutine, instance_size))
-            .flatten()
+            .flat_map(|subroutine| self.compile_subroutine(subroutine, instance_size))
             .collect()
     }
 

@@ -11,24 +11,19 @@
   each bit of asm corresponds to etc. this should help a lot both with debugging and
   with possible later visualisation stuff AND with my attempts to reduce the emitted code size.
 
-jack code ->
-parsed jack code ->
-parsed jack code, decorated with vm instructions ->
-parsed jack code, decorated with vm instructions, and each vm instruction decorated with asm instructions
-
-the goal for the visualisation thing would include something like this https://twitter.com/dgryski/status/1547952259828330498/photo/1
-
 ## STEPS
 
 ### groundwork for code size analysis
 
-- abolish textual vm code - instead go directly from jack AST to "parsed" vm instructions - bypass the textual vmcode stage
-- add references from vm instructions to their owning node from the jack AST
+- add references from vm instructions to their owning node from the jack AST (via the ref-counted JackNode intermediary enum)
+- generation of reports on generated code size vs type of origin jack nodes.
 - abolish textual ASM - instead go directly from "parsed" vm instructions to "parsed" asm instructions
 - add references from asm instructions to their owning vm instruction node
 - same again for asm -> machine code stage
 
 - restore Glyphs.jack.todo!!
+
+- the goal for the visualisation thing would include something like this https://twitter.com/dgryski/status/1547952259828330498/photo/1
 
 ### optimizations
 

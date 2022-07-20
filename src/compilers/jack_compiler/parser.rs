@@ -9,11 +9,12 @@ use crate::compilers::utils::{
     tokenizer::{Token, Tokenizer},
 };
 
-pub enum JackNode<'a> {
-    ClassNode(&'a Class),
-    ClassVarDeclarationNode(&'a ClassVarDeclaration),
-    ExpressionNode(&'a Expression),
-    SubroutineCall(&'a SubroutineCall),
+pub enum JackNode {
+    ClassNode(Class),
+    ClassVarDeclarationNode(ClassVarDeclaration),
+    ExpressionNode(Expression),
+    SubroutineCall(SubroutineCall),
+    SubroutineDeclaration(SubroutineDeclaration),
 }
 
 #[derive(Debug, PartialEq)]

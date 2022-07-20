@@ -1,13 +1,15 @@
+use std::rc::Rc;
+
 use super::tokenizer::{
     token_defs, ArithmeticCmdTokenVariant, FunctionCmdTokenVariant, MemoryCmdTokenVariant,
     MemorySegmentTokenVariant, ProgramFlowCmdTokenVariant, TokenKind,
 };
-use crate::compilers::utils::{
+use crate::compilers::{utils::{
     parser_utils::{
         maybe_take_command_with_optional_comment_and_whitespace, parse_by_line, PeekableTokens,
     },
     tokenizer::Token,
-};
+}, jack_compiler::parser::JackNode};
 
 #[derive(PartialEq, Debug)]
 pub enum UnaryArithmeticCommandVariant {
@@ -80,6 +82,11 @@ pub enum Command {
     Flow(FlowCommandVariant),
     Arithmetic(ArithmeticCommandVariant),
     Memory(MemoryCommandVariant),
+}
+
+pub struct CommandWithOrigin {
+    command: Command,
+    origin: Rc<JackNode>,
 }
 
 use ArithmeticCommandVariant::*;

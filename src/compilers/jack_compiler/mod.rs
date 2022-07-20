@@ -4,13 +4,8 @@ use super::{
     utils::source_modules::{get_source_modules, SourceModule},
     vm_compiler::parser::Command,
 };
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
-
 mod codegen;
-mod parser;
+pub mod parser;
 mod tokenizer;
 
 pub fn compile(source: &str) -> Vec<Command> {

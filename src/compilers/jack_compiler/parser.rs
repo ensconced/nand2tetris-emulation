@@ -15,6 +15,10 @@ pub enum JackNode {
     ExpressionNode(Expression),
     SubroutineCall(SubroutineCall),
     SubroutineDeclaration(SubroutineDeclaration),
+    BinaryOperatorNode(BinaryOperator),
+    UnaryOperatorNode(UnaryOperator),
+    PrimitiveTermNode(PrimitiveTermVariant),
+    StatementNode(Statement),
 }
 
 #[derive(Debug, PartialEq)]

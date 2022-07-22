@@ -2,17 +2,17 @@ use self::parser::parse;
 
 use super::{
     utils::source_modules::{get_source_modules, SourceModule},
-    vm_compiler::parser::Command,
+    vm_compiler::parser::{Command, CommandWithOrigin},
 };
 mod codegen;
 pub mod parser;
 mod tokenizer;
 
-pub fn compile(source: &str) -> Vec<Command> {
-    codegen::generate_vm_code(parse(source))
+pub fn compile(source: &str) -> Vec<CommandWithOrigin> {
+    codegen::generate_vm_code(&parse(source))
 }
 
-fn compile_modules(modules: &[SourceModule]) -> Vec<Vec<Command>> {
+fn compile_modules(modules: &[SourceModule]) -> Vec<Vec<CommandWithOrigin>> {
     modules
         .iter()
         .map(|module| compile(&module.source))
@@ -21,11 +21,8 @@ fn compile_modules(modules: &[SourceModule]) -> Vec<Vec<Command>> {
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::HashMap, fmt::Debug, iter};
-
+    use crate::compilers::utils::testing::*;
     use itertools::repeat_n;
-
-    use crate::{compilers::utils::testing::*, emulator::computer::DebugMode};
 
     #[test]
     fn test_addition() {

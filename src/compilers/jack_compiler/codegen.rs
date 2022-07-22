@@ -36,7 +36,7 @@ struct CodeGenerator {
     subroutine_kind: Option<SubroutineKind>,
 }
 
-fn implicit_return(return_type: Option<Type>) -> Vec<Command> {
+fn implicit_return(return_type: &Option<Type>) -> Vec<Command> {
     if return_type.is_none() {
         vec![
             Command::Memory(MemoryCommandVariant::Push(
@@ -98,14 +98,14 @@ impl CodeGenerator {
         }
         count
     }
-    fn compile_do_statement(
-        &mut self,
-        subroutine_call: SubroutineCall,
-        origin_node: Rc<JackNode>,
-    ) -> Vec<CommandWithOrigin> {
+    fn compile_do_statement<'a>(
+        &'a mut self,
+        subroutine_call: &'a SubroutineCall,
+        origin_node: Rc<JackNode<'a>>,
+    ) -> Vec<CommandWithOrigin<'a>> {
         let pop_return_val = CommandWithOrigin {
             command: Command::Memory(MemoryCommandVariant::Pop(MemorySegmentVariant::Constant, 0)),
-            origin: origin_node,
+            origin_node,
         };
         self.compile_subroutine_call_expression(subroutine_call)
             .into_iter()
@@ -113,13 +113,13 @@ impl CodeGenerator {
             .collect()
     }
 
-    fn compile_let_statement(
-        &mut self,
-        var_name: String,
-        array_index: Option<Expression>,
-        value: Expression,
-        origin_node: Rc<JackNode>,
-    ) -> Vec<CommandWithOrigin> {
+    fn compile_let_statement<'a>(
+        &'a mut self,
+        var_name: &str,
+        array_index: &Option<Expression>,
+        value: &Expression,
+        origin_node: Rc<JackNode<'a>>,
+    ) -> Vec<CommandWithOrigin<'a>> {
         let compiled_value = self.compile_expression(value);
         let (var_mem_segment, var_seg_idx) = self.compile_variable(&var_name);
 
@@ -133,7 +133,7 @@ impl CodeGenerator {
                         var_mem_segment,
                         var_seg_idx as u16,
                     )),
-                    origin: origin_node,
+                    origin_node: origin_node.clone(),
                 }])
                 .chain(compiled_idx.into_iter())
                 .chain(
@@ -153,7 +153,7 @@ impl CodeGenerator {
                     .into_iter()
                     .map(|command| CommandWithOrigin {
                         command,
-                        origin: origin_node,
+                        origin_node: origin_node.clone(),
                     }),
                 )
                 .collect()
@@ -166,7 +166,7 @@ impl CodeGenerator {
                             var_mem_segment,
                             var_seg_idx as u16,
                         )),
-                        origin: origin_node,
+                        origin_node,
                     }]
                     .into_iter(),
                 )
@@ -174,13 +174,13 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_if_statement(
-        &mut self,
-        condition: Expression,
+    fn compile_if_statement<'a>(
+        &'a mut self,
+        condition: &Expression,
         if_statements: Vec<Statement>,
         else_statements: Option<Vec<Statement>>,
-        origin_node: Rc<JackNode>,
-    ) -> Vec<CommandWithOrigin> {
+        origin_node: Rc<JackNode<'a>>,
+    ) -> Vec<CommandWithOrigin<'a>> {
         let if_count = self.subroutine_if_count;
         self.subroutine_if_count += 1;
 
@@ -200,7 +200,7 @@ impl CodeGenerator {
                         "if_statements_{}",
                         if_count
                     ))),
-                    origin: origin_node,
+                    origin_node: origin_node.clone(),
                 }]
                 .into_iter(),
             )
@@ -211,7 +211,7 @@ impl CodeGenerator {
                         "end_if_{}",
                         if_count
                     ))),
-                    origin: origin_node,
+                    origin_node: origin_node.clone(),
                 }]
                 .into_iter(),
             )
@@ -221,7 +221,7 @@ impl CodeGenerator {
                         "if_statements_{}",
                         if_count
                     ))),
-                    origin: origin_node,
+                    origin_node: origin_node.clone(),
                 }]
                 .into_iter(),
             )
@@ -232,18 +232,18 @@ impl CodeGenerator {
                         "end_if_{}",
                         if_count
                     ))),
-                    origin: origin_node,
+                    origin_node: origin_node.clone(),
                 }]
                 .into_iter(),
             )
             .collect()
     }
 
-    fn compile_return_statement(
-        &mut self,
-        return_value: Option<Expression>,
-        origin_node: Rc<JackNode>,
-    ) -> Vec<CommandWithOrigin> {
+    fn compile_return_statement<'a>(
+        &'a mut self,
+        return_value: &Option<Expression>,
+        origin_node: Rc<JackNode<'a>>,
+    ) -> Vec<CommandWithOrigin<'a>> {
         let push_return_value = if let Some(expression) = return_value {
             self.compile_expression(expression)
         } else {
@@ -252,7 +252,7 @@ impl CodeGenerator {
                     MemorySegmentVariant::Constant,
                     0,
                 )),
-                origin: origin_node,
+                origin_node: origin_node.clone(),
             }]
         };
 
@@ -261,25 +261,25 @@ impl CodeGenerator {
             .chain(
                 vec![CommandWithOrigin {
                     command: Command::Function(FunctionCommandVariant::ReturnFrom),
-                    origin: origin_node,
+                    origin_node: origin_node.clone(),
                 }]
                 .into_iter(),
             )
             .collect()
     }
 
-    fn compile_array_access_expression(
-        &mut self,
-        var_name: String,
-        index: Expression,
-        origin: Rc<JackNode>,
-    ) -> Vec<CommandWithOrigin> {
+    fn compile_array_access_expression<'a>(
+        &'a mut self,
+        var_name: &str,
+        index: &'a Expression,
+        origin_node: Rc<JackNode<'a>>,
+    ) -> Vec<CommandWithOrigin<'a>> {
         let (arr_mem_seg, arr_seg_idx) = self.compile_variable(&var_name);
         let push_index = self.compile_expression(index);
 
         vec![CommandWithOrigin {
             command: Command::Memory(MemoryCommandVariant::Push(arr_mem_seg, arr_seg_idx as u16)),
-            origin,
+            origin_node: origin_node.clone(),
         }]
         .into_iter()
         .chain(push_index.into_iter())
@@ -288,7 +288,7 @@ impl CodeGenerator {
                 command: Command::Arithmetic(ArithmeticCommandVariant::Binary(
                     BinaryArithmeticCommandVariant::Add,
                 )),
-                origin,
+                origin_node: origin_node.clone(),
             }]
             .into_iter(),
         )
@@ -304,21 +304,22 @@ impl CodeGenerator {
                 )),
             ]
             .into_iter()
-            .map(|command| CommandWithOrigin { command, origin }),
+            .map(|command| CommandWithOrigin {
+                command,
+                origin_node: origin_node.clone(),
+            }),
         )
         .collect()
     }
 
-    fn compile_binary_expression(
-        &mut self,
-        operator: BinaryOperator,
-        lhs: Expression,
-        rhs: Expression,
-    ) -> Vec<CommandWithOrigin> {
+    fn compile_binary_expression<'a>(
+        &'a mut self,
+        operator: &'a BinaryOperator,
+        lhs: &Expression,
+        rhs: &Expression,
+    ) -> Vec<CommandWithOrigin<'a>> {
         let push_lhs = self.compile_expression(lhs);
         let push_rhs = self.compile_expression(rhs);
-
-        let origin_operator_node = Rc::new(JackNode::BinaryOperatorNode(operator));
 
         let perform_op = match operator {
             BinaryOperator::And => vec![Command::Arithmetic(ArithmeticCommandVariant::Binary(
@@ -370,12 +371,14 @@ impl CodeGenerator {
             ))],
         };
 
+        let origin_node = Rc::new(JackNode::BinaryOperatorNode(&operator));
+
         push_lhs
             .into_iter()
             .chain(push_rhs.into_iter())
             .chain(perform_op.into_iter().map(|command| CommandWithOrigin {
                 command,
-                origin: origin_operator_node,
+                origin_node: origin_node.clone(),
             }))
             .collect()
     }
@@ -384,8 +387,6 @@ impl CodeGenerator {
         &mut self,
         primitive_term: PrimitiveTermVariant,
     ) -> Vec<CommandWithOrigin> {
-        let origin_node = Rc::new(JackNode::PrimitiveTermNode(primitive_term));
-
         let commands = match primitive_term {
             PrimitiveTermVariant::False | PrimitiveTermVariant::Null => {
                 vec![Command::Memory(MemoryCommandVariant::Push(
@@ -500,16 +501,21 @@ impl CodeGenerator {
             }
         };
 
+        let origin_node = Rc::new(JackNode::PrimitiveTermNode(&primitive_term));
+
         commands
             .into_iter()
             .map(|command| CommandWithOrigin {
                 command,
-                origin: origin_node,
+                origin_node: origin_node.clone(),
             })
             .collect()
     }
 
-    fn compile_push_arguments(&mut self, arguments: Vec<Expression>) -> Vec<CommandWithOrigin> {
+    fn compile_push_arguments<'a>(
+        &'a mut self,
+        arguments: &'a Vec<Expression>,
+    ) -> Vec<CommandWithOrigin<'a>> {
         arguments
             .into_iter()
             .map(|argument| self.compile_expression(argument))
@@ -519,9 +525,9 @@ impl CodeGenerator {
 
     fn compile_method_subroutine_call_expression(
         &mut self,
-        this_name: String,
-        method_name: String,
-        arguments: Vec<Expression>,
+        this_name: &str,
+        method_name: &str,
+        arguments: &Vec<Expression>,
         origin_node: Rc<JackNode>,
     ) -> Vec<CommandWithOrigin> {
         let arg_count = arguments.len();
@@ -538,7 +544,7 @@ impl CodeGenerator {
                             this_memory_segment,
                             this_idx as u16,
                         )),
-                        origin: origin_node,
+                        origin_node,
                     }]
                     .into_iter()
                     .chain(push_arguments.into_iter())
@@ -547,7 +553,7 @@ impl CodeGenerator {
                             format!("{}.{}", this_class, method_name),
                             arg_count_with_this as u16,
                         )),
-                        origin: origin_node,
+                        origin_node,
                     }])
                     .collect()
                 }
@@ -564,7 +570,7 @@ impl CodeGenerator {
                         format!("{}.{}", this_name, method_name),
                         arg_count as u16,
                     )),
-                    origin: origin_node,
+                    origin_node,
                 }])
                 .collect()
         }
@@ -572,8 +578,8 @@ impl CodeGenerator {
 
     fn compile_direct_subroutine_call_expression(
         &mut self,
-        subroutine_name: String,
-        arguments: Vec<Expression>,
+        subroutine_name: &str,
+        arguments: &Vec<Expression>,
         origin_node: Rc<JackNode>,
     ) -> Vec<CommandWithOrigin> {
         let arg_count = arguments.len();
@@ -586,14 +592,14 @@ impl CodeGenerator {
                     format!("{}.{}", class_name, subroutine_name),
                     arg_count as u16,
                 )),
-                origin: origin_node,
+                origin_node,
             }])
             .collect()
     }
 
     fn compile_subroutine_call_expression(
         &mut self,
-        subroutine_call: SubroutineCall,
+        subroutine_call: &SubroutineCall,
     ) -> Vec<CommandWithOrigin> {
         let origin_node = Rc::new(JackNode::SubroutineCall(subroutine_call));
 
@@ -638,7 +644,7 @@ impl CodeGenerator {
             .chain(
                 vec![CommandWithOrigin {
                     command: perform_op,
-                    origin: Rc::new(JackNode::UnaryOperatorNode(operator)),
+                    origin_node: Rc::new(JackNode::UnaryOperatorNode(&operator)),
                 }]
                 .into_iter(),
             )
@@ -681,8 +687,8 @@ impl CodeGenerator {
         (symbol_kind, symbol.offset)
     }
 
-    fn compile_expression(&mut self, expression: Expression) -> Vec<CommandWithOrigin> {
-        let origin_node = Rc::new(JackNode::ExpressionNode(expression));
+    fn compile_expression(&mut self, expression: &Expression) -> Vec<CommandWithOrigin> {
+        let origin_node = Rc::new(JackNode::ExpressionNode(&expression));
 
         match expression {
             Expression::ArrayAccess { var_name, index } => {
@@ -707,7 +713,7 @@ impl CodeGenerator {
                         memory_segment,
                         idx as u16,
                     )),
-                    origin: origin_node,
+                    origin_node,
                 }]
             }
         }
@@ -736,6 +742,10 @@ impl CodeGenerator {
             while_idx
         )))]
         .into_iter()
+        .map(|command| CommandWithOrigin {
+            command,
+            origin_node,
+        })
         .chain(condition.into_iter())
         .chain(
             vec![
@@ -747,7 +757,11 @@ impl CodeGenerator {
                     while_idx
                 ))),
             ]
-            .into_iter(),
+            .into_iter()
+            .map(|command| CommandWithOrigin {
+                command,
+                origin_node,
+            }),
         )
         .chain(body.into_iter())
         .chain(
@@ -761,15 +775,19 @@ impl CodeGenerator {
                     while_idx
                 ))),
             ]
-            .into_iter(),
+            .into_iter()
+            .map(|command| CommandWithOrigin {
+                command,
+                origin_node,
+            }),
         )
         .collect()
     }
 
     fn compile_statement(&mut self, statement: Statement) -> Vec<CommandWithOrigin> {
-        let origin_node = Rc::new(JackNode::StatementNode(statement));
+        let origin_node = Rc::new(JackNode::StatementNode(&statement));
 
-        let command = match statement {
+        match statement {
             Statement::Do(subroutine_call) => {
                 self.compile_do_statement(subroutine_call, origin_node)
             }
@@ -788,10 +806,10 @@ impl CodeGenerator {
                 condition,
                 statements,
             } => self.compile_while_statement(condition, statements, origin_node),
-        };
+        }
     }
 
-    fn compile_subroutine_parameters(&mut self, parameters: Vec<Parameter>) {
+    fn compile_subroutine_parameters(&mut self, parameters: &Vec<Parameter>) {
         for parameter in parameters {
             let offset = if self.subroutine_kind == Some(SubroutineKind::Method) {
                 self.subroutine_parameters.len() + 1
@@ -800,27 +818,25 @@ impl CodeGenerator {
             };
 
             self.subroutine_parameters.insert(
-                parameter.var_name,
+                parameter.var_name.clone(),
                 Symbol {
                     offset,
-                    symbol_type: parameter.type_name,
+                    symbol_type: parameter.type_name.clone(),
                     kind: SymbolKind::Parameter,
                 },
             );
         }
     }
 
-    fn compile_subroutine(
-        &mut self,
-        subroutine: SubroutineDeclaration,
+    fn compile_subroutine<'a>(
+        &'a mut self,
+        subroutine: &'a SubroutineDeclaration,
         instance_size: usize,
-    ) -> Vec<CommandWithOrigin> {
+    ) -> Vec<CommandWithOrigin<'a>> {
         self.clear_subroutine();
         self.subroutine_kind = Some(subroutine.subroutine_kind);
 
-        self.compile_subroutine_parameters(subroutine.parameters);
-
-        let jack_node = Rc::new(JackNode::SubroutineDeclaration(subroutine));
+        self.compile_subroutine_parameters(&subroutine.parameters);
 
         let locals_count =
             self.compile_subroutine_var_declarations(subroutine.body.var_declarations);
@@ -828,30 +844,15 @@ impl CodeGenerator {
         let compiled_statements = self.compile_statements(subroutine.body.statements);
 
         let class_name = self.get_class_name();
-        let function_name = subroutine.name;
 
-        match subroutine.subroutine_kind {
-            SubroutineKind::Function => vec![CommandWithOrigin {
-                command: Command::Function(FunctionCommandVariant::Define(
-                    format!("{}.{}", class_name, function_name),
-                    locals_count as u16,
-                )),
-                origin: jack_node.clone(),
-            }]
-            .into_iter()
-            .chain(compiled_statements.into_iter())
-            .chain(
-                implicit_return(subroutine.return_type)
-                    .into_iter()
-                    .map(|command| CommandWithOrigin {
-                        command,
-                        origin: jack_node.clone(),
-                    }),
-            )
-            .collect(),
+        let commands = match subroutine.subroutine_kind {
+            SubroutineKind::Function => vec![Command::Function(FunctionCommandVariant::Define(
+                format!("{}.{}", class_name, subroutine.name),
+                locals_count as u16,
+            ))],
             SubroutineKind::Method => vec![
                 Command::Function(FunctionCommandVariant::Define(
-                    format!("{}.{}", class_name, function_name),
+                    format!("{}.{}", class_name, subroutine.name),
                     locals_count as u16,
                 )),
                 Command::Memory(MemoryCommandVariant::Push(
@@ -862,14 +863,10 @@ impl CodeGenerator {
                     MemorySegmentVariant::OffsetSegment(OffsetSegmentVariant::Pointer),
                     0,
                 )),
-            ]
-            .into_iter()
-            .chain(compiled_statements.into_iter())
-            .chain(implicit_return.into_iter())
-            .collect(),
+            ],
             SubroutineKind::Constructor => vec![
                 Command::Function(FunctionCommandVariant::Define(
-                    format!("{}.{}", class_name, function_name),
+                    format!("{}.{}", class_name, subroutine.name),
                     locals_count as u16,
                 )),
                 Command::Memory(MemoryCommandVariant::Push(
@@ -881,19 +878,36 @@ impl CodeGenerator {
                     MemorySegmentVariant::OffsetSegment(OffsetSegmentVariant::Pointer),
                     0,
                 )),
-            ]
+            ],
+        };
+
+        let implicit_return_commands = implicit_return(&subroutine.return_type);
+
+        let origin_node = Rc::new(JackNode::SubroutineDeclaration(&subroutine));
+
+        commands
             .into_iter()
+            .map(|command| CommandWithOrigin {
+                command,
+                origin_node: origin_node.clone(),
+            })
             .chain(compiled_statements.into_iter())
-            .chain(implicit_return.into_iter())
-            .collect(),
-        }
+            .chain(
+                implicit_return_commands
+                    .into_iter()
+                    .map(|command| CommandWithOrigin {
+                        command,
+                        origin_node: origin_node.clone(),
+                    }),
+            )
+            .collect()
     }
 
-    fn compile_subroutines(
-        &mut self,
-        subroutine_declarations: Vec<SubroutineDeclaration>,
+    fn compile_subroutines<'a>(
+        &'a mut self,
+        subroutine_declarations: &'a Vec<SubroutineDeclaration>,
         instance_size: usize,
-    ) -> Vec<Command> {
+    ) -> Vec<CommandWithOrigin<'a>> {
         subroutine_declarations
             .into_iter()
             .flat_map(|subroutine| self.compile_subroutine(subroutine, instance_size))
@@ -927,7 +941,7 @@ impl CodeGenerator {
     }
 }
 
-pub fn generate_vm_code(class: Class) -> Vec<CommandWithOrigin> {
+pub fn generate_vm_code(class: &Class) -> Vec<CommandWithOrigin> {
     let mut code_generator = CodeGenerator::new();
     code_generator.class_name = Some(class.name.clone());
     let class_instance_size = code_generator.compile_var_declarations(class.var_declarations);

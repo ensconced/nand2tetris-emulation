@@ -3,7 +3,7 @@ use std::ops::Deref;
 
 use std::path::Path;
 
-use crate::compilers::vm_compiler::parser::Command;
+use crate::compilers::vm_compiler::parser::{Command, CommandWithOrigin};
 use crate::compilers::vm_compiler::ParsedModule;
 use crate::compilers::{
     assembler::assemble, jack_compiler, utils::source_modules::SourceModule, vm_compiler,
@@ -34,13 +34,17 @@ pub fn computer_from_vm_code(vm_code_sources: Vec<&str>) -> Computer {
     Computer::new(generate_rom::from_string(machine_code))
 }
 
-pub fn computer_from_vm_instructions(vm_command_sources: Vec<Vec<Command>>) -> Computer {
+pub fn computer_from_vm_instructions(vm_command_sources: Vec<Vec<CommandWithOrigin>>) -> Computer {
     let parsed_vm_modules: Vec<_> = vm_command_sources
         .into_iter()
         .enumerate()
-        .map(|(idx, commands)| ParsedModule {
+        .map(|(idx, commands_with_origin)| ParsedModule {
             filename: format!("some_filename_{idx}").into(),
-            commands: Box::new(commands.into_iter()),
+            commands: Box::new(
+                commands_with_origin
+                    .into_iter()
+                    .map(|command_with_origin| command_with_origin.command),
+            ),
         })
         .collect();
 

@@ -3,6 +3,8 @@ use std::ops::Deref;
 
 use std::path::Path;
 
+use crate::compilers::jack_compiler::codegen::generate_vm_code;
+use crate::compilers::jack_compiler::parser::parse;
 use crate::compilers::vm_compiler::parser::{Command, CommandWithOrigin};
 use crate::compilers::vm_compiler::ParsedModule;
 use crate::compilers::{
@@ -38,13 +40,9 @@ pub fn computer_from_vm_instructions(vm_command_sources: Vec<Vec<CommandWithOrig
     let parsed_vm_modules: Vec<_> = vm_command_sources
         .into_iter()
         .enumerate()
-        .map(|(idx, commands_with_origin)| ParsedModule {
+        .map(|(idx, commands)| ParsedModule {
             filename: format!("some_filename_{idx}").into(),
-            commands: Box::new(
-                commands_with_origin
-                    .into_iter()
-                    .map(|command_with_origin| command_with_origin.command),
-            ),
+            commands: Box::new(commands.into_iter().map(|command| command.command)),
         })
         .collect();
 
@@ -62,14 +60,14 @@ pub fn computer_from_jack_code(jack_code: Vec<&str>) -> Computer {
         .map(|stdlib_module| stdlib_module.source)
         .collect();
 
-    computer_from_vm_instructions(
-        std_lib_source
-            .iter()
-            .map(|source| source.deref())
-            .chain(jack_code.into_iter())
-            .map(jack_compiler::compile)
-            .collect(),
-    )
+    let jack_classes: Vec<_> = std_lib_source
+        .iter()
+        .map(|source| source.deref())
+        .chain(jack_code.into_iter())
+        .map(parse)
+        .collect();
+
+    computer_from_vm_instructions(jack_classes.iter().map(generate_vm_code).collect())
 }
 
 pub fn stack_pointer(computer: &Computer) -> i16 {

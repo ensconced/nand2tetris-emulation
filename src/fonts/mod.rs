@@ -272,21 +272,21 @@ pub fn glyphs_class() -> String {
     )
 }
 
-#[cfg(test)]
-mod tests {
-    use std::num::Wrapping;
+// #[cfg(test)]
+// mod tests {
+//     use std::num::Wrapping;
 
-    use super::*;
-    use crate::compilers::jack_compiler::compile;
+//     use super::*;
+//     use crate::compilers::jack_compiler::compile;
 
-    #[test]
-    fn test_glyph_module_compiles() {
-        // just check that the output compiles
-        compile(&glyphs_class());
-    }
+//     #[test]
+//     fn test_glyph_module_compiles() {
+//         // just check that the output compiles
+//         compile(&glyphs_class());
+//     }
 
-    #[test]
-    fn test_safe_jack_number_string() {
-        assert_eq!(Wrapping(32767_i16) + Wrapping(1), Wrapping(-32768));
-    }
-}
+//     #[test]
+//     fn test_safe_jack_number_string() {
+//         assert_eq!(Wrapping(32767_i16) + Wrapping(1), Wrapping(-32768));
+//     }
+// }

@@ -89,7 +89,7 @@ pub enum Command {
 
 pub struct CommandWithOrigin<'a> {
     pub command: Command,
-    origin_node: Rc<JackNode<'a>>,
+    pub origin_node: Rc<JackNode<'a>>,
 }
 
 use ArithmeticCommandVariant::*;

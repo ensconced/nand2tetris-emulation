@@ -117,7 +117,7 @@ impl CodeGenerator {
         &'a mut self,
         var_name: &str,
         array_index: &Option<Expression>,
-        value: &Expression,
+        value: &'a Expression,
         origin_node: Rc<JackNode<'a>>,
     ) -> Vec<CommandWithOrigin<'a>> {
         let compiled_value = self.compile_expression(value);
@@ -176,7 +176,7 @@ impl CodeGenerator {
 
     fn compile_if_statement<'a>(
         &'a mut self,
-        condition: &Expression,
+        condition: &'a Expression,
         if_statements: Vec<Statement>,
         else_statements: Option<Vec<Statement>>,
         origin_node: Rc<JackNode<'a>>,
@@ -315,8 +315,8 @@ impl CodeGenerator {
     fn compile_binary_expression<'a>(
         &'a mut self,
         operator: &'a BinaryOperator,
-        lhs: &Expression,
-        rhs: &Expression,
+        lhs: &'a Expression,
+        rhs: &'a Expression,
     ) -> Vec<CommandWithOrigin<'a>> {
         let push_lhs = self.compile_expression(lhs);
         let push_rhs = self.compile_expression(rhs);
@@ -512,25 +512,28 @@ impl CodeGenerator {
             .collect()
     }
 
-    fn compile_push_arguments<'a>(
+    fn compile_push_arguments<'a, 'b>(
         &'a mut self,
-        arguments: &'a Vec<Expression>,
-    ) -> Vec<CommandWithOrigin<'a>> {
-        let c = |argument| self.compile_expression(argument);
-        arguments.into_iter().map(c).flatten().collect()
+        arguments: &'b Vec<Expression>,
+    ) -> Vec<CommandWithOrigin<'b>> {
+        arguments
+            .into_iter()
+            .map(|argument| self.compile_expression(argument))
+            .flatten()
+            .collect()
     }
 
-    fn compile_method_subroutine_call_expression(
-        &mut self,
-        this_name: &str,
-        method_name: &str,
-        arguments: &Vec<Expression>,
-        origin_node: Rc<JackNode>,
-    ) -> Vec<CommandWithOrigin> {
+    fn compile_method_subroutine_call_expression<'a, 'b>(
+        &'a mut self,
+        this_name: &'b str,
+        method_name: &'b str,
+        arguments: &'b Vec<Expression>,
+        origin_node: Rc<JackNode<'b>>,
+    ) -> Vec<CommandWithOrigin<'b>> {
         let arg_count = arguments.len();
         let push_arguments = self.compile_push_arguments(arguments);
 
-        if let Some(symbol) = self.maybe_resolve_symbol(&this_name) {
+        if let Some(&symbol) = self.maybe_resolve_symbol(&this_name) {
             // Treat it as a method.
             match symbol.symbol_type.clone() {
                 Type::ClassName(this_class) => {
@@ -573,12 +576,12 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_direct_subroutine_call_expression(
-        &mut self,
-        subroutine_name: &str,
-        arguments: &Vec<Expression>,
-        origin_node: Rc<JackNode>,
-    ) -> Vec<CommandWithOrigin> {
+    fn compile_direct_subroutine_call_expression<'a, 'b>(
+        &'a mut self,
+        subroutine_name: &'b str,
+        arguments: &'b Vec<Expression>,
+        origin_node: Rc<JackNode<'b>>,
+    ) -> Vec<CommandWithOrigin<'b>> {
         let arg_count = arguments.len();
         let class_name = self.get_class_name().to_owned();
         let push_arguments = self.compile_push_arguments(arguments);
@@ -594,10 +597,10 @@ impl CodeGenerator {
             .collect()
     }
 
-    fn compile_subroutine_call_expression(
-        &mut self,
-        subroutine_call: &SubroutineCall,
-    ) -> Vec<CommandWithOrigin> {
+    fn compile_subroutine_call_expression<'a, 'b>(
+        &'a mut self,
+        subroutine_call: &'b SubroutineCall,
+    ) -> Vec<CommandWithOrigin<'b>> {
         let origin_node = Rc::new(JackNode::SubroutineCall(subroutine_call));
 
         match subroutine_call {
@@ -622,11 +625,11 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_unary_expression(
-        &mut self,
+    fn compile_unary_expression<'a, 'b>(
+        &'a mut self,
         operator: UnaryOperator,
-        operand: Expression,
-    ) -> Vec<CommandWithOrigin> {
+        operand: &'b Expression,
+    ) -> Vec<CommandWithOrigin<'b>> {
         let perform_op = match operator {
             UnaryOperator::Minus => Command::Arithmetic(ArithmeticCommandVariant::Unary(
                 UnaryArithmeticCommandVariant::Neg,
@@ -684,7 +687,10 @@ impl CodeGenerator {
         (symbol_kind, symbol.offset)
     }
 
-    fn compile_expression(&mut self, expression: &Expression) -> Vec<CommandWithOrigin> {
+    fn compile_expression<'a, 'b>(
+        &'a mut self,
+        expression: &'b Expression,
+    ) -> Vec<CommandWithOrigin<'b>> {
         let origin_node = Rc::new(JackNode::ExpressionNode(&expression));
 
         match expression {

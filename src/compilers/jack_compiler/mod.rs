@@ -1,9 +1,6 @@
 use self::parser::parse;
 
-use super::{
-    utils::source_modules::{get_source_modules, SourceModule},
-    vm_compiler::parser::{Command, CommandWithOrigin},
-};
+use super::{utils::source_modules::SourceModule, vm_compiler::parser::CommandWithOrigin};
 mod codegen;
 pub mod parser;
 mod tokenizer;

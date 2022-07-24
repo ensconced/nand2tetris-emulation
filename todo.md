@@ -1,8 +1,4 @@
-- now that we have the jack compiler, we don't actually need to a textual
-  representations for vm code (or even for asm I suppose) - these could just be
-  data structures within the rust code i.e. more like intermediate
-  representations than their own languages per se - this would probably allow
-  tidying up a lot of code!
+- add text info to tokens
 
 - this in turn will allow me to turn the compilation process into less of a series
   of translations from one language to another, and more like a series of transformations

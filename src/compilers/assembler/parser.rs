@@ -305,7 +305,7 @@ mod tests {
             result,
             Some(Token {
                 kind: Identifier("not".to_string()),
-                length: 3
+                range: 0..3
             })
         );
     }
@@ -320,7 +320,7 @@ mod tests {
             remaining,
             Some(Token {
                 kind: Identifier("hello".to_string()),
-                length: 5
+                range: 6..11
             })
         );
     }

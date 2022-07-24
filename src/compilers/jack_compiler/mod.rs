@@ -1,13 +1,6 @@
-use self::parser::parse;
-
-use super::{utils::source_modules::SourceModule, vm_compiler::parser::CommandWithOrigin};
 pub mod codegen;
 pub mod parser;
 mod tokenizer;
-
-// pub fn compile(source: &str) -> Vec<CommandWithOrigin> {
-//     codegen::generate_vm_code(&parse(source))
-// }
 
 #[cfg(test)]
 mod tests {

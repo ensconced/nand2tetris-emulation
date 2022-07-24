@@ -36,22 +36,7 @@ pub fn computer_from_vm_code(vm_code_sources: Vec<&str>) -> Computer {
     Computer::new(generate_rom::from_string(machine_code))
 }
 
-pub fn computer_from_vm_instructions(vm_command_sources: Vec<Vec<CommandWithOrigin>>) -> Computer {
-    let parsed_vm_modules: Vec<_> = vm_command_sources
-        .into_iter()
-        .enumerate()
-        .map(|(idx, commands)| ParsedModule {
-            filename: format!("some_filename_{idx}").into(),
-            commands: Box::new(commands.into_iter().map(|command| command.command)),
-        })
-        .collect();
-
-    let asm = vm_compiler::codegen::generate_asm(parsed_vm_modules);
-    let machine_code = assemble(asm, config::ROM_DEPTH);
-    Computer::new(generate_rom::from_string(machine_code))
-}
-
-pub fn computer_from_jack_code(jack_code: Vec<&str>) -> Computer {
+pub fn compile_to_machine_code(jack_code: Vec<&str>) -> String {
     let std_lib_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("std_lib");
 
     let std_lib_source: Vec<_> = get_source_modules(&std_lib_dir)
@@ -67,7 +52,23 @@ pub fn computer_from_jack_code(jack_code: Vec<&str>) -> Computer {
         .map(parse)
         .collect();
 
-    computer_from_vm_instructions(jack_classes.iter().map(generate_vm_code).collect())
+    let parsed_vm_modules: Vec<_> = jack_classes
+        .iter()
+        .map(generate_vm_code)
+        .enumerate()
+        .map(|(idx, commands)| ParsedModule {
+            filename: format!("some_filename_{idx}").into(),
+            commands: Box::new(commands.into_iter().map(|command| command.command)),
+        })
+        .collect();
+
+    let asm = vm_compiler::codegen::generate_asm(parsed_vm_modules);
+    assemble(asm, config::ROM_DEPTH)
+}
+
+pub fn computer_from_jack_code(jack_code: Vec<&str>) -> Computer {
+    let machine_code = compile_to_machine_code(jack_code);
+    Computer::new(generate_rom::from_string(machine_code))
 }
 
 pub fn stack_pointer(computer: &Computer) -> i16 {

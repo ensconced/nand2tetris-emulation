@@ -516,11 +516,8 @@ impl CodeGenerator {
         &'a mut self,
         arguments: &'a Vec<Expression>,
     ) -> Vec<CommandWithOrigin<'a>> {
-        arguments
-            .into_iter()
-            .map(|argument| self.compile_expression(argument))
-            .flatten()
-            .collect()
+        let c = |argument| self.compile_expression(argument);
+        arguments.into_iter().map(c).flatten().collect()
     }
 
     fn compile_method_subroutine_call_expression(

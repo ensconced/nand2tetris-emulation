@@ -1061,7 +1061,7 @@ mod tests {
             Class {
                 name: Identifier {
                     name: "foo".to_string(),
-                    source_byte_range: 0..1
+                    source_byte_range: 19..22
                 },
                 var_declarations: vec![],
                 subroutine_declarations: vec![
@@ -1069,84 +1069,84 @@ mod tests {
                         subroutine_kind: SubroutineKind::Constructor,
                         return_type: Some(Type {
                             variant: TypeVariant::Boolean,
-                            source_byte_range: 0..1,
+                            source_byte_range: 53..60,
                         }),
                         parameters: vec![
                             Parameter {
                                 type_name: Type {
                                     variant: TypeVariant::Int,
-                                    source_byte_range: 0..1
+                                    source_byte_range: 65..68
                                 },
                                 var_name: Identifier {
                                     name: "abc".to_string(),
-                                    source_byte_range: 0..1,
+                                    source_byte_range: 69..72,
                                 },
-                                source_byte_range: 0..1,
+                                source_byte_range: 65..72,
                             },
                             Parameter {
                                 type_name: Type {
                                     variant: TypeVariant::Char,
-                                    source_byte_range: 0..1
+                                    source_byte_range: 74..78
                                 },
                                 var_name: Identifier {
                                     name: "def".to_string(),
-                                    source_byte_range: 0..1,
+                                    source_byte_range: 79..82,
                                 },
-                                source_byte_range: 0..1,
+                                source_byte_range: 74..82,
                             },
                             Parameter {
                                 type_name: Type {
                                     variant: TypeVariant::ClassName(Identifier {
                                         name: "foo".to_string(),
-                                        source_byte_range: 0..1,
+                                        source_byte_range: 84..87,
                                     }),
-                                    source_byte_range: 0..1
+                                    source_byte_range: 84..87
                                 },
                                 var_name: Identifier {
                                     name: "ghi".to_string(),
-                                    source_byte_range: 0..1,
+                                    source_byte_range: 88..91,
                                 },
-                                source_byte_range: 0..1
+                                source_byte_range: 84..91
                             }
                         ],
                         name: Identifier {
                             name: "bar".to_string(),
-                            source_byte_range: 0..1
+                            source_byte_range: 61..64
                         },
                         body: SubroutineBody {
                             var_declarations: vec![],
                             statements: vec![],
-                            source_byte_range: 0..1
+                            source_byte_range: 93..112
                         },
-                        source_byte_range: 0..1
+                        source_byte_range: 41..112
                     },
                     SubroutineDeclaration {
                         subroutine_kind: SubroutineKind::Function,
                         return_type: Some(Type {
                             variant: TypeVariant::Char,
-                            source_byte_range: 0..1
+                            source_byte_range: 138..142
                         }),
                         parameters: vec![Parameter {
                             type_name: Type {
                                 variant: TypeVariant::Boolean,
-                                source_byte_range: 0..1
+                                source_byte_range: 147..154
                             },
                             var_name: Identifier {
                                 name: "_123".to_string(),
-                                source_byte_range: 0..1
+                                source_byte_range: 155..159
                             },
-                            source_byte_range: 0..1
+                            source_byte_range: 147..159
                         },],
                         name: Identifier {
                             name: "baz".to_string(),
-                            source_byte_range: 0..1
+                            source_byte_range: 143..146
                         },
                         body: SubroutineBody {
                             var_declarations: vec![],
                             statements: vec![],
-                            source_byte_range: 0..1
+                            source_byte_range: 161..180
                         },
-                        source_byte_range: 0..1
+                        source_byte_range: 129..180
                     },
                     SubroutineDeclaration {
                         subroutine_kind: SubroutineKind::Method,
@@ -1154,17 +1154,17 @@ mod tests {
                         parameters: vec![],
                         name: Identifier {
                             name: "qux".to_string(),
-                            source_byte_range: 0..1
+                            source_byte_range: 209..212
                         },
                         body: SubroutineBody {
                             var_declarations: vec![],
                             statements: vec![],
-                            source_byte_range: 0..1
+                            source_byte_range: 215..234
                         },
-                        source_byte_range: 0..1
+                        source_byte_range: 197..234
                     }
                 ],
-                source_byte_range: 0..1
+                source_byte_range: 13..248
             }
         );
     }

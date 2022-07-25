@@ -24,6 +24,7 @@ pub enum JackNode<'a> {
 
 #[derive(Serialize, TS, Debug, PartialEq)]
 #[ts(export)]
+#[ts(export_to = "../bindings/")]
 pub struct Class {
     pub name: Identifier,
     pub var_declarations: Vec<ClassVarDeclaration>,
@@ -33,6 +34,7 @@ pub struct Class {
 
 #[derive(Serialize, TS, Debug, PartialEq)]
 #[ts(export)]
+#[ts(export_to = "../bindings/")]
 pub enum ClassVarDeclarationKindVariant {
     Static,
     Field,
@@ -40,6 +42,7 @@ pub enum ClassVarDeclarationKindVariant {
 
 #[derive(Serialize, TS, Debug, PartialEq)]
 #[ts(export)]
+#[ts(export_to = "../bindings/")]
 pub struct ClassVarDeclarationKind {
     pub variant: ClassVarDeclarationKindVariant,
     source_byte_range: Range<usize>,
@@ -47,6 +50,7 @@ pub struct ClassVarDeclarationKind {
 
 #[derive(Serialize, TS, Clone, Debug, PartialEq)]
 #[ts(export)]
+#[ts(export_to = "../bindings/")]
 pub enum TypeVariant {
     Int,
     Char,
@@ -56,6 +60,7 @@ pub enum TypeVariant {
 
 #[derive(Serialize, TS, Debug, PartialEq)]
 #[ts(export)]
+#[ts(export_to = "../bindings/")]
 pub struct Type {
     pub variant: TypeVariant,
     source_byte_range: Range<usize>,
@@ -63,6 +68,7 @@ pub struct Type {
 
 #[derive(Serialize, TS, Clone, Debug, PartialEq)]
 #[ts(export)]
+#[ts(export_to = "../bindings/")]
 pub struct Identifier {
     pub name: String,
     source_byte_range: Range<usize>,
@@ -70,6 +76,7 @@ pub struct Identifier {
 
 #[derive(Serialize, TS, Debug, PartialEq)]
 #[ts(export)]
+#[ts(export_to = "../bindings/")]
 pub struct ClassVarDeclaration {
     pub type_name: Type,
     pub qualifier: ClassVarDeclarationKind,
@@ -79,6 +86,7 @@ pub struct ClassVarDeclaration {
 
 #[derive(Serialize, TS, Copy, Clone, Debug, PartialEq)]
 #[ts(export)]
+#[ts(export_to = "../bindings/")]
 pub enum SubroutineKind {
     Constructor,
     Function,
@@ -87,6 +95,7 @@ pub enum SubroutineKind {
 
 #[derive(Serialize, TS, Debug, PartialEq)]
 #[ts(export)]
+#[ts(export_to = "../bindings/")]
 pub enum PrimitiveTermVariant {
     IntegerConstant(String),
     StringConstant(String),
@@ -100,6 +109,7 @@ use PrimitiveTermVariant::*;
 
 #[derive(Serialize, TS, Debug, PartialEq)]
 #[ts(export)]
+#[ts(export_to = "../bindings/")]
 pub enum BinaryOperator {
     Plus,
     Minus,
@@ -116,6 +126,7 @@ pub enum BinaryOperator {
 
 #[derive(Serialize, TS, Debug, PartialEq)]
 #[ts(export)]
+#[ts(export_to = "../bindings/")]
 pub enum UnaryOperator {
     Minus,
     Not,
@@ -123,6 +134,7 @@ pub enum UnaryOperator {
 
 #[derive(Serialize, TS, Debug, PartialEq)]
 #[ts(export)]
+#[ts(export_to = "../bindings/")]
 pub enum Expression {
     PrimitiveTerm(PrimitiveTermVariant),
     Binary {
@@ -144,6 +156,7 @@ pub enum Expression {
 
 #[derive(Serialize, TS, Debug, PartialEq)]
 #[ts(export)]
+#[ts(export_to = "../bindings/")]
 pub struct Parameter {
     pub type_name: Type,
     pub var_name: Identifier,
@@ -152,6 +165,7 @@ pub struct Parameter {
 
 #[derive(Serialize, TS, Debug, PartialEq)]
 #[ts(export)]
+#[ts(export_to = "../bindings/")]
 pub enum SubroutineCall {
     Direct {
         subroutine_name: Identifier,
@@ -166,6 +180,7 @@ pub enum SubroutineCall {
 
 #[derive(Serialize, TS, Debug, PartialEq)]
 #[ts(export)]
+#[ts(export_to = "../bindings/")]
 pub enum Statement {
     Let {
         var_name: Identifier,
@@ -186,6 +201,7 @@ pub enum Statement {
 }
 #[derive(Serialize, TS, Debug, PartialEq)]
 #[ts(export)]
+#[ts(export_to = "../bindings/")]
 pub struct VarNames {
     pub names: Vec<Identifier>,
     source_byte_range: Range<usize>,
@@ -193,6 +209,7 @@ pub struct VarNames {
 
 #[derive(Serialize, TS, Debug, PartialEq)]
 #[ts(export)]
+#[ts(export_to = "../bindings/")]
 pub struct VarDeclaration {
     pub type_name: Type,
     pub var_names: VarNames,
@@ -201,6 +218,7 @@ pub struct VarDeclaration {
 
 #[derive(Serialize, TS, Debug, PartialEq)]
 #[ts(export)]
+#[ts(export_to = "../bindings/")]
 pub struct SubroutineBody {
     pub var_declarations: Vec<VarDeclaration>,
     pub statements: Vec<Statement>,
@@ -208,6 +226,7 @@ pub struct SubroutineBody {
 }
 #[derive(Serialize, TS, Debug, PartialEq)]
 #[ts(export)]
+#[ts(export_to = "../bindings/")]
 pub struct SubroutineDeclaration {
     pub subroutine_kind: SubroutineKind,
     pub return_type: Option<Type>,

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+set -eu
+
+cd core
+# test and build TS bindings as side effect
+cargo test || true
+# get data for viz
+cargo run -- jack-parser-viz ../std_lib/Math.jack
+
+cd ../web
+npm start

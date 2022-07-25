@@ -37,7 +37,7 @@ pub fn computer_from_vm_code(vm_code_sources: Vec<&str>) -> Computer {
 }
 
 pub fn compile_to_machine_code(jack_code: Vec<&str>) -> String {
-    let std_lib_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("std_lib");
+    let std_lib_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../std_lib");
 
     let std_lib_source: Vec<_> = get_source_modules(&std_lib_dir)
         .expect("failed to get stdlib modules")

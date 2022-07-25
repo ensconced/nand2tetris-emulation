@@ -3,14 +3,28 @@ mod emulator;
 mod fonts;
 
 use clap::{Parser, Subcommand};
-use compilers::{assembler::assemble_file, jack_compiler, vm_compiler};
+use compilers::{
+    assembler::assemble_file,
+    jack_compiler::{self, parser::Class},
+    vm_compiler,
+};
 use emulator::run::run;
 use fonts::glyphs_class;
+use serde::Serialize;
 use std::{
     fs,
     io::{self, Read},
     path::Path,
 };
+use ts_rs::TS;
+
+#[derive(Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "../bindings/")]
+struct ParserVizData {
+    source: String,
+    parsed_class: Class,
+}
 
 #[derive(Parser, Debug)]
 #[clap()]
@@ -83,7 +97,13 @@ fn main() {
                 .unwrap_or_else(|| panic!("source path is required"));
             let source = fs::read_to_string(source_path).unwrap();
             let jack_class = jack_compiler::parser::parse(&source);
-            print!("{}", serde_json::to_string_pretty(&jack_class).unwrap());
+            let parser_viz_data = ParserVizData {
+                parsed_class: jack_class,
+                source,
+            };
+            let json = serde_json::to_string_pretty(&parser_viz_data).unwrap();
+            let out_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../parser_viz_data.json");
+            fs::write(out_path, json).unwrap()
         }
     }
 }

@@ -1,0 +1,1731 @@
+{
+  "source": "class Math {\n  // For internal use only.\n  function void init() {}\n\n  function int abs(int x) {\n    if (x < 0) {\n      return -x;\n    } else {\n      return x;\n    }\n  }\n\n  function int multiply(int x, int y) {\n    var int shifted_x, i, result, mask;\n\n    let shifted_x = x;\n    let i = 0;\n    let result = 0;\n    let mask = 1;\n\n    while (i < 16) {\n      if ((y & mask) = mask) {\n        let result = result + shifted_x;\n      }\n      let shifted_x = shifted_x + shifted_x;\n      let mask = mask + mask;\n      let i = i + 1;\n    }\n\n    return result;\n  }\n\n  function int abs(int x) {\n    if (x < 0) {\n      return -x;\n    }\n    return x;\n  }\n\n  // Returns the integer part of x/y.\n  function int divide(int x, int y) {\n    var int absx, absy;\n\n    let absx = abs(x);\n    let absy = abs(y);\n\n    if (x < 0 = y < 0) {\n      return divide_non_negatives(absx, absy);\n    }\n    return -divide_non_negatives(absx, absy);\n  }\n\n  function int divide_non_negatives(int x, int y) {\n    var int quotient_for_double_divisor, double_divisor, remainder;\n    if (y > x) {\n      return 0;\n    }\n    let double_divisor = 2 * y;\n    let quotient_for_double_divisor = divide(x, double_divisor);\n    let remainder = x - quotient_for_double_divisor * double_divisor;\n    if (remainder < y) {\n      return 2 * quotient_for_double_divisor;\n    } else {\n      return 2 * quotient_for_double_divisor + 1;\n    }\n  }\n\n  function int min(int x, int y) {\n    if (x < y) {\n      return x;\n    } else {\n      return y;\n    }\n  }\n\n  function int max(int x, int y) {\n    if (x > y) {\n      return x;\n    } else {\n      return y;\n    }\n  }\n\n  // Integer part of the square root\n  function int sqrt(int x) {\n    // use binary search\n    var int y, offset, with_offset;\n    let y = 0;\n    let offset = 127;\n\n    while (offset >= 1) {\n      let with_offset = y + offset;\n       if (with_offset * with_offset <= x) {\n         let y = with_offset;\n       }\n      let offset = offset / 2;\n    }\n\n    return y;\n  }\n\n  function int pow2(int exp) {\n    var int result, i;\n\n    let result = 1;\n    let i = 0;\n    while (i < exp) {\n      let result = result + result;\n      let i = i + 1;\n    }\n    return result;\n  }\n}",
+  "parsed_class": {
+    "name": {
+      "name": "Math",
+      "source_byte_range": {
+        "start": 6,
+        "end": 10
+      }
+    },
+    "var_declarations": [],
+    "subroutine_declarations": [
+      {
+        "subroutine_kind": "Function",
+        "return_type": null,
+        "parameters": [],
+        "name": {
+          "name": "init",
+          "source_byte_range": {
+            "start": 57,
+            "end": 61
+          }
+        },
+        "body": {
+          "var_declarations": [],
+          "statements": [],
+          "source_byte_range": {
+            "start": 64,
+            "end": 66
+          }
+        },
+        "source_byte_range": {
+          "start": 43,
+          "end": 66
+        }
+      },
+      {
+        "subroutine_kind": "Function",
+        "return_type": {
+          "variant": "Int",
+          "source_byte_range": {
+            "start": 79,
+            "end": 82
+          }
+        },
+        "parameters": [
+          {
+            "type_name": {
+              "variant": "Int",
+              "source_byte_range": {
+                "start": 87,
+                "end": 90
+              }
+            },
+            "var_name": {
+              "name": "x",
+              "source_byte_range": {
+                "start": 91,
+                "end": 92
+              }
+            },
+            "source_byte_range": {
+              "start": 87,
+              "end": 92
+            }
+          }
+        ],
+        "name": {
+          "name": "abs",
+          "source_byte_range": {
+            "start": 83,
+            "end": 86
+          }
+        },
+        "body": {
+          "var_declarations": [],
+          "statements": [
+            {
+              "If": {
+                "condition": {
+                  "Binary": {
+                    "operator": "LessThan",
+                    "lhs": {
+                      "Variable": "x"
+                    },
+                    "rhs": {
+                      "PrimitiveTerm": {
+                        "IntegerConstant": "0"
+                      }
+                    }
+                  }
+                },
+                "if_statements": [
+                  {
+                    "Return": {
+                      "Unary": {
+                        "operator": "Minus",
+                        "operand": {
+                          "Variable": "x"
+                        }
+                      }
+                    }
+                  }
+                ],
+                "else_statements": [
+                  {
+                    "Return": {
+                      "Variable": "x"
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "source_byte_range": {
+            "start": 94,
+            "end": 168
+          }
+        },
+        "source_byte_range": {
+          "start": 70,
+          "end": 168
+        }
+      },
+      {
+        "subroutine_kind": "Function",
+        "return_type": {
+          "variant": "Int",
+          "source_byte_range": {
+            "start": 181,
+            "end": 184
+          }
+        },
+        "parameters": [
+          {
+            "type_name": {
+              "variant": "Int",
+              "source_byte_range": {
+                "start": 194,
+                "end": 197
+              }
+            },
+            "var_name": {
+              "name": "x",
+              "source_byte_range": {
+                "start": 198,
+                "end": 199
+              }
+            },
+            "source_byte_range": {
+              "start": 194,
+              "end": 199
+            }
+          },
+          {
+            "type_name": {
+              "variant": "Int",
+              "source_byte_range": {
+                "start": 201,
+                "end": 204
+              }
+            },
+            "var_name": {
+              "name": "y",
+              "source_byte_range": {
+                "start": 205,
+                "end": 206
+              }
+            },
+            "source_byte_range": {
+              "start": 201,
+              "end": 206
+            }
+          }
+        ],
+        "name": {
+          "name": "multiply",
+          "source_byte_range": {
+            "start": 185,
+            "end": 193
+          }
+        },
+        "body": {
+          "var_declarations": [
+            {
+              "type_name": {
+                "variant": "Int",
+                "source_byte_range": {
+                  "start": 218,
+                  "end": 221
+                }
+              },
+              "var_names": {
+                "names": [
+                  {
+                    "name": "shifted_x",
+                    "source_byte_range": {
+                      "start": 222,
+                      "end": 231
+                    }
+                  },
+                  {
+                    "name": "i",
+                    "source_byte_range": {
+                      "start": 233,
+                      "end": 234
+                    }
+                  },
+                  {
+                    "name": "result",
+                    "source_byte_range": {
+                      "start": 236,
+                      "end": 242
+                    }
+                  },
+                  {
+                    "name": "mask",
+                    "source_byte_range": {
+                      "start": 244,
+                      "end": 248
+                    }
+                  }
+                ],
+                "source_byte_range": {
+                  "start": 222,
+                  "end": 248
+                }
+              },
+              "source_byte_range": {
+                "start": 214,
+                "end": 248
+              }
+            }
+          ],
+          "statements": [
+            {
+              "Let": {
+                "var_name": {
+                  "name": "shifted_x",
+                  "source_byte_range": {
+                    "start": 259,
+                    "end": 268
+                  }
+                },
+                "array_index": null,
+                "value": {
+                  "Variable": "x"
+                }
+              }
+            },
+            {
+              "Let": {
+                "var_name": {
+                  "name": "i",
+                  "source_byte_range": {
+                    "start": 282,
+                    "end": 283
+                  }
+                },
+                "array_index": null,
+                "value": {
+                  "PrimitiveTerm": {
+                    "IntegerConstant": "0"
+                  }
+                }
+              }
+            },
+            {
+              "Let": {
+                "var_name": {
+                  "name": "result",
+                  "source_byte_range": {
+                    "start": 297,
+                    "end": 303
+                  }
+                },
+                "array_index": null,
+                "value": {
+                  "PrimitiveTerm": {
+                    "IntegerConstant": "0"
+                  }
+                }
+              }
+            },
+            {
+              "Let": {
+                "var_name": {
+                  "name": "mask",
+                  "source_byte_range": {
+                    "start": 317,
+                    "end": 321
+                  }
+                },
+                "array_index": null,
+                "value": {
+                  "PrimitiveTerm": {
+                    "IntegerConstant": "1"
+                  }
+                }
+              }
+            },
+            {
+              "While": {
+                "condition": {
+                  "Binary": {
+                    "operator": "LessThan",
+                    "lhs": {
+                      "Variable": "i"
+                    },
+                    "rhs": {
+                      "PrimitiveTerm": {
+                        "IntegerConstant": "16"
+                      }
+                    }
+                  }
+                },
+                "statements": [
+                  {
+                    "If": {
+                      "condition": {
+                        "Binary": {
+                          "operator": "Equals",
+                          "lhs": {
+                            "Binary": {
+                              "operator": "And",
+                              "lhs": {
+                                "Variable": "y"
+                              },
+                              "rhs": {
+                                "Variable": "mask"
+                              }
+                            }
+                          },
+                          "rhs": {
+                            "Variable": "mask"
+                          }
+                        }
+                      },
+                      "if_statements": [
+                        {
+                          "Let": {
+                            "var_name": {
+                              "name": "result",
+                              "source_byte_range": {
+                                "start": 392,
+                                "end": 398
+                              }
+                            },
+                            "array_index": null,
+                            "value": {
+                              "Binary": {
+                                "operator": "Plus",
+                                "lhs": {
+                                  "Variable": "result"
+                                },
+                                "rhs": {
+                                  "Variable": "shifted_x"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      ],
+                      "else_statements": null
+                    }
+                  },
+                  {
+                    "Let": {
+                      "var_name": {
+                        "name": "shifted_x",
+                        "source_byte_range": {
+                          "start": 439,
+                          "end": 448
+                        }
+                      },
+                      "array_index": null,
+                      "value": {
+                        "Binary": {
+                          "operator": "Plus",
+                          "lhs": {
+                            "Variable": "shifted_x"
+                          },
+                          "rhs": {
+                            "Variable": "shifted_x"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "Let": {
+                      "var_name": {
+                        "name": "mask",
+                        "source_byte_range": {
+                          "start": 484,
+                          "end": 488
+                        }
+                      },
+                      "array_index": null,
+                      "value": {
+                        "Binary": {
+                          "operator": "Plus",
+                          "lhs": {
+                            "Variable": "mask"
+                          },
+                          "rhs": {
+                            "Variable": "mask"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "Let": {
+                      "var_name": {
+                        "name": "i",
+                        "source_byte_range": {
+                          "start": 514,
+                          "end": 515
+                        }
+                      },
+                      "array_index": null,
+                      "value": {
+                        "Binary": {
+                          "operator": "Plus",
+                          "lhs": {
+                            "Variable": "i"
+                          },
+                          "rhs": {
+                            "PrimitiveTerm": {
+                              "IntegerConstant": "1"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "Return": {
+                "Variable": "result"
+              }
+            }
+          ],
+          "source_byte_range": {
+            "start": 208,
+            "end": 554
+          }
+        },
+        "source_byte_range": {
+          "start": 172,
+          "end": 554
+        }
+      },
+      {
+        "subroutine_kind": "Function",
+        "return_type": {
+          "variant": "Int",
+          "source_byte_range": {
+            "start": 567,
+            "end": 570
+          }
+        },
+        "parameters": [
+          {
+            "type_name": {
+              "variant": "Int",
+              "source_byte_range": {
+                "start": 575,
+                "end": 578
+              }
+            },
+            "var_name": {
+              "name": "x",
+              "source_byte_range": {
+                "start": 579,
+                "end": 580
+              }
+            },
+            "source_byte_range": {
+              "start": 575,
+              "end": 580
+            }
+          }
+        ],
+        "name": {
+          "name": "abs",
+          "source_byte_range": {
+            "start": 571,
+            "end": 574
+          }
+        },
+        "body": {
+          "var_declarations": [],
+          "statements": [
+            {
+              "If": {
+                "condition": {
+                  "Binary": {
+                    "operator": "LessThan",
+                    "lhs": {
+                      "Variable": "x"
+                    },
+                    "rhs": {
+                      "PrimitiveTerm": {
+                        "IntegerConstant": "0"
+                      }
+                    }
+                  }
+                },
+                "if_statements": [
+                  {
+                    "Return": {
+                      "Unary": {
+                        "operator": "Minus",
+                        "operand": {
+                          "Variable": "x"
+                        }
+                      }
+                    }
+                  }
+                ],
+                "else_statements": null
+              }
+            },
+            {
+              "Return": {
+                "Variable": "x"
+              }
+            }
+          ],
+          "source_byte_range": {
+            "start": 582,
+            "end": 641
+          }
+        },
+        "source_byte_range": {
+          "start": 558,
+          "end": 641
+        }
+      },
+      {
+        "subroutine_kind": "Function",
+        "return_type": {
+          "variant": "Int",
+          "source_byte_range": {
+            "start": 692,
+            "end": 695
+          }
+        },
+        "parameters": [
+          {
+            "type_name": {
+              "variant": "Int",
+              "source_byte_range": {
+                "start": 703,
+                "end": 706
+              }
+            },
+            "var_name": {
+              "name": "x",
+              "source_byte_range": {
+                "start": 707,
+                "end": 708
+              }
+            },
+            "source_byte_range": {
+              "start": 703,
+              "end": 708
+            }
+          },
+          {
+            "type_name": {
+              "variant": "Int",
+              "source_byte_range": {
+                "start": 710,
+                "end": 713
+              }
+            },
+            "var_name": {
+              "name": "y",
+              "source_byte_range": {
+                "start": 714,
+                "end": 715
+              }
+            },
+            "source_byte_range": {
+              "start": 710,
+              "end": 715
+            }
+          }
+        ],
+        "name": {
+          "name": "divide",
+          "source_byte_range": {
+            "start": 696,
+            "end": 702
+          }
+        },
+        "body": {
+          "var_declarations": [
+            {
+              "type_name": {
+                "variant": "Int",
+                "source_byte_range": {
+                  "start": 727,
+                  "end": 730
+                }
+              },
+              "var_names": {
+                "names": [
+                  {
+                    "name": "absx",
+                    "source_byte_range": {
+                      "start": 731,
+                      "end": 735
+                    }
+                  },
+                  {
+                    "name": "absy",
+                    "source_byte_range": {
+                      "start": 737,
+                      "end": 741
+                    }
+                  }
+                ],
+                "source_byte_range": {
+                  "start": 731,
+                  "end": 741
+                }
+              },
+              "source_byte_range": {
+                "start": 723,
+                "end": 741
+              }
+            }
+          ],
+          "statements": [
+            {
+              "Let": {
+                "var_name": {
+                  "name": "absx",
+                  "source_byte_range": {
+                    "start": 752,
+                    "end": 756
+                  }
+                },
+                "array_index": null,
+                "value": {
+                  "SubroutineCall": {
+                    "Direct": {
+                      "subroutine_name": {
+                        "name": "abs",
+                        "source_byte_range": {
+                          "start": 759,
+                          "end": 762
+                        }
+                      },
+                      "arguments": [
+                        {
+                          "Variable": "x"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "Let": {
+                "var_name": {
+                  "name": "absy",
+                  "source_byte_range": {
+                    "start": 775,
+                    "end": 779
+                  }
+                },
+                "array_index": null,
+                "value": {
+                  "SubroutineCall": {
+                    "Direct": {
+                      "subroutine_name": {
+                        "name": "abs",
+                        "source_byte_range": {
+                          "start": 782,
+                          "end": 785
+                        }
+                      },
+                      "arguments": [
+                        {
+                          "Variable": "y"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "If": {
+                "condition": {
+                  "Binary": {
+                    "operator": "Equals",
+                    "lhs": {
+                      "Binary": {
+                        "operator": "LessThan",
+                        "lhs": {
+                          "Variable": "x"
+                        },
+                        "rhs": {
+                          "PrimitiveTerm": {
+                            "IntegerConstant": "0"
+                          }
+                        }
+                      }
+                    },
+                    "rhs": {
+                      "Binary": {
+                        "operator": "LessThan",
+                        "lhs": {
+                          "Variable": "y"
+                        },
+                        "rhs": {
+                          "PrimitiveTerm": {
+                            "IntegerConstant": "0"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "if_statements": [
+                  {
+                    "Return": {
+                      "SubroutineCall": {
+                        "Direct": {
+                          "subroutine_name": {
+                            "name": "divide_non_negatives",
+                            "source_byte_range": {
+                              "start": 829,
+                              "end": 849
+                            }
+                          },
+                          "arguments": [
+                            {
+                              "Variable": "absx"
+                            },
+                            {
+                              "Variable": "absy"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                ],
+                "else_statements": null
+              }
+            },
+            {
+              "Return": {
+                "Unary": {
+                  "operator": "Minus",
+                  "operand": {
+                    "SubroutineCall": {
+                      "Direct": {
+                        "subroutine_name": {
+                          "name": "divide_non_negatives",
+                          "source_byte_range": {
+                            "start": 881,
+                            "end": 901
+                          }
+                        },
+                        "arguments": [
+                          {
+                            "Variable": "absx"
+                          },
+                          {
+                            "Variable": "absy"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "source_byte_range": {
+            "start": 717,
+            "end": 918
+          }
+        },
+        "source_byte_range": {
+          "start": 683,
+          "end": 918
+        }
+      },
+      {
+        "subroutine_kind": "Function",
+        "return_type": {
+          "variant": "Int",
+          "source_byte_range": {
+            "start": 931,
+            "end": 934
+          }
+        },
+        "parameters": [
+          {
+            "type_name": {
+              "variant": "Int",
+              "source_byte_range": {
+                "start": 956,
+                "end": 959
+              }
+            },
+            "var_name": {
+              "name": "x",
+              "source_byte_range": {
+                "start": 960,
+                "end": 961
+              }
+            },
+            "source_byte_range": {
+              "start": 956,
+              "end": 961
+            }
+          },
+          {
+            "type_name": {
+              "variant": "Int",
+              "source_byte_range": {
+                "start": 963,
+                "end": 966
+              }
+            },
+            "var_name": {
+              "name": "y",
+              "source_byte_range": {
+                "start": 967,
+                "end": 968
+              }
+            },
+            "source_byte_range": {
+              "start": 963,
+              "end": 968
+            }
+          }
+        ],
+        "name": {
+          "name": "divide_non_negatives",
+          "source_byte_range": {
+            "start": 935,
+            "end": 955
+          }
+        },
+        "body": {
+          "var_declarations": [
+            {
+              "type_name": {
+                "variant": "Int",
+                "source_byte_range": {
+                  "start": 980,
+                  "end": 983
+                }
+              },
+              "var_names": {
+                "names": [
+                  {
+                    "name": "quotient_for_double_divisor",
+                    "source_byte_range": {
+                      "start": 984,
+                      "end": 1011
+                    }
+                  },
+                  {
+                    "name": "double_divisor",
+                    "source_byte_range": {
+                      "start": 1013,
+                      "end": 1027
+                    }
+                  },
+                  {
+                    "name": "remainder",
+                    "source_byte_range": {
+                      "start": 1029,
+                      "end": 1038
+                    }
+                  }
+                ],
+                "source_byte_range": {
+                  "start": 984,
+                  "end": 1038
+                }
+              },
+              "source_byte_range": {
+                "start": 976,
+                "end": 1038
+              }
+            }
+          ],
+          "statements": [
+            {
+              "If": {
+                "condition": {
+                  "Binary": {
+                    "operator": "GreaterThan",
+                    "lhs": {
+                      "Variable": "y"
+                    },
+                    "rhs": {
+                      "Variable": "x"
+                    }
+                  }
+                },
+                "if_statements": [
+                  {
+                    "Return": {
+                      "PrimitiveTerm": {
+                        "IntegerConstant": "0"
+                      }
+                    }
+                  }
+                ],
+                "else_statements": null
+              }
+            },
+            {
+              "Let": {
+                "var_name": {
+                  "name": "double_divisor",
+                  "source_byte_range": {
+                    "start": 1087,
+                    "end": 1101
+                  }
+                },
+                "array_index": null,
+                "value": {
+                  "Binary": {
+                    "operator": "Multiply",
+                    "lhs": {
+                      "PrimitiveTerm": {
+                        "IntegerConstant": "2"
+                      }
+                    },
+                    "rhs": {
+                      "Variable": "y"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "Let": {
+                "var_name": {
+                  "name": "quotient_for_double_divisor",
+                  "source_byte_range": {
+                    "start": 1119,
+                    "end": 1146
+                  }
+                },
+                "array_index": null,
+                "value": {
+                  "SubroutineCall": {
+                    "Direct": {
+                      "subroutine_name": {
+                        "name": "divide",
+                        "source_byte_range": {
+                          "start": 1149,
+                          "end": 1155
+                        }
+                      },
+                      "arguments": [
+                        {
+                          "Variable": "x"
+                        },
+                        {
+                          "Variable": "double_divisor"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "Let": {
+                "var_name": {
+                  "name": "remainder",
+                  "source_byte_range": {
+                    "start": 1184,
+                    "end": 1193
+                  }
+                },
+                "array_index": null,
+                "value": {
+                  "Binary": {
+                    "operator": "Minus",
+                    "lhs": {
+                      "Variable": "x"
+                    },
+                    "rhs": {
+                      "Binary": {
+                        "operator": "Multiply",
+                        "lhs": {
+                          "Variable": "quotient_for_double_divisor"
+                        },
+                        "rhs": {
+                          "Variable": "double_divisor"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "If": {
+                "condition": {
+                  "Binary": {
+                    "operator": "LessThan",
+                    "lhs": {
+                      "Variable": "remainder"
+                    },
+                    "rhs": {
+                      "Variable": "y"
+                    }
+                  }
+                },
+                "if_statements": [
+                  {
+                    "Return": {
+                      "Binary": {
+                        "operator": "Multiply",
+                        "lhs": {
+                          "PrimitiveTerm": {
+                            "IntegerConstant": "2"
+                          }
+                        },
+                        "rhs": {
+                          "Variable": "quotient_for_double_divisor"
+                        }
+                      }
+                    }
+                  }
+                ],
+                "else_statements": [
+                  {
+                    "Return": {
+                      "Binary": {
+                        "operator": "Plus",
+                        "lhs": {
+                          "Binary": {
+                            "operator": "Multiply",
+                            "lhs": {
+                              "PrimitiveTerm": {
+                                "IntegerConstant": "2"
+                              }
+                            },
+                            "rhs": {
+                              "Variable": "quotient_for_double_divisor"
+                            }
+                          }
+                        },
+                        "rhs": {
+                          "PrimitiveTerm": {
+                            "IntegerConstant": "1"
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "source_byte_range": {
+            "start": 970,
+            "end": 1389
+          }
+        },
+        "source_byte_range": {
+          "start": 922,
+          "end": 1389
+        }
+      },
+      {
+        "subroutine_kind": "Function",
+        "return_type": {
+          "variant": "Int",
+          "source_byte_range": {
+            "start": 1402,
+            "end": 1405
+          }
+        },
+        "parameters": [
+          {
+            "type_name": {
+              "variant": "Int",
+              "source_byte_range": {
+                "start": 1410,
+                "end": 1413
+              }
+            },
+            "var_name": {
+              "name": "x",
+              "source_byte_range": {
+                "start": 1414,
+                "end": 1415
+              }
+            },
+            "source_byte_range": {
+              "start": 1410,
+              "end": 1415
+            }
+          },
+          {
+            "type_name": {
+              "variant": "Int",
+              "source_byte_range": {
+                "start": 1417,
+                "end": 1420
+              }
+            },
+            "var_name": {
+              "name": "y",
+              "source_byte_range": {
+                "start": 1421,
+                "end": 1422
+              }
+            },
+            "source_byte_range": {
+              "start": 1417,
+              "end": 1422
+            }
+          }
+        ],
+        "name": {
+          "name": "min",
+          "source_byte_range": {
+            "start": 1406,
+            "end": 1409
+          }
+        },
+        "body": {
+          "var_declarations": [],
+          "statements": [
+            {
+              "If": {
+                "condition": {
+                  "Binary": {
+                    "operator": "LessThan",
+                    "lhs": {
+                      "Variable": "x"
+                    },
+                    "rhs": {
+                      "Variable": "y"
+                    }
+                  }
+                },
+                "if_statements": [
+                  {
+                    "Return": {
+                      "Variable": "x"
+                    }
+                  }
+                ],
+                "else_statements": [
+                  {
+                    "Return": {
+                      "Variable": "y"
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "source_byte_range": {
+            "start": 1424,
+            "end": 1497
+          }
+        },
+        "source_byte_range": {
+          "start": 1393,
+          "end": 1497
+        }
+      },
+      {
+        "subroutine_kind": "Function",
+        "return_type": {
+          "variant": "Int",
+          "source_byte_range": {
+            "start": 1510,
+            "end": 1513
+          }
+        },
+        "parameters": [
+          {
+            "type_name": {
+              "variant": "Int",
+              "source_byte_range": {
+                "start": 1518,
+                "end": 1521
+              }
+            },
+            "var_name": {
+              "name": "x",
+              "source_byte_range": {
+                "start": 1522,
+                "end": 1523
+              }
+            },
+            "source_byte_range": {
+              "start": 1518,
+              "end": 1523
+            }
+          },
+          {
+            "type_name": {
+              "variant": "Int",
+              "source_byte_range": {
+                "start": 1525,
+                "end": 1528
+              }
+            },
+            "var_name": {
+              "name": "y",
+              "source_byte_range": {
+                "start": 1529,
+                "end": 1530
+              }
+            },
+            "source_byte_range": {
+              "start": 1525,
+              "end": 1530
+            }
+          }
+        ],
+        "name": {
+          "name": "max",
+          "source_byte_range": {
+            "start": 1514,
+            "end": 1517
+          }
+        },
+        "body": {
+          "var_declarations": [],
+          "statements": [
+            {
+              "If": {
+                "condition": {
+                  "Binary": {
+                    "operator": "GreaterThan",
+                    "lhs": {
+                      "Variable": "x"
+                    },
+                    "rhs": {
+                      "Variable": "y"
+                    }
+                  }
+                },
+                "if_statements": [
+                  {
+                    "Return": {
+                      "Variable": "x"
+                    }
+                  }
+                ],
+                "else_statements": [
+                  {
+                    "Return": {
+                      "Variable": "y"
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "source_byte_range": {
+            "start": 1532,
+            "end": 1605
+          }
+        },
+        "source_byte_range": {
+          "start": 1501,
+          "end": 1605
+        }
+      },
+      {
+        "subroutine_kind": "Function",
+        "return_type": {
+          "variant": "Int",
+          "source_byte_range": {
+            "start": 1655,
+            "end": 1658
+          }
+        },
+        "parameters": [
+          {
+            "type_name": {
+              "variant": "Int",
+              "source_byte_range": {
+                "start": 1664,
+                "end": 1667
+              }
+            },
+            "var_name": {
+              "name": "x",
+              "source_byte_range": {
+                "start": 1668,
+                "end": 1669
+              }
+            },
+            "source_byte_range": {
+              "start": 1664,
+              "end": 1669
+            }
+          }
+        ],
+        "name": {
+          "name": "sqrt",
+          "source_byte_range": {
+            "start": 1659,
+            "end": 1663
+          }
+        },
+        "body": {
+          "var_declarations": [
+            {
+              "type_name": {
+                "variant": "Int",
+                "source_byte_range": {
+                  "start": 1706,
+                  "end": 1709
+                }
+              },
+              "var_names": {
+                "names": [
+                  {
+                    "name": "y",
+                    "source_byte_range": {
+                      "start": 1710,
+                      "end": 1711
+                    }
+                  },
+                  {
+                    "name": "offset",
+                    "source_byte_range": {
+                      "start": 1713,
+                      "end": 1719
+                    }
+                  },
+                  {
+                    "name": "with_offset",
+                    "source_byte_range": {
+                      "start": 1721,
+                      "end": 1732
+                    }
+                  }
+                ],
+                "source_byte_range": {
+                  "start": 1710,
+                  "end": 1732
+                }
+              },
+              "source_byte_range": {
+                "start": 1702,
+                "end": 1732
+              }
+            }
+          ],
+          "statements": [
+            {
+              "Let": {
+                "var_name": {
+                  "name": "y",
+                  "source_byte_range": {
+                    "start": 1742,
+                    "end": 1743
+                  }
+                },
+                "array_index": null,
+                "value": {
+                  "PrimitiveTerm": {
+                    "IntegerConstant": "0"
+                  }
+                }
+              }
+            },
+            {
+              "Let": {
+                "var_name": {
+                  "name": "offset",
+                  "source_byte_range": {
+                    "start": 1757,
+                    "end": 1763
+                  }
+                },
+                "array_index": null,
+                "value": {
+                  "PrimitiveTerm": {
+                    "IntegerConstant": "127"
+                  }
+                }
+              }
+            },
+            {
+              "While": {
+                "condition": {
+                  "Binary": {
+                    "operator": "GreaterThanOrEquals",
+                    "lhs": {
+                      "Variable": "offset"
+                    },
+                    "rhs": {
+                      "PrimitiveTerm": {
+                        "IntegerConstant": "1"
+                      }
+                    }
+                  }
+                },
+                "statements": [
+                  {
+                    "Let": {
+                      "var_name": {
+                        "name": "with_offset",
+                        "source_byte_range": {
+                          "start": 1808,
+                          "end": 1819
+                        }
+                      },
+                      "array_index": null,
+                      "value": {
+                        "Binary": {
+                          "operator": "Plus",
+                          "lhs": {
+                            "Variable": "y"
+                          },
+                          "rhs": {
+                            "Variable": "offset"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "If": {
+                      "condition": {
+                        "Binary": {
+                          "operator": "LessThanOrEquals",
+                          "lhs": {
+                            "Binary": {
+                              "operator": "Multiply",
+                              "lhs": {
+                                "Variable": "with_offset"
+                              },
+                              "rhs": {
+                                "Variable": "with_offset"
+                              }
+                            }
+                          },
+                          "rhs": {
+                            "Variable": "x"
+                          }
+                        }
+                      },
+                      "if_statements": [
+                        {
+                          "Let": {
+                            "var_name": {
+                              "name": "y",
+                              "source_byte_range": {
+                                "start": 1892,
+                                "end": 1893
+                              }
+                            },
+                            "array_index": null,
+                            "value": {
+                              "Variable": "with_offset"
+                            }
+                          }
+                        }
+                      ],
+                      "else_statements": null
+                    }
+                  },
+                  {
+                    "Let": {
+                      "var_name": {
+                        "name": "offset",
+                        "source_byte_range": {
+                          "start": 1928,
+                          "end": 1934
+                        }
+                      },
+                      "array_index": null,
+                      "value": {
+                        "Binary": {
+                          "operator": "Divide",
+                          "lhs": {
+                            "Variable": "offset"
+                          },
+                          "rhs": {
+                            "PrimitiveTerm": {
+                              "IntegerConstant": "2"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "Return": {
+                "Variable": "y"
+              }
+            }
+          ],
+          "source_byte_range": {
+            "start": 1671,
+            "end": 1973
+          }
+        },
+        "source_byte_range": {
+          "start": 1646,
+          "end": 1973
+        }
+      },
+      {
+        "subroutine_kind": "Function",
+        "return_type": {
+          "variant": "Int",
+          "source_byte_range": {
+            "start": 1986,
+            "end": 1989
+          }
+        },
+        "parameters": [
+          {
+            "type_name": {
+              "variant": "Int",
+              "source_byte_range": {
+                "start": 1995,
+                "end": 1998
+              }
+            },
+            "var_name": {
+              "name": "exp",
+              "source_byte_range": {
+                "start": 1999,
+                "end": 2002
+              }
+            },
+            "source_byte_range": {
+              "start": 1995,
+              "end": 2002
+            }
+          }
+        ],
+        "name": {
+          "name": "pow2",
+          "source_byte_range": {
+            "start": 1990,
+            "end": 1994
+          }
+        },
+        "body": {
+          "var_declarations": [
+            {
+              "type_name": {
+                "variant": "Int",
+                "source_byte_range": {
+                  "start": 2014,
+                  "end": 2017
+                }
+              },
+              "var_names": {
+                "names": [
+                  {
+                    "name": "result",
+                    "source_byte_range": {
+                      "start": 2018,
+                      "end": 2024
+                    }
+                  },
+                  {
+                    "name": "i",
+                    "source_byte_range": {
+                      "start": 2026,
+                      "end": 2027
+                    }
+                  }
+                ],
+                "source_byte_range": {
+                  "start": 2018,
+                  "end": 2027
+                }
+              },
+              "source_byte_range": {
+                "start": 2010,
+                "end": 2027
+              }
+            }
+          ],
+          "statements": [
+            {
+              "Let": {
+                "var_name": {
+                  "name": "result",
+                  "source_byte_range": {
+                    "start": 2038,
+                    "end": 2044
+                  }
+                },
+                "array_index": null,
+                "value": {
+                  "PrimitiveTerm": {
+                    "IntegerConstant": "1"
+                  }
+                }
+              }
+            },
+            {
+              "Let": {
+                "var_name": {
+                  "name": "i",
+                  "source_byte_range": {
+                    "start": 2058,
+                    "end": 2059
+                  }
+                },
+                "array_index": null,
+                "value": {
+                  "PrimitiveTerm": {
+                    "IntegerConstant": "0"
+                  }
+                }
+              }
+            },
+            {
+              "While": {
+                "condition": {
+                  "Binary": {
+                    "operator": "LessThan",
+                    "lhs": {
+                      "Variable": "i"
+                    },
+                    "rhs": {
+                      "Variable": "exp"
+                    }
+                  }
+                },
+                "statements": [
+                  {
+                    "Let": {
+                      "var_name": {
+                        "name": "result",
+                        "source_byte_range": {
+                          "start": 2097,
+                          "end": 2103
+                        }
+                      },
+                      "array_index": null,
+                      "value": {
+                        "Binary": {
+                          "operator": "Plus",
+                          "lhs": {
+                            "Variable": "result"
+                          },
+                          "rhs": {
+                            "Variable": "result"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "Let": {
+                      "var_name": {
+                        "name": "i",
+                        "source_byte_range": {
+                          "start": 2133,
+                          "end": 2134
+                        }
+                      },
+                      "array_index": null,
+                      "value": {
+                        "Binary": {
+                          "operator": "Plus",
+                          "lhs": {
+                            "Variable": "i"
+                          },
+                          "rhs": {
+                            "PrimitiveTerm": {
+                              "IntegerConstant": "1"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "Return": {
+                "Variable": "result"
+              }
+            }
+          ],
+          "source_byte_range": {
+            "start": 2004,
+            "end": 2172
+          }
+        },
+        "source_byte_range": {
+          "start": 1977,
+          "end": 2172
+        }
+      }
+    ],
+    "source_byte_range": {
+      "start": 0,
+      "end": 2174
+    }
+  }
+}

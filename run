@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-
-set -eu
-
-cd core
-
-cargo run -- compile "../programs/vm-code/$1" "../programs/asm/$1.asm"
-cargo run -- assemble "../programs/asm/$1.asm" "../programs/machine-code/$1"
-cargo run -- run "../programs/machine-code/$1"

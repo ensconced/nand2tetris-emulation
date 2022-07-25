@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -eu
+
+cd ./core
+
+# NB ts-rs outputs the TS bindings as a side-effect during the tests. This is a
+# bit of a weird way of doing things but it works for now. It might be better to
+# call the export method ourselves
+# (https://docs.rs/ts-rs/latest/ts_rs/trait.TS.html#method.export).
+cargo test

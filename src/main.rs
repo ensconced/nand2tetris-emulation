@@ -23,20 +23,20 @@ struct Args {
 enum Commands {
     /// Compile assembly to machine code
     Assemble {
-        source_path_maybe: Option<String>,
-        dest_path_maybe: Option<String>,
+        source_path: Option<String>,
+        dest_path: Option<String>,
     },
     /// Compile vm code to assembly
     Compile {
-        source_path_maybe: Option<String>,
-        dest_path_maybe: Option<String>,
+        source_path: Option<String>,
+        dest_path: Option<String>,
     },
     /// Run machine code on emulator
-    Run { file_path_maybe: Option<String> },
+    Run { file_path: Option<String> },
     /// Generate glyphs stdlib module from fonts file
     GenerateGlyphs,
     /// Generate JSON for visualisation of jack parser output
-    JackParserViz,
+    JackParserViz { source_path: Option<String> },
 }
 
 fn main() {
@@ -44,8 +44,8 @@ fn main() {
 
     match &args.command {
         Commands::Assemble {
-            source_path_maybe,
-            dest_path_maybe,
+            source_path: source_path_maybe,
+            dest_path: dest_path_maybe,
         } => {
             let source_path = source_path_maybe.as_ref().expect("source path is required");
             let dest_path = dest_path_maybe.as_ref().expect("dest path is required");
@@ -57,15 +57,17 @@ fn main() {
             );
         }
         Commands::Compile {
-            source_path_maybe,
-            dest_path_maybe,
+            source_path: source_path_maybe,
+            dest_path: dest_path_maybe,
         } => {
             let source_path = source_path_maybe.as_ref().expect("source path is required");
             let dest_path = dest_path_maybe.as_ref().expect("dest path is required");
             println!("assembling {} to {}", source_path, dest_path);
             vm_compiler::compile(Path::new(source_path), Path::new(dest_path)).unwrap();
         }
-        Commands::Run { file_path_maybe } => {
+        Commands::Run {
+            file_path: file_path_maybe,
+        } => {
             let file_path = file_path_maybe.as_ref().expect("path is required");
             println!("running {}", file_path);
             run(file_path);
@@ -73,9 +75,13 @@ fn main() {
         Commands::GenerateGlyphs => {
             fs::write("./std_lib/Glyphs.jack", glyphs_class()).unwrap();
         }
-        Commands::JackParserViz => {
-            let mut source = String::new();
-            io::stdin().read_to_string(&mut source).unwrap();
+        Commands::JackParserViz {
+            source_path: source_path_maybe,
+        } => {
+            let source_path = source_path_maybe
+                .as_ref()
+                .unwrap_or_else(|| panic!("source path is required"));
+            let source = fs::read_to_string(source_path).unwrap();
             let jack_class = jack_compiler::parser::parse(&source);
             print!("{}", serde_json::to_string_pretty(&jack_class).unwrap());
         }

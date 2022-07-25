@@ -1,4 +1,5 @@
 use std::ops::Range;
+use ts_rs::TS;
 
 use super::tokenizer::{
     token_defs,
@@ -21,7 +22,8 @@ pub enum JackNode<'a> {
     StatementNode(&'a Statement),
 }
 
-#[derive(Serialize, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq)]
+#[ts(export)]
 pub struct Class {
     pub name: Identifier,
     pub var_declarations: Vec<ClassVarDeclaration>,
@@ -29,19 +31,22 @@ pub struct Class {
     source_byte_range: Range<usize>,
 }
 
-#[derive(Serialize, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq)]
+#[ts(export)]
 pub enum ClassVarDeclarationKindVariant {
     Static,
     Field,
 }
 
-#[derive(Serialize, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq)]
+#[ts(export)]
 pub struct ClassVarDeclarationKind {
     pub variant: ClassVarDeclarationKindVariant,
     source_byte_range: Range<usize>,
 }
 
-#[derive(Serialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, TS, Clone, Debug, PartialEq)]
+#[ts(export)]
 pub enum TypeVariant {
     Int,
     Char,
@@ -49,19 +54,22 @@ pub enum TypeVariant {
     ClassName(Identifier),
 }
 
-#[derive(Serialize, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq)]
+#[ts(export)]
 pub struct Type {
     pub variant: TypeVariant,
     source_byte_range: Range<usize>,
 }
 
-#[derive(Serialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, TS, Clone, Debug, PartialEq)]
+#[ts(export)]
 pub struct Identifier {
     pub name: String,
     source_byte_range: Range<usize>,
 }
 
-#[derive(Serialize, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq)]
+#[ts(export)]
 pub struct ClassVarDeclaration {
     pub type_name: Type,
     pub qualifier: ClassVarDeclarationKind,
@@ -69,14 +77,16 @@ pub struct ClassVarDeclaration {
     source_byte_range: Range<usize>,
 }
 
-#[derive(Serialize, Copy, Clone, Debug, PartialEq)]
+#[derive(Serialize, TS, Copy, Clone, Debug, PartialEq)]
+#[ts(export)]
 pub enum SubroutineKind {
     Constructor,
     Function,
     Method,
 }
 
-#[derive(Serialize, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq)]
+#[ts(export)]
 pub enum PrimitiveTermVariant {
     IntegerConstant(String),
     StringConstant(String),
@@ -88,7 +98,8 @@ pub enum PrimitiveTermVariant {
 use serde::Serialize;
 use PrimitiveTermVariant::*;
 
-#[derive(Serialize, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq)]
+#[ts(export)]
 pub enum BinaryOperator {
     Plus,
     Minus,
@@ -103,13 +114,15 @@ pub enum BinaryOperator {
     Equals,
 }
 
-#[derive(Serialize, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq)]
+#[ts(export)]
 pub enum UnaryOperator {
     Minus,
     Not,
 }
 
-#[derive(Serialize, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq)]
+#[ts(export)]
 pub enum Expression {
     PrimitiveTerm(PrimitiveTermVariant),
     Binary {
@@ -129,14 +142,16 @@ pub enum Expression {
     },
 }
 
-#[derive(Serialize, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq)]
+#[ts(export)]
 pub struct Parameter {
     pub type_name: Type,
     pub var_name: Identifier,
     source_byte_range: Range<usize>,
 }
 
-#[derive(Serialize, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq)]
+#[ts(export)]
 pub enum SubroutineCall {
     Direct {
         subroutine_name: Identifier,
@@ -149,7 +164,8 @@ pub enum SubroutineCall {
     },
 }
 
-#[derive(Serialize, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq)]
+#[ts(export)]
 pub enum Statement {
     Let {
         var_name: Identifier,
@@ -168,26 +184,30 @@ pub enum Statement {
     Do(SubroutineCall),
     Return(Option<Expression>),
 }
-#[derive(Serialize, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq)]
+#[ts(export)]
 pub struct VarNames {
     pub names: Vec<Identifier>,
     source_byte_range: Range<usize>,
 }
 
-#[derive(Serialize, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq)]
+#[ts(export)]
 pub struct VarDeclaration {
     pub type_name: Type,
     pub var_names: VarNames,
     source_byte_range: Range<usize>,
 }
 
-#[derive(Serialize, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq)]
+#[ts(export)]
 pub struct SubroutineBody {
     pub var_declarations: Vec<VarDeclaration>,
     pub statements: Vec<Statement>,
     source_byte_range: Range<usize>,
 }
-#[derive(Serialize, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq)]
+#[ts(export)]
 pub struct SubroutineDeclaration {
     pub subroutine_kind: SubroutineKind,
     pub return_type: Option<Type>,

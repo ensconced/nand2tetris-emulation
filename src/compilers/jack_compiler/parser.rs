@@ -1387,7 +1387,7 @@ mod tests {
             Class {
                 name: Identifier {
                     name: "foo".to_string(),
-                    source_byte_range: 0..1
+                    source_byte_range: 19..22
                 },
                 var_declarations: vec![],
                 subroutine_declarations: vec![SubroutineDeclaration {
@@ -1396,14 +1396,14 @@ mod tests {
                     parameters: vec![],
                     name: Identifier {
                         name: "bar".to_string(),
-                        source_byte_range: 0..1
+                        source_byte_range: 53..56
                     },
                     body: SubroutineBody {
                         var_declarations: vec![],
                         statements: vec![Statement::Let {
                             var_name: Identifier {
                                 name: "a".to_string(),
-                                source_byte_range: 0..1
+                                source_byte_range: 86..87
                             },
                             array_index: None,
                             value: Expression::Binary {
@@ -1422,11 +1422,11 @@ mod tests {
                                 ))),
                             }
                         }],
-                        source_byte_range: 0..1
+                        source_byte_range: 60..118
                     },
-                    source_byte_range: 0..1
+                    source_byte_range: 41..118
                 }],
-                source_byte_range: 0..1
+                source_byte_range: 13..132
             }
         )
     }

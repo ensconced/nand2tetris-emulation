@@ -1197,40 +1197,40 @@ mod tests {
             Class {
                 name: Identifier {
                     name: "foo".to_string(),
-                    source_byte_range: 0..1
+                    source_byte_range: 19..22
                 },
                 var_declarations: vec![],
                 subroutine_declarations: vec![SubroutineDeclaration {
                     subroutine_kind: SubroutineKind::Constructor,
                     return_type: Some(Type {
                         variant: TypeVariant::Int,
-                        source_byte_range: 0..1
+                        source_byte_range: 53..56
                     }),
                     parameters: vec![],
                     name: Identifier {
                         name: "blah".to_string(),
-                        source_byte_range: 0..1
+                        source_byte_range: 57..61
                     },
                     body: SubroutineBody {
                         var_declarations: vec![VarDeclaration {
                             type_name: Type {
                                 variant: TypeVariant::Int,
-                                source_byte_range: 0..1
+                                source_byte_range: 90..93
                             },
                             var_names: VarNames {
                                 names: vec![Identifier {
                                     name: "a".to_string(),
-                                    source_byte_range: 0..1
+                                    source_byte_range: 94..95
                                 }],
-                                source_byte_range: 0..1
+                                source_byte_range: 94..95
                             },
-                            source_byte_range: 0..1
+                            source_byte_range: 86..95
                         }],
                         statements: vec![
                             Statement::Let {
                                 var_name: Identifier {
                                     name: "a".to_string(),
-                                    source_byte_range: 0..1
+                                    source_byte_range: 121..122
                                 },
                                 array_index: None,
                                 value: Expression::PrimitiveTerm(IntegerConstant(
@@ -1240,7 +1240,7 @@ mod tests {
                             Statement::Let {
                                 var_name: Identifier {
                                     name: "b".to_string(),
-                                    source_byte_range: 0..1
+                                    source_byte_range: 155..156
                                 },
                                 array_index: Some(Expression::PrimitiveTerm(IntegerConstant(
                                     "22".to_string()
@@ -1261,14 +1261,14 @@ mod tests {
                                         Statement::Do(SubroutineCall::Direct {
                                             subroutine_name: Identifier {
                                                 name: "foobar".to_string(),
-                                                source_byte_range: 0..1
+                                                source_byte_range: 263..269
                                             },
                                             arguments: vec![]
                                         }),
                                         Statement::Do(SubroutineCall::Direct {
                                             subroutine_name: Identifier {
                                                 name: "foobar".to_string(),
-                                                source_byte_range: 0..1
+                                                source_byte_range: 303..309
                                             },
                                             arguments: vec![Expression::PrimitiveTerm(
                                                 IntegerConstant("1".to_string())
@@ -1277,7 +1277,7 @@ mod tests {
                                         Statement::Do(SubroutineCall::Direct {
                                             subroutine_name: Identifier {
                                                 name: "foobar".to_string(),
-                                                source_byte_range: 0..1
+                                                source_byte_range: 344..350
                                             },
                                             arguments: vec![
                                                 Expression::PrimitiveTerm(IntegerConstant(
@@ -1294,22 +1294,22 @@ mod tests {
                                         Statement::Do(SubroutineCall::Method {
                                             this_name: Identifier {
                                                 name: "foo".to_string(),
-                                                source_byte_range: 0..1
+                                                source_byte_range: 391..394
                                             },
                                             method_name: Identifier {
                                                 name: "bar".to_string(),
-                                                source_byte_range: 0..1
+                                                source_byte_range: 395..398
                                             },
                                             arguments: vec![]
                                         }),
                                         Statement::Do(SubroutineCall::Method {
                                             this_name: Identifier {
                                                 name: "foo".to_string(),
-                                                source_byte_range: 0..1
+                                                source_byte_range: 432..435
                                             },
                                             method_name: Identifier {
                                                 name: "bar".to_string(),
-                                                source_byte_range: 0..1
+                                                source_byte_range: 436..439
                                             },
                                             arguments: vec![Expression::PrimitiveTerm(
                                                 IntegerConstant("1".to_string())
@@ -1318,11 +1318,11 @@ mod tests {
                                         Statement::Do(SubroutineCall::Method {
                                             this_name: Identifier {
                                                 name: "foo".to_string(),
-                                                source_byte_range: 0..1
+                                                source_byte_range: 474..477
                                             },
                                             method_name: Identifier {
                                                 name: "bar".to_string(),
-                                                source_byte_range: 0..1
+                                                source_byte_range: 478..481
                                             },
                                             arguments: vec![
                                                 Expression::PrimitiveTerm(IntegerConstant(
@@ -1335,19 +1335,19 @@ mod tests {
                                                     "3".to_string()
                                                 ))
                                             ]
-                                        }),
+                                        })
                                     ]
                                 }],
                                 else_statements: Some(vec![Statement::Return(Some(
                                     Expression::PrimitiveTerm(IntegerConstant("123".to_string()))
-                                ))]),
+                                ))])
                             }
                         ],
-                        source_byte_range: 0..1
+                        source_byte_range: 64..622
                     },
-                    source_byte_range: 0..1
+                    source_byte_range: 41..622
                 }],
-                source_byte_range: 0..1
+                source_byte_range: 13..636
             }
         );
     }

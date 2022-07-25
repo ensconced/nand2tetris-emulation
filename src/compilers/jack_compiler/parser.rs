@@ -925,23 +925,23 @@ mod tests {
                 var_declarations: vec![ClassVarDeclaration {
                     qualifier: ClassVarDeclarationKind {
                         variant: ClassVarDeclarationKindVariant::Static,
-                        source_byte_range: 40..46
+                        source_byte_range: 39..45
                     },
                     type_name: Type {
                         variant: TypeVariant::Int,
-                        source_byte_range: 47..50,
+                        source_byte_range: 46..49
                     },
                     var_names: VarNames {
                         names: vec![Identifier {
                             name: "bar".to_string(),
-                            source_byte_range: 51..54,
+                            source_byte_range: 50..53
                         }],
-                        source_byte_range: 51..54,
+                        source_byte_range: 50..53
                     },
-                    source_byte_range: 39..53,
+                    source_byte_range: 39..54
                 }],
                 subroutine_declarations: vec![],
-                source_byte_range: 19..55,
+                source_byte_range: 13..68
             }
         );
     }

@@ -960,86 +960,86 @@ mod tests {
             Class {
                 name: Identifier {
                     name: "foo".to_string(),
-                    source_byte_range: 0..1
+                    source_byte_range: 19..22
                 },
                 var_declarations: vec![
                     ClassVarDeclaration {
                         qualifier: ClassVarDeclarationKind {
                             variant: ClassVarDeclarationKindVariant::Static,
-                            source_byte_range: 0..1,
+                            source_byte_range: 39..45,
                         },
                         type_name: Type {
                             variant: TypeVariant::Int,
-                            source_byte_range: 0..1
+                            source_byte_range: 46..49
                         },
                         var_names: VarNames {
                             names: vec![Identifier {
                                 name: "bar".to_string(),
-                                source_byte_range: 0..1,
+                                source_byte_range: 50..53,
                             }],
-                            source_byte_range: 0..1
+                            source_byte_range: 50..53
                         },
-                        source_byte_range: 0..1,
+                        source_byte_range: 39..54,
                     },
                     ClassVarDeclaration {
                         qualifier: ClassVarDeclarationKind {
                             variant: ClassVarDeclarationKindVariant::Field,
-                            source_byte_range: 0..1
+                            source_byte_range: 69..74
                         },
                         type_name: Type {
                             variant: TypeVariant::Char,
-                            source_byte_range: 0..1
+                            source_byte_range: 75..79
                         },
                         var_names: VarNames {
                             names: vec![
                                 Identifier {
                                     name: "baz".to_string(),
-                                    source_byte_range: 0..1,
+                                    source_byte_range: 80..83,
                                 },
                                 Identifier {
                                     name: "buz".to_string(),
-                                    source_byte_range: 0..1,
+                                    source_byte_range: 85..88,
                                 },
                                 Identifier {
                                     name: "boz".to_string(),
-                                    source_byte_range: 0..1,
+                                    source_byte_range: 90..93,
                                 }
                             ],
-                            source_byte_range: 0..1
+                            source_byte_range: 80..93
                         },
-                        source_byte_range: 0..1,
+                        source_byte_range: 69..94,
                     },
                     ClassVarDeclaration {
                         qualifier: ClassVarDeclarationKind {
                             variant: ClassVarDeclarationKindVariant::Field,
-                            source_byte_range: 0..1,
+                            source_byte_range: 109..114,
                         },
                         type_name: Type {
                             variant: TypeVariant::Boolean,
-                            source_byte_range: 0..1,
+                            source_byte_range: 115..122,
                         },
                         var_names: VarNames {
                             names: vec![
                                 Identifier {
                                     name: "a".to_string(),
-                                    source_byte_range: 0..1
+                                    source_byte_range: 123..124
                                 },
                                 Identifier {
                                     name: "b".to_string(),
-                                    source_byte_range: 0..1
+                                    source_byte_range: 126..127
                                 },
                                 Identifier {
                                     name: "c".to_string(),
-                                    source_byte_range: 0..1
+                                    source_byte_range: 129..130
                                 },
                             ],
-                            source_byte_range: 0..1
+                            source_byte_range: 123..130
                         },
-                        source_byte_range: 0..1
+                        source_byte_range: 109..131
                     }
                 ],
                 subroutine_declarations: vec![],
-                source_byte_range: 0..1,
+                source_byte_range: 13..145,
             }
         );
     }

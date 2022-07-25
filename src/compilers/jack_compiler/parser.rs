@@ -1551,7 +1551,7 @@ mod tests {
                     rhs: Box::new(Expression::SubroutineCall(SubroutineCall::Direct {
                         subroutine_name: Identifier {
                             name: "foo".to_string(),
-                            source_byte_range: 0..1
+                            source_byte_range: 4..7
                         },
                         arguments: vec![
                             Expression::PrimitiveTerm(IntegerConstant("1".to_string())),

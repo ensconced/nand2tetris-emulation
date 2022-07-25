@@ -1593,11 +1593,11 @@ mod tests {
                             lhs: Box::new(Expression::SubroutineCall(SubroutineCall::Method {
                                 this_name: Identifier {
                                     name: "buz".to_string(),
-                                    source_byte_range: 0..1
+                                    source_byte_range: 16..19
                                 },
                                 method_name: Identifier {
                                     name: "boz".to_string(),
-                                    source_byte_range: 0..1
+                                    source_byte_range: 20..23
                                 },
                                 arguments: vec![
                                     Expression::Variable("qux".to_string()),

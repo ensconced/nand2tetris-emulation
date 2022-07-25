@@ -3,10 +3,14 @@ mod emulator;
 mod fonts;
 
 use clap::{Parser, Subcommand};
-use compilers::{assembler::assemble_file, vm_compiler};
+use compilers::{assembler::assemble_file, jack_compiler, vm_compiler};
 use emulator::run::run;
 use fonts::glyphs_class;
-use std::{fs, path::Path};
+use std::{
+    fs,
+    io::{self, Read},
+    path::Path,
+};
 
 #[derive(Parser, Debug)]
 #[clap()]
@@ -31,6 +35,8 @@ enum Commands {
     Run { file_path_maybe: Option<String> },
     /// Generate glyphs stdlib module from fonts file
     GenerateGlyphs,
+    /// Generate JSON for visualisation of jack parser output
+    JackParserViz,
 }
 
 fn main() {
@@ -66,6 +72,12 @@ fn main() {
         }
         Commands::GenerateGlyphs => {
             fs::write("./std_lib/Glyphs.jack", glyphs_class()).unwrap();
+        }
+        Commands::JackParserViz => {
+            let mut source = String::new();
+            io::stdin().read_to_string(&mut source).unwrap();
+            let jack_class = jack_compiler::parser::parse(&source);
+            print!("{}", serde_json::to_string_pretty(&jack_class).unwrap());
         }
     }
 }

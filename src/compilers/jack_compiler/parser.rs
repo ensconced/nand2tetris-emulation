@@ -21,7 +21,7 @@ pub enum JackNode<'a> {
     StatementNode(&'a Statement),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Serialize, Debug, PartialEq)]
 pub struct Class {
     pub name: Identifier,
     pub var_declarations: Vec<ClassVarDeclaration>,
@@ -29,19 +29,19 @@ pub struct Class {
     source_byte_range: Range<usize>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Serialize, Debug, PartialEq)]
 pub enum ClassVarDeclarationKindVariant {
     Static,
     Field,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Serialize, Debug, PartialEq)]
 pub struct ClassVarDeclarationKind {
     pub variant: ClassVarDeclarationKindVariant,
     source_byte_range: Range<usize>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Serialize, Clone, Debug, PartialEq)]
 pub enum TypeVariant {
     Int,
     Char,
@@ -49,19 +49,19 @@ pub enum TypeVariant {
     ClassName(Identifier),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Serialize, Debug, PartialEq)]
 pub struct Type {
     pub variant: TypeVariant,
     source_byte_range: Range<usize>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Serialize, Clone, Debug, PartialEq)]
 pub struct Identifier {
     pub name: String,
     source_byte_range: Range<usize>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Serialize, Debug, PartialEq)]
 pub struct ClassVarDeclaration {
     pub type_name: Type,
     pub qualifier: ClassVarDeclarationKind,
@@ -69,14 +69,14 @@ pub struct ClassVarDeclaration {
     source_byte_range: Range<usize>,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Serialize, Copy, Clone, Debug, PartialEq)]
 pub enum SubroutineKind {
     Constructor,
     Function,
     Method,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Serialize, Debug, PartialEq)]
 pub enum PrimitiveTermVariant {
     IntegerConstant(String),
     StringConstant(String),
@@ -85,9 +85,10 @@ pub enum PrimitiveTermVariant {
     Null,
     This,
 }
+use serde::Serialize;
 use PrimitiveTermVariant::*;
 
-#[derive(Debug, PartialEq)]
+#[derive(Serialize, Debug, PartialEq)]
 pub enum BinaryOperator {
     Plus,
     Minus,
@@ -102,13 +103,13 @@ pub enum BinaryOperator {
     Equals,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Serialize, Debug, PartialEq)]
 pub enum UnaryOperator {
     Minus,
     Not,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Serialize, Debug, PartialEq)]
 pub enum Expression {
     PrimitiveTerm(PrimitiveTermVariant),
     Binary {
@@ -128,14 +129,14 @@ pub enum Expression {
     },
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Serialize, Debug, PartialEq)]
 pub struct Parameter {
     pub type_name: Type,
     pub var_name: Identifier,
     source_byte_range: Range<usize>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Serialize, Debug, PartialEq)]
 pub enum SubroutineCall {
     Direct {
         subroutine_name: Identifier,
@@ -148,7 +149,7 @@ pub enum SubroutineCall {
     },
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Serialize, Debug, PartialEq)]
 pub enum Statement {
     Let {
         var_name: Identifier,
@@ -167,26 +168,26 @@ pub enum Statement {
     Do(SubroutineCall),
     Return(Option<Expression>),
 }
-#[derive(Debug, PartialEq)]
+#[derive(Serialize, Debug, PartialEq)]
 pub struct VarNames {
     pub names: Vec<Identifier>,
     source_byte_range: Range<usize>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Serialize, Debug, PartialEq)]
 pub struct VarDeclaration {
     pub type_name: Type,
     pub var_names: VarNames,
     source_byte_range: Range<usize>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Serialize, Debug, PartialEq)]
 pub struct SubroutineBody {
     pub var_declarations: Vec<VarDeclaration>,
     pub statements: Vec<Statement>,
     source_byte_range: Range<usize>,
 }
-#[derive(Debug, PartialEq)]
+#[derive(Serialize, Debug, PartialEq)]
 pub struct SubroutineDeclaration {
     pub subroutine_kind: SubroutineKind,
     pub return_type: Option<Type>,

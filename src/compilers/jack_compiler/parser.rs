@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use super::tokenizer::{
     token_defs,
     KeywordTokenVariant::{self, *},
@@ -10,8 +12,6 @@ use crate::compilers::utils::{
 };
 
 pub enum JackNode<'a> {
-    ClassNode(&'a Class),
-    ClassVarDeclarationNode(&'a ClassVarDeclaration),
     ExpressionNode(&'a Expression),
     SubroutineCall(&'a SubroutineCall),
     SubroutineDeclaration(&'a SubroutineDeclaration),
@@ -23,30 +23,50 @@ pub enum JackNode<'a> {
 
 #[derive(Debug, PartialEq)]
 pub struct Class {
-    pub name: String,
+    pub name: Identifier,
     pub var_declarations: Vec<ClassVarDeclaration>,
     pub subroutine_declarations: Vec<SubroutineDeclaration>,
+    source_byte_range: Range<usize>,
 }
 
 #[derive(Debug, PartialEq)]
-pub enum ClassVarDeclarationKind {
+pub enum ClassVarDeclarationKindVariant {
     Static,
     Field,
 }
 
+#[derive(Debug, PartialEq)]
+pub struct ClassVarDeclarationKind {
+    pub variant: ClassVarDeclarationKindVariant,
+    source_byte_range: Range<usize>,
+}
+
 #[derive(Clone, Debug, PartialEq)]
-pub enum Type {
+pub enum TypeVariant {
     Int,
     Char,
     Boolean,
-    ClassName(String),
+    ClassName(Identifier),
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Type {
+    pub variant: TypeVariant,
+    source_byte_range: Range<usize>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Identifier {
+    pub name: String,
+    source_byte_range: Range<usize>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct ClassVarDeclaration {
     pub type_name: Type,
     pub qualifier: ClassVarDeclarationKind,
-    pub var_names: Vec<String>,
+    pub var_names: VarNames,
+    source_byte_range: Range<usize>,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -111,18 +131,19 @@ pub enum Expression {
 #[derive(Debug, PartialEq)]
 pub struct Parameter {
     pub type_name: Type,
-    pub var_name: String,
+    pub var_name: Identifier,
+    source_byte_range: Range<usize>,
 }
 
 #[derive(Debug, PartialEq)]
 pub enum SubroutineCall {
     Direct {
-        subroutine_name: String,
+        subroutine_name: Identifier,
         arguments: Vec<Expression>,
     },
     Method {
-        this_name: String,
-        method_name: String,
+        this_name: Identifier,
+        method_name: Identifier,
         arguments: Vec<Expression>,
     },
 }
@@ -130,7 +151,7 @@ pub enum SubroutineCall {
 #[derive(Debug, PartialEq)]
 pub enum Statement {
     Let {
-        var_name: String,
+        var_name: Identifier,
         array_index: Option<Expression>,
         value: Expression,
     },
@@ -147,23 +168,32 @@ pub enum Statement {
     Return(Option<Expression>),
 }
 #[derive(Debug, PartialEq)]
+pub struct VarNames {
+    pub names: Vec<Identifier>,
+    source_byte_range: Range<usize>,
+}
+
+#[derive(Debug, PartialEq)]
 pub struct VarDeclaration {
     pub type_name: Type,
-    pub var_names: Vec<String>,
+    pub var_names: VarNames,
+    source_byte_range: Range<usize>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct SubroutineBody {
     pub var_declarations: Vec<VarDeclaration>,
     pub statements: Vec<Statement>,
+    source_byte_range: Range<usize>,
 }
 #[derive(Debug, PartialEq)]
 pub struct SubroutineDeclaration {
     pub subroutine_kind: SubroutineKind,
     pub return_type: Option<Type>,
     pub parameters: Vec<Parameter>,
-    pub name: String,
+    pub name: Identifier,
     pub body: SubroutineBody,
+    source_byte_range: Range<usize>,
 }
 
 fn maybe_take_primitive_expression(tokens: &mut PeekableTokens<TokenKind>) -> Option<Expression> {
@@ -235,7 +265,7 @@ fn maybe_take_term_starting_with_identifier(
             Some(Token {
                 kind: LSquareBracket,
                 ..
-            }) => Some(take_array_access(tokens, identifier)),
+            }) => Some(take_array_access(tokens, identifier.name)),
             Some(Token {
                 kind: Dot | LParen, ..
             }) => Some(Expression::SubroutineCall(take_subroutine_call(
@@ -318,7 +348,7 @@ fn maybe_take_expression_with_binding_power(
     Some(lhs)
 }
 
-fn take_class_keyword(tokens: &mut PeekableTokens<TokenKind>) {
+fn take_class_keyword(tokens: &mut PeekableTokens<TokenKind>) -> Token<TokenKind> {
     tokens
         .next_if(|token| {
             matches!(
@@ -329,22 +359,26 @@ fn take_class_keyword(tokens: &mut PeekableTokens<TokenKind>) {
                 }
             )
         })
-        .expect("expected keyword \"class\".");
+        .expect("expected keyword \"class\".")
 }
 
-fn take_token(tokens: &mut PeekableTokens<TokenKind>, token_kind: TokenKind) {
+fn take_token(tokens: &mut PeekableTokens<TokenKind>, token_kind: TokenKind) -> Token<TokenKind> {
     tokens
         .next_if(|token| token.kind == token_kind)
-        .unwrap_or_else(|| panic!("expected token {:?}", token_kind));
+        .unwrap_or_else(|| panic!("expected token {:?}", token_kind))
 }
 
-fn take_identifier(tokens: &mut PeekableTokens<TokenKind>) -> String {
+fn take_identifier(tokens: &mut PeekableTokens<TokenKind>) -> Identifier {
     if let Some(Token {
         kind: Identifier(string),
+        range,
         ..
     }) = tokens.next()
     {
-        string
+        Identifier {
+            name: string,
+            source_byte_range: range,
+        }
     } else {
         panic!("expected identifier")
     }
@@ -366,7 +400,10 @@ fn take_expression_list(tokens: &mut PeekableTokens<TokenKind>) -> Vec<Expressio
     result
 }
 
-fn take_subroutine_call(tokens: &mut PeekableTokens<TokenKind>, name: String) -> SubroutineCall {
+fn take_subroutine_call(
+    tokens: &mut PeekableTokens<TokenKind>,
+    name: Identifier,
+) -> SubroutineCall {
     match tokens.peek() {
         Some(Token { kind: LParen, .. }) => {
             // Direct function call
@@ -408,23 +445,29 @@ fn take_subroutine_return_type(tokens: &mut PeekableTokens<TokenKind>) -> Option
     }
 }
 
-fn take_parameters(tokens: &mut PeekableTokens<TokenKind>) -> Vec<Parameter> {
-    let mut result = Vec::new();
-    if let Some(type_name) = maybe_take_type(tokens) {
+fn maybe_take_parameter(tokens: &mut PeekableTokens<TokenKind>) -> Option<Parameter> {
+    maybe_take_type(tokens).map(|type_name| {
         let var_name = take_identifier(tokens);
-        result.push(Parameter {
+        let source_byte_range = type_name.source_byte_range.start..var_name.source_byte_range.end;
+        Parameter {
             type_name,
             var_name,
-        });
+            source_byte_range,
+        }
+    })
+}
+
+fn take_parameters(tokens: &mut PeekableTokens<TokenKind>) -> Vec<Parameter> {
+    let mut result = Vec::new();
+    if let Some(parameter) = maybe_take_parameter(tokens) {
+        result.push(parameter);
 
         while let Some(Token { kind: Comma, .. }) = tokens.peek() {
             tokens.next(); // comma
-            let type_name = take_type(tokens);
-            let var_name = take_identifier(tokens);
-            result.push(Parameter {
-                type_name,
-                var_name,
-            });
+            result.push(
+                maybe_take_parameter(tokens)
+                    .unwrap_or_else(|| panic!("expected parameter after comma")),
+            );
         }
     }
     result
@@ -553,15 +596,18 @@ fn take_statements(tokens: &mut PeekableTokens<TokenKind>) -> Vec<Statement> {
 
 fn take_var_declaration(tokens: &mut PeekableTokens<TokenKind>) -> VarDeclaration {
     if let Some(Token {
-        kind: Keyword(Var), ..
+        kind: Keyword(Var),
+        range: keyword_range,
     }) = tokens.next()
     {
         let type_name = take_type(tokens);
         let var_names = take_var_names(tokens);
         take_token(tokens, Semicolon);
+        let source_byte_range = keyword_range.start..var_names.source_byte_range.end;
         VarDeclaration {
             type_name,
             var_names,
+            source_byte_range,
         }
     } else {
         panic!("expected var keyword");
@@ -580,19 +626,21 @@ fn take_var_declarations(tokens: &mut PeekableTokens<TokenKind>) -> Vec<VarDecla
 }
 
 fn take_subroutine_body(tokens: &mut PeekableTokens<TokenKind>) -> SubroutineBody {
-    take_token(tokens, LCurly);
+    let start_curly = take_token(tokens, LCurly);
     let var_declarations = take_var_declarations(tokens);
     let statements = take_statements(tokens);
-    take_token(tokens, RCurly);
+    let end_curly = take_token(tokens, RCurly);
     SubroutineBody {
         var_declarations,
         statements,
+        source_byte_range: start_curly.range.start..end_curly.range.end,
     }
 }
 
 fn take_subroutine_declaration(tokens: &mut PeekableTokens<TokenKind>) -> SubroutineDeclaration {
     if let Some(Token {
         kind: Keyword(keyword),
+        range: subroutine_kind_keyword_range,
         ..
     }) = tokens.next()
     {
@@ -609,13 +657,14 @@ fn take_subroutine_declaration(tokens: &mut PeekableTokens<TokenKind>) -> Subrou
         let parameters = take_parameters(tokens);
         take_token(tokens, RParen);
         let body = take_subroutine_body(tokens);
-
+        let source_byte_range = subroutine_kind_keyword_range.start..body.source_byte_range.end;
         SubroutineDeclaration {
             subroutine_kind,
             return_type,
             name,
             parameters,
             body,
+            source_byte_range,
         }
     } else {
         panic!("expected subroutine kind");
@@ -652,47 +701,74 @@ fn take_class_var_declaration_qualifier(
     match tokens.next() {
         Some(Token {
             kind: Keyword(keyword),
+            range,
             ..
-        }) => match keyword {
-            Static => ClassVarDeclarationKind::Static,
-            Field => ClassVarDeclarationKind::Field,
-            _ => panic!("expected var declaration qualifier",),
-        },
+        }) => {
+            let variant = match keyword {
+                Static => ClassVarDeclarationKindVariant::Static,
+                Field => ClassVarDeclarationKindVariant::Field,
+                _ => panic!("expected var declaration qualifier",),
+            };
+            ClassVarDeclarationKind {
+                variant,
+                source_byte_range: range,
+            }
+        }
         _ => panic!("expected var declaration qualifier",),
     }
 }
 
-fn take_var_name(tokens: &mut PeekableTokens<TokenKind>) -> String {
+fn take_var_name(tokens: &mut PeekableTokens<TokenKind>) -> Identifier {
     if let Some(Token {
         kind: Identifier(var_name),
+        range,
         ..
     }) = tokens.next()
     {
-        var_name
+        Identifier {
+            name: var_name,
+            source_byte_range: range,
+        }
     } else {
         panic!("expected var name")
     }
 }
 
-fn take_var_names(tokens: &mut PeekableTokens<TokenKind>) -> Vec<String> {
+fn take_var_names(tokens: &mut PeekableTokens<TokenKind>) -> VarNames {
     // There has to be at least one var name.
-    let mut result = vec![take_var_name(tokens)];
+    let first_var = take_var_name(tokens);
+    let mut source_byte_range = first_var.source_byte_range.clone();
+    let mut names = vec![first_var];
     while let Some(Token { kind: Comma, .. }) = tokens.peek() {
         tokens.next(); // comma
-        result.push(take_var_name(tokens));
+        let var = take_var_name(tokens);
+        source_byte_range.end = var.source_byte_range.end;
+        names.push(var);
     }
-    result
+    VarNames {
+        names,
+        source_byte_range,
+    }
 }
 
 fn take_type(tokens: &mut PeekableTokens<TokenKind>) -> Type {
     match tokens.next() {
-        Some(Token { kind, .. }) => match kind {
-            Keyword(Int) => Type::Int,
-            Keyword(Char) => Type::Char,
-            Keyword(Boolean) => Type::Boolean,
-            Identifier(class_name) => Type::ClassName(class_name),
-            _ => panic!("expected var type name"),
-        },
+        Some(Token { kind, range, .. }) => {
+            let type_variant = match kind {
+                Keyword(Int) => TypeVariant::Int,
+                Keyword(Char) => TypeVariant::Char,
+                Keyword(Boolean) => TypeVariant::Boolean,
+                Identifier(class_name) => TypeVariant::ClassName(Identifier {
+                    name: class_name,
+                    source_byte_range: range.clone(),
+                }),
+                _ => panic!("expected var type name"),
+            };
+            Type {
+                variant: type_variant,
+                source_byte_range: range,
+            }
+        }
         _ => panic!("expected var type name"),
     }
 }
@@ -716,11 +792,13 @@ fn take_class_var_declaration(tokens: &mut PeekableTokens<TokenKind>) -> ClassVa
     let qualifier = take_class_var_declaration_qualifier(tokens);
     let type_name = take_type(tokens);
     let var_names = take_var_names(tokens);
-    take_token(tokens, Semicolon);
+    let semicolon = take_token(tokens, Semicolon);
+    let source_byte_range = qualifier.source_byte_range.start..semicolon.range.end;
     ClassVarDeclaration {
         qualifier,
         type_name,
         var_names,
+        source_byte_range,
     }
 }
 
@@ -745,16 +823,17 @@ fn take_class_var_declarations(tokens: &mut PeekableTokens<TokenKind>) -> Vec<Cl
 }
 
 fn take_class(tokens: &mut PeekableTokens<TokenKind>) -> Class {
-    take_class_keyword(tokens);
+    let class_keyword = take_class_keyword(tokens);
     let name = take_identifier(tokens);
     take_token(tokens, LCurly);
     let var_declarations = take_class_var_declarations(tokens);
     let subroutine_declarations = take_class_subroutine_declarations(tokens);
-    take_token(tokens, RCurly);
+    let end_curly = take_token(tokens, RCurly);
     Class {
         name,
         var_declarations,
         subroutine_declarations,
+        source_byte_range: class_keyword.range.start..end_curly.range.end,
     }
 }
 
@@ -818,9 +897,13 @@ mod tests {
         assert_eq!(
             parse("class foo {}"),
             Class {
-                name: "foo".to_string(),
+                name: Identifier {
+                    name: "foo".to_string(),
+                    source_byte_range: 6..9
+                },
                 var_declarations: vec![],
-                subroutine_declarations: vec![]
+                subroutine_declarations: vec![],
+                source_byte_range: 0..12
             }
         );
     }
@@ -835,13 +918,30 @@ mod tests {
             }"
             ),
             Class {
-                name: "foo".to_string(),
+                name: Identifier {
+                    name: "foo".to_string(),
+                    source_byte_range: 19..22
+                },
                 var_declarations: vec![ClassVarDeclaration {
-                    qualifier: ClassVarDeclarationKind::Static,
-                    type_name: Type::Int,
-                    var_names: vec!["bar".to_string()]
+                    qualifier: ClassVarDeclarationKind {
+                        variant: ClassVarDeclarationKindVariant::Static,
+                        source_byte_range: 40..46
+                    },
+                    type_name: Type {
+                        variant: TypeVariant::Int,
+                        source_byte_range: 47..50,
+                    },
+                    var_names: VarNames {
+                        names: vec![Identifier {
+                            name: "bar".to_string(),
+                            source_byte_range: 51..54,
+                        }],
+                        source_byte_range: 51..54,
+                    },
+                    source_byte_range: 39..53,
                 }],
-                subroutine_declarations: vec![]
+                subroutine_declarations: vec![],
+                source_byte_range: 19..55,
             }
         );
     }
@@ -858,25 +958,88 @@ mod tests {
             }"
             ),
             Class {
-                name: "foo".to_string(),
+                name: Identifier {
+                    name: "foo".to_string(),
+                    source_byte_range: 0..1
+                },
                 var_declarations: vec![
                     ClassVarDeclaration {
-                        qualifier: ClassVarDeclarationKind::Static,
-                        type_name: Type::Int,
-                        var_names: vec!["bar".to_string()]
+                        qualifier: ClassVarDeclarationKind {
+                            variant: ClassVarDeclarationKindVariant::Static,
+                            source_byte_range: 0..1,
+                        },
+                        type_name: Type {
+                            variant: TypeVariant::Int,
+                            source_byte_range: 0..1
+                        },
+                        var_names: VarNames {
+                            names: vec![Identifier {
+                                name: "bar".to_string(),
+                                source_byte_range: 0..1,
+                            }],
+                            source_byte_range: 0..1
+                        },
+                        source_byte_range: 0..1,
                     },
                     ClassVarDeclaration {
-                        qualifier: ClassVarDeclarationKind::Field,
-                        type_name: Type::Char,
-                        var_names: vec!["baz".to_string(), "buz".to_string(), "boz".to_string()]
+                        qualifier: ClassVarDeclarationKind {
+                            variant: ClassVarDeclarationKindVariant::Field,
+                            source_byte_range: 0..1
+                        },
+                        type_name: Type {
+                            variant: TypeVariant::Char,
+                            source_byte_range: 0..1
+                        },
+                        var_names: VarNames {
+                            names: vec![
+                                Identifier {
+                                    name: "baz".to_string(),
+                                    source_byte_range: 0..1,
+                                },
+                                Identifier {
+                                    name: "buz".to_string(),
+                                    source_byte_range: 0..1,
+                                },
+                                Identifier {
+                                    name: "boz".to_string(),
+                                    source_byte_range: 0..1,
+                                }
+                            ],
+                            source_byte_range: 0..1
+                        },
+                        source_byte_range: 0..1,
                     },
                     ClassVarDeclaration {
-                        qualifier: ClassVarDeclarationKind::Field,
-                        type_name: Type::Boolean,
-                        var_names: vec!["a".to_string(), "b".to_string(), "c".to_string()]
+                        qualifier: ClassVarDeclarationKind {
+                            variant: ClassVarDeclarationKindVariant::Field,
+                            source_byte_range: 0..1,
+                        },
+                        type_name: Type {
+                            variant: TypeVariant::Boolean,
+                            source_byte_range: 0..1,
+                        },
+                        var_names: VarNames {
+                            names: vec![
+                                Identifier {
+                                    name: "a".to_string(),
+                                    source_byte_range: 0..1
+                                },
+                                Identifier {
+                                    name: "b".to_string(),
+                                    source_byte_range: 0..1
+                                },
+                                Identifier {
+                                    name: "c".to_string(),
+                                    source_byte_range: 0..1
+                                },
+                            ],
+                            source_byte_range: 0..1
+                        },
+                        source_byte_range: 0..1
                     }
                 ],
-                subroutine_declarations: vec![]
+                subroutine_declarations: vec![],
+                source_byte_range: 0..1,
             }
         );
     }
@@ -896,56 +1059,112 @@ mod tests {
             }"
             ),
             Class {
-                name: "foo".to_string(),
+                name: Identifier {
+                    name: "foo".to_string(),
+                    source_byte_range: 0..1
+                },
                 var_declarations: vec![],
                 subroutine_declarations: vec![
                     SubroutineDeclaration {
                         subroutine_kind: SubroutineKind::Constructor,
-                        return_type: Some(Type::Boolean),
+                        return_type: Some(Type {
+                            variant: TypeVariant::Boolean,
+                            source_byte_range: 0..1,
+                        }),
                         parameters: vec![
                             Parameter {
-                                type_name: Type::Int,
-                                var_name: "abc".to_string()
+                                type_name: Type {
+                                    variant: TypeVariant::Int,
+                                    source_byte_range: 0..1
+                                },
+                                var_name: Identifier {
+                                    name: "abc".to_string(),
+                                    source_byte_range: 0..1,
+                                },
+                                source_byte_range: 0..1,
                             },
                             Parameter {
-                                type_name: Type::Char,
-                                var_name: "def".to_string()
+                                type_name: Type {
+                                    variant: TypeVariant::Char,
+                                    source_byte_range: 0..1
+                                },
+                                var_name: Identifier {
+                                    name: "def".to_string(),
+                                    source_byte_range: 0..1,
+                                },
+                                source_byte_range: 0..1,
                             },
                             Parameter {
-                                type_name: Type::ClassName("foo".to_string()),
-                                var_name: "ghi".to_string()
+                                type_name: Type {
+                                    variant: TypeVariant::ClassName(Identifier {
+                                        name: "foo".to_string(),
+                                        source_byte_range: 0..1,
+                                    }),
+                                    source_byte_range: 0..1
+                                },
+                                var_name: Identifier {
+                                    name: "ghi".to_string(),
+                                    source_byte_range: 0..1,
+                                },
+                                source_byte_range: 0..1
                             }
                         ],
-                        name: "bar".to_string(),
+                        name: Identifier {
+                            name: "bar".to_string(),
+                            source_byte_range: 0..1
+                        },
                         body: SubroutineBody {
                             var_declarations: vec![],
-                            statements: vec![]
-                        }
+                            statements: vec![],
+                            source_byte_range: 0..1
+                        },
+                        source_byte_range: 0..1
                     },
                     SubroutineDeclaration {
                         subroutine_kind: SubroutineKind::Function,
-                        return_type: Some(Type::Char),
+                        return_type: Some(Type {
+                            variant: TypeVariant::Char,
+                            source_byte_range: 0..1
+                        }),
                         parameters: vec![Parameter {
-                            type_name: Type::Boolean,
-                            var_name: "_123".to_string()
+                            type_name: Type {
+                                variant: TypeVariant::Boolean,
+                                source_byte_range: 0..1
+                            },
+                            var_name: Identifier {
+                                name: "_123".to_string(),
+                                source_byte_range: 0..1
+                            },
+                            source_byte_range: 0..1
                         },],
-                        name: "baz".to_string(),
+                        name: Identifier {
+                            name: "baz".to_string(),
+                            source_byte_range: 0..1
+                        },
                         body: SubroutineBody {
                             var_declarations: vec![],
-                            statements: vec![]
-                        }
+                            statements: vec![],
+                            source_byte_range: 0..1
+                        },
+                        source_byte_range: 0..1
                     },
                     SubroutineDeclaration {
                         subroutine_kind: SubroutineKind::Method,
                         return_type: None,
                         parameters: vec![],
-                        name: "qux".to_string(),
+                        name: Identifier {
+                            name: "qux".to_string(),
+                            source_byte_range: 0..1
+                        },
                         body: SubroutineBody {
                             var_declarations: vec![],
-                            statements: vec![]
-                        }
+                            statements: vec![],
+                            source_byte_range: 0..1
+                        },
+                        source_byte_range: 0..1
                     }
                 ],
+                source_byte_range: 0..1
             }
         );
     }
@@ -976,28 +1195,53 @@ mod tests {
             }"
             ),
             Class {
-                name: "foo".to_string(),
+                name: Identifier {
+                    name: "foo".to_string(),
+                    source_byte_range: 0..1
+                },
                 var_declarations: vec![],
                 subroutine_declarations: vec![SubroutineDeclaration {
                     subroutine_kind: SubroutineKind::Constructor,
-                    return_type: Some(Type::Int),
+                    return_type: Some(Type {
+                        variant: TypeVariant::Int,
+                        source_byte_range: 0..1
+                    }),
                     parameters: vec![],
-                    name: "blah".to_string(),
+                    name: Identifier {
+                        name: "blah".to_string(),
+                        source_byte_range: 0..1
+                    },
                     body: SubroutineBody {
                         var_declarations: vec![VarDeclaration {
-                            type_name: Type::Int,
-                            var_names: vec!["a".to_string()]
+                            type_name: Type {
+                                variant: TypeVariant::Int,
+                                source_byte_range: 0..1
+                            },
+                            var_names: VarNames {
+                                names: vec![Identifier {
+                                    name: "a".to_string(),
+                                    source_byte_range: 0..1
+                                }],
+                                source_byte_range: 0..1
+                            },
+                            source_byte_range: 0..1
                         }],
                         statements: vec![
                             Statement::Let {
-                                var_name: "a".to_string(),
+                                var_name: Identifier {
+                                    name: "a".to_string(),
+                                    source_byte_range: 0..1
+                                },
                                 array_index: None,
                                 value: Expression::PrimitiveTerm(IntegerConstant(
                                     "1234".to_string()
                                 ))
                             },
                             Statement::Let {
-                                var_name: "b".to_string(),
+                                var_name: Identifier {
+                                    name: "b".to_string(),
+                                    source_byte_range: 0..1
+                                },
                                 array_index: Some(Expression::PrimitiveTerm(IntegerConstant(
                                     "22".to_string()
                                 ))),
@@ -1015,17 +1259,26 @@ mod tests {
                                     )),
                                     statements: vec![
                                         Statement::Do(SubroutineCall::Direct {
-                                            subroutine_name: "foobar".to_string(),
+                                            subroutine_name: Identifier {
+                                                name: "foobar".to_string(),
+                                                source_byte_range: 0..1
+                                            },
                                             arguments: vec![]
                                         }),
                                         Statement::Do(SubroutineCall::Direct {
-                                            subroutine_name: "foobar".to_string(),
+                                            subroutine_name: Identifier {
+                                                name: "foobar".to_string(),
+                                                source_byte_range: 0..1
+                                            },
                                             arguments: vec![Expression::PrimitiveTerm(
                                                 IntegerConstant("1".to_string())
                                             )]
                                         }),
                                         Statement::Do(SubroutineCall::Direct {
-                                            subroutine_name: "foobar".to_string(),
+                                            subroutine_name: Identifier {
+                                                name: "foobar".to_string(),
+                                                source_byte_range: 0..1
+                                            },
                                             arguments: vec![
                                                 Expression::PrimitiveTerm(IntegerConstant(
                                                     "1".to_string()
@@ -1039,20 +1292,38 @@ mod tests {
                                             ]
                                         }),
                                         Statement::Do(SubroutineCall::Method {
-                                            this_name: "foo".to_string(),
-                                            method_name: "bar".to_string(),
+                                            this_name: Identifier {
+                                                name: "foo".to_string(),
+                                                source_byte_range: 0..1
+                                            },
+                                            method_name: Identifier {
+                                                name: "bar".to_string(),
+                                                source_byte_range: 0..1
+                                            },
                                             arguments: vec![]
                                         }),
                                         Statement::Do(SubroutineCall::Method {
-                                            this_name: "foo".to_string(),
-                                            method_name: "bar".to_string(),
+                                            this_name: Identifier {
+                                                name: "foo".to_string(),
+                                                source_byte_range: 0..1
+                                            },
+                                            method_name: Identifier {
+                                                name: "bar".to_string(),
+                                                source_byte_range: 0..1
+                                            },
                                             arguments: vec![Expression::PrimitiveTerm(
                                                 IntegerConstant("1".to_string())
                                             )]
                                         }),
                                         Statement::Do(SubroutineCall::Method {
-                                            this_name: "foo".to_string(),
-                                            method_name: "bar".to_string(),
+                                            this_name: Identifier {
+                                                name: "foo".to_string(),
+                                                source_byte_range: 0..1
+                                            },
+                                            method_name: Identifier {
+                                                name: "bar".to_string(),
+                                                source_byte_range: 0..1
+                                            },
                                             arguments: vec![
                                                 Expression::PrimitiveTerm(IntegerConstant(
                                                     "1".to_string()
@@ -1071,9 +1342,12 @@ mod tests {
                                     Expression::PrimitiveTerm(IntegerConstant("123".to_string()))
                                 ))]),
                             }
-                        ]
-                    }
+                        ],
+                        source_byte_range: 0..1
+                    },
+                    source_byte_range: 0..1
                 }],
+                source_byte_range: 0..1
             }
         );
     }
@@ -1111,17 +1385,26 @@ mod tests {
             "
             ),
             Class {
-                name: "foo".to_string(),
+                name: Identifier {
+                    name: "foo".to_string(),
+                    source_byte_range: 0..1
+                },
                 var_declarations: vec![],
                 subroutine_declarations: vec![SubroutineDeclaration {
                     subroutine_kind: SubroutineKind::Method,
                     return_type: None,
                     parameters: vec![],
-                    name: "bar".to_string(),
+                    name: Identifier {
+                        name: "bar".to_string(),
+                        source_byte_range: 0..1
+                    },
                     body: SubroutineBody {
                         var_declarations: vec![],
                         statements: vec![Statement::Let {
-                            var_name: "a".to_string(),
+                            var_name: Identifier {
+                                name: "a".to_string(),
+                                source_byte_range: 0..1
+                            },
                             array_index: None,
                             value: Expression::Binary {
                                 operator: BinaryOperator::Plus,
@@ -1138,9 +1421,12 @@ mod tests {
                                     "3".to_string()
                                 ))),
                             }
-                        }]
-                    }
-                }]
+                        }],
+                        source_byte_range: 0..1
+                    },
+                    source_byte_range: 0..1
+                }],
+                source_byte_range: 0..1
             }
         )
     }
@@ -1224,12 +1510,21 @@ mod tests {
                     operator: BinaryOperator::Plus,
                     lhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                     rhs: Box::new(Expression::SubroutineCall(SubroutineCall::Direct {
-                        subroutine_name: "foo".to_string(),
+                        subroutine_name: Identifier {
+                            name: "foo".to_string(),
+                            source_byte_range: 0..1
+                        },
                         arguments: vec![
                             Expression::PrimitiveTerm(IntegerConstant("1".to_string())),
                             Expression::SubroutineCall(SubroutineCall::Method {
-                                this_name: "baz".to_string(),
-                                method_name: "bar".to_string(),
+                                this_name: Identifier {
+                                    name: "baz".to_string(),
+                                    source_byte_range: 0..1
+                                },
+                                method_name: Identifier {
+                                    name: "bar".to_string(),
+                                    source_byte_range: 0..1
+                                },
                                 arguments: vec![
                                     Expression::PrimitiveTerm(IntegerConstant("1".to_string())),
                                     Expression::PrimitiveTerm(IntegerConstant("2".to_string())),
@@ -1254,7 +1549,10 @@ mod tests {
                     operator: BinaryOperator::Plus,
                     lhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                     rhs: Box::new(Expression::SubroutineCall(SubroutineCall::Direct {
-                        subroutine_name: "foo".to_string(),
+                        subroutine_name: Identifier {
+                            name: "foo".to_string(),
+                            source_byte_range: 0..1
+                        },
                         arguments: vec![
                             Expression::PrimitiveTerm(IntegerConstant("1".to_string())),
                             Expression::ArrayAccess {
@@ -1293,8 +1591,14 @@ mod tests {
                         rhs: Box::new(Expression::Binary {
                             operator: BinaryOperator::Divide,
                             lhs: Box::new(Expression::SubroutineCall(SubroutineCall::Method {
-                                this_name: "buz".to_string(),
-                                method_name: "boz".to_string(),
+                                this_name: Identifier {
+                                    name: "buz".to_string(),
+                                    source_byte_range: 0..1
+                                },
+                                method_name: Identifier {
+                                    name: "boz".to_string(),
+                                    source_byte_range: 0..1
+                                },
                                 arguments: vec![
                                     Expression::Variable("qux".to_string()),
                                     Expression::ArrayAccess {

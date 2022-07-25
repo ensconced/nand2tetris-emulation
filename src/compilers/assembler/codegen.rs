@@ -5,7 +5,7 @@ use super::parser::{
 };
 use std::collections::HashMap;
 
-fn predefined_symbol_code(sym: &str) -> Option<usize> {
+fn predefined_symbol_code(sym: &str) -> Option<i16> {
     match sym {
         "SP" => Some(0),
         "LCL" => Some(1),
@@ -136,9 +136,9 @@ fn numeric_a_command_code(num_string: &str) -> String {
 }
 
 pub struct CodeGenerator {
-    resolved_symbols: HashMap<String, usize>,
+    resolved_symbols: HashMap<String, i16>,
     commands_without_labels: Vec<Command>,
-    address_next_static_variable: usize,
+    address_next_static_variable: i16,
 }
 
 impl CodeGenerator {
@@ -157,22 +157,21 @@ impl CodeGenerator {
                 C { expr, dest, jump } => c_command_code(expr, dest.as_ref(), jump.as_ref()),
                 A(Numeric(num)) => numeric_a_command_code(num),
                 A(Symbolic(sym)) => {
+                    if sym == "$return_point_99" {
+                        println!("here we are");
+                    }
                     let index = predefined_symbol_code(sym)
                         .or_else(|| self.resolved_symbols.get(sym).copied())
                         .unwrap_or_else(|| {
                             let address = self.address_next_static_variable;
                             if address > 255 {
-                                panic!("too many static variables - ran out of place while trying to place \"{}\"", sym)
+                              panic!("too many static variables - ran out of place while trying to place \"{}\"", sym)
                             }
                             self.resolved_symbols.insert(sym.to_string(), address);
                             self.address_next_static_variable += 1;
                             address
                         });
-                    if let Ok(num_16) = i16::try_from(index) {
-                        format!("{:016b}", num_16)
-                    } else {
-                        panic!("failed to resolve symbolic a-command {} to valid index", sym);
-                    }
+                    format!("{:016b}", index)
                 }
                 L { identifier: _ } => {
                     panic!("unexpected l_command remaining after first pass")
@@ -258,16 +257,5 @@ mod tests {
         let mut code_generator = CodeGenerator::new(first_pass_result);
         let instruction = code_generator.generate().next().unwrap();
         assert_eq!(instruction, "0100100000000000");
-    }
-
-    #[test]
-    #[should_panic(expected = "failed to resolve symbolic a-command foo to valid index")]
-    fn test_too_big_symbolic_a_command_code() {
-        let first_pass_result = FirstPassResult {
-            resolved_symbols: HashMap::from([("foo".to_string(), 1000000)]),
-            commands_without_labels: vec![A(Symbolic("foo".to_string()))],
-        };
-        let mut code_generator = CodeGenerator::new(first_pass_result);
-        code_generator.generate().count(); // .count() is just to consume the iterator
     }
 }

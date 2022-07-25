@@ -5,9 +5,9 @@ use crate::compilers::vm_compiler::parser::{
 };
 
 use super::parser::{
-    BinaryOperator, Class, ClassVarDeclaration, ClassVarDeclarationKind, Expression, JackNode,
-    Parameter, PrimitiveTermVariant, Statement, SubroutineCall, SubroutineDeclaration,
-    SubroutineKind, Type, UnaryOperator, VarDeclaration,
+    BinaryOperator, Class, ClassVarDeclaration, ClassVarDeclarationKindVariant, Expression,
+    JackNode, Parameter, PrimitiveTermVariant, Statement, SubroutineCall, SubroutineDeclaration,
+    SubroutineKind, Type, TypeVariant, UnaryOperator, VarDeclaration,
 };
 use std::{collections::HashMap, rc::Rc};
 
@@ -21,7 +21,7 @@ enum SymbolKind {
 
 struct Symbol {
     offset: usize,
-    symbol_type: Type,
+    symbol_type: TypeVariant,
     kind: SymbolKind,
 }
 
@@ -84,13 +84,13 @@ impl CodeGenerator {
     ) -> usize {
         let mut count = 0;
         for var_declaration in var_declarations {
-            for var_name in var_declaration.var_names.iter() {
+            for var_name in var_declaration.var_names.names.iter() {
                 count += 1;
                 self.subroutine_vars.insert(
-                    var_name.clone(),
+                    var_name.name.clone(),
                     Symbol {
                         offset: self.subroutine_vars.len(),
-                        symbol_type: var_declaration.type_name.clone(),
+                        symbol_type: var_declaration.type_name.variant.clone(),
                         kind: SymbolKind::Local,
                     },
                 );
@@ -536,7 +536,7 @@ impl CodeGenerator {
         if let Some(symbol) = self.maybe_resolve_symbol(&this_name) {
             // Treat it as a method.
             match symbol.symbol_type.clone() {
-                Type::ClassName(this_class) => {
+                TypeVariant::ClassName(this_class) => {
                     let arg_count_with_this = arg_count + 1;
                     let (this_memory_segment, this_idx) = self.compile_variable(&this_name);
                     vec![CommandWithOrigin {
@@ -550,7 +550,7 @@ impl CodeGenerator {
                     .chain(push_arguments.into_iter())
                     .chain(vec![CommandWithOrigin {
                         command: Command::Function(FunctionCommandVariant::Call(
-                            format!("{}.{}", this_class, method_name),
+                            format!("{}.{}", this_class.name, method_name),
                             arg_count_with_this as u16,
                         )),
                         origin_node,
@@ -608,7 +608,7 @@ impl CodeGenerator {
                 subroutine_name,
                 arguments,
             } => self.compile_direct_subroutine_call_expression(
-                subroutine_name,
+                &subroutine_name.name,
                 arguments,
                 origin_node,
             ),
@@ -617,8 +617,8 @@ impl CodeGenerator {
                 method_name,
                 arguments,
             } => self.compile_method_subroutine_call_expression(
-                this_name,
-                method_name,
+                &this_name.name,
+                &method_name.name,
                 arguments,
                 origin_node,
             ),
@@ -804,7 +804,7 @@ impl CodeGenerator {
                 var_name,
                 array_index,
                 value,
-            } => self.compile_let_statement(var_name, array_index, value, origin_node),
+            } => self.compile_let_statement(&var_name.name, array_index, value, origin_node),
             Statement::If {
                 condition,
                 if_statements,
@@ -827,10 +827,10 @@ impl CodeGenerator {
             };
 
             self.subroutine_parameters.insert(
-                parameter.var_name.clone(),
+                parameter.var_name.name.clone(),
                 Symbol {
                     offset,
-                    symbol_type: parameter.type_name.clone(),
+                    symbol_type: parameter.type_name.variant.clone(),
                     kind: SymbolKind::Parameter,
                 },
             );
@@ -856,12 +856,12 @@ impl CodeGenerator {
 
         let commands = match subroutine.subroutine_kind {
             SubroutineKind::Function => vec![Command::Function(FunctionCommandVariant::Define(
-                format!("{}.{}", class_name, subroutine.name),
+                format!("{}.{}", class_name, subroutine.name.name),
                 locals_count as u16,
             ))],
             SubroutineKind::Method => vec![
                 Command::Function(FunctionCommandVariant::Define(
-                    format!("{}.{}", class_name, subroutine.name),
+                    format!("{}.{}", class_name, subroutine.name.name),
                     locals_count as u16,
                 )),
                 Command::Memory(MemoryCommandVariant::Push(
@@ -875,7 +875,7 @@ impl CodeGenerator {
             ],
             SubroutineKind::Constructor => vec![
                 Command::Function(FunctionCommandVariant::Define(
-                    format!("{}.{}", class_name, subroutine.name),
+                    format!("{}.{}", class_name, subroutine.name.name),
                     locals_count as u16,
                 )),
                 Command::Memory(MemoryCommandVariant::Push(
@@ -926,20 +926,24 @@ impl CodeGenerator {
     fn compile_var_declarations(&mut self, var_declarations: &Vec<ClassVarDeclaration>) -> usize {
         let mut instance_size = 0;
         for var_declaration in var_declarations {
-            let (hashmap, symbol_kind) = match var_declaration.qualifier {
-                ClassVarDeclarationKind::Static => (&mut self.class_statics, SymbolKind::Static),
-                ClassVarDeclarationKind::Field => (&mut self.class_fields, SymbolKind::Field),
+            let (hashmap, symbol_kind) = match var_declaration.qualifier.variant {
+                ClassVarDeclarationKindVariant::Static => {
+                    (&mut self.class_statics, SymbolKind::Static)
+                }
+                ClassVarDeclarationKindVariant::Field => {
+                    (&mut self.class_fields, SymbolKind::Field)
+                }
             };
-            for var_name in var_declaration.var_names.iter() {
+            for var_name in var_declaration.var_names.names.iter() {
                 if symbol_kind == SymbolKind::Field {
                     instance_size += 1;
                 }
 
                 hashmap.insert(
-                    var_name.clone(),
+                    var_name.name.clone(),
                     Symbol {
                         offset: hashmap.len(),
-                        symbol_type: var_declaration.type_name.clone(),
+                        symbol_type: var_declaration.type_name.variant.clone(),
                         kind: symbol_kind.clone(),
                     },
                 );
@@ -952,7 +956,7 @@ impl CodeGenerator {
 
 pub fn generate_vm_code(class: &Class) -> Vec<CommandWithOrigin> {
     let mut code_generator = CodeGenerator::new();
-    code_generator.class_name = Some(class.name.clone());
+    code_generator.class_name = Some(class.name.name.clone());
     let class_instance_size = code_generator.compile_var_declarations(&class.var_declarations);
     code_generator.compile_subroutines(&class.subroutine_declarations, class_instance_size)
 }

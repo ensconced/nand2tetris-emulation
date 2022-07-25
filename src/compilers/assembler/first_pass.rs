@@ -2,8 +2,9 @@ use std::collections::HashMap;
 
 use super::parser::Command;
 
+#[derive(Debug)]
 pub struct FirstPassResult {
-    pub resolved_symbols: HashMap<String, usize>,
+    pub resolved_symbols: HashMap<String, i16>,
     pub commands_without_labels: Vec<Command>,
 }
 

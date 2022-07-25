@@ -196,6 +196,8 @@ pub fn glyphs_class() -> String {
     let glyph_map = parse_psf_file();
     let glyph_allocations: Vec<_> = glyph_map
         .into_iter()
+        // sort to keep things deterministic when iterating over hashmap
+        .sorted()
         .map(|(codepoint, bitmap)| {
             if codepoint < 32 {
                 panic!("unexpected glyph for codepoint < 32");

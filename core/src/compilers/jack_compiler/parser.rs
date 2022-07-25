@@ -12,15 +12,7 @@ use crate::compilers::utils::{
     tokenizer::{Token, Tokenizer},
 };
 
-pub enum JackNode<'a> {
-    ExpressionNode(&'a Expression),
-    SubroutineCall(&'a SubroutineCall),
-    SubroutineDeclaration(&'a SubroutineDeclaration),
-    BinaryOperatorNode(&'a BinaryOperator),
-    UnaryOperatorNode(&'a UnaryOperator),
-    PrimitiveTermNode(&'a PrimitiveTermVariant),
-    StatementNode(&'a Statement),
-}
+pub struct JackNode {}
 
 #[derive(Serialize, TS, Debug, PartialEq)]
 #[ts(export)]

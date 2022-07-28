@@ -36,10 +36,11 @@ fn debug_print_slice(slice: &[i16]) -> String {
     let mut result = String::new();
     result.push('[');
     for group in group_consecutive_identical_elements(slice) {
-        if group.len() > 1 {
-            result.extend(format!("{} x {}, ", group[0], group.len()).chars());
-        } else if group.len() == 1 {
-            result.extend(format!("{}, ", group[0]).chars());
+        match group.len().cmp(&1) {
+            std::cmp::Ordering::Greater => {
+                result.extend(format!("{} x {}, ", group[0], group.len()).chars())
+            }
+            _ => result.extend(format!("{}, ", group[0]).chars()),
         }
     }
     result.push(']');

@@ -65,7 +65,7 @@ fn take_codepoints(codepoints: &mut Peekable<impl Iterator<Item = u16>>) -> Vec<
             result.push(codepoints.next().unwrap());
         }
     }
-    return result;
+    result
 }
 
 fn maybe_take_codepoint_sequence(

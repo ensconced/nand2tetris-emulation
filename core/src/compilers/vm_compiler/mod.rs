@@ -12,9 +12,9 @@ pub struct ParsedModule<'a> {
     pub commands: Box<dyn Iterator<Item = Command> + 'a>,
 }
 
-pub fn parse<'a>(source_module: &'a SourceModule) -> ParsedModule<'a> {
+pub fn parse(source_module: &SourceModule) -> ParsedModule {
     ParsedModule {
-        filename: source_module.filename.to_owned().into(),
+        filename: source_module.filename.to_owned(),
         commands: Box::new(parse_lines(&source_module.source)),
     }
 }

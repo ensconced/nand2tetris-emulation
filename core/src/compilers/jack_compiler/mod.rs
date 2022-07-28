@@ -1,10 +1,30 @@
+use std::path::Path;
+
 pub mod codegen;
 pub mod parser;
 mod tokenizer;
 
+use std::{fs, io};
+
+use super::compile_to_machine_code;
+use super::utils::source_modules::get_source_modules;
+
+pub fn compile(src_path: &Path, dest_path: &Path) -> Result<(), io::Error> {
+    let source_modules = get_source_modules(src_path)?;
+    let jack_sources: Vec<_> = source_modules
+        .into_iter()
+        .map(|source_module| fs::read_to_string(source_module.filename).unwrap())
+        .collect();
+
+    fs::write(
+        dest_path,
+        compile_to_machine_code(jack_sources.iter().map(|s| s.as_str()).collect()),
+    )
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::compilers::utils::testing::*;
+    use crate::compilers::utils::testing::test_utils::*;
     use itertools::repeat_n;
 
     #[test]

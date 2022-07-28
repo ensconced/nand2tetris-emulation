@@ -37,25 +37,6 @@ fn take_glyphs(
         .collect()
 }
 
-fn take_u16(bytes: &mut impl Iterator<Item = u8>) -> Option<u16> {
-    bytes.next().map(|less_sig_byte| {
-        let more_sig_byte = bytes.next().unwrap();
-        u16::from_le_bytes([less_sig_byte, more_sig_byte])
-    })
-}
-
-fn take_codepoints_up_to(bytes: &mut impl Iterator<Item = u8>, end: u16) -> Vec<u16> {
-    let mut result = Vec::new();
-    while let Some(codepoint) = take_u16(bytes) {
-        if codepoint == end {
-            return result;
-        } else {
-            result.push(codepoint);
-        }
-    }
-    result
-}
-
 fn take_codepoints(codepoints: &mut Peekable<impl Iterator<Item = u16>>) -> Vec<u16> {
     let mut result = Vec::new();
     while let Some(&codepoint) = codepoints.peek() {
@@ -279,9 +260,9 @@ pub fn glyphs_class() -> String {
 mod tests {
     use std::num::Wrapping;
 
-    use super::*;
-    use crate::compilers::utils::testing::compile_to_machine_code;
+    use crate::compilers::compile_to_machine_code;
 
+    use super::*;
     #[test]
     fn test_glyph_module_compiles() {
         // just check that the output compiles

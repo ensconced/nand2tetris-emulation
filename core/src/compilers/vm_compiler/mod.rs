@@ -27,7 +27,7 @@ pub fn compile(src_path: &Path, dest_path: &Path) -> Result<(), io::Error> {
 
 #[cfg(test)]
 mod tests {
-    use crate::compilers::utils::testing::*;
+    use crate::compilers::utils::testing::test_utils::*;
 
     #[test]
     fn test_initialization() {

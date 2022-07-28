@@ -11,12 +11,10 @@ use compilers::{
 use emulator::run::run;
 use fonts::glyphs_class;
 use serde::Serialize;
-use std::{
-    fs,
-    io::{self, Read},
-    path::Path,
-};
+use std::{fs, path::Path};
 use ts_rs::TS;
+
+use crate::compilers::jack_compiler::compile;
 
 #[derive(Serialize, TS)]
 #[ts(export)]
@@ -35,6 +33,11 @@ struct Args {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
+    /// Compile jack code to machine code
+    CompileJack {
+        source_path: Option<String>,
+        dest_path: Option<String>,
+    },
     /// Compile assembly to machine code
     Assemble {
         source_path: Option<String>,
@@ -57,6 +60,14 @@ fn main() {
     let args = Args::parse();
 
     match &args.command {
+        Commands::CompileJack {
+            source_path: source_path_maybe,
+            dest_path: dest_path_maybe,
+        } => {
+            let source_path = source_path_maybe.as_ref().expect("source path is required");
+            let dest_path = dest_path_maybe.as_ref().expect("dest path is required");
+            compile(Path::new(source_path), Path::new(dest_path)).unwrap()
+        }
         Commands::Assemble {
             source_path: source_path_maybe,
             dest_path: dest_path_maybe,

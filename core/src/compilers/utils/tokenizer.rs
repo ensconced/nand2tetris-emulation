@@ -32,6 +32,7 @@ where
 }
 
 impl<LangTokenKind> Token<LangTokenKind> {
+    #[cfg(test)]
     pub fn new(range: Range<usize>, kind: LangTokenKind) -> Self {
         Token { range, kind }
     }

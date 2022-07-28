@@ -1,17 +1,9 @@
 #[cfg(test)]
-mod tests {
-    use std::collections::HashMap;
-    use std::ops::Deref;
-
-    use std::path::Path;
-
-    use crate::compilers::jack_compiler::codegen::generate_vm_code;
-    use crate::compilers::jack_compiler::parser::parse;
-    use crate::compilers::vm_compiler::ParsedModule;
+pub mod test_utils {
+    use crate::compilers::compile_to_machine_code;
     use crate::compilers::{assembler::assemble, utils::source_modules::SourceModule, vm_compiler};
     use crate::{emulator::computer::Computer, emulator::config, emulator::generate_rom};
-
-    use super::super::source_modules::get_source_modules;
+    use std::collections::HashMap;
 
     pub const INITIAL_STACK_POINTER_ADDRESS: i16 = 261;
 
@@ -33,36 +25,6 @@ mod tests {
         let asm = vm_compiler::codegen::generate_asm(parsed_vm_modules);
         let machine_code = assemble(asm, config::ROM_DEPTH);
         Computer::new(generate_rom::from_string(machine_code))
-    }
-
-    pub fn compile_to_machine_code(jack_code: Vec<&str>) -> String {
-        let std_lib_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../std_lib");
-
-        let std_lib_source: Vec<_> = get_source_modules(&std_lib_dir)
-            .expect("failed to get stdlib modules")
-            .into_iter()
-            .map(|stdlib_module| stdlib_module.source)
-            .collect();
-
-        let jack_classes: Vec<_> = std_lib_source
-            .iter()
-            .map(|source| source.deref())
-            .chain(jack_code.into_iter())
-            .map(parse)
-            .collect();
-
-        let parsed_vm_modules: Vec<_> = jack_classes
-            .iter()
-            .map(generate_vm_code)
-            .enumerate()
-            .map(|(idx, commands)| ParsedModule {
-                filename: format!("some_filename_{idx}").into(),
-                commands: Box::new(commands.into_iter()),
-            })
-            .collect();
-
-        let asm = vm_compiler::codegen::generate_asm(parsed_vm_modules);
-        assemble(asm, config::ROM_DEPTH)
     }
 
     pub fn computer_from_jack_code(jack_code: Vec<&str>) -> Computer {
@@ -97,10 +59,6 @@ mod tests {
 
     pub fn peek_stack(computer: &Computer) -> i16 {
         nth_stack_value(computer, 0)
-    }
-
-    pub fn statics_includes(computer: &Computer, value: i16) -> bool {
-        (0..240).any(|static_idx| static_variable(computer, static_idx) == value)
     }
 
     pub fn heap_includes(computer: &Computer, values: &[i16]) -> bool {
@@ -214,24 +172,6 @@ mod tests {
         panic!("predicate was not true within {} ticks", max_ticks);
     }
 
-    pub fn tick_within_stack_frame_until(
-        computer: &mut Computer,
-        predicate: &dyn Fn(&Computer) -> bool,
-    ) {
-        let initial_depth = frame_stack_depth(computer);
-        let max_ticks: usize = 10_000_000_000;
-        for _ in 0..=max_ticks {
-            if predicate(computer) {
-                return;
-            }
-            if frame_stack_depth(computer) < initial_depth {
-                panic!("predicate was never fulfilled within the stack frame");
-            }
-            computer.tick();
-        }
-        panic!("predicate was not true within {} ticks", max_ticks);
-    }
-
     pub fn string_from_pointer(computer: &Computer, pointer: i16) -> String {
         let ram = computer.ram.lock().unwrap();
         let str_length = ram[pointer as usize + 1] as usize;
@@ -240,8 +180,6 @@ mod tests {
         let u16_buffer: Vec<_> = str_buffer.iter().map(|&x| x as u16).collect();
         String::from_utf16(&u16_buffer).unwrap()
     }
-
-    use super::count_nonoverlapping_sequences;
 
     #[test]
     fn test_count_nonoverlapping_sequences() {

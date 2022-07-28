@@ -12,8 +12,6 @@ use crate::compilers::utils::{
     tokenizer::{Token, Tokenizer},
 };
 
-pub struct JackNode {}
-
 #[derive(Serialize, TS, Debug, PartialEq)]
 #[ts(export)]
 #[ts(export_to = "../bindings/")]

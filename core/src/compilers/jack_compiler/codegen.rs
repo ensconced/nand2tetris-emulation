@@ -6,10 +6,10 @@ use crate::compilers::vm_compiler::parser::{
 
 use super::parser::{
     BinaryOperator, Class, ClassVarDeclaration, ClassVarDeclarationKindVariant, Expression,
-    JackNode, Parameter, PrimitiveTermVariant, Statement, SubroutineCall, SubroutineDeclaration,
+    Parameter, PrimitiveTermVariant, Statement, SubroutineCall, SubroutineDeclaration,
     SubroutineKind, Type, TypeVariant, UnaryOperator, VarDeclaration,
 };
-use std::{collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 
 #[derive(Clone, PartialEq)]
 enum SymbolKind {
@@ -25,8 +25,8 @@ struct Symbol {
     kind: SymbolKind,
 }
 
-struct CodeGenerator {
-    class_name: Option<String>,
+pub struct CodeGenerator {
+    pub class_name: Option<String>,
     class_fields: HashMap<String, Symbol>,
     class_statics: HashMap<String, Symbol>,
     subroutine_while_count: usize,
@@ -319,8 +319,6 @@ impl CodeGenerator {
                 BinaryArithmeticCommandVariant::Add,
             ))],
         };
-
-        let origin_node = Rc::new(JackNode {});
 
         push_lhs
             .into_iter()
@@ -669,8 +667,6 @@ impl CodeGenerator {
     }
 
     fn compile_statement(&mut self, statement: &Statement) -> Vec<Command> {
-        let origin_node = Rc::new(JackNode {});
-
         match statement {
             Statement::Do(subroutine_call) => self.compile_do_statement(subroutine_call),
             Statement::Let {
@@ -772,7 +768,7 @@ impl CodeGenerator {
             .collect()
     }
 
-    fn compile_subroutines(
+    pub fn compile_subroutines(
         &mut self,
         subroutine_declarations: &[SubroutineDeclaration],
         instance_size: usize,
@@ -783,7 +779,10 @@ impl CodeGenerator {
             .collect()
     }
 
-    fn compile_var_declarations(&mut self, var_declarations: &Vec<ClassVarDeclaration>) -> usize {
+    pub fn compile_var_declarations(
+        &mut self,
+        var_declarations: &Vec<ClassVarDeclaration>,
+    ) -> usize {
         let mut instance_size = 0;
         for var_declaration in var_declarations {
             let (hashmap, symbol_kind) = match var_declaration.qualifier.variant {

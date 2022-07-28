@@ -6,7 +6,9 @@ use std::{
 use tabled::{Style, Table, Tabled};
 
 pub enum DebugMode {
+    #[allow(dead_code)]
     Verbose,
+    #[allow(dead_code)]
     Heap,
     None,
 }

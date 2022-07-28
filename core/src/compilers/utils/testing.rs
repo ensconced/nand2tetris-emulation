@@ -5,11 +5,8 @@ use std::path::Path;
 
 use crate::compilers::jack_compiler::codegen::generate_vm_code;
 use crate::compilers::jack_compiler::parser::parse;
-use crate::compilers::vm_compiler::parser::{Command, CommandWithOrigin};
 use crate::compilers::vm_compiler::ParsedModule;
-use crate::compilers::{
-    assembler::assemble, jack_compiler, utils::source_modules::SourceModule, vm_compiler,
-};
+use crate::compilers::{assembler::assemble, utils::source_modules::SourceModule, vm_compiler};
 use crate::{emulator::computer::Computer, emulator::config, emulator::generate_rom};
 
 use super::source_modules::get_source_modules;
@@ -58,7 +55,7 @@ pub fn compile_to_machine_code(jack_code: Vec<&str>) -> String {
         .enumerate()
         .map(|(idx, commands)| ParsedModule {
             filename: format!("some_filename_{idx}").into(),
-            commands: Box::new(commands.into_iter().map(|command| command.command)),
+            commands: Box::new(commands.into_iter()),
         })
         .collect();
 

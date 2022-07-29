@@ -14,6 +14,7 @@ pub mod jack_compiler;
 pub mod utils;
 pub mod vm_compiler;
 
+use jack_compiler::sourcemap::SourceMap;
 use std::path::Path;
 
 pub fn compile_to_machine_code(jack_code: Vec<&str>) -> String {
@@ -37,6 +38,7 @@ pub fn compile_to_machine_code(jack_code: Vec<&str>) -> String {
         .map(generate_vm_code)
         .enumerate()
         .map(|(idx, commands)| ParsedModule {
+            // TODO - use actual filenames here
             filename: format!("some_filename_{idx}").into(),
             commands: Box::new(commands.into_iter()),
         })

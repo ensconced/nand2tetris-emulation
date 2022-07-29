@@ -2,6 +2,7 @@ use std::path::Path;
 
 pub mod codegen;
 pub mod parser;
+pub mod sourcemap;
 mod tokenizer;
 
 use std::{fs, io};

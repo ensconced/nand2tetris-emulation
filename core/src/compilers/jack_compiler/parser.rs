@@ -1,11 +1,14 @@
 use std::ops::Range;
 use ts_rs::TS;
 
-use super::tokenizer::{
-    token_defs,
-    KeywordTokenVariant::{self, *},
-    OperatorVariant::{self, *},
-    TokenKind::{self, *},
+use super::{
+    sourcemap::SourceMap,
+    tokenizer::{
+        token_defs,
+        KeywordTokenVariant::{self, *},
+        OperatorVariant::{self, *},
+        TokenKind::{self, *},
+    },
 };
 use crate::compilers::utils::{
     parser_utils::PeekableTokens,

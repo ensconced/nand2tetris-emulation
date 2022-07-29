@@ -7,7 +7,7 @@ use super::{
         token_defs,
         KeywordTokenVariant::{self, *},
         OperatorVariant::{self, *},
-        TokenKind::{self, *},
+        TokenKind,
     },
 };
 use crate::compilers::utils::{
@@ -229,80 +229,86 @@ pub struct SubroutineDeclaration {
     source_byte_range: Range<usize>,
 }
 
-fn maybe_take_primitive_expression(tokens: &mut PeekableTokens<TokenKind>) -> Option<Expression> {
-    let peeked_token = tokens.peek().cloned();
+struct ParserState {
+    tokens: PeekableTokens<TokenKind>,
+    sourcemap: SourceMap,
+}
+
+fn maybe_take_primitive_expression(parser_state: &mut ParserState) -> Option<Expression> {
+    use TokenKind::*;
+    let peeked_token = parser_state.tokens.peek().cloned();
     peeked_token.and_then(|token| match token.kind {
         IntegerLiteral(string) => {
-            tokens.next();
+            parser_state.tokens.next();
             Some(Expression::PrimitiveTerm(IntegerConstant(string)))
         }
         StringLiteral(string) => {
-            tokens.next();
+            parser_state.tokens.next();
             Some(Expression::PrimitiveTerm(StringConstant(string)))
         }
         Keyword(KeywordTokenVariant::True) => {
-            tokens.next();
+            parser_state.tokens.next();
             Some(Expression::PrimitiveTerm(PrimitiveTermVariant::True))
         }
         Keyword(KeywordTokenVariant::False) => {
-            tokens.next();
+            parser_state.tokens.next();
             Some(Expression::PrimitiveTerm(PrimitiveTermVariant::False))
         }
         Keyword(KeywordTokenVariant::Null) => {
-            tokens.next();
+            parser_state.tokens.next();
             Some(Expression::PrimitiveTerm(PrimitiveTermVariant::Null))
         }
         Keyword(KeywordTokenVariant::This) => {
-            tokens.next();
+            parser_state.tokens.next();
             Some(Expression::PrimitiveTerm(PrimitiveTermVariant::This))
         }
         _ => None,
     })
 }
 
-fn take_array_access(tokens: &mut PeekableTokens<TokenKind>, var_name: String) -> Expression {
-    take_token(tokens, LSquareBracket);
-    let index = take_expression(tokens);
-    take_token(tokens, RSquareBracket);
+fn take_array_access(parser_state: &mut ParserState, var_name: String) -> Expression {
+    use TokenKind::*;
+    take_token(parser_state, LSquareBracket);
+    let index = take_expression(parser_state);
+    take_token(parser_state, RSquareBracket);
     Expression::ArrayAccess {
         var_name,
         index: Box::new(index),
     }
 }
 
-fn maybe_take_parenthesized_expression(
-    tokens: &mut PeekableTokens<TokenKind>,
-) -> Option<Expression> {
-    if let Some(Token { kind: LParen, .. }) = tokens.peek() {
-        tokens.next();
-        let expr = take_expression(tokens);
-        take_token(tokens, RParen);
+fn maybe_take_parenthesized_expression(parser_state: &mut ParserState) -> Option<Expression> {
+    use TokenKind::*;
+    if let Some(Token { kind: LParen, .. }) = parser_state.tokens.peek() {
+        parser_state.tokens.next();
+        let expr = take_expression(parser_state);
+        take_token(parser_state, RParen);
         Some(expr)
     } else {
         None
     }
 }
 
-fn maybe_take_term_starting_with_identifier(
-    tokens: &mut PeekableTokens<TokenKind>,
-) -> Option<Expression> {
-    let p = tokens.peek();
+fn maybe_take_term_starting_with_identifier(parser_state: &mut ParserState) -> Option<Expression> {
+    use TokenKind::*;
+    let p = parser_state.tokens.peek();
     if let Some(Token {
         kind: Identifier(string),
         ..
     }) = p
     {
         let string = string.to_string();
-        let identifier = take_identifier(tokens);
-        match tokens.peek() {
+        let identifier = take_identifier(parser_state);
+        match parser_state.tokens.peek() {
             Some(Token {
                 kind: LSquareBracket,
                 ..
-            }) => Some(take_array_access(tokens, identifier.name)),
+            }) => Some(take_array_access(parser_state, identifier.name)),
             Some(Token {
                 kind: Dot | LParen, ..
             }) => Some(Expression::SubroutineCall(take_subroutine_call(
-                tokens, identifier,
+                parser_state,
+                identifier,
             ))),
             _ => Some(Expression::Variable(string)),
         }
@@ -312,17 +318,18 @@ fn maybe_take_term_starting_with_identifier(
 }
 
 fn maybe_take_expression_with_binding_power(
-    tokens: &mut PeekableTokens<TokenKind>,
+    parser_state: &mut ParserState,
     binding_power: u8,
 ) -> Option<Expression> {
+    use TokenKind::*;
     let mut lhs = if let Some(Token {
         kind: Operator(op), ..
-    }) = tokens.peek()
+    }) = parser_state.tokens.peek()
     {
         let op = op.clone();
         let rbp = prefix_precedence(op.clone()).expect("invalid prefix operator");
-        tokens.next();
-        let operand = maybe_take_expression_with_binding_power(tokens, rbp)
+        parser_state.tokens.next();
+        let operand = maybe_take_expression_with_binding_power(parser_state, rbp)
             .expect("unary operator has no operand");
         let operator = match op {
             OperatorVariant::Minus => UnaryOperator::Minus,
@@ -334,13 +341,13 @@ fn maybe_take_expression_with_binding_power(
             operand: Box::new(operand),
         }
     } else {
-        maybe_take_primitive_expression(tokens)
-            .or_else(|| maybe_take_term_starting_with_identifier(tokens))
-            .or_else(|| maybe_take_parenthesized_expression(tokens))?
+        maybe_take_primitive_expression(parser_state)
+            .or_else(|| maybe_take_term_starting_with_identifier(parser_state))
+            .or_else(|| maybe_take_parenthesized_expression(parser_state))?
     };
 
     loop {
-        match tokens.peek() {
+        match parser_state.tokens.peek() {
             Some(Token {
                 kind: Operator(op), ..
             }) => {
@@ -349,8 +356,8 @@ fn maybe_take_expression_with_binding_power(
                 if lbp < binding_power {
                     break;
                 }
-                tokens.next();
-                let rhs = maybe_take_expression_with_binding_power(tokens, rbp)
+                parser_state.tokens.next();
+                let rhs = maybe_take_expression_with_binding_power(parser_state, rbp)
                     .expect("expected rhs for binary operator");
                 let operator = match op {
                     Plus => BinaryOperator::Plus,
@@ -381,13 +388,14 @@ fn maybe_take_expression_with_binding_power(
     Some(lhs)
 }
 
-fn take_class_keyword(tokens: &mut PeekableTokens<TokenKind>) -> Token<TokenKind> {
-    tokens
+fn take_class_keyword(parser_state: &mut ParserState) -> Token<TokenKind> {
+    parser_state
+        .tokens
         .next_if(|token| {
             matches!(
                 token,
                 Token {
-                    kind: Keyword(Class),
+                    kind: TokenKind::Keyword(Class),
                     ..
                 }
             )
@@ -395,18 +403,19 @@ fn take_class_keyword(tokens: &mut PeekableTokens<TokenKind>) -> Token<TokenKind
         .expect("expected keyword \"class\".")
 }
 
-fn take_token(tokens: &mut PeekableTokens<TokenKind>, token_kind: TokenKind) -> Token<TokenKind> {
-    tokens
+fn take_token(parser_state: &mut ParserState, token_kind: TokenKind) -> Token<TokenKind> {
+    parser_state
+        .tokens
         .next_if(|token| token.kind == token_kind)
         .unwrap_or_else(|| panic!("expected token {:?}", token_kind))
 }
 
-fn take_identifier(tokens: &mut PeekableTokens<TokenKind>) -> Identifier {
+fn take_identifier(parser_state: &mut ParserState) -> Identifier {
     if let Some(Token {
-        kind: Identifier(string),
+        kind: TokenKind::Identifier(string),
         range,
         ..
-    }) = tokens.next()
+    }) = parser_state.tokens.next()
     {
         Identifier {
             name: string,
@@ -417,32 +426,31 @@ fn take_identifier(tokens: &mut PeekableTokens<TokenKind>) -> Identifier {
     }
 }
 
-fn take_expression(tokens: &mut PeekableTokens<TokenKind>) -> Expression {
-    maybe_take_expression_with_binding_power(tokens, 0).expect("expected expression")
+fn take_expression(parser_state: &mut ParserState) -> Expression {
+    maybe_take_expression_with_binding_power(parser_state, 0).expect("expected expression")
 }
 
-fn take_expression_list(tokens: &mut PeekableTokens<TokenKind>) -> Vec<Expression> {
+fn take_expression_list(parser_state: &mut ParserState) -> Vec<Expression> {
+    use TokenKind::*;
     let mut result = Vec::new();
-    if let Some(expression) = maybe_take_expression_with_binding_power(tokens, 0) {
+    if let Some(expression) = maybe_take_expression_with_binding_power(parser_state, 0) {
         result.push(expression);
-        while let Some(Token { kind: Comma, .. }) = tokens.peek() {
-            tokens.next();
-            result.push(take_expression(tokens));
+        while let Some(Token { kind: Comma, .. }) = parser_state.tokens.peek() {
+            parser_state.tokens.next();
+            result.push(take_expression(parser_state));
         }
     }
     result
 }
 
-fn take_subroutine_call(
-    tokens: &mut PeekableTokens<TokenKind>,
-    name: Identifier,
-) -> SubroutineCall {
-    match tokens.peek() {
+fn take_subroutine_call(parser_state: &mut ParserState, name: Identifier) -> SubroutineCall {
+    use TokenKind::*;
+    match parser_state.tokens.peek() {
         Some(Token { kind: LParen, .. }) => {
             // Direct function call
-            tokens.next(); // LParen
-            let arguments = take_expression_list(tokens);
-            take_token(tokens, RParen);
+            parser_state.tokens.next(); // LParen
+            let arguments = take_expression_list(parser_state);
+            take_token(parser_state, RParen);
             SubroutineCall::Direct {
                 subroutine_name: name,
                 arguments,
@@ -450,11 +458,11 @@ fn take_subroutine_call(
         }
         Some(Token { kind: Dot, .. }) => {
             // Method call
-            tokens.next(); // Dot
-            let method_name = take_identifier(tokens);
-            take_token(tokens, LParen);
-            let arguments = take_expression_list(tokens);
-            take_token(tokens, RParen);
+            parser_state.tokens.next(); // Dot
+            let method_name = take_identifier(parser_state);
+            take_token(parser_state, LParen);
+            let arguments = take_expression_list(parser_state);
+            take_token(parser_state, RParen);
             SubroutineCall::Method {
                 this_name: name,
                 method_name,
@@ -465,22 +473,22 @@ fn take_subroutine_call(
     }
 }
 
-fn take_subroutine_return_type(tokens: &mut PeekableTokens<TokenKind>) -> Option<Type> {
+fn take_subroutine_return_type(parser_state: &mut ParserState) -> Option<Type> {
     if let Some(Token {
-        kind: Keyword(Void),
+        kind: TokenKind::Keyword(Void),
         ..
-    }) = tokens.peek()
+    }) = parser_state.tokens.peek()
     {
-        tokens.next();
+        parser_state.tokens.next();
         None
     } else {
-        Some(take_type(tokens))
+        Some(take_type(parser_state))
     }
 }
 
-fn maybe_take_parameter(tokens: &mut PeekableTokens<TokenKind>) -> Option<Parameter> {
-    maybe_take_type(tokens).map(|type_name| {
-        let var_name = take_identifier(tokens);
+fn maybe_take_parameter(parser_state: &mut ParserState) -> Option<Parameter> {
+    maybe_take_type(parser_state).map(|type_name| {
+        let var_name = take_identifier(parser_state);
         let source_byte_range = type_name.source_byte_range.start..var_name.source_byte_range.end;
         Parameter {
             type_name,
@@ -490,15 +498,19 @@ fn maybe_take_parameter(tokens: &mut PeekableTokens<TokenKind>) -> Option<Parame
     })
 }
 
-fn take_parameters(tokens: &mut PeekableTokens<TokenKind>) -> Vec<Parameter> {
+fn take_parameters(parser_state: &mut ParserState) -> Vec<Parameter> {
     let mut result = Vec::new();
-    if let Some(parameter) = maybe_take_parameter(tokens) {
+    if let Some(parameter) = maybe_take_parameter(parser_state) {
         result.push(parameter);
 
-        while let Some(Token { kind: Comma, .. }) = tokens.peek() {
-            tokens.next(); // comma
+        while let Some(Token {
+            kind: TokenKind::Comma,
+            ..
+        }) = parser_state.tokens.peek()
+        {
+            parser_state.tokens.next(); // comma
             result.push(
-                maybe_take_parameter(tokens)
+                maybe_take_parameter(parser_state)
                     .unwrap_or_else(|| panic!("expected parameter after comma")),
             );
         }
@@ -506,31 +518,32 @@ fn take_parameters(tokens: &mut PeekableTokens<TokenKind>) -> Vec<Parameter> {
     result
 }
 
-fn maybe_take_array_index(tokens: &mut PeekableTokens<TokenKind>) -> Option<Expression> {
-    tokens
+fn maybe_take_array_index(parser_state: &mut ParserState) -> Option<Expression> {
+    parser_state
+        .tokens
         .next_if(|token| {
             matches!(
                 token,
                 Token {
-                    kind: LSquareBracket,
+                    kind: TokenKind::LSquareBracket,
                     ..
                 }
             )
         })
         .map(|_| {
-            let expression = take_expression(tokens);
-            take_token(tokens, RSquareBracket);
+            let expression = take_expression(parser_state);
+            take_token(parser_state, TokenKind::RSquareBracket);
             expression
         })
 }
 
-fn take_let_statement(tokens: &mut PeekableTokens<TokenKind>) -> Statement {
-    tokens.next(); // "let" keyword
-    let var_name = take_identifier(tokens);
-    let array_index = maybe_take_array_index(tokens);
-    take_token(tokens, Operator(Equals));
-    let value = take_expression(tokens);
-    take_token(tokens, Semicolon);
+fn take_let_statement(parser_state: &mut ParserState) -> Statement {
+    parser_state.tokens.next(); // "let" keyword
+    let var_name = take_identifier(parser_state);
+    let array_index = maybe_take_array_index(parser_state);
+    take_token(parser_state, TokenKind::Operator(Equals));
+    let value = take_expression(parser_state);
+    take_token(parser_state, TokenKind::Semicolon);
     Statement::Let {
         var_name,
         array_index,
@@ -538,34 +551,35 @@ fn take_let_statement(tokens: &mut PeekableTokens<TokenKind>) -> Statement {
     }
 }
 
-fn take_statement_block(tokens: &mut PeekableTokens<TokenKind>) -> Vec<Statement> {
-    take_token(tokens, LCurly);
-    let statements = take_statements(tokens);
-    take_token(tokens, RCurly);
+fn take_statement_block(parser_state: &mut ParserState) -> Vec<Statement> {
+    take_token(parser_state, TokenKind::LCurly);
+    let statements = take_statements(parser_state);
+    take_token(parser_state, TokenKind::RCurly);
     statements
 }
 
-fn maybe_take_else_block(tokens: &mut PeekableTokens<TokenKind>) -> Option<Vec<Statement>> {
-    tokens
+fn maybe_take_else_block(parser_state: &mut ParserState) -> Option<Vec<Statement>> {
+    parser_state
+        .tokens
         .next_if(|token| {
             matches!(
                 token,
                 Token {
-                    kind: Keyword(Else),
+                    kind: TokenKind::Keyword(Else),
                     ..
                 }
             )
         })
-        .map(|_| take_statement_block(tokens))
+        .map(|_| take_statement_block(parser_state))
 }
 
-fn take_if_statement(tokens: &mut PeekableTokens<TokenKind>) -> Statement {
-    tokens.next(); // "if" keyword
-    take_token(tokens, LParen);
-    let condition = take_expression(tokens);
-    take_token(tokens, RParen);
-    let if_statements = take_statement_block(tokens);
-    let else_statements = maybe_take_else_block(tokens);
+fn take_if_statement(parser_state: &mut ParserState) -> Statement {
+    parser_state.tokens.next(); // "if" keyword
+    take_token(parser_state, TokenKind::LParen);
+    let condition = take_expression(parser_state);
+    take_token(parser_state, TokenKind::RParen);
+    let if_statements = take_statement_block(parser_state);
+    let else_statements = maybe_take_else_block(parser_state);
     Statement::If {
         condition,
         if_statements,
@@ -573,45 +587,45 @@ fn take_if_statement(tokens: &mut PeekableTokens<TokenKind>) -> Statement {
     }
 }
 
-fn take_while_statement(tokens: &mut PeekableTokens<TokenKind>) -> Statement {
-    tokens.next(); // "while" keyword
-    take_token(tokens, LParen);
-    let expression = take_expression(tokens);
-    take_token(tokens, RParen);
-    let statements = take_statement_block(tokens);
+fn take_while_statement(parser_state: &mut ParserState) -> Statement {
+    parser_state.tokens.next(); // "while" keyword
+    take_token(parser_state, TokenKind::LParen);
+    let expression = take_expression(parser_state);
+    take_token(parser_state, TokenKind::RParen);
+    let statements = take_statement_block(parser_state);
     Statement::While {
         condition: expression,
         statements,
     }
 }
 
-fn take_do_statement(tokens: &mut PeekableTokens<TokenKind>) -> Statement {
-    tokens.next(); // "do" keyword
-    let identifier = take_identifier(tokens);
-    let subroutine_call = take_subroutine_call(tokens, identifier);
-    take_token(tokens, Semicolon);
+fn take_do_statement(parser_state: &mut ParserState) -> Statement {
+    parser_state.tokens.next(); // "do" keyword
+    let identifier = take_identifier(parser_state);
+    let subroutine_call = take_subroutine_call(parser_state, identifier);
+    take_token(parser_state, TokenKind::Semicolon);
     Statement::Do(subroutine_call)
 }
 
-fn take_return_statement(tokens: &mut PeekableTokens<TokenKind>) -> Statement {
-    tokens.next(); // "return" keyword
-    let expression = maybe_take_expression_with_binding_power(tokens, 0);
-    take_token(tokens, Semicolon);
+fn take_return_statement(parser_state: &mut ParserState) -> Statement {
+    parser_state.tokens.next(); // "return" keyword
+    let expression = maybe_take_expression_with_binding_power(parser_state, 0);
+    take_token(parser_state, TokenKind::Semicolon);
     Statement::Return(expression)
 }
 
-fn maybe_take_statement(tokens: &mut PeekableTokens<TokenKind>) -> Option<Statement> {
+fn maybe_take_statement(parser_state: &mut ParserState) -> Option<Statement> {
     if let Some(Token {
-        kind: Keyword(keyword),
+        kind: TokenKind::Keyword(keyword),
         ..
-    }) = tokens.peek()
+    }) = parser_state.tokens.peek()
     {
         match keyword {
-            Let => Some(take_let_statement(tokens)),
-            If => Some(take_if_statement(tokens)),
-            While => Some(take_while_statement(tokens)),
-            Do => Some(take_do_statement(tokens)),
-            Return => Some(take_return_statement(tokens)),
+            Let => Some(take_let_statement(parser_state)),
+            If => Some(take_if_statement(parser_state)),
+            While => Some(take_while_statement(parser_state)),
+            Do => Some(take_do_statement(parser_state)),
+            Return => Some(take_return_statement(parser_state)),
             _ => None,
         }
     } else {
@@ -619,23 +633,23 @@ fn maybe_take_statement(tokens: &mut PeekableTokens<TokenKind>) -> Option<Statem
     }
 }
 
-fn take_statements(tokens: &mut PeekableTokens<TokenKind>) -> Vec<Statement> {
+fn take_statements(parser_state: &mut ParserState) -> Vec<Statement> {
     let mut result = Vec::new();
-    while let Some(statement) = maybe_take_statement(tokens) {
+    while let Some(statement) = maybe_take_statement(parser_state) {
         result.push(statement);
     }
     result
 }
 
-fn take_var_declaration(tokens: &mut PeekableTokens<TokenKind>) -> VarDeclaration {
+fn take_var_declaration(parser_state: &mut ParserState) -> VarDeclaration {
     if let Some(Token {
-        kind: Keyword(Var),
+        kind: TokenKind::Keyword(Var),
         range: keyword_range,
-    }) = tokens.next()
+    }) = parser_state.tokens.next()
     {
-        let type_name = take_type(tokens);
-        let var_names = take_var_names(tokens);
-        take_token(tokens, Semicolon);
+        let type_name = take_type(parser_state);
+        let var_names = take_var_names(parser_state);
+        take_token(parser_state, TokenKind::Semicolon);
         let source_byte_range = keyword_range.start..var_names.source_byte_range.end;
         VarDeclaration {
             type_name,
@@ -647,22 +661,23 @@ fn take_var_declaration(tokens: &mut PeekableTokens<TokenKind>) -> VarDeclaratio
     }
 }
 
-fn take_var_declarations(tokens: &mut PeekableTokens<TokenKind>) -> Vec<VarDeclaration> {
+fn take_var_declarations(parser_state: &mut ParserState) -> Vec<VarDeclaration> {
     let mut result = Vec::new();
     while let Some(Token {
-        kind: Keyword(Var), ..
-    }) = tokens.peek()
+        kind: TokenKind::Keyword(Var),
+        ..
+    }) = parser_state.tokens.peek()
     {
-        result.push(take_var_declaration(tokens));
+        result.push(take_var_declaration(parser_state));
     }
     result
 }
 
-fn take_subroutine_body(tokens: &mut PeekableTokens<TokenKind>) -> SubroutineBody {
-    let start_curly = take_token(tokens, LCurly);
-    let var_declarations = take_var_declarations(tokens);
-    let statements = take_statements(tokens);
-    let end_curly = take_token(tokens, RCurly);
+fn take_subroutine_body(parser_state: &mut ParserState) -> SubroutineBody {
+    let start_curly = take_token(parser_state, TokenKind::LCurly);
+    let var_declarations = take_var_declarations(parser_state);
+    let statements = take_statements(parser_state);
+    let end_curly = take_token(parser_state, TokenKind::RCurly);
     SubroutineBody {
         var_declarations,
         statements,
@@ -670,12 +685,12 @@ fn take_subroutine_body(tokens: &mut PeekableTokens<TokenKind>) -> SubroutineBod
     }
 }
 
-fn take_subroutine_declaration(tokens: &mut PeekableTokens<TokenKind>) -> SubroutineDeclaration {
+fn take_subroutine_declaration(parser_state: &mut ParserState) -> SubroutineDeclaration {
     if let Some(Token {
-        kind: Keyword(keyword),
+        kind: TokenKind::Keyword(keyword),
         range: subroutine_kind_keyword_range,
         ..
-    }) = tokens.next()
+    }) = parser_state.tokens.next()
     {
         let subroutine_kind = match keyword {
             Constructor => SubroutineKind::Constructor,
@@ -684,12 +699,12 @@ fn take_subroutine_declaration(tokens: &mut PeekableTokens<TokenKind>) -> Subrou
             _ => panic!("expected subroutine kind"),
         };
 
-        let return_type = take_subroutine_return_type(tokens);
-        let name = take_identifier(tokens);
-        take_token(tokens, LParen);
-        let parameters = take_parameters(tokens);
-        take_token(tokens, RParen);
-        let body = take_subroutine_body(tokens);
+        let return_type = take_subroutine_return_type(parser_state);
+        let name = take_identifier(parser_state);
+        take_token(parser_state, TokenKind::LParen);
+        let parameters = take_parameters(parser_state);
+        take_token(parser_state, TokenKind::RParen);
+        let body = take_subroutine_body(parser_state);
         let source_byte_range = subroutine_kind_keyword_range.start..body.source_byte_range.end;
         SubroutineDeclaration {
             subroutine_kind,
@@ -705,35 +720,34 @@ fn take_subroutine_declaration(tokens: &mut PeekableTokens<TokenKind>) -> Subrou
 }
 
 fn maybe_take_subroutine_declaration(
-    tokens: &mut PeekableTokens<TokenKind>,
+    parser_state: &mut ParserState,
 ) -> Option<SubroutineDeclaration> {
+    use KeywordTokenVariant::*;
     if let Some(Token {
-        kind: Keyword(Constructor | Function | Method),
+        kind: TokenKind::Keyword(Constructor | Function | Method),
         ..
-    }) = tokens.peek()
+    }) = parser_state.tokens.peek()
     {
-        Some(take_subroutine_declaration(tokens))
+        Some(take_subroutine_declaration(parser_state))
     } else {
         None
     }
 }
 
 fn take_class_subroutine_declarations(
-    tokens: &mut PeekableTokens<TokenKind>,
+    parser_state: &mut ParserState,
 ) -> Vec<SubroutineDeclaration> {
     let mut result = Vec::new();
-    while let Some(subroutine_declaration) = maybe_take_subroutine_declaration(tokens) {
+    while let Some(subroutine_declaration) = maybe_take_subroutine_declaration(parser_state) {
         result.push(subroutine_declaration);
     }
     result
 }
 
-fn take_class_var_declaration_qualifier(
-    tokens: &mut PeekableTokens<TokenKind>,
-) -> ClassVarDeclarationKind {
-    match tokens.next() {
+fn take_class_var_declaration_qualifier(parser_state: &mut ParserState) -> ClassVarDeclarationKind {
+    match parser_state.tokens.next() {
         Some(Token {
-            kind: Keyword(keyword),
+            kind: TokenKind::Keyword(keyword),
             range,
             ..
         }) => {
@@ -751,12 +765,12 @@ fn take_class_var_declaration_qualifier(
     }
 }
 
-fn take_var_name(tokens: &mut PeekableTokens<TokenKind>) -> Identifier {
+fn take_var_name(parser_state: &mut ParserState) -> Identifier {
     if let Some(Token {
-        kind: Identifier(var_name),
+        kind: TokenKind::Identifier(var_name),
         range,
         ..
-    }) = tokens.next()
+    }) = parser_state.tokens.next()
     {
         Identifier {
             name: var_name,
@@ -767,14 +781,18 @@ fn take_var_name(tokens: &mut PeekableTokens<TokenKind>) -> Identifier {
     }
 }
 
-fn take_var_names(tokens: &mut PeekableTokens<TokenKind>) -> VarNames {
+fn take_var_names(parser_state: &mut ParserState) -> VarNames {
     // There has to be at least one var name.
-    let first_var = take_var_name(tokens);
+    let first_var = take_var_name(parser_state);
     let mut source_byte_range = first_var.source_byte_range.clone();
     let mut names = vec![first_var];
-    while let Some(Token { kind: Comma, .. }) = tokens.peek() {
-        tokens.next(); // comma
-        let var = take_var_name(tokens);
+    while let Some(Token {
+        kind: TokenKind::Comma,
+        ..
+    }) = parser_state.tokens.peek()
+    {
+        parser_state.tokens.next(); // comma
+        let var = take_var_name(parser_state);
         source_byte_range.end = var.source_byte_range.end;
         names.push(var);
     }
@@ -784,14 +802,14 @@ fn take_var_names(tokens: &mut PeekableTokens<TokenKind>) -> VarNames {
     }
 }
 
-fn take_type(tokens: &mut PeekableTokens<TokenKind>) -> Type {
-    match tokens.next() {
+fn take_type(parser_state: &mut ParserState) -> Type {
+    match parser_state.tokens.next() {
         Some(Token { kind, range, .. }) => {
             let type_variant = match kind {
-                Keyword(Int) => TypeVariant::Int,
-                Keyword(Char) => TypeVariant::Char,
-                Keyword(Boolean) => TypeVariant::Boolean,
-                Identifier(class_name) => TypeVariant::ClassName(Identifier {
+                TokenKind::Keyword(Int) => TypeVariant::Int,
+                TokenKind::Keyword(Char) => TypeVariant::Char,
+                TokenKind::Keyword(Boolean) => TypeVariant::Boolean,
+                TokenKind::Identifier(class_name) => TypeVariant::ClassName(Identifier {
                     name: class_name,
                     source_byte_range: range.clone(),
                 }),
@@ -806,26 +824,27 @@ fn take_type(tokens: &mut PeekableTokens<TokenKind>) -> Type {
     }
 }
 
-fn maybe_take_type(tokens: &mut PeekableTokens<TokenKind>) -> Option<Type> {
+fn maybe_take_type(parser_state: &mut ParserState) -> Option<Type> {
+    use KeywordTokenVariant::*;
     if let Some(
         Token {
-            kind: Keyword(Int | Char | Boolean) | Identifier(_),
+            kind: TokenKind::Keyword(Int | Char | Boolean) | TokenKind::Identifier(_),
             ..
         },
         ..,
-    ) = tokens.peek()
+    ) = parser_state.tokens.peek()
     {
-        Some(take_type(tokens))
+        Some(take_type(parser_state))
     } else {
         None
     }
 }
 
-fn take_class_var_declaration(tokens: &mut PeekableTokens<TokenKind>) -> ClassVarDeclaration {
-    let qualifier = take_class_var_declaration_qualifier(tokens);
-    let type_name = take_type(tokens);
-    let var_names = take_var_names(tokens);
-    let semicolon = take_token(tokens, Semicolon);
+fn take_class_var_declaration(parser_state: &mut ParserState) -> ClassVarDeclaration {
+    let qualifier = take_class_var_declaration_qualifier(parser_state);
+    let type_name = take_type(parser_state);
+    let var_names = take_var_names(parser_state);
+    let semicolon = take_token(parser_state, TokenKind::Semicolon);
     let source_byte_range = qualifier.source_byte_range.start..semicolon.range.end;
     ClassVarDeclaration {
         qualifier,
@@ -835,33 +854,32 @@ fn take_class_var_declaration(tokens: &mut PeekableTokens<TokenKind>) -> ClassVa
     }
 }
 
-fn maybe_take_class_var_declaration(
-    tokens: &mut PeekableTokens<TokenKind>,
-) -> Option<ClassVarDeclaration> {
-    match tokens.peek().expect("unexpected end of input") {
+fn maybe_take_class_var_declaration(parser_state: &mut ParserState) -> Option<ClassVarDeclaration> {
+    use KeywordTokenVariant::*;
+    match parser_state.tokens.peek().expect("unexpected end of input") {
         Token {
-            kind: Keyword(Static | Field),
+            kind: TokenKind::Keyword(Static | Field),
             ..
-        } => Some(take_class_var_declaration(tokens)),
+        } => Some(take_class_var_declaration(parser_state)),
         _ => None,
     }
 }
 
-fn take_class_var_declarations(tokens: &mut PeekableTokens<TokenKind>) -> Vec<ClassVarDeclaration> {
+fn take_class_var_declarations(parser_state: &mut ParserState) -> Vec<ClassVarDeclaration> {
     let mut result = Vec::new();
-    while let Some(class_var_declaration) = maybe_take_class_var_declaration(tokens) {
+    while let Some(class_var_declaration) = maybe_take_class_var_declaration(parser_state) {
         result.push(class_var_declaration);
     }
     result
 }
 
-fn take_class(tokens: &mut PeekableTokens<TokenKind>) -> Class {
-    let class_keyword = take_class_keyword(tokens);
-    let name = take_identifier(tokens);
-    take_token(tokens, LCurly);
-    let var_declarations = take_class_var_declarations(tokens);
-    let subroutine_declarations = take_class_subroutine_declarations(tokens);
-    let end_curly = take_token(tokens, RCurly);
+fn take_class(parser_state: &mut ParserState) -> Class {
+    let class_keyword = take_class_keyword(parser_state);
+    let name = take_identifier(parser_state);
+    take_token(parser_state, TokenKind::LCurly);
+    let var_declarations = take_class_var_declarations(parser_state);
+    let subroutine_declarations = take_class_subroutine_declarations(parser_state);
+    let end_curly = take_token(parser_state, TokenKind::RCurly);
     Class {
         name,
         var_declarations,
@@ -904,8 +922,11 @@ pub fn parse(source: &str) -> Class {
         )
     });
     let cleaned_tokens: Box<dyn Iterator<Item = Token<TokenKind>>> = Box::new(filtered);
-    let mut cleaned_peekable_tokens = cleaned_tokens.peekable();
-    take_class(&mut cleaned_peekable_tokens)
+    let mut parser_state = ParserState {
+        tokens: cleaned_tokens.peekable(),
+        sourcemap: SourceMap::new(),
+    };
+    take_class(&mut parser_state)
 }
 
 #[cfg(test)]
@@ -921,8 +942,11 @@ mod tests {
             )
         });
         let cleaned_tokens: Box<dyn Iterator<Item = Token<TokenKind>>> = Box::new(filtered);
-        let mut cleaned_peekable_tokens = cleaned_tokens.peekable();
-        take_expression(&mut cleaned_peekable_tokens)
+        let mut parser_state = ParserState {
+            tokens: cleaned_tokens.peekable(),
+            sourcemap: SourceMap::new(),
+        };
+        take_expression(&mut parser_state)
     }
 
     #[test]

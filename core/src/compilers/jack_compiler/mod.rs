@@ -1,6 +1,7 @@
 use std::path::Path;
 
 pub mod codegen;
+pub mod jack_node_types;
 pub mod parser;
 pub mod sourcemap;
 mod tokenizer;

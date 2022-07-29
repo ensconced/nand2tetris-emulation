@@ -1,11 +1,8 @@
-use std::ops::Range;
-use ts_rs::TS;
-
 use super::{
+    jack_node_types::{PrimitiveTermVariant::*, *},
     sourcemap::SourceMap,
     tokenizer::{
-        token_defs,
-        KeywordTokenVariant::{self, *},
+        token_defs, KeywordTokenVariant,
         OperatorVariant::{self, *},
         TokenKind,
     },
@@ -14,220 +11,6 @@ use crate::compilers::utils::{
     parser_utils::PeekableTokens,
     tokenizer::{Token, Tokenizer},
 };
-
-#[derive(Serialize, TS, Debug, PartialEq)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
-pub struct Class {
-    pub name: Identifier,
-    pub var_declarations: Vec<ClassVarDeclaration>,
-    pub subroutine_declarations: Vec<SubroutineDeclaration>,
-    source_byte_range: Range<usize>,
-}
-
-#[derive(Serialize, TS, Debug, PartialEq)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
-pub enum ClassVarDeclarationKindVariant {
-    Static,
-    Field,
-}
-
-#[derive(Serialize, TS, Debug, PartialEq)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
-pub struct ClassVarDeclarationKind {
-    pub variant: ClassVarDeclarationKindVariant,
-    source_byte_range: Range<usize>,
-}
-
-#[derive(Serialize, TS, Clone, Debug, PartialEq)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
-pub enum TypeVariant {
-    Int,
-    Char,
-    Boolean,
-    ClassName(Identifier),
-}
-
-#[derive(Serialize, TS, Debug, PartialEq)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
-pub struct Type {
-    pub variant: TypeVariant,
-    source_byte_range: Range<usize>,
-}
-
-#[derive(Serialize, TS, Clone, Debug, PartialEq)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
-pub struct Identifier {
-    pub name: String,
-    source_byte_range: Range<usize>,
-}
-
-#[derive(Serialize, TS, Debug, PartialEq)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
-pub struct ClassVarDeclaration {
-    pub type_name: Type,
-    pub qualifier: ClassVarDeclarationKind,
-    pub var_names: VarNames,
-    source_byte_range: Range<usize>,
-}
-
-#[derive(Serialize, TS, Copy, Clone, Debug, PartialEq)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
-pub enum SubroutineKind {
-    Constructor,
-    Function,
-    Method,
-}
-
-#[derive(Serialize, TS, Debug, PartialEq)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
-pub enum PrimitiveTermVariant {
-    IntegerConstant(String),
-    StringConstant(String),
-    True,
-    False,
-    Null,
-    This,
-}
-use serde::Serialize;
-use PrimitiveTermVariant::*;
-
-#[derive(Serialize, TS, Debug, PartialEq)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
-pub enum BinaryOperator {
-    Plus,
-    Minus,
-    Multiply,
-    Divide,
-    And,
-    Or,
-    LessThan,
-    LessThanOrEquals,
-    GreaterThan,
-    GreaterThanOrEquals,
-    Equals,
-}
-
-#[derive(Serialize, TS, Debug, PartialEq)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
-pub enum UnaryOperator {
-    Minus,
-    Not,
-}
-
-#[derive(Serialize, TS, Debug, PartialEq)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
-pub enum Expression {
-    PrimitiveTerm(PrimitiveTermVariant),
-    Binary {
-        operator: BinaryOperator,
-        lhs: Box<Expression>,
-        rhs: Box<Expression>,
-    },
-    Unary {
-        operator: UnaryOperator,
-        operand: Box<Expression>,
-    },
-    Variable(String),
-    SubroutineCall(SubroutineCall),
-    ArrayAccess {
-        var_name: String,
-        index: Box<Expression>,
-    },
-}
-
-#[derive(Serialize, TS, Debug, PartialEq)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
-pub struct Parameter {
-    pub type_name: Type,
-    pub var_name: Identifier,
-    source_byte_range: Range<usize>,
-}
-
-#[derive(Serialize, TS, Debug, PartialEq)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
-pub enum SubroutineCall {
-    Direct {
-        subroutine_name: Identifier,
-        arguments: Vec<Expression>,
-    },
-    Method {
-        this_name: Identifier,
-        method_name: Identifier,
-        arguments: Vec<Expression>,
-    },
-}
-
-#[derive(Serialize, TS, Debug, PartialEq)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
-pub enum Statement {
-    Let {
-        var_name: Identifier,
-        array_index: Option<Expression>,
-        value: Expression,
-    },
-    If {
-        condition: Expression,
-        if_statements: Vec<Statement>,
-        else_statements: Option<Vec<Statement>>,
-    },
-    While {
-        condition: Expression,
-        statements: Vec<Statement>,
-    },
-    Do(SubroutineCall),
-    Return(Option<Expression>),
-}
-#[derive(Serialize, TS, Debug, PartialEq)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
-pub struct VarNames {
-    pub names: Vec<Identifier>,
-    source_byte_range: Range<usize>,
-}
-
-#[derive(Serialize, TS, Debug, PartialEq)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
-pub struct VarDeclaration {
-    pub type_name: Type,
-    pub var_names: VarNames,
-    source_byte_range: Range<usize>,
-}
-
-#[derive(Serialize, TS, Debug, PartialEq)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
-pub struct SubroutineBody {
-    pub var_declarations: Vec<VarDeclaration>,
-    pub statements: Vec<Statement>,
-    source_byte_range: Range<usize>,
-}
-#[derive(Serialize, TS, Debug, PartialEq)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
-pub struct SubroutineDeclaration {
-    pub subroutine_kind: SubroutineKind,
-    pub return_type: Option<Type>,
-    pub parameters: Vec<Parameter>,
-    pub name: Identifier,
-    pub body: SubroutineBody,
-    source_byte_range: Range<usize>,
-}
 
 struct ParserState {
     tokens: PeekableTokens<TokenKind>,
@@ -395,7 +178,7 @@ fn take_class_keyword(parser_state: &mut ParserState) -> Token<TokenKind> {
             matches!(
                 token,
                 Token {
-                    kind: TokenKind::Keyword(Class),
+                    kind: TokenKind::Keyword(KeywordTokenVariant::Class),
                     ..
                 }
             )
@@ -475,7 +258,7 @@ fn take_subroutine_call(parser_state: &mut ParserState, name: Identifier) -> Sub
 
 fn take_subroutine_return_type(parser_state: &mut ParserState) -> Option<Type> {
     if let Some(Token {
-        kind: TokenKind::Keyword(Void),
+        kind: TokenKind::Keyword(KeywordTokenVariant::Void),
         ..
     }) = parser_state.tokens.peek()
     {
@@ -565,7 +348,7 @@ fn maybe_take_else_block(parser_state: &mut ParserState) -> Option<Vec<Statement
             matches!(
                 token,
                 Token {
-                    kind: TokenKind::Keyword(Else),
+                    kind: TokenKind::Keyword(KeywordTokenVariant::Else),
                     ..
                 }
             )
@@ -615,6 +398,7 @@ fn take_return_statement(parser_state: &mut ParserState) -> Statement {
 }
 
 fn maybe_take_statement(parser_state: &mut ParserState) -> Option<Statement> {
+    use KeywordTokenVariant::*;
     if let Some(Token {
         kind: TokenKind::Keyword(keyword),
         ..
@@ -643,7 +427,7 @@ fn take_statements(parser_state: &mut ParserState) -> Vec<Statement> {
 
 fn take_var_declaration(parser_state: &mut ParserState) -> VarDeclaration {
     if let Some(Token {
-        kind: TokenKind::Keyword(Var),
+        kind: TokenKind::Keyword(KeywordTokenVariant::Var),
         range: keyword_range,
     }) = parser_state.tokens.next()
     {
@@ -664,7 +448,7 @@ fn take_var_declaration(parser_state: &mut ParserState) -> VarDeclaration {
 fn take_var_declarations(parser_state: &mut ParserState) -> Vec<VarDeclaration> {
     let mut result = Vec::new();
     while let Some(Token {
-        kind: TokenKind::Keyword(Var),
+        kind: TokenKind::Keyword(KeywordTokenVariant::Var),
         ..
     }) = parser_state.tokens.peek()
     {
@@ -686,6 +470,7 @@ fn take_subroutine_body(parser_state: &mut ParserState) -> SubroutineBody {
 }
 
 fn take_subroutine_declaration(parser_state: &mut ParserState) -> SubroutineDeclaration {
+    use KeywordTokenVariant::*;
     if let Some(Token {
         kind: TokenKind::Keyword(keyword),
         range: subroutine_kind_keyword_range,
@@ -745,6 +530,7 @@ fn take_class_subroutine_declarations(
 }
 
 fn take_class_var_declaration_qualifier(parser_state: &mut ParserState) -> ClassVarDeclarationKind {
+    use KeywordTokenVariant::*;
     match parser_state.tokens.next() {
         Some(Token {
             kind: TokenKind::Keyword(keyword),
@@ -803,6 +589,7 @@ fn take_var_names(parser_state: &mut ParserState) -> VarNames {
 }
 
 fn take_type(parser_state: &mut ParserState) -> Type {
+    use KeywordTokenVariant::*;
     match parser_state.tokens.next() {
         Some(Token { kind, range, .. }) => {
             let type_variant = match kind {

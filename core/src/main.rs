@@ -5,7 +5,7 @@ mod fonts;
 use clap::{Parser, Subcommand};
 use compilers::{
     assembler::assemble_file,
-    jack_compiler::{self, parser::Class},
+    jack_compiler::{self, jack_node_types::Class},
     vm_compiler,
 };
 use emulator::run::run;

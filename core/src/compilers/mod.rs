@@ -14,7 +14,6 @@ pub mod jack_compiler;
 pub mod utils;
 pub mod vm_compiler;
 
-use jack_compiler::sourcemap::SourceMap;
 use std::path::Path;
 
 pub fn compile_to_machine_code(jack_code: Vec<&str>) -> String {

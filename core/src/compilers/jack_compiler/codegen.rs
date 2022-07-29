@@ -4,7 +4,7 @@ use crate::compilers::vm_compiler::parser::{
     PointerSegmentVariant, UnaryArithmeticCommandVariant,
 };
 
-use super::parser::{
+use super::jack_node_types::{
     BinaryOperator, Class, ClassVarDeclaration, ClassVarDeclarationKindVariant, Expression,
     Parameter, PrimitiveTermVariant, Statement, SubroutineCall, SubroutineDeclaration,
     SubroutineKind, Type, TypeVariant, UnaryOperator, VarDeclaration,

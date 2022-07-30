@@ -84,7 +84,7 @@ impl CodeGenerator {
     ) -> usize {
         let mut count = 0;
         for var_declaration in var_declarations {
-            for var_name in var_declaration.var_names.names.iter() {
+            for var_name in var_declaration.var_names.iter() {
                 count += 1;
                 self.subroutine_vars.insert(
                     var_name.clone(),
@@ -518,14 +518,12 @@ impl CodeGenerator {
             SubroutineCall::Direct {
                 subroutine_name,
                 arguments,
-            } => self.compile_direct_subroutine_call_expression(&subroutine_name, arguments),
+            } => self.compile_direct_subroutine_call_expression(subroutine_name, arguments),
             SubroutineCall::Method {
                 this_name,
                 method_name,
                 arguments,
-            } => {
-                self.compile_method_subroutine_call_expression(&this_name, &method_name, arguments)
-            }
+            } => self.compile_method_subroutine_call_expression(this_name, method_name, arguments),
         }
     }
 
@@ -671,7 +669,7 @@ impl CodeGenerator {
                 var_name,
                 array_index,
                 value,
-            } => self.compile_let_statement(&var_name, array_index, value),
+            } => self.compile_let_statement(var_name, array_index, value),
             Statement::If {
                 condition,
                 if_statements,
@@ -787,7 +785,7 @@ impl CodeGenerator {
                 ClassVarDeclarationKind::Static => (&mut self.class_statics, SymbolKind::Static),
                 ClassVarDeclarationKind::Field => (&mut self.class_fields, SymbolKind::Field),
             };
-            for var_name in var_declaration.var_names.names.iter() {
+            for var_name in var_declaration.var_names.iter() {
                 if symbol_kind == SymbolKind::Field {
                     instance_size += 1;
                 }

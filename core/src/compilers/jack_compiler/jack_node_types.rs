@@ -34,7 +34,7 @@ pub enum Type {
 pub struct ClassVarDeclaration {
     pub type_name: Type,
     pub qualifier: ClassVarDeclarationKind,
-    pub var_names: VarNames,
+    pub var_names: Vec<String>,
 }
 
 #[derive(Serialize, TS, Copy, Clone, Debug, PartialEq)]
@@ -152,16 +152,9 @@ pub enum Statement {
 #[derive(Serialize, TS, Debug, PartialEq)]
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
-pub struct VarNames {
-    pub names: Vec<String>,
-}
-
-#[derive(Serialize, TS, Debug, PartialEq)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
 pub struct VarDeclaration {
     pub type_name: Type,
-    pub var_names: VarNames,
+    pub var_names: Vec<String>,
 }
 
 #[derive(Serialize, TS, Debug, PartialEq)]

@@ -580,7 +580,7 @@ impl Parser {
         }
     }
 
-    fn take_var_names(&mut self) -> VarNames {
+    fn take_var_names(&mut self) -> Vec<String> {
         // There has to be at least one var name.
         let first_var = self.take_var_name();
         let mut names = vec![first_var];
@@ -593,7 +593,7 @@ impl Parser {
             let var = self.take_var_name();
             names.push(var);
         }
-        VarNames { names }
+        names
     }
 
     fn take_type(&mut self) -> Type {
@@ -718,9 +718,7 @@ mod tests {
                 var_declarations: vec![ClassVarDeclaration {
                     qualifier: ClassVarDeclarationKind::Static,
                     type_name: Type::Int,
-                    var_names: VarNames {
-                        names: vec!["bar".to_string()],
-                    },
+                    var_names: vec!["bar".to_string()],
                 }],
                 subroutine_declarations: vec![],
             }
@@ -744,23 +742,17 @@ mod tests {
                     ClassVarDeclaration {
                         qualifier: ClassVarDeclarationKind::Static,
                         type_name: Type::Int,
-                        var_names: VarNames {
-                            names: vec!["bar".to_string()],
-                        },
+                        var_names: vec!["bar".to_string()],
                     },
                     ClassVarDeclaration {
                         qualifier: ClassVarDeclarationKind::Field,
                         type_name: Type::Char,
-                        var_names: VarNames {
-                            names: vec!["baz".to_string(), "buz".to_string(), "boz".to_string()],
-                        },
+                        var_names: vec!["baz".to_string(), "buz".to_string(), "boz".to_string()],
                     },
                     ClassVarDeclaration {
                         qualifier: ClassVarDeclarationKind::Field,
                         type_name: Type::Boolean,
-                        var_names: VarNames {
-                            names: vec!["a".to_string(), "b".to_string(), "c".to_string(),],
-                        },
+                        var_names: vec!["a".to_string(), "b".to_string(), "c".to_string(),],
                     }
                 ],
                 subroutine_declarations: vec![],
@@ -873,9 +865,7 @@ mod tests {
                     body: SubroutineBody {
                         var_declarations: vec![VarDeclaration {
                             type_name: Type::Int,
-                            var_names: VarNames {
-                                names: vec!["a".to_string()],
-                            },
+                            var_names: vec!["a".to_string()],
                         }],
                         statements: vec![
                             Statement::Let {

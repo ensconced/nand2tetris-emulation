@@ -3,4 +3,4 @@ import type { ClassVarDeclarationKind } from "./ClassVarDeclarationKind";
 import type { Type } from "./Type";
 import type { VarNames } from "./VarNames";
 
-export interface ClassVarDeclaration { type_name: Type, qualifier: ClassVarDeclarationKind, var_names: VarNames, source_byte_range: { start: number, end: number, }, }
+export interface ClassVarDeclaration { type_name: Type, qualifier: ClassVarDeclarationKind, var_names: VarNames, }

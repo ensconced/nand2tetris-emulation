@@ -2,4 +2,4 @@
 import type { Type } from "./Type";
 import type { VarNames } from "./VarNames";
 
-export interface VarDeclaration { type_name: Type, var_names: VarNames, source_byte_range: { start: number, end: number, }, }
+export interface VarDeclaration { type_name: Type, var_names: VarNames, }

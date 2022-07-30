@@ -2,4 +2,4 @@
 import type { Identifier } from "./Identifier";
 import type { Type } from "./Type";
 
-export interface Parameter { type_name: Type, var_name: Identifier, source_byte_range: { start: number, end: number, }, }
+export interface Parameter { type_name: Type, var_name: Identifier, }

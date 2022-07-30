@@ -3,4 +3,4 @@ import type { ClassVarDeclaration } from "./ClassVarDeclaration";
 import type { Identifier } from "./Identifier";
 import type { SubroutineDeclaration } from "./SubroutineDeclaration";
 
-export interface Class { name: Identifier, var_declarations: Array<ClassVarDeclaration>, subroutine_declarations: Array<SubroutineDeclaration>, source_byte_range: { start: number, end: number, }, }
+export interface Class { name: Identifier, var_declarations: Array<ClassVarDeclaration>, subroutine_declarations: Array<SubroutineDeclaration>, }

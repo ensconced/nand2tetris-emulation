@@ -5,9 +5,9 @@ use crate::compilers::vm_compiler::parser::{
 };
 
 use super::jack_node_types::{
-    BinaryOperator, Class, ClassVarDeclaration, ClassVarDeclarationKindVariant, Expression,
-    Parameter, PrimitiveTermVariant, Statement, SubroutineCall, SubroutineDeclaration,
-    SubroutineKind, Type, TypeVariant, UnaryOperator, VarDeclaration,
+    BinaryOperator, Class, ClassVarDeclaration, ClassVarDeclarationKind, Expression, Parameter,
+    PrimitiveTermVariant, Statement, SubroutineCall, SubroutineDeclaration, SubroutineKind, Type,
+    TypeVariant, UnaryOperator, VarDeclaration,
 };
 use std::collections::HashMap;
 
@@ -785,13 +785,9 @@ impl CodeGenerator {
     ) -> usize {
         let mut instance_size = 0;
         for var_declaration in var_declarations {
-            let (hashmap, symbol_kind) = match var_declaration.qualifier.variant {
-                ClassVarDeclarationKindVariant::Static => {
-                    (&mut self.class_statics, SymbolKind::Static)
-                }
-                ClassVarDeclarationKindVariant::Field => {
-                    (&mut self.class_fields, SymbolKind::Field)
-                }
+            let (hashmap, symbol_kind) = match var_declaration.qualifier {
+                ClassVarDeclarationKind::Static => (&mut self.class_statics, SymbolKind::Static),
+                ClassVarDeclarationKind::Field => (&mut self.class_fields, SymbolKind::Field),
             };
             for var_name in var_declaration.var_names.names.iter() {
                 if symbol_kind == SymbolKind::Field {

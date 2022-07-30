@@ -237,14 +237,10 @@ impl Parser {
     fn take_identifier(&mut self) -> Identifier {
         if let Some(Token {
             kind: TokenKind::Identifier(string),
-            range,
             ..
         }) = self.tokens.next()
         {
-            Identifier {
-                name: string,
-                source_byte_range: range,
-            }
+            Identifier { name: string }
         } else {
             panic!("expected identifier")
         }
@@ -314,12 +310,9 @@ impl Parser {
     fn maybe_take_parameter(&mut self) -> Option<Parameter> {
         self.maybe_take_type().map(|type_name| {
             let var_name = self.take_identifier();
-            let source_byte_range =
-                type_name.source_byte_range.start..var_name.source_byte_range.end;
             Parameter {
                 type_name,
                 var_name,
-                source_byte_range,
             }
         })
     }
@@ -469,17 +462,15 @@ impl Parser {
     fn take_var_declaration(&mut self) -> VarDeclaration {
         if let Some(Token {
             kind: TokenKind::Keyword(KeywordTokenVariant::Var),
-            range: keyword_range,
+            ..
         }) = self.tokens.next()
         {
             let type_name = self.take_type();
             let var_names = self.take_var_names();
             self.take_token(TokenKind::Semicolon);
-            let source_byte_range = keyword_range.start..var_names.source_byte_range.end;
             VarDeclaration {
                 type_name,
                 var_names,
-                source_byte_range,
             }
         } else {
             panic!("expected var keyword");
@@ -499,14 +490,13 @@ impl Parser {
     }
 
     fn take_subroutine_body(&mut self) -> SubroutineBody {
-        let start_curly = self.take_token(TokenKind::LCurly);
+        self.take_token(TokenKind::LCurly);
         let var_declarations = self.take_var_declarations();
         let statements = self.take_statements();
-        let end_curly = self.take_token(TokenKind::RCurly);
+        self.take_token(TokenKind::RCurly);
         SubroutineBody {
             var_declarations,
             statements,
-            source_byte_range: start_curly.range.start..end_curly.range.end,
         }
     }
 
@@ -514,7 +504,6 @@ impl Parser {
         use KeywordTokenVariant::*;
         if let Some(Token {
             kind: TokenKind::Keyword(keyword),
-            range: subroutine_kind_keyword_range,
             ..
         }) = self.tokens.next()
         {
@@ -531,14 +520,12 @@ impl Parser {
             let parameters = self.take_parameters();
             self.take_token(TokenKind::RParen);
             let body = self.take_subroutine_body();
-            let source_byte_range = subroutine_kind_keyword_range.start..body.source_byte_range.end;
             SubroutineDeclaration {
                 subroutine_kind,
                 return_type,
                 name,
                 parameters,
                 body,
-                source_byte_range,
             }
         } else {
             panic!("expected subroutine kind");
@@ -571,19 +558,12 @@ impl Parser {
         match self.tokens.next() {
             Some(Token {
                 kind: TokenKind::Keyword(keyword),
-                range,
                 ..
-            }) => {
-                let variant = match keyword {
-                    Static => ClassVarDeclarationKindVariant::Static,
-                    Field => ClassVarDeclarationKindVariant::Field,
-                    _ => panic!("expected var declaration qualifier",),
-                };
-                ClassVarDeclarationKind {
-                    variant,
-                    source_byte_range: range,
-                }
-            }
+            }) => match keyword {
+                Static => ClassVarDeclarationKind::Static,
+                Field => ClassVarDeclarationKind::Field,
+                _ => panic!("expected var declaration qualifier",),
+            },
             _ => panic!("expected var declaration qualifier",),
         }
     }
@@ -591,14 +571,10 @@ impl Parser {
     fn take_var_name(&mut self) -> Identifier {
         if let Some(Token {
             kind: TokenKind::Identifier(var_name),
-            range,
             ..
         }) = self.tokens.next()
         {
-            Identifier {
-                name: var_name,
-                source_byte_range: range,
-            }
+            Identifier { name: var_name }
         } else {
             panic!("expected var name")
         }
@@ -607,7 +583,6 @@ impl Parser {
     fn take_var_names(&mut self) -> VarNames {
         // There has to be at least one var name.
         let first_var = self.take_var_name();
-        let mut source_byte_range = first_var.source_byte_range.clone();
         let mut names = vec![first_var];
         while let Some(Token {
             kind: TokenKind::Comma,
@@ -616,32 +591,26 @@ impl Parser {
         {
             self.tokens.next(); // comma
             let var = self.take_var_name();
-            source_byte_range.end = var.source_byte_range.end;
             names.push(var);
         }
-        VarNames {
-            names,
-            source_byte_range,
-        }
+        VarNames { names }
     }
 
     fn take_type(&mut self) -> Type {
         use KeywordTokenVariant::*;
         match self.tokens.next() {
-            Some(Token { kind, range, .. }) => {
+            Some(Token { kind, .. }) => {
                 let type_variant = match kind {
                     TokenKind::Keyword(Int) => TypeVariant::Int,
                     TokenKind::Keyword(Char) => TypeVariant::Char,
                     TokenKind::Keyword(Boolean) => TypeVariant::Boolean,
-                    TokenKind::Identifier(class_name) => TypeVariant::ClassName(Identifier {
-                        name: class_name,
-                        source_byte_range: range.clone(),
-                    }),
+                    TokenKind::Identifier(class_name) => {
+                        TypeVariant::ClassName(Identifier { name: class_name })
+                    }
                     _ => panic!("expected var type name"),
                 };
                 Type {
                     variant: type_variant,
-                    source_byte_range: range,
                 }
             }
             _ => panic!("expected var type name"),
@@ -668,13 +637,11 @@ impl Parser {
         let qualifier = self.take_class_var_declaration_qualifier();
         let type_name = self.take_type();
         let var_names = self.take_var_names();
-        let semicolon = self.take_token(TokenKind::Semicolon);
-        let source_byte_range = qualifier.source_byte_range.start..semicolon.range.end;
+        self.take_token(TokenKind::Semicolon);
         ClassVarDeclaration {
             qualifier,
             type_name,
             var_names,
-            source_byte_range,
         }
     }
 
@@ -698,17 +665,16 @@ impl Parser {
     }
 
     fn take_class(&mut self) -> Class {
-        let class_keyword = self.take_class_keyword();
+        self.take_class_keyword();
         let name = self.take_identifier();
         self.take_token(TokenKind::LCurly);
         let var_declarations = self.take_class_var_declarations();
         let subroutine_declarations = self.take_class_subroutine_declarations();
-        let end_curly = self.take_token(TokenKind::RCurly);
+        self.take_token(TokenKind::RCurly);
         Class {
             name,
             var_declarations,
             subroutine_declarations,
-            source_byte_range: class_keyword.range.start..end_curly.range.end,
         }
     }
 }
@@ -740,11 +706,9 @@ mod tests {
             Class {
                 name: Identifier {
                     name: "foo".to_string(),
-                    source_byte_range: 6..9
                 },
                 var_declarations: vec![],
                 subroutine_declarations: vec![],
-                source_byte_range: 0..12
             }
         );
     }
@@ -761,28 +725,19 @@ mod tests {
             Class {
                 name: Identifier {
                     name: "foo".to_string(),
-                    source_byte_range: 19..22
                 },
                 var_declarations: vec![ClassVarDeclaration {
-                    qualifier: ClassVarDeclarationKind {
-                        variant: ClassVarDeclarationKindVariant::Static,
-                        source_byte_range: 39..45
-                    },
+                    qualifier: ClassVarDeclarationKind::Static,
                     type_name: Type {
                         variant: TypeVariant::Int,
-                        source_byte_range: 46..49
                     },
                     var_names: VarNames {
                         names: vec![Identifier {
                             name: "bar".to_string(),
-                            source_byte_range: 50..53
                         }],
-                        source_byte_range: 50..53
                     },
-                    source_byte_range: 39..54
                 }],
                 subroutine_declarations: vec![],
-                source_byte_range: 13..68
             }
         );
     }
@@ -801,86 +756,59 @@ mod tests {
             Class {
                 name: Identifier {
                     name: "foo".to_string(),
-                    source_byte_range: 19..22
                 },
                 var_declarations: vec![
                     ClassVarDeclaration {
-                        qualifier: ClassVarDeclarationKind {
-                            variant: ClassVarDeclarationKindVariant::Static,
-                            source_byte_range: 39..45,
-                        },
+                        qualifier: ClassVarDeclarationKind::Static,
                         type_name: Type {
                             variant: TypeVariant::Int,
-                            source_byte_range: 46..49
                         },
                         var_names: VarNames {
                             names: vec![Identifier {
                                 name: "bar".to_string(),
-                                source_byte_range: 50..53,
                             }],
-                            source_byte_range: 50..53
                         },
-                        source_byte_range: 39..54,
                     },
                     ClassVarDeclaration {
-                        qualifier: ClassVarDeclarationKind {
-                            variant: ClassVarDeclarationKindVariant::Field,
-                            source_byte_range: 69..74
-                        },
+                        qualifier: ClassVarDeclarationKind::Field,
                         type_name: Type {
                             variant: TypeVariant::Char,
-                            source_byte_range: 75..79
                         },
                         var_names: VarNames {
                             names: vec![
                                 Identifier {
                                     name: "baz".to_string(),
-                                    source_byte_range: 80..83,
                                 },
                                 Identifier {
                                     name: "buz".to_string(),
-                                    source_byte_range: 85..88,
                                 },
                                 Identifier {
                                     name: "boz".to_string(),
-                                    source_byte_range: 90..93,
                                 }
                             ],
-                            source_byte_range: 80..93
                         },
-                        source_byte_range: 69..94,
                     },
                     ClassVarDeclaration {
-                        qualifier: ClassVarDeclarationKind {
-                            variant: ClassVarDeclarationKindVariant::Field,
-                            source_byte_range: 109..114,
-                        },
+                        qualifier: ClassVarDeclarationKind::Field,
                         type_name: Type {
                             variant: TypeVariant::Boolean,
-                            source_byte_range: 115..122,
                         },
                         var_names: VarNames {
                             names: vec![
                                 Identifier {
                                     name: "a".to_string(),
-                                    source_byte_range: 123..124
                                 },
                                 Identifier {
                                     name: "b".to_string(),
-                                    source_byte_range: 126..127
                                 },
                                 Identifier {
                                     name: "c".to_string(),
-                                    source_byte_range: 129..130
                                 },
                             ],
-                            source_byte_range: 123..130
                         },
-                        source_byte_range: 109..131
                     }
                 ],
                 subroutine_declarations: vec![],
-                source_byte_range: 13..145,
             }
         );
     }
@@ -902,7 +830,6 @@ mod tests {
             Class {
                 name: Identifier {
                     name: "foo".to_string(),
-                    source_byte_range: 19..22
                 },
                 var_declarations: vec![],
                 subroutine_declarations: vec![
@@ -910,84 +837,63 @@ mod tests {
                         subroutine_kind: SubroutineKind::Constructor,
                         return_type: Some(Type {
                             variant: TypeVariant::Boolean,
-                            source_byte_range: 53..60,
                         }),
                         parameters: vec![
                             Parameter {
                                 type_name: Type {
                                     variant: TypeVariant::Int,
-                                    source_byte_range: 65..68
                                 },
                                 var_name: Identifier {
                                     name: "abc".to_string(),
-                                    source_byte_range: 69..72,
                                 },
-                                source_byte_range: 65..72,
                             },
                             Parameter {
                                 type_name: Type {
                                     variant: TypeVariant::Char,
-                                    source_byte_range: 74..78
                                 },
                                 var_name: Identifier {
                                     name: "def".to_string(),
-                                    source_byte_range: 79..82,
                                 },
-                                source_byte_range: 74..82,
                             },
                             Parameter {
                                 type_name: Type {
                                     variant: TypeVariant::ClassName(Identifier {
                                         name: "foo".to_string(),
-                                        source_byte_range: 84..87,
                                     }),
-                                    source_byte_range: 84..87
                                 },
                                 var_name: Identifier {
                                     name: "ghi".to_string(),
-                                    source_byte_range: 88..91,
                                 },
-                                source_byte_range: 84..91
                             }
                         ],
                         name: Identifier {
                             name: "bar".to_string(),
-                            source_byte_range: 61..64
                         },
                         body: SubroutineBody {
                             var_declarations: vec![],
                             statements: vec![],
-                            source_byte_range: 93..112
                         },
-                        source_byte_range: 41..112
                     },
                     SubroutineDeclaration {
                         subroutine_kind: SubroutineKind::Function,
                         return_type: Some(Type {
                             variant: TypeVariant::Char,
-                            source_byte_range: 138..142
                         }),
                         parameters: vec![Parameter {
                             type_name: Type {
                                 variant: TypeVariant::Boolean,
-                                source_byte_range: 147..154
                             },
                             var_name: Identifier {
                                 name: "_123".to_string(),
-                                source_byte_range: 155..159
                             },
-                            source_byte_range: 147..159
                         },],
                         name: Identifier {
                             name: "baz".to_string(),
-                            source_byte_range: 143..146
                         },
                         body: SubroutineBody {
                             var_declarations: vec![],
                             statements: vec![],
-                            source_byte_range: 161..180
                         },
-                        source_byte_range: 129..180
                     },
                     SubroutineDeclaration {
                         subroutine_kind: SubroutineKind::Method,
@@ -995,17 +901,13 @@ mod tests {
                         parameters: vec![],
                         name: Identifier {
                             name: "qux".to_string(),
-                            source_byte_range: 209..212
                         },
                         body: SubroutineBody {
                             var_declarations: vec![],
                             statements: vec![],
-                            source_byte_range: 215..234
                         },
-                        source_byte_range: 197..234
                     }
                 ],
-                source_byte_range: 13..248
             }
         );
     }
@@ -1038,40 +940,32 @@ mod tests {
             Class {
                 name: Identifier {
                     name: "foo".to_string(),
-                    source_byte_range: 19..22
                 },
                 var_declarations: vec![],
                 subroutine_declarations: vec![SubroutineDeclaration {
                     subroutine_kind: SubroutineKind::Constructor,
                     return_type: Some(Type {
                         variant: TypeVariant::Int,
-                        source_byte_range: 53..56
                     }),
                     parameters: vec![],
                     name: Identifier {
                         name: "blah".to_string(),
-                        source_byte_range: 57..61
                     },
                     body: SubroutineBody {
                         var_declarations: vec![VarDeclaration {
                             type_name: Type {
                                 variant: TypeVariant::Int,
-                                source_byte_range: 90..93
                             },
                             var_names: VarNames {
                                 names: vec![Identifier {
                                     name: "a".to_string(),
-                                    source_byte_range: 94..95
                                 }],
-                                source_byte_range: 94..95
                             },
-                            source_byte_range: 86..95
                         }],
                         statements: vec![
                             Statement::Let {
                                 var_name: Identifier {
                                     name: "a".to_string(),
-                                    source_byte_range: 121..122
                                 },
                                 array_index: None,
                                 value: Expression::PrimitiveTerm(IntegerConstant(
@@ -1081,7 +975,6 @@ mod tests {
                             Statement::Let {
                                 var_name: Identifier {
                                     name: "b".to_string(),
-                                    source_byte_range: 155..156
                                 },
                                 array_index: Some(Expression::PrimitiveTerm(IntegerConstant(
                                     "22".to_string()
@@ -1102,14 +995,12 @@ mod tests {
                                         Statement::Do(SubroutineCall::Direct {
                                             subroutine_name: Identifier {
                                                 name: "foobar".to_string(),
-                                                source_byte_range: 263..269
                                             },
                                             arguments: vec![]
                                         }),
                                         Statement::Do(SubroutineCall::Direct {
                                             subroutine_name: Identifier {
                                                 name: "foobar".to_string(),
-                                                source_byte_range: 303..309
                                             },
                                             arguments: vec![Expression::PrimitiveTerm(
                                                 IntegerConstant("1".to_string())
@@ -1118,7 +1009,6 @@ mod tests {
                                         Statement::Do(SubroutineCall::Direct {
                                             subroutine_name: Identifier {
                                                 name: "foobar".to_string(),
-                                                source_byte_range: 344..350
                                             },
                                             arguments: vec![
                                                 Expression::PrimitiveTerm(IntegerConstant(
@@ -1135,22 +1025,18 @@ mod tests {
                                         Statement::Do(SubroutineCall::Method {
                                             this_name: Identifier {
                                                 name: "foo".to_string(),
-                                                source_byte_range: 391..394
                                             },
                                             method_name: Identifier {
                                                 name: "bar".to_string(),
-                                                source_byte_range: 395..398
                                             },
                                             arguments: vec![]
                                         }),
                                         Statement::Do(SubroutineCall::Method {
                                             this_name: Identifier {
                                                 name: "foo".to_string(),
-                                                source_byte_range: 432..435
                                             },
                                             method_name: Identifier {
                                                 name: "bar".to_string(),
-                                                source_byte_range: 436..439
                                             },
                                             arguments: vec![Expression::PrimitiveTerm(
                                                 IntegerConstant("1".to_string())
@@ -1159,11 +1045,9 @@ mod tests {
                                         Statement::Do(SubroutineCall::Method {
                                             this_name: Identifier {
                                                 name: "foo".to_string(),
-                                                source_byte_range: 474..477
                                             },
                                             method_name: Identifier {
                                                 name: "bar".to_string(),
-                                                source_byte_range: 478..481
                                             },
                                             arguments: vec![
                                                 Expression::PrimitiveTerm(IntegerConstant(
@@ -1184,11 +1068,8 @@ mod tests {
                                 ))])
                             }
                         ],
-                        source_byte_range: 64..622
                     },
-                    source_byte_range: 41..622
                 }],
-                source_byte_range: 13..636
             }
         );
     }
@@ -1228,7 +1109,6 @@ mod tests {
             Class {
                 name: Identifier {
                     name: "foo".to_string(),
-                    source_byte_range: 19..22
                 },
                 var_declarations: vec![],
                 subroutine_declarations: vec![SubroutineDeclaration {
@@ -1237,14 +1117,12 @@ mod tests {
                     parameters: vec![],
                     name: Identifier {
                         name: "bar".to_string(),
-                        source_byte_range: 53..56
                     },
                     body: SubroutineBody {
                         var_declarations: vec![],
                         statements: vec![Statement::Let {
                             var_name: Identifier {
                                 name: "a".to_string(),
-                                source_byte_range: 86..87
                             },
                             array_index: None,
                             value: Expression::Binary {
@@ -1263,11 +1141,8 @@ mod tests {
                                 ))),
                             }
                         }],
-                        source_byte_range: 60..118
                     },
-                    source_byte_range: 41..118
                 }],
-                source_byte_range: 13..132
             }
         )
     }
@@ -1353,18 +1228,15 @@ mod tests {
                     rhs: Box::new(Expression::SubroutineCall(SubroutineCall::Direct {
                         subroutine_name: Identifier {
                             name: "foo".to_string(),
-                            source_byte_range: 4..7
                         },
                         arguments: vec![
                             Expression::PrimitiveTerm(IntegerConstant("1".to_string())),
                             Expression::SubroutineCall(SubroutineCall::Method {
                                 this_name: Identifier {
                                     name: "baz".to_string(),
-                                    source_byte_range: 11..14
                                 },
                                 method_name: Identifier {
                                     name: "bar".to_string(),
-                                    source_byte_range: 15..18
                                 },
                                 arguments: vec![
                                     Expression::PrimitiveTerm(IntegerConstant("1".to_string())),
@@ -1392,7 +1264,6 @@ mod tests {
                     rhs: Box::new(Expression::SubroutineCall(SubroutineCall::Direct {
                         subroutine_name: Identifier {
                             name: "foo".to_string(),
-                            source_byte_range: 4..7
                         },
                         arguments: vec![
                             Expression::PrimitiveTerm(IntegerConstant("1".to_string())),
@@ -1434,11 +1305,9 @@ mod tests {
                             lhs: Box::new(Expression::SubroutineCall(SubroutineCall::Method {
                                 this_name: Identifier {
                                     name: "buz".to_string(),
-                                    source_byte_range: 16..19
                                 },
                                 method_name: Identifier {
                                     name: "boz".to_string(),
-                                    source_byte_range: 20..23
                                 },
                                 arguments: vec![
                                     Expression::Variable("qux".to_string()),

@@ -5,4 +5,4 @@ import type { SubroutineBody } from "./SubroutineBody";
 import type { SubroutineKind } from "./SubroutineKind";
 import type { Type } from "./Type";
 
-export interface SubroutineDeclaration { subroutine_kind: SubroutineKind, return_type: Type | null, parameters: Array<Parameter>, name: Identifier, body: SubroutineBody, source_byte_range: { start: number, end: number, }, }
+export interface SubroutineDeclaration { subroutine_kind: SubroutineKind, return_type: Type | null, parameters: Array<Parameter>, name: Identifier, body: SubroutineBody, }

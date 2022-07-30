@@ -1,5 +1,4 @@
 use serde::Serialize;
-use std::ops::Range;
 use ts_rs::TS;
 
 #[derive(Serialize, TS, Debug, PartialEq)]
@@ -9,23 +8,14 @@ pub struct Class {
     pub name: Identifier,
     pub var_declarations: Vec<ClassVarDeclaration>,
     pub subroutine_declarations: Vec<SubroutineDeclaration>,
-    pub source_byte_range: Range<usize>,
 }
 
 #[derive(Serialize, TS, Debug, PartialEq)]
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
-pub enum ClassVarDeclarationKindVariant {
+pub enum ClassVarDeclarationKind {
     Static,
     Field,
-}
-
-#[derive(Serialize, TS, Debug, PartialEq)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
-pub struct ClassVarDeclarationKind {
-    pub variant: ClassVarDeclarationKindVariant,
-    pub source_byte_range: Range<usize>,
 }
 
 #[derive(Serialize, TS, Clone, Debug, PartialEq)]
@@ -43,7 +33,6 @@ pub enum TypeVariant {
 #[ts(export_to = "../bindings/")]
 pub struct Type {
     pub variant: TypeVariant,
-    pub source_byte_range: Range<usize>,
 }
 
 #[derive(Serialize, TS, Clone, Debug, PartialEq)]
@@ -51,7 +40,6 @@ pub struct Type {
 #[ts(export_to = "../bindings/")]
 pub struct Identifier {
     pub name: String,
-    pub source_byte_range: Range<usize>,
 }
 
 #[derive(Serialize, TS, Debug, PartialEq)]
@@ -61,7 +49,6 @@ pub struct ClassVarDeclaration {
     pub type_name: Type,
     pub qualifier: ClassVarDeclarationKind,
     pub var_names: VarNames,
-    pub source_byte_range: Range<usize>,
 }
 
 #[derive(Serialize, TS, Copy, Clone, Debug, PartialEq)]
@@ -138,7 +125,6 @@ pub enum Expression {
 pub struct Parameter {
     pub type_name: Type,
     pub var_name: Identifier,
-    pub source_byte_range: Range<usize>,
 }
 
 #[derive(Serialize, TS, Debug, PartialEq)]
@@ -182,7 +168,6 @@ pub enum Statement {
 #[ts(export_to = "../bindings/")]
 pub struct VarNames {
     pub names: Vec<Identifier>,
-    pub source_byte_range: Range<usize>,
 }
 
 #[derive(Serialize, TS, Debug, PartialEq)]
@@ -191,7 +176,6 @@ pub struct VarNames {
 pub struct VarDeclaration {
     pub type_name: Type,
     pub var_names: VarNames,
-    pub source_byte_range: Range<usize>,
 }
 
 #[derive(Serialize, TS, Debug, PartialEq)]
@@ -200,7 +184,6 @@ pub struct VarDeclaration {
 pub struct SubroutineBody {
     pub var_declarations: Vec<VarDeclaration>,
     pub statements: Vec<Statement>,
-    pub source_byte_range: Range<usize>,
 }
 #[derive(Serialize, TS, Debug, PartialEq)]
 #[ts(export)]
@@ -211,5 +194,4 @@ pub struct SubroutineDeclaration {
     pub parameters: Vec<Parameter>,
     pub name: Identifier,
     pub body: SubroutineBody,
-    pub source_byte_range: Range<usize>,
 }

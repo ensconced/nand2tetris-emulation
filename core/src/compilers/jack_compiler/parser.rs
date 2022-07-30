@@ -128,7 +128,7 @@ impl Parser {
                 Some(Token {
                     kind: LSquareBracket,
                     ..
-                }) => Some(self.take_array_access(identifier.name)),
+                }) => Some(self.take_array_access(identifier)),
                 Some(Token {
                     kind: Dot | LParen, ..
                 }) => Some(Expression::SubroutineCall(
@@ -234,13 +234,13 @@ impl Parser {
             .unwrap_or_else(|| panic!("expected token {:?}", token_kind))
     }
 
-    fn take_identifier(&mut self) -> Identifier {
+    fn take_identifier(&mut self) -> String {
         if let Some(Token {
             kind: TokenKind::Identifier(string),
             ..
         }) = self.tokens.next()
         {
-            Identifier { name: string }
+            string
         } else {
             panic!("expected identifier")
         }
@@ -264,7 +264,7 @@ impl Parser {
         result
     }
 
-    fn take_subroutine_call(&mut self, name: Identifier) -> SubroutineCall {
+    fn take_subroutine_call(&mut self, name: String) -> SubroutineCall {
         use TokenKind::*;
         match self.tokens.peek() {
             Some(Token { kind: LParen, .. }) => {
@@ -568,13 +568,13 @@ impl Parser {
         }
     }
 
-    fn take_var_name(&mut self) -> Identifier {
+    fn take_var_name(&mut self) -> String {
         if let Some(Token {
             kind: TokenKind::Identifier(var_name),
             ..
         }) = self.tokens.next()
         {
-            Identifier { name: var_name }
+            var_name
         } else {
             panic!("expected var name")
         }
@@ -603,9 +603,7 @@ impl Parser {
                 TokenKind::Keyword(Int) => Type::Int,
                 TokenKind::Keyword(Char) => Type::Char,
                 TokenKind::Keyword(Boolean) => Type::Boolean,
-                TokenKind::Identifier(class_name) => {
-                    Type::ClassName(Identifier { name: class_name })
-                }
+                TokenKind::Identifier(class_name) => Type::ClassName(class_name),
                 _ => panic!("expected var type name"),
             },
             _ => panic!("expected var type name"),
@@ -699,9 +697,7 @@ mod tests {
         assert_eq!(
             parse("class foo {}"),
             Class {
-                name: Identifier {
-                    name: "foo".to_string(),
-                },
+                name: "foo".to_string(),
                 var_declarations: vec![],
                 subroutine_declarations: vec![],
             }
@@ -718,16 +714,12 @@ mod tests {
             }"
             ),
             Class {
-                name: Identifier {
-                    name: "foo".to_string(),
-                },
+                name: "foo".to_string(),
                 var_declarations: vec![ClassVarDeclaration {
                     qualifier: ClassVarDeclarationKind::Static,
                     type_name: Type::Int,
                     var_names: VarNames {
-                        names: vec![Identifier {
-                            name: "bar".to_string(),
-                        }],
+                        names: vec!["bar".to_string()],
                     },
                 }],
                 subroutine_declarations: vec![],
@@ -747,51 +739,27 @@ mod tests {
             }"
             ),
             Class {
-                name: Identifier {
-                    name: "foo".to_string(),
-                },
+                name: "foo".to_string(),
                 var_declarations: vec![
                     ClassVarDeclaration {
                         qualifier: ClassVarDeclarationKind::Static,
                         type_name: Type::Int,
                         var_names: VarNames {
-                            names: vec![Identifier {
-                                name: "bar".to_string(),
-                            }],
+                            names: vec!["bar".to_string()],
                         },
                     },
                     ClassVarDeclaration {
                         qualifier: ClassVarDeclarationKind::Field,
                         type_name: Type::Char,
                         var_names: VarNames {
-                            names: vec![
-                                Identifier {
-                                    name: "baz".to_string(),
-                                },
-                                Identifier {
-                                    name: "buz".to_string(),
-                                },
-                                Identifier {
-                                    name: "boz".to_string(),
-                                }
-                            ],
+                            names: vec!["baz".to_string(), "buz".to_string(), "boz".to_string()],
                         },
                     },
                     ClassVarDeclaration {
                         qualifier: ClassVarDeclarationKind::Field,
                         type_name: Type::Boolean,
                         var_names: VarNames {
-                            names: vec![
-                                Identifier {
-                                    name: "a".to_string(),
-                                },
-                                Identifier {
-                                    name: "b".to_string(),
-                                },
-                                Identifier {
-                                    name: "c".to_string(),
-                                },
-                            ],
+                            names: vec!["a".to_string(), "b".to_string(), "c".to_string(),],
                         },
                     }
                 ],
@@ -815,9 +783,7 @@ mod tests {
             }"
             ),
             Class {
-                name: Identifier {
-                    name: "foo".to_string(),
-                },
+                name: "foo".to_string(),
                 var_declarations: vec![],
                 subroutine_declarations: vec![
                     SubroutineDeclaration {
@@ -826,28 +792,18 @@ mod tests {
                         parameters: vec![
                             Parameter {
                                 type_name: Type::Int,
-                                var_name: Identifier {
-                                    name: "abc".to_string(),
-                                },
+                                var_name: "abc".to_string(),
                             },
                             Parameter {
                                 type_name: Type::Char,
-                                var_name: Identifier {
-                                    name: "def".to_string(),
-                                },
+                                var_name: "def".to_string(),
                             },
                             Parameter {
-                                type_name: Type::ClassName(Identifier {
-                                    name: "foo".to_string(),
-                                }),
-                                var_name: Identifier {
-                                    name: "ghi".to_string(),
-                                },
+                                type_name: Type::ClassName("foo".to_string()),
+                                var_name: "ghi".to_string(),
                             }
                         ],
-                        name: Identifier {
-                            name: "bar".to_string(),
-                        },
+                        name: "bar".to_string(),
                         body: SubroutineBody {
                             var_declarations: vec![],
                             statements: vec![],
@@ -858,13 +814,9 @@ mod tests {
                         return_type: Some(Type::Char),
                         parameters: vec![Parameter {
                             type_name: Type::Boolean,
-                            var_name: Identifier {
-                                name: "_123".to_string(),
-                            },
+                            var_name: "_123".to_string(),
                         },],
-                        name: Identifier {
-                            name: "baz".to_string(),
-                        },
+                        name: "baz".to_string(),
                         body: SubroutineBody {
                             var_declarations: vec![],
                             statements: vec![],
@@ -874,9 +826,7 @@ mod tests {
                         subroutine_kind: SubroutineKind::Method,
                         return_type: None,
                         parameters: vec![],
-                        name: Identifier {
-                            name: "qux".to_string(),
-                        },
+                        name: "qux".to_string(),
                         body: SubroutineBody {
                             var_declarations: vec![],
                             statements: vec![],
@@ -913,40 +863,30 @@ mod tests {
             }"
             ),
             Class {
-                name: Identifier {
-                    name: "foo".to_string(),
-                },
+                name: "foo".to_string(),
                 var_declarations: vec![],
                 subroutine_declarations: vec![SubroutineDeclaration {
                     subroutine_kind: SubroutineKind::Constructor,
                     return_type: Some(Type::Int),
                     parameters: vec![],
-                    name: Identifier {
-                        name: "blah".to_string(),
-                    },
+                    name: "blah".to_string(),
                     body: SubroutineBody {
                         var_declarations: vec![VarDeclaration {
                             type_name: Type::Int,
                             var_names: VarNames {
-                                names: vec![Identifier {
-                                    name: "a".to_string(),
-                                }],
+                                names: vec!["a".to_string()],
                             },
                         }],
                         statements: vec![
                             Statement::Let {
-                                var_name: Identifier {
-                                    name: "a".to_string(),
-                                },
+                                var_name: "a".to_string(),
                                 array_index: None,
                                 value: Expression::PrimitiveTerm(IntegerConstant(
                                     "1234".to_string()
                                 ))
                             },
                             Statement::Let {
-                                var_name: Identifier {
-                                    name: "b".to_string(),
-                                },
+                                var_name: "b".to_string(),
                                 array_index: Some(Expression::PrimitiveTerm(IntegerConstant(
                                     "22".to_string()
                                 ))),
@@ -964,23 +904,17 @@ mod tests {
                                     )),
                                     statements: vec![
                                         Statement::Do(SubroutineCall::Direct {
-                                            subroutine_name: Identifier {
-                                                name: "foobar".to_string(),
-                                            },
+                                            subroutine_name: "foobar".to_string(),
                                             arguments: vec![]
                                         }),
                                         Statement::Do(SubroutineCall::Direct {
-                                            subroutine_name: Identifier {
-                                                name: "foobar".to_string(),
-                                            },
+                                            subroutine_name: "foobar".to_string(),
                                             arguments: vec![Expression::PrimitiveTerm(
                                                 IntegerConstant("1".to_string())
                                             )]
                                         }),
                                         Statement::Do(SubroutineCall::Direct {
-                                            subroutine_name: Identifier {
-                                                name: "foobar".to_string(),
-                                            },
+                                            subroutine_name: "foobar".to_string(),
                                             arguments: vec![
                                                 Expression::PrimitiveTerm(IntegerConstant(
                                                     "1".to_string()
@@ -994,32 +928,20 @@ mod tests {
                                             ]
                                         }),
                                         Statement::Do(SubroutineCall::Method {
-                                            this_name: Identifier {
-                                                name: "foo".to_string(),
-                                            },
-                                            method_name: Identifier {
-                                                name: "bar".to_string(),
-                                            },
+                                            this_name: "foo".to_string(),
+                                            method_name: "bar".to_string(),
                                             arguments: vec![]
                                         }),
                                         Statement::Do(SubroutineCall::Method {
-                                            this_name: Identifier {
-                                                name: "foo".to_string(),
-                                            },
-                                            method_name: Identifier {
-                                                name: "bar".to_string(),
-                                            },
+                                            this_name: "foo".to_string(),
+                                            method_name: "bar".to_string(),
                                             arguments: vec![Expression::PrimitiveTerm(
                                                 IntegerConstant("1".to_string())
                                             )]
                                         }),
                                         Statement::Do(SubroutineCall::Method {
-                                            this_name: Identifier {
-                                                name: "foo".to_string(),
-                                            },
-                                            method_name: Identifier {
-                                                name: "bar".to_string(),
-                                            },
+                                            this_name: "foo".to_string(),
+                                            method_name: "bar".to_string(),
                                             arguments: vec![
                                                 Expression::PrimitiveTerm(IntegerConstant(
                                                     "1".to_string()
@@ -1078,23 +1000,17 @@ mod tests {
             "
             ),
             Class {
-                name: Identifier {
-                    name: "foo".to_string(),
-                },
+                name: "foo".to_string(),
                 var_declarations: vec![],
                 subroutine_declarations: vec![SubroutineDeclaration {
                     subroutine_kind: SubroutineKind::Method,
                     return_type: None,
                     parameters: vec![],
-                    name: Identifier {
-                        name: "bar".to_string(),
-                    },
+                    name: "bar".to_string(),
                     body: SubroutineBody {
                         var_declarations: vec![],
                         statements: vec![Statement::Let {
-                            var_name: Identifier {
-                                name: "a".to_string(),
-                            },
+                            var_name: "a".to_string(),
                             array_index: None,
                             value: Expression::Binary {
                                 operator: BinaryOperator::Plus,
@@ -1197,18 +1113,12 @@ mod tests {
                     operator: BinaryOperator::Plus,
                     lhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                     rhs: Box::new(Expression::SubroutineCall(SubroutineCall::Direct {
-                        subroutine_name: Identifier {
-                            name: "foo".to_string(),
-                        },
+                        subroutine_name: "foo".to_string(),
                         arguments: vec![
                             Expression::PrimitiveTerm(IntegerConstant("1".to_string())),
                             Expression::SubroutineCall(SubroutineCall::Method {
-                                this_name: Identifier {
-                                    name: "baz".to_string(),
-                                },
-                                method_name: Identifier {
-                                    name: "bar".to_string(),
-                                },
+                                this_name: "baz".to_string(),
+                                method_name: "bar".to_string(),
                                 arguments: vec![
                                     Expression::PrimitiveTerm(IntegerConstant("1".to_string())),
                                     Expression::PrimitiveTerm(IntegerConstant("2".to_string())),
@@ -1233,9 +1143,7 @@ mod tests {
                     operator: BinaryOperator::Plus,
                     lhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                     rhs: Box::new(Expression::SubroutineCall(SubroutineCall::Direct {
-                        subroutine_name: Identifier {
-                            name: "foo".to_string(),
-                        },
+                        subroutine_name: "foo".to_string(),
                         arguments: vec![
                             Expression::PrimitiveTerm(IntegerConstant("1".to_string())),
                             Expression::ArrayAccess {
@@ -1274,12 +1182,8 @@ mod tests {
                         rhs: Box::new(Expression::Binary {
                             operator: BinaryOperator::Divide,
                             lhs: Box::new(Expression::SubroutineCall(SubroutineCall::Method {
-                                this_name: Identifier {
-                                    name: "buz".to_string(),
-                                },
-                                method_name: Identifier {
-                                    name: "boz".to_string(),
-                                },
+                                this_name: "buz".to_string(),
+                                method_name: "boz".to_string(),
                                 arguments: vec![
                                     Expression::Variable("qux".to_string()),
                                     Expression::ArrayAccess {

@@ -5,7 +5,7 @@ use ts_rs::TS;
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub struct Class {
-    pub name: Identifier,
+    pub name: String,
     pub var_declarations: Vec<ClassVarDeclaration>,
     pub subroutine_declarations: Vec<SubroutineDeclaration>,
 }
@@ -25,14 +25,7 @@ pub enum Type {
     Int,
     Char,
     Boolean,
-    ClassName(Identifier),
-}
-
-#[derive(Serialize, TS, Clone, Debug, PartialEq)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
-pub struct Identifier {
-    pub name: String,
+    ClassName(String),
 }
 
 #[derive(Serialize, TS, Debug, PartialEq)]
@@ -117,7 +110,7 @@ pub enum Expression {
 #[ts(export_to = "../bindings/")]
 pub struct Parameter {
     pub type_name: Type,
-    pub var_name: Identifier,
+    pub var_name: String,
 }
 
 #[derive(Serialize, TS, Debug, PartialEq)]
@@ -125,12 +118,12 @@ pub struct Parameter {
 #[ts(export_to = "../bindings/")]
 pub enum SubroutineCall {
     Direct {
-        subroutine_name: Identifier,
+        subroutine_name: String,
         arguments: Vec<Expression>,
     },
     Method {
-        this_name: Identifier,
-        method_name: Identifier,
+        this_name: String,
+        method_name: String,
         arguments: Vec<Expression>,
     },
 }
@@ -140,7 +133,7 @@ pub enum SubroutineCall {
 #[ts(export_to = "../bindings/")]
 pub enum Statement {
     Let {
-        var_name: Identifier,
+        var_name: String,
         array_index: Option<Expression>,
         value: Expression,
     },
@@ -160,7 +153,7 @@ pub enum Statement {
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub struct VarNames {
-    pub names: Vec<Identifier>,
+    pub names: Vec<String>,
 }
 
 #[derive(Serialize, TS, Debug, PartialEq)]
@@ -185,6 +178,6 @@ pub struct SubroutineDeclaration {
     pub subroutine_kind: SubroutineKind,
     pub return_type: Option<Type>,
     pub parameters: Vec<Parameter>,
-    pub name: Identifier,
+    pub name: String,
     pub body: SubroutineBody,
 }

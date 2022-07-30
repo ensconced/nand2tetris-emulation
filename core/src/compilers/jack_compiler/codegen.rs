@@ -87,7 +87,7 @@ impl CodeGenerator {
             for var_name in var_declaration.var_names.names.iter() {
                 count += 1;
                 self.subroutine_vars.insert(
-                    var_name.name.clone(),
+                    var_name.clone(),
                     Symbol {
                         offset: self.subroutine_vars.len(),
                         symbol_type: var_declaration.type_name.clone(),
@@ -472,7 +472,7 @@ impl CodeGenerator {
                     .into_iter()
                     .chain(push_arguments.into_iter())
                     .chain(vec![Command::Function(FunctionCommandVariant::Call(
-                        format!("{}.{}", this_class.name, method_name),
+                        format!("{}.{}", this_class, method_name),
                         arg_count_with_this as u16,
                     ))])
                     .collect()
@@ -518,16 +518,14 @@ impl CodeGenerator {
             SubroutineCall::Direct {
                 subroutine_name,
                 arguments,
-            } => self.compile_direct_subroutine_call_expression(&subroutine_name.name, arguments),
+            } => self.compile_direct_subroutine_call_expression(&subroutine_name, arguments),
             SubroutineCall::Method {
                 this_name,
                 method_name,
                 arguments,
-            } => self.compile_method_subroutine_call_expression(
-                &this_name.name,
-                &method_name.name,
-                arguments,
-            ),
+            } => {
+                self.compile_method_subroutine_call_expression(&this_name, &method_name, arguments)
+            }
         }
     }
 
@@ -673,7 +671,7 @@ impl CodeGenerator {
                 var_name,
                 array_index,
                 value,
-            } => self.compile_let_statement(&var_name.name, array_index, value),
+            } => self.compile_let_statement(&var_name, array_index, value),
             Statement::If {
                 condition,
                 if_statements,
@@ -696,7 +694,7 @@ impl CodeGenerator {
             };
 
             self.subroutine_parameters.insert(
-                parameter.var_name.name.clone(),
+                parameter.var_name.clone(),
                 Symbol {
                     offset,
                     symbol_type: parameter.type_name.clone(),
@@ -725,12 +723,12 @@ impl CodeGenerator {
 
         let commands = match subroutine.subroutine_kind {
             SubroutineKind::Function => vec![Command::Function(FunctionCommandVariant::Define(
-                format!("{}.{}", class_name, subroutine.name.name),
+                format!("{}.{}", class_name, subroutine.name),
                 locals_count as u16,
             ))],
             SubroutineKind::Method => vec![
                 Command::Function(FunctionCommandVariant::Define(
-                    format!("{}.{}", class_name, subroutine.name.name),
+                    format!("{}.{}", class_name, subroutine.name),
                     locals_count as u16,
                 )),
                 Command::Memory(MemoryCommandVariant::Push(
@@ -744,7 +742,7 @@ impl CodeGenerator {
             ],
             SubroutineKind::Constructor => vec![
                 Command::Function(FunctionCommandVariant::Define(
-                    format!("{}.{}", class_name, subroutine.name.name),
+                    format!("{}.{}", class_name, subroutine.name),
                     locals_count as u16,
                 )),
                 Command::Memory(MemoryCommandVariant::Push(
@@ -795,7 +793,7 @@ impl CodeGenerator {
                 }
 
                 hashmap.insert(
-                    var_name.name.clone(),
+                    var_name.clone(),
                     Symbol {
                         offset: hashmap.len(),
                         symbol_type: var_declaration.type_name.clone(),
@@ -811,7 +809,7 @@ impl CodeGenerator {
 
 pub fn generate_vm_code(class: &Class) -> Vec<Command> {
     let mut code_generator = CodeGenerator::new();
-    code_generator.class_name = Some(class.name.name.clone());
+    code_generator.class_name = Some(class.name.clone());
     let class_instance_size = code_generator.compile_var_declarations(&class.var_declarations);
     code_generator.compile_subroutines(&class.subroutine_declarations, class_instance_size)
 }

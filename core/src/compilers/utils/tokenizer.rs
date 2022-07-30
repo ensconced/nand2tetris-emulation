@@ -116,13 +116,13 @@ mod tests {
                 "_bar".to_string(),
             ),
             Token::new(TokenKind::RParen, ")".to_string()),
-            Token::new(TokenKind::Whitespace, " ".to_string()),
+            Token::new(TokenKind::InlineWhitespace, " ".to_string()),
             Token::new(TokenKind::Semicolon, ";".to_string()),
-            Token::new(TokenKind::Whitespace, " ".to_string()),
+            Token::new(TokenKind::InlineWhitespace, " ".to_string()),
             Token::new(TokenKind::Identifier("JMP".to_string()), "JMP".to_string()),
-            Token::new(TokenKind::Whitespace, " ".to_string()),
+            Token::new(TokenKind::InlineWhitespace, " ".to_string()),
             Token::new(TokenKind::Number("1234".to_string()), "1234".to_string()),
-            Token::new(TokenKind::Whitespace, " ".to_string()),
+            Token::new(TokenKind::InlineWhitespace, " ".to_string()),
             Token::new(TokenKind::Comment, "// whatever".to_string()),
         ];
         assert_eq!(tokens, expected_tokens)

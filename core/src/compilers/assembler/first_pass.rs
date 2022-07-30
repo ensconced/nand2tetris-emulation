@@ -29,11 +29,11 @@ pub fn first_pass(commands: impl Iterator<Item = Command>) -> FirstPassResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::compilers::assembler::parser::{parse_lines, AValue};
+    use crate::compilers::assembler::parser::{parse, AValue};
 
     #[test]
     fn test_first_pass() {
-        let commands = parse_lines(
+        let commands = parse(
             "
             (foo)
              A=A+1

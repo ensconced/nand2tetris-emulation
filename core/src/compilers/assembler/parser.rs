@@ -211,7 +211,7 @@ fn parse_line(line_tokens: PeekableTokens<TokenKind>, line_number: usize) -> Opt
     )
 }
 
-pub fn parse_lines(source: &str) -> impl Iterator<Item = Command> + '_ {
+pub fn parse(source: &str) -> impl Iterator<Item = Command> + '_ {
     parse_by_line(source, parse_line, token_defs())
 }
 
@@ -434,7 +434,7 @@ mod tests {
             (FOOBAR)
             @FOOBAR
             ";
-        let result: Vec<Command> = parse_lines(source).collect();
+        let result: Vec<Command> = parse(source).collect();
         assert_eq!(
             result,
             vec![

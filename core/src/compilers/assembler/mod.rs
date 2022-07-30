@@ -5,11 +5,11 @@ pub mod tokenizer;
 
 use codegen::CodeGenerator;
 use first_pass::first_pass;
-use parser::parse_lines;
+use parser::parse;
 use std::{fs, path::Path};
 
 pub fn assemble(source: String, rom_depth: usize) -> String {
-    let first_pass_result = first_pass(parse_lines(&source));
+    let first_pass_result = first_pass(parse(&source));
     let mut code_generator = CodeGenerator::new(first_pass_result);
     let mut machine_instructions = code_generator.generate();
     let mut result = String::new();

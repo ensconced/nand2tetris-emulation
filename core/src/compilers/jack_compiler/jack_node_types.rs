@@ -21,18 +21,11 @@ pub enum ClassVarDeclarationKind {
 #[derive(Serialize, TS, Clone, Debug, PartialEq)]
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
-pub enum TypeVariant {
+pub enum Type {
     Int,
     Char,
     Boolean,
     ClassName(Identifier),
-}
-
-#[derive(Serialize, TS, Debug, PartialEq)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
-pub struct Type {
-    pub variant: TypeVariant,
 }
 
 #[derive(Serialize, TS, Clone, Debug, PartialEq)]

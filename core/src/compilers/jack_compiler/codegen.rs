@@ -7,7 +7,7 @@ use crate::compilers::vm_compiler::parser::{
 use super::jack_node_types::{
     BinaryOperator, Class, ClassVarDeclaration, ClassVarDeclarationKind, Expression, Parameter,
     PrimitiveTermVariant, Statement, SubroutineCall, SubroutineDeclaration, SubroutineKind, Type,
-    TypeVariant, UnaryOperator, VarDeclaration,
+    UnaryOperator, VarDeclaration,
 };
 use std::collections::HashMap;
 
@@ -21,7 +21,7 @@ enum SymbolKind {
 
 struct Symbol {
     offset: usize,
-    symbol_type: TypeVariant,
+    symbol_type: Type,
     kind: SymbolKind,
 }
 
@@ -90,7 +90,7 @@ impl CodeGenerator {
                     var_name.name.clone(),
                     Symbol {
                         offset: self.subroutine_vars.len(),
-                        symbol_type: var_declaration.type_name.variant.clone(),
+                        symbol_type: var_declaration.type_name.clone(),
                         kind: SymbolKind::Local,
                     },
                 );
@@ -462,7 +462,7 @@ impl CodeGenerator {
         if let Some(symbol) = self.maybe_resolve_symbol(this_name) {
             // Treat it as a method.
             match symbol.symbol_type.clone() {
-                TypeVariant::ClassName(this_class) => {
+                Type::ClassName(this_class) => {
                     let arg_count_with_this = arg_count + 1;
                     let (this_memory_segment, this_idx) = self.compile_variable(this_name);
                     vec![Command::Memory(MemoryCommandVariant::Push(
@@ -699,7 +699,7 @@ impl CodeGenerator {
                 parameter.var_name.name.clone(),
                 Symbol {
                     offset,
-                    symbol_type: parameter.type_name.variant.clone(),
+                    symbol_type: parameter.type_name.clone(),
                     kind: SymbolKind::Parameter,
                 },
             );
@@ -798,7 +798,7 @@ impl CodeGenerator {
                     var_name.name.clone(),
                     Symbol {
                         offset: hashmap.len(),
-                        symbol_type: var_declaration.type_name.variant.clone(),
+                        symbol_type: var_declaration.type_name.clone(),
                         kind: symbol_kind.clone(),
                     },
                 );

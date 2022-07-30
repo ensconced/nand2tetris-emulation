@@ -599,20 +599,15 @@ impl Parser {
     fn take_type(&mut self) -> Type {
         use KeywordTokenVariant::*;
         match self.tokens.next() {
-            Some(Token { kind, .. }) => {
-                let type_variant = match kind {
-                    TokenKind::Keyword(Int) => TypeVariant::Int,
-                    TokenKind::Keyword(Char) => TypeVariant::Char,
-                    TokenKind::Keyword(Boolean) => TypeVariant::Boolean,
-                    TokenKind::Identifier(class_name) => {
-                        TypeVariant::ClassName(Identifier { name: class_name })
-                    }
-                    _ => panic!("expected var type name"),
-                };
-                Type {
-                    variant: type_variant,
+            Some(Token { kind, .. }) => match kind {
+                TokenKind::Keyword(Int) => Type::Int,
+                TokenKind::Keyword(Char) => Type::Char,
+                TokenKind::Keyword(Boolean) => Type::Boolean,
+                TokenKind::Identifier(class_name) => {
+                    Type::ClassName(Identifier { name: class_name })
                 }
-            }
+                _ => panic!("expected var type name"),
+            },
             _ => panic!("expected var type name"),
         }
     }
@@ -728,9 +723,7 @@ mod tests {
                 },
                 var_declarations: vec![ClassVarDeclaration {
                     qualifier: ClassVarDeclarationKind::Static,
-                    type_name: Type {
-                        variant: TypeVariant::Int,
-                    },
+                    type_name: Type::Int,
                     var_names: VarNames {
                         names: vec![Identifier {
                             name: "bar".to_string(),
@@ -760,9 +753,7 @@ mod tests {
                 var_declarations: vec![
                     ClassVarDeclaration {
                         qualifier: ClassVarDeclarationKind::Static,
-                        type_name: Type {
-                            variant: TypeVariant::Int,
-                        },
+                        type_name: Type::Int,
                         var_names: VarNames {
                             names: vec![Identifier {
                                 name: "bar".to_string(),
@@ -771,9 +762,7 @@ mod tests {
                     },
                     ClassVarDeclaration {
                         qualifier: ClassVarDeclarationKind::Field,
-                        type_name: Type {
-                            variant: TypeVariant::Char,
-                        },
+                        type_name: Type::Char,
                         var_names: VarNames {
                             names: vec![
                                 Identifier {
@@ -790,9 +779,7 @@ mod tests {
                     },
                     ClassVarDeclaration {
                         qualifier: ClassVarDeclarationKind::Field,
-                        type_name: Type {
-                            variant: TypeVariant::Boolean,
-                        },
+                        type_name: Type::Boolean,
                         var_names: VarNames {
                             names: vec![
                                 Identifier {
@@ -835,32 +822,24 @@ mod tests {
                 subroutine_declarations: vec![
                     SubroutineDeclaration {
                         subroutine_kind: SubroutineKind::Constructor,
-                        return_type: Some(Type {
-                            variant: TypeVariant::Boolean,
-                        }),
+                        return_type: Some(Type::Boolean),
                         parameters: vec![
                             Parameter {
-                                type_name: Type {
-                                    variant: TypeVariant::Int,
-                                },
+                                type_name: Type::Int,
                                 var_name: Identifier {
                                     name: "abc".to_string(),
                                 },
                             },
                             Parameter {
-                                type_name: Type {
-                                    variant: TypeVariant::Char,
-                                },
+                                type_name: Type::Char,
                                 var_name: Identifier {
                                     name: "def".to_string(),
                                 },
                             },
                             Parameter {
-                                type_name: Type {
-                                    variant: TypeVariant::ClassName(Identifier {
-                                        name: "foo".to_string(),
-                                    }),
-                                },
+                                type_name: Type::ClassName(Identifier {
+                                    name: "foo".to_string(),
+                                }),
                                 var_name: Identifier {
                                     name: "ghi".to_string(),
                                 },
@@ -876,13 +855,9 @@ mod tests {
                     },
                     SubroutineDeclaration {
                         subroutine_kind: SubroutineKind::Function,
-                        return_type: Some(Type {
-                            variant: TypeVariant::Char,
-                        }),
+                        return_type: Some(Type::Char),
                         parameters: vec![Parameter {
-                            type_name: Type {
-                                variant: TypeVariant::Boolean,
-                            },
+                            type_name: Type::Boolean,
                             var_name: Identifier {
                                 name: "_123".to_string(),
                             },
@@ -944,18 +919,14 @@ mod tests {
                 var_declarations: vec![],
                 subroutine_declarations: vec![SubroutineDeclaration {
                     subroutine_kind: SubroutineKind::Constructor,
-                    return_type: Some(Type {
-                        variant: TypeVariant::Int,
-                    }),
+                    return_type: Some(Type::Int),
                     parameters: vec![],
                     name: Identifier {
                         name: "blah".to_string(),
                     },
                     body: SubroutineBody {
                         var_declarations: vec![VarDeclaration {
-                            type_name: Type {
-                                variant: TypeVariant::Int,
-                            },
+                            type_name: Type::Int,
                             var_names: VarNames {
                                 names: vec![Identifier {
                                     name: "a".to_string(),

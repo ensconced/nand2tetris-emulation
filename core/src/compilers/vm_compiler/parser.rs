@@ -3,10 +3,8 @@ use super::tokenizer::{
     MemorySegmentTokenVariant, ProgramFlowCmdTokenVariant, TokenKind,
 };
 use crate::compilers::utils::{
-    parser_utils::{
-        maybe_take_command_with_optional_comment_and_whitespace, parse_by_line, PeekableTokens,
-    },
-    tokenizer::Token,
+    parser_utils::{maybe_take, PeekableTokens},
+    tokenizer::{Token, Tokenizer},
 };
 
 #[derive(PartialEq, Debug)]
@@ -229,32 +227,34 @@ fn take_flow_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize)
     }
 }
 
-fn take_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> Command {
-    if let Some(Token { kind, .. }) = tokens.peek() {
-        match kind {
-            TokenKind::ArithmeticCmdToken(_) => take_arithmetic_command(tokens, line_number),
-            TokenKind::MemoryCmdToken(_) => take_mem_command(tokens, line_number),
-            TokenKind::FunctionCmdToken(_) => take_fn_command(tokens, line_number),
-            TokenKind::FlowCmdToken(_) => take_flow_command(tokens, line_number),
-            _ => panic!("expected command. line: {}", line_number),
+fn maybe_take_command(
+    tokens: &mut PeekableTokens<TokenKind>,
+    line_number: usize,
+) -> Option<Command> {
+    let first_token_kind = tokens.peek().map(|token| token.kind.clone());
+    first_token_kind.and_then(|kind| match kind {
+        TokenKind::ArithmeticCmdToken(_) => Some(take_arithmetic_command(tokens, line_number)),
+        TokenKind::MemoryCmdToken(_) => Some(take_mem_command(tokens, line_number)),
+        TokenKind::FunctionCmdToken(_) => Some(take_fn_command(tokens, line_number)),
+        TokenKind::FlowCmdToken(_) => Some(take_flow_command(tokens, line_number)),
+        _ => None,
+    })
+}
+
+pub fn parse_into_vm_commands(source: &str) -> impl Iterator<Item = Command> + '_ {
+    let tokenizer = Tokenizer::new(token_defs());
+    let mut tokens = tokenizer.tokenize(source).peekable();
+
+    let mut result = Vec::new();
+    while tokens.peek().is_some() {
+        maybe_take(&mut tokens, &TokenKind::Whitespace);
+        if let Some(command) = maybe_take_command(&mut tokens, 1) {
+            result.push(command);
         }
-    } else {
-        panic!("expected command to begin with either arithmetic command, memory command, function command, or flow command. line: {}", line_number);
+        maybe_take(&mut tokens, &TokenKind::Whitespace);
+        maybe_take(&mut tokens, &TokenKind::Comment);
     }
-}
-
-fn parse_line(line_tokens: PeekableTokens<TokenKind>, line_number: usize) -> Option<Command> {
-    maybe_take_command_with_optional_comment_and_whitespace(
-        line_tokens,
-        take_command,
-        line_number,
-        &TokenKind::Whitespace,
-        &TokenKind::Comment,
-    )
-}
-
-pub fn parse_lines(source: &str) -> impl Iterator<Item = Command> + '_ {
-    parse_by_line(source, parse_line, token_defs())
+    result.into_iter()
 }
 
 #[cfg(test)]
@@ -293,7 +293,7 @@ mod tests {
             return
         ";
 
-        let commands: Vec<Command> = parse_lines(source).collect();
+        let commands: Vec<Command> = parse_into_vm_commands(source).collect();
         let expected = vec![
             Arithmetic(Binary(Add)),
             Arithmetic(Binary(Sub)),

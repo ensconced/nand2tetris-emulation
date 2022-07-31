@@ -1,3 +1,5 @@
+use std::iter;
+
 use super::tokenizer::{
     token_defs,
     TokenKind::{self, *},
@@ -187,15 +189,7 @@ fn take_c_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) ->
     }
 }
 
-fn maybe_take_line(tokens: &mut PeekableTokens<TokenKind>) {
-    maybe_take(&mut tokens, &TokenKind::InlineWhitespace);
-    maybe_take(&mut tokens, &TokenKind::Comment);
-}
-
-fn maybe_take_command(
-    tokens: &mut PeekableTokens<TokenKind>,
-    line_number: usize,
-) -> Option<Command> {
+fn take_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> Command {
     match tokens.peek() {
         Some(Token { kind, .. }) => match kind {
             TokenKind::At => take_a_command(tokens, line_number),
@@ -206,15 +200,35 @@ fn maybe_take_command(
     }
 }
 
+fn take_command_line(tokens: &mut PeekableTokens<TokenKind>) -> Command {
+    let command = take_command(tokens, 1);
+    maybe_take(tokens, &TokenKind::InlineWhitespace);
+    maybe_take(tokens, &Comment);
+    command
+}
+
 pub fn parse(source: &str) -> impl Iterator<Item = Command> + '_ {
     let tokenizer = Tokenizer::new(token_defs());
     let mut tokens = tokenizer.tokenize(source).peekable();
 
     let mut result = Vec::new();
 
-    loop {
-        maybe_take(&mut tokens, &TokenKind::LineBreakingWhitespace);
-        let command = maybe_take_command(tokens, line_number);
+    maybe_take(&mut tokens, &TokenKind::LineBreakingWhitespace);
+    maybe_take(&mut tokens, &TokenKind::InlineWhitespace);
+
+    while tokens.peek().is_some() {
+        maybe_take(&mut tokens, &TokenKind::InlineWhitespace);
+        if maybe_take(&mut tokens, &Comment).is_none() {
+            result.push(take_command_line(&mut tokens));
+        }
+        match tokens.next() {
+            Some(Token {
+                kind: TokenKind::LineBreakingWhitespace,
+                ..
+            }) => continue,
+            None => break,
+            _ => panic!("expected end of line. instead found another token"),
+        }
     }
 
     result.into_iter()
@@ -385,9 +399,9 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let line = "";
-        let mut result = parse(line);
-        assert_eq!(result.next(), None);
+        // let line = "";
+        // let mut result = parse(line);
+        // assert_eq!(result.next(), None);
 
         let line = "     ";
         let mut result = parse(line);

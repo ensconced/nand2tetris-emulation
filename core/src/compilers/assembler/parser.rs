@@ -1,5 +1,3 @@
-use std::iter;
-
 use super::tokenizer::{
     token_defs,
     TokenKind::{self, *},

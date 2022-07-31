@@ -26,26 +26,23 @@ pub enum Command {
     },
 }
 
-fn take_a_value(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> AValue {
+fn take_a_value(tokens: &mut PeekableTokens<TokenKind>) -> AValue {
     match tokens.next() {
         Some(Token { kind, .. }) => match kind {
             Number(numeric_string) => AValue::Numeric(numeric_string),
             Identifier(identifier_string) => AValue::Symbolic(identifier_string),
-            _ => panic!(
-                "failed to parse a-command as either number or identifier. line: {}",
-                line_number
-            ),
+            _ => panic!("failed to parse a-command as either number or identifier.",),
         },
-        _ => panic!("unexpected end of line. line: {}", line_number),
+        _ => panic!("unexpected end of line"),
     }
 }
 
-fn take_a_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> Command {
+fn take_a_command(tokens: &mut PeekableTokens<TokenKind>) -> Command {
     tokens.next(); // pop @
-    Command::A(take_a_value(tokens, line_number))
+    Command::A(take_a_value(tokens))
 }
 
-fn take_l_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> Command {
+fn take_l_command(tokens: &mut PeekableTokens<TokenKind>) -> Command {
     tokens.next(); // pop (
     let token = tokens.next();
     let identifier_string = if let Some(Token {
@@ -55,19 +52,13 @@ fn take_l_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) ->
     {
         identifier_string
     } else {
-        panic!(
-            "failed to parse l-command - expected identifier. line: {}",
-            line_number
-        )
+        panic!("failed to parse l-command - expected identifier.",)
     };
     match tokens.next() {
         Some(Token { kind: RParen, .. }) => Command::L {
             identifier: identifier_string,
         },
-        Some(_) => panic!(
-            "failed to parse l-command. missing \")\". line: {}",
-            line_number
-        ),
+        Some(_) => panic!("failed to parse l-command. missing \")\".",),
         None => panic!("failed to parse l-command. unexpected end of line."),
     }
 }
@@ -103,10 +94,7 @@ fn maybe_take_destination(tokens: &mut PeekableTokens<TokenKind>) -> Option<Stri
     }
 }
 
-fn maybe_take_unary_expression(
-    tokens: &mut PeekableTokens<TokenKind>,
-    line_number: usize,
-) -> Option<String> {
+fn maybe_take_unary_expression(tokens: &mut PeekableTokens<TokenKind>) -> Option<String> {
     if let Some(Token {
         kind: Operator(_), ..
     }) = tokens.peek()
@@ -116,7 +104,7 @@ fn maybe_take_unary_expression(
             ..
         }) = tokens.next()
         {
-            let operand = take_single_expression_term(tokens, line_number);
+            let operand = take_single_expression_term(tokens);
             op_string.push_str(&operand);
             Some(op_string)
         } else {
@@ -127,58 +115,43 @@ fn maybe_take_unary_expression(
     }
 }
 
-fn take_single_expression_term(
-    tokens: &mut PeekableTokens<TokenKind>,
-    line_number: usize,
-) -> String {
+fn take_single_expression_term(tokens: &mut PeekableTokens<TokenKind>) -> String {
     match tokens.next() {
         Some(Token { kind, .. }) => match kind {
             Number(num_string) => num_string,
             Identifier(ident_string) => ident_string,
-            _ => panic!(
-                "expected number or identifier as single expression term. line: {}",
-                line_number
-            ),
+            _ => panic!("expected number or identifier as single expression term.",),
         },
-        _ => panic!("unexpected end of input. line: {}", line_number),
+        _ => panic!("unexpected end of input."),
     }
 }
 
-fn take_binary_or_single_term_expression(
-    tokens: &mut PeekableTokens<TokenKind>,
-    line_number: usize,
-) -> String {
-    let mut result = take_single_expression_term(tokens, line_number);
-    if let Some(remainder_string) = maybe_take_unary_expression(tokens, line_number) {
+fn take_binary_or_single_term_expression(tokens: &mut PeekableTokens<TokenKind>) -> String {
+    let mut result = take_single_expression_term(tokens);
+    if let Some(remainder_string) = maybe_take_unary_expression(tokens) {
         result.push_str(&remainder_string);
     }
     result
 }
 
-fn take_unary_expression(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> String {
-    maybe_take_unary_expression(tokens, line_number).expect("expected unary expression.")
+fn take_unary_expression(tokens: &mut PeekableTokens<TokenKind>) -> String {
+    maybe_take_unary_expression(tokens).expect("expected unary expression.")
 }
 
-fn take_expression(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> String {
+fn take_expression(tokens: &mut PeekableTokens<TokenKind>) -> String {
     match tokens.peek() {
         Some(Token { kind, .. }) => match kind {
-            Operator(_) => take_unary_expression(tokens, line_number),
-            Identifier(_) | Number(_) => take_binary_or_single_term_expression(tokens, line_number),
-            _ => panic!(
-                "unexpected token type while parsing expression. line: {}",
-                line_number
-            ),
+            Operator(_) => take_unary_expression(tokens),
+            Identifier(_) | Number(_) => take_binary_or_single_term_expression(tokens),
+            _ => panic!("unexpected token type while parsing expression",),
         },
-        None => panic!(
-            "unexpected end of line while parsing expression. line: {}",
-            line_number
-        ),
+        None => panic!("unexpected end of line while parsing expression.",),
     }
 }
 
-fn take_c_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> Command {
+fn take_c_command(tokens: &mut PeekableTokens<TokenKind>) -> Command {
     let dest = maybe_take_destination(tokens);
-    let expr = take_expression(tokens, line_number);
+    let expr = take_expression(tokens);
     maybe_take(tokens, &InlineWhitespace);
     Command::C {
         expr,
@@ -187,19 +160,19 @@ fn take_c_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) ->
     }
 }
 
-fn take_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> Command {
+fn take_command(tokens: &mut PeekableTokens<TokenKind>) -> Command {
     match tokens.peek() {
         Some(Token { kind, .. }) => match kind {
-            TokenKind::At => take_a_command(tokens, line_number),
-            TokenKind::LParen => take_l_command(tokens, line_number),
-            _ => take_c_command(tokens, line_number),
+            TokenKind::At => take_a_command(tokens),
+            TokenKind::LParen => take_l_command(tokens),
+            _ => take_c_command(tokens),
         },
-        None => panic!("failed to parse command: line {}", line_number),
+        None => panic!("failed to parse command"),
     }
 }
 
 fn take_command_line(tokens: &mut PeekableTokens<TokenKind>) -> Command {
-    let command = take_command(tokens, 1);
+    let command = take_command(tokens);
     maybe_take(tokens, &TokenKind::InlineWhitespace);
     maybe_take(tokens, &Comment);
     command
@@ -241,7 +214,7 @@ mod tests {
     fn test_take_c_command() {
         let tokenizer = Tokenizer::new(token_defs());
         let mut tokens = tokenizer.tokenize("M=M+1;JGT").peekable();
-        let c_command = take_c_command(&mut tokens, 1);
+        let c_command = take_c_command(&mut tokens);
         assert_eq!(
             c_command,
             Command::C {
@@ -252,7 +225,7 @@ mod tests {
         );
 
         let mut tokens = tokenizer.tokenize("AMD=A|D;JLT").peekable();
-        let c_command = take_c_command(&mut tokens, 1);
+        let c_command = take_c_command(&mut tokens);
         assert_eq!(
             c_command,
             Command::C {
@@ -263,7 +236,7 @@ mod tests {
         );
 
         let mut tokens = tokenizer.tokenize("M+1").peekable();
-        let c_command = take_c_command(&mut tokens, 1);
+        let c_command = take_c_command(&mut tokens);
         assert_eq!(
             c_command,
             Command::C {
@@ -274,7 +247,7 @@ mod tests {
         );
 
         let mut tokens = tokenizer.tokenize("D&M;JGT").peekable();
-        let c_command = take_c_command(&mut tokens, 1);
+        let c_command = take_c_command(&mut tokens);
         assert_eq!(
             c_command,
             Command::C {
@@ -285,7 +258,7 @@ mod tests {
         );
 
         let mut tokens = tokenizer.tokenize("!M;JGT").peekable();
-        let c_command = take_c_command(&mut tokens, 1);
+        let c_command = take_c_command(&mut tokens);
         assert_eq!(
             c_command,
             Command::C {
@@ -296,7 +269,7 @@ mod tests {
         );
 
         let mut chars = tokenizer.tokenize("MD=-A").peekable();
-        let c_command = take_c_command(&mut chars, 1);
+        let c_command = take_c_command(&mut chars);
         assert_eq!(
             c_command,
             Command::C {
@@ -353,11 +326,11 @@ mod tests {
     fn test_take_a_command() {
         let tokenizer = Tokenizer::new(token_defs());
         let mut tokens = tokenizer.tokenize("@1234").peekable();
-        let a_command = take_a_command(&mut tokens, 1);
+        let a_command = take_a_command(&mut tokens);
         assert_eq!(a_command, Command::A(AValue::Numeric("1234".to_string())));
 
         let mut tokens = tokenizer.tokenize("@FOOBAR").peekable();
-        let a_command = take_a_command(&mut tokens, 1);
+        let a_command = take_a_command(&mut tokens);
         assert_eq!(
             a_command,
             Command::A(AValue::Symbolic("FOOBAR".to_string()))
@@ -368,7 +341,7 @@ mod tests {
     fn test_take_l_command() {
         let tokenizer = Tokenizer::new(token_defs());
         let mut tokens = tokenizer.tokenize("(TEST)").peekable();
-        let a_command = take_l_command(&mut tokens, 1);
+        let a_command = take_l_command(&mut tokens);
         assert_eq!(
             a_command,
             Command::L {
@@ -377,7 +350,7 @@ mod tests {
         );
 
         let mut tokens = tokenizer.tokenize("(_TEST)").peekable();
-        let a_command = take_l_command(&mut tokens, 1);
+        let a_command = take_l_command(&mut tokens);
         assert_eq!(
             a_command,
             Command::L {
@@ -386,7 +359,7 @@ mod tests {
         );
 
         let mut tokens = tokenizer.tokenize("(T:E$S.T)").peekable();
-        let a_command = take_l_command(&mut tokens, 1);
+        let a_command = take_l_command(&mut tokens);
         assert_eq!(
             a_command,
             Command::L {

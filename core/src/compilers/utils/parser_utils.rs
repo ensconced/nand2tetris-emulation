@@ -1,10 +1,7 @@
-use super::tokenizer::{Token, TokenDef};
+use super::tokenizer::Token;
 use std::iter::Peekable;
 
 pub type PeekableTokens<TokenKind> = Peekable<Box<dyn Iterator<Item = Token<TokenKind>>>>;
-type LineParser<ParsedLine, TokenKind> =
-    fn(tokens: PeekableTokens<TokenKind>, line_number: usize) -> Option<ParsedLine>;
-type TokenDefs<TokenKind> = Vec<TokenDef<TokenKind>>;
 
 pub fn maybe_take<TokenKind>(
     tokens: &mut PeekableTokens<TokenKind>,

@@ -241,7 +241,7 @@ fn maybe_take_command(
     })
 }
 
-pub fn parse_into_vm_commands(source: &str) -> impl Iterator<Item = Command> + '_ {
+pub fn parse_into_vm_commands(source: &str) -> impl Iterator<Item = Command> {
     let tokenizer = Tokenizer::new(token_defs());
     let mut tokens = tokenizer.tokenize(source).peekable();
 

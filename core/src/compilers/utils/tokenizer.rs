@@ -13,7 +13,7 @@ impl<LangTokenKind: Debug> Tokenizer<LangTokenKind> {
     pub fn tokenize(&self, source: &str) -> Box<dyn Iterator<Item = Token<LangTokenKind>>> {
         let mut remainder = source.to_string();
         let mut result = Vec::new();
-        while let Some(first_token) = get_first_token(&remainder, source, &self.token_defs) {
+        while let Some(first_token) = get_first_token(&remainder, &self.token_defs) {
             let len = first_token.source.len();
             result.push(first_token);
             remainder = remainder.chars().skip(len).collect();
@@ -52,24 +52,22 @@ impl<LangTokenKind> TokenDef<LangTokenKind> {
         }
     }
 
-    fn make_token(&self, match_result: Match, stripped_byte_count: usize) -> Token<LangTokenKind> {
+    fn make_token(&self, match_result: Match) -> Token<LangTokenKind> {
         Token {
             kind: (self.make_token_kind)(match_result.as_str().to_string()),
             source: match_result.as_str().to_string(),
         }
     }
 
-    fn get_token(&self, string: &str, full_string: &str) -> Option<Token<LangTokenKind>> {
-        let stripped_byte_count = full_string.bytes().len() - string.bytes().len();
+    fn get_token(&self, string: &str) -> Option<Token<LangTokenKind>> {
         self.regex
             .find(string)
-            .map(|match_result| self.make_token(match_result, stripped_byte_count))
+            .map(|match_result| self.make_token(match_result))
     }
 }
 
 fn get_first_token<LangTokenKind>(
     string: &str,
-    full_string: &str,
     token_defs: &[TokenDef<LangTokenKind>],
 ) -> Option<Token<LangTokenKind>> {
     if string.is_empty() {
@@ -80,7 +78,7 @@ fn get_first_token<LangTokenKind>(
     // does the job.
     let token_alternatives = token_defs
         .iter()
-        .filter_map(|matcher| matcher.get_token(string, full_string));
+        .filter_map(|matcher| matcher.get_token(string));
     let longest_token = token_alternatives.max_by_key(|token| token.source.len());
 
     if longest_token.is_some() {

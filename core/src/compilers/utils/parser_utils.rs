@@ -1,7 +1,7 @@
 use super::tokenizer::Token;
-use std::iter::Peekable;
+use std::{iter::Peekable, vec::IntoIter};
 
-pub type PeekableTokens<TokenKind> = Peekable<Box<dyn Iterator<Item = Token<TokenKind>>>>;
+pub type PeekableTokens<TokenKind> = Peekable<IntoIter<Token<TokenKind>>>;
 
 pub fn maybe_take<TokenKind>(
     tokens: &mut PeekableTokens<TokenKind>,

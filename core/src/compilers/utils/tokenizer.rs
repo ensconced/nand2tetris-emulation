@@ -10,7 +10,7 @@ impl<LangTokenKind: Debug> Tokenizer<LangTokenKind> {
         Self { token_defs }
     }
 
-    pub fn tokenize(&self, source: &str) -> Box<dyn Iterator<Item = Token<LangTokenKind>>> {
+    pub fn tokenize(&self, source: &str) -> Vec<Token<LangTokenKind>> {
         let mut remainder = source.to_string();
         let mut result = Vec::new();
         while let Some(first_token) = get_first_token(&remainder, &self.token_defs) {
@@ -18,7 +18,7 @@ impl<LangTokenKind: Debug> Tokenizer<LangTokenKind> {
             result.push(first_token);
             remainder = remainder.chars().skip(len).collect();
         }
-        Box::new(result.into_iter())
+        result
     }
 }
 
@@ -97,9 +97,7 @@ mod tests {
     fn test_get_token() {
         let tokenizer = Tokenizer::new(token_defs());
 
-        let tokens: Vec<Token<TokenKind>> = tokenizer
-            .tokenize("AMD=(@FOO+_bar) ; JMP 1234 // whatever")
-            .collect();
+        let tokens = tokenizer.tokenize("AMD=(@FOO+_bar) ; JMP 1234 // whatever");
         let expected_tokens = vec![
             Token::new(
                 TokenKind::Destination("AMD".to_string()),

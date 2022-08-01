@@ -127,8 +127,7 @@ mod tests {
     use crate::compilers::utils::tokenizer::{Token, Tokenizer};
 
     fn tokenize(str: &str) -> Vec<Token<TokenKind>> {
-        let tokenizer = Tokenizer::new(token_defs());
-        tokenizer.tokenize(str).collect()
+        Tokenizer::new(token_defs()).tokenize(str)
     }
 
     #[test]

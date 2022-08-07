@@ -33,7 +33,7 @@ pub fn compile_to_machine_code(jack_code: Vec<&str>) -> String {
         .collect();
 
     let parsed_vm_modules: Vec<_> = jack_classes
-        .iter()
+        .into_iter()
         .map(generate_vm_code)
         .enumerate()
         .map(|(idx, commands)| ParsedModule {

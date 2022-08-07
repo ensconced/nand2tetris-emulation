@@ -39,7 +39,7 @@ fn infix_precedence(operator: OperatorVariant) -> Option<(u8, u8)> {
     }
 }
 
-pub fn parse(source: &str) -> Class {
+pub fn parse(source: &str) -> Rc<Class> {
     let tokens: Vec<_> = Tokenizer::new(token_defs())
         .tokenize(source)
         .into_iter()
@@ -121,11 +121,11 @@ impl Parser {
     fn take_array_access(&mut self, var_name: String) -> (Rc<Expression>, Range<usize>) {
         use TokenKind::*;
         let l_bracket = self.take_token(LSquareBracket);
-        let index = self.take_expression();
+        let (index_expr, index_expr_token_range) = self.take_expression();
         let r_bracket = self.take_token(RSquareBracket);
         let rc = Rc::new(Expression::ArrayAccess {
             var_name,
-            index: Box::new(index),
+            index: index_expr,
         });
         let jack_node = JackNode::ExpressionNode(rc);
         let token_range = l_bracket.idx..r_bracket.idx + 1;
@@ -133,7 +133,7 @@ impl Parser {
         (rc, token_range)
     }
 
-    fn maybe_take_parenthesized_expression(&mut self) -> Option<Rc<Expression>> {
+    fn maybe_take_parenthesized_expression(&mut self) -> Option<(Rc<Expression>, Range<usize>)> {
         use TokenKind::*;
         if let Some(Token {
             kind: LParen,
@@ -142,12 +142,12 @@ impl Parser {
         }) = self.token_iter.peek()
         {
             self.token_iter.next();
-            let expr = self.take_expression();
-            let rc = Rc::new(expr);
+            let (expr, _) = self.take_expression();
             let r_paren = self.take_token(RParen);
-            let jack_node = JackNode::ExpressionNode(rc);
-            self.record_jack_node(jack_node, *l_paren_idx..r_paren.idx + 1);
-            Some(rc)
+            let jack_node = JackNode::ExpressionNode(expr);
+            let token_range = *l_paren_idx..r_paren.idx + 1;
+            self.record_jack_node(jack_node, token_range);
+            Some((expr, token_range))
         } else {
             None
         }
@@ -273,7 +273,7 @@ impl Parser {
             }
         }
 
-        Some(lhs)
+        Some((lhs, lhs_token_range))
     }
 
     fn take_class_keyword(&mut self) -> Token<TokenKind> {
@@ -309,7 +309,7 @@ impl Parser {
         }
     }
 
-    fn take_expression(&mut self) -> Expression {
+    fn take_expression(&mut self) -> (Rc<Expression>, Range<usize>) {
         self.maybe_take_expression_with_binding_power(0)
             .expect("expected expression")
     }
@@ -321,7 +321,8 @@ impl Parser {
             result.push(expression);
             while let Some(Token { kind: Comma, .. }) = self.token_iter.peek() {
                 self.token_iter.next();
-                result.push(self.take_expression());
+                let (expr, _) = self.take_expression();
+                result.push(expr);
             }
         }
         result
@@ -345,21 +346,26 @@ impl Parser {
                 };
                 let rc = Rc::new(subroutine_call);
                 let jack_node = JackNode::SubroutineCallNode(rc);
-                self.record_jack_node(jack_node, identifier_token_idx..r_paren.idx + 1);
-                rc
+                let token_range = identifier_token_idx..r_paren.idx + 1;
+                self.record_jack_node(jack_node, token_range);
+                (rc, token_range)
             }
             Some(Token { kind: Dot, .. }) => {
                 // Method call
                 self.token_iter.next(); // Dot
-                let method_name = self.take_identifier();
+                let (method_name, method_name_token_idx) = self.take_identifier();
                 self.take_token(LParen);
                 let arguments = self.take_expression_list();
-                self.take_token(RParen);
-                SubroutineCall::Method {
+                let r_paren = self.take_token(RParen);
+                let method = SubroutineCall::Method {
                     this_name: name,
                     method_name,
                     arguments,
-                }
+                };
+                let rc = Rc::new(method);
+                let token_range = method_name_token_idx..r_paren.idx + 1;
+                self.record_jack_node(JackNode::SubroutineCallNode(rc), token_range);
+                (rc, token_range)
             }
             _ => panic!("expected subroutine call"),
         }
@@ -380,7 +386,7 @@ impl Parser {
 
     fn maybe_take_parameter(&mut self) -> Option<Parameter> {
         self.maybe_take_type().map(|type_name| {
-            let var_name = self.take_identifier();
+            let (var_name, _) = self.take_identifier();
             Parameter {
                 type_name,
                 var_name,
@@ -408,7 +414,7 @@ impl Parser {
         result
     }
 
-    fn maybe_take_array_index(&mut self) -> Option<Expression> {
+    fn maybe_take_array_index(&mut self) -> Option<Rc<Expression>> {
         self.token_iter
             .next_if(|token| {
                 matches!(
@@ -420,34 +426,41 @@ impl Parser {
                 )
             })
             .map(|_| {
-                let expression = self.take_expression();
+                let (expression, _) = self.take_expression();
                 self.take_token(TokenKind::RSquareBracket);
                 expression
             })
     }
 
-    fn take_let_statement(&mut self) -> Statement {
+    fn take_let_statement(
+        &mut self,
+        let_keyword_token_idx: usize,
+    ) -> (Rc<Statement>, Range<usize>) {
         self.token_iter.next(); // "let" keyword
-        let var_name = self.take_identifier();
+        let (var_name, _) = self.take_identifier();
         let array_index = self.maybe_take_array_index();
         self.take_token(TokenKind::Operator(Equals));
-        let value = self.take_expression();
-        self.take_token(TokenKind::Semicolon);
-        Statement::Let {
+        let (value, _) = self.take_expression();
+        let semicolon = self.take_token(TokenKind::Semicolon);
+        let statement = Statement::Let {
             var_name,
             array_index,
             value,
-        }
+        };
+        let rc = Rc::new(statement);
+        let token_range = let_keyword_token_idx..semicolon.idx + 1;
+        self.record_jack_node(JackNode::StatementNode(rc), token_range);
+        (rc, token_range)
     }
 
-    fn take_statement_block(&mut self) -> Vec<Statement> {
-        self.take_token(TokenKind::LCurly);
+    fn take_statement_block(&mut self) -> (Vec<Rc<Statement>>, Range<usize>) {
+        let l_curly = self.take_token(TokenKind::LCurly);
         let statements = self.take_statements();
-        self.take_token(TokenKind::RCurly);
-        statements
+        let r_curly = self.take_token(TokenKind::RCurly);
+        (statements, l_curly.idx..r_curly.idx + 1)
     }
 
-    fn maybe_take_else_block(&mut self) -> Option<Vec<Statement>> {
+    fn maybe_take_else_block(&mut self) -> Option<(Vec<Rc<Statement>>, Range<usize>)> {
         self.token_iter
             .next_if(|token| {
                 matches!(
@@ -461,54 +474,73 @@ impl Parser {
             .map(|_| self.take_statement_block())
     }
 
-    fn take_if_statement(&mut self) -> Statement {
+    fn take_if_statement(&mut self, if_keyword_token_idx: usize) -> (Rc<Statement>, Range<usize>) {
         self.token_iter.next(); // "if" keyword
         self.take_token(TokenKind::LParen);
-        let condition = self.take_expression();
-        self.take_token(TokenKind::RParen);
-        let if_statements = self.take_statement_block();
-        let else_statements = self.maybe_take_else_block();
-        Statement::If {
+        let (condition, _) = self.take_expression();
+        let (if_statements, if_statements_token_range) = self.take_statement_block();
+        let else_block_maybe = self.maybe_take_else_block();
+        let statement = Statement::If {
             condition,
             if_statements,
-            else_statements,
-        }
+            else_statements: else_block_maybe.map(|(else_statements, _)| else_statements),
+        };
+        let rc = Rc::new(statement);
+        let last_part_of_token_range = else_block_maybe
+            .map(|(_, else_block_token_range)| else_block_token_range)
+            .unwrap_or(if_statements_token_range);
+        let token_range = if_keyword_token_idx..last_part_of_token_range.end;
+        self.record_jack_node(JackNode::StatementNode(rc), token_range);
+        (rc, token_range)
     }
 
-    fn take_while_statement(&mut self) -> Statement {
+    fn take_while_statement(
+        &mut self,
+        while_keyword_token_idx: usize,
+    ) -> (Rc<Statement>, Range<usize>) {
         self.token_iter.next(); // "while" keyword
         self.take_token(TokenKind::LParen);
-        let expression = self.take_expression();
+        let (condition, condition_token_range) = self.take_expression();
         self.take_token(TokenKind::RParen);
-        let statements = self.take_statement_block();
-        Statement::While {
-            condition: expression,
+        let (statements, statements_token_range) = self.take_statement_block();
+        let statement = Statement::While {
+            condition,
             statements,
-        }
+        };
+        let rc = Rc::new(statement);
+        let token_range = while_keyword_token_idx..statements_token_range.end;
+        self.record_jack_node(JackNode::StatementNode(rc), token_range);
+        (rc, token_range)
     }
 
-    fn take_do_statement(&mut self, do_keyword_token_idx: usize) -> Statement {
+    fn take_do_statement(&mut self, do_keyword_token_idx: usize) -> (Rc<Statement>, Range<usize>) {
         self.token_iter.next(); // "do" keyword
         let (identifier, identifier_token_idx) = self.take_identifier();
         let (subroutine_call, _) = self.take_subroutine_call(identifier, identifier_token_idx);
         let semicolon = self.take_token(TokenKind::Semicolon);
         let statement = Statement::Do(subroutine_call);
         let rc = Rc::new(statement);
-        self.record_jack_node(
-            JackNode::StatementNode(rc),
-            do_keyword_token_idx..semicolon.idx + 1,
-        );
-        statement
+        let token_range = do_keyword_token_idx..semicolon.idx + 1;
+        self.record_jack_node(JackNode::StatementNode(rc), token_range);
+        (rc, token_range)
     }
 
-    fn take_return_statement(&mut self) -> Statement {
+    fn take_return_statement(
+        &mut self,
+        return_keyword_token_idx: usize,
+    ) -> (Rc<Statement>, Range<usize>) {
         self.token_iter.next(); // "return" keyword
-        let expression = self.maybe_take_expression_with_binding_power(0);
-        self.take_token(TokenKind::Semicolon);
-        Statement::Return(expression)
+        let expression_result = self.maybe_take_expression_with_binding_power(0);
+        let expression = expression_result.map(|(expr, _)| expr);
+        let semicolon = self.take_token(TokenKind::Semicolon);
+        let statement = Statement::Return(expression);
+        let rc = Rc::new(statement);
+        let token_range = return_keyword_token_idx..semicolon.idx + 1;
+        self.record_jack_node(JackNode::StatementNode(rc), token_range);
+        (rc, token_range)
     }
 
-    fn maybe_take_statement(&mut self) -> Option<Statement> {
+    fn maybe_take_statement(&mut self) -> Option<(Rc<Statement>, Range<usize>)> {
         use KeywordTokenVariant::*;
         if let Some(Token {
             kind: TokenKind::Keyword(keyword),
@@ -517,11 +549,11 @@ impl Parser {
         }) = self.token_iter.peek()
         {
             match keyword {
-                Let => Some(self.take_let_statement()),
-                If => Some(self.take_if_statement()),
-                While => Some(self.take_while_statement()),
-                Do => Some(self.take_do_statement(statement_keyword_idx)),
-                Return => Some(self.take_return_statement()),
+                Let => Some(self.take_let_statement(*statement_keyword_idx)),
+                If => Some(self.take_if_statement(*statement_keyword_idx)),
+                While => Some(self.take_while_statement(*statement_keyword_idx)),
+                Do => Some(self.take_do_statement(*statement_keyword_idx)),
+                Return => Some(self.take_return_statement(*statement_keyword_idx)),
                 _ => None,
             }
         } else {
@@ -529,9 +561,9 @@ impl Parser {
         }
     }
 
-    fn take_statements(&mut self) -> Vec<Statement> {
+    fn take_statements(&mut self) -> Vec<Rc<Statement>> {
         let mut result = Vec::new();
-        while let Some(statement) = self.maybe_take_statement() {
+        while let Some((statement, token_range)) = self.maybe_take_statement() {
             result.push(statement);
         }
         result
@@ -567,21 +599,26 @@ impl Parser {
         result
     }
 
-    fn take_subroutine_body(&mut self) -> SubroutineBody {
-        self.take_token(TokenKind::LCurly);
+    fn take_subroutine_body(&mut self) -> (Rc<SubroutineBody>, Range<usize>) {
+        let l_curly = self.take_token(TokenKind::LCurly);
         let var_declarations = self.take_var_declarations();
         let statements = self.take_statements();
-        self.take_token(TokenKind::RCurly);
-        SubroutineBody {
+        let r_curly = self.take_token(TokenKind::RCurly);
+        let subroutine_body = SubroutineBody {
             var_declarations,
             statements,
-        }
+        };
+        let rc = Rc::new(subroutine_body);
+        let token_range = l_curly.idx..r_curly.idx + 1;
+        self.record_jack_node(JackNode::SubroutineBodyNode(rc), token_range);
+        (rc, token_range)
     }
 
-    fn take_subroutine_declaration(&mut self) -> SubroutineDeclaration {
+    fn take_subroutine_declaration(&mut self) -> (Rc<SubroutineDeclaration>, Range<usize>) {
         use KeywordTokenVariant::*;
         if let Some(Token {
             kind: TokenKind::Keyword(keyword),
+            idx: subroutine_kind_token_idx,
             ..
         }) = self.token_iter.next()
         {
@@ -593,24 +630,31 @@ impl Parser {
             };
 
             let return_type = self.take_subroutine_return_type();
-            let name = self.take_identifier();
+            let (name, _) = self.take_identifier();
             self.take_token(TokenKind::LParen);
             let parameters = self.take_parameters();
             self.take_token(TokenKind::RParen);
-            let body = self.take_subroutine_body();
-            SubroutineDeclaration {
+            let (body, body_token_range) = self.take_subroutine_body();
+            let subroutine_declaration = SubroutineDeclaration {
                 subroutine_kind,
                 return_type,
                 name,
                 parameters,
                 body,
-            }
+            };
+            let rc = Rc::new(subroutine_declaration);
+            let token_range = subroutine_kind_token_idx..body_token_range.end;
+
+            self.record_jack_node(JackNode::SubroutineDeclarationNode(rc), token_range);
+            (rc, token_range)
         } else {
             panic!("expected subroutine kind");
         }
     }
 
-    fn maybe_take_subroutine_declaration(&mut self) -> Option<SubroutineDeclaration> {
+    fn maybe_take_subroutine_declaration(
+        &mut self,
+    ) -> Option<(Rc<SubroutineDeclaration>, Range<usize>)> {
         use KeywordTokenVariant::*;
         if let Some(Token {
             kind: TokenKind::Keyword(Constructor | Function | Method),
@@ -623,9 +667,9 @@ impl Parser {
         }
     }
 
-    fn take_class_subroutine_declarations(&mut self) -> Vec<SubroutineDeclaration> {
+    fn take_class_subroutine_declarations(&mut self) -> Vec<Rc<SubroutineDeclaration>> {
         let mut result = Vec::new();
-        while let Some(subroutine_declaration) = self.maybe_take_subroutine_declaration() {
+        while let Some((subroutine_declaration, _)) = self.maybe_take_subroutine_declaration() {
             result.push(subroutine_declaration);
         }
         result
@@ -735,18 +779,22 @@ impl Parser {
         result
     }
 
-    fn take_class(&mut self) -> Class {
-        self.take_class_keyword();
-        let name = self.take_identifier();
+    fn take_class(&mut self) -> Rc<Class> {
+        let class_keyword = self.take_class_keyword();
+        let (name, _) = self.take_identifier();
         self.take_token(TokenKind::LCurly);
         let var_declarations = self.take_class_var_declarations();
         let subroutine_declarations = self.take_class_subroutine_declarations();
-        self.take_token(TokenKind::RCurly);
-        Class {
+        let r_curly = self.take_token(TokenKind::RCurly);
+        let class = Class {
             name,
             var_declarations,
             subroutine_declarations,
-        }
+        };
+        let rc = Rc::new(class);
+        let token_range = class_keyword.idx..r_curly.idx + 1;
+        self.record_jack_node(JackNode::ClassNode(rc), token_range);
+        rc
     }
 }
 
@@ -754,7 +802,7 @@ impl Parser {
 mod tests {
     use super::*;
 
-    fn parse_expression(source: &str) -> Expression {
+    fn parse_expression(source: &str) -> Rc<Expression> {
         let tokens: Vec<_> = Tokenizer::new(token_defs())
             .tokenize(source)
             .into_iter()
@@ -775,13 +823,13 @@ mod tests {
             sourcemap: SourceMap::new(),
             jack_nodes: Vec::new(),
         };
-        parser.take_expression()
+        parser.take_expression().0
     }
 
     #[test]
     fn test_simple_class() {
         assert_eq!(
-            parse("class foo {}"),
+            *parse("class foo {}"),
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![],
@@ -793,7 +841,7 @@ mod tests {
     #[test]
     fn test_class_with_var_declaration() {
         assert_eq!(
-            parse(
+            *parse(
                 "
             class foo {
               static int bar;
@@ -814,7 +862,7 @@ mod tests {
     #[test]
     fn test_class_with_multiple_var_declarations() {
         assert_eq!(
-            parse(
+            *parse(
                 "
             class foo {
               static int bar;
@@ -849,7 +897,7 @@ mod tests {
     #[test]
     fn test_class_with_subroutine_declarations() {
         assert_eq!(
-            parse(
+            *parse(
                 "
             class foo {
                 constructor boolean bar(int abc, char def, foo ghi) {
@@ -864,7 +912,7 @@ mod tests {
                 name: "foo".to_string(),
                 var_declarations: vec![],
                 subroutine_declarations: vec![
-                    SubroutineDeclaration {
+                    Rc::new(SubroutineDeclaration {
                         subroutine_kind: SubroutineKind::Constructor,
                         return_type: Some(Type::Boolean),
                         parameters: vec![
@@ -882,12 +930,12 @@ mod tests {
                             }
                         ],
                         name: "bar".to_string(),
-                        body: SubroutineBody {
+                        body: Rc::new(SubroutineBody {
                             var_declarations: vec![],
                             statements: vec![],
-                        },
-                    },
-                    SubroutineDeclaration {
+                        }),
+                    }),
+                    Rc::new(SubroutineDeclaration {
                         subroutine_kind: SubroutineKind::Function,
                         return_type: Some(Type::Char),
                         parameters: vec![Parameter {
@@ -895,21 +943,21 @@ mod tests {
                             var_name: "_123".to_string(),
                         },],
                         name: "baz".to_string(),
-                        body: SubroutineBody {
+                        body: Rc::new(SubroutineBody {
                             var_declarations: vec![],
                             statements: vec![],
-                        },
-                    },
-                    SubroutineDeclaration {
+                        }),
+                    }),
+                    Rc::new(SubroutineDeclaration {
                         subroutine_kind: SubroutineKind::Method,
                         return_type: None,
                         parameters: vec![],
                         name: "qux".to_string(),
-                        body: SubroutineBody {
+                        body: Rc::new(SubroutineBody {
                             var_declarations: vec![],
                             statements: vec![],
-                        },
-                    }
+                        }),
+                    })
                 ],
             }
         );
@@ -918,7 +966,7 @@ mod tests {
     #[test]
     fn test_all_statement_types() {
         assert_eq!(
-            parse(
+            *parse(
                 "
             class foo {
                 constructor int blah() {
@@ -943,102 +991,104 @@ mod tests {
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![],
-                subroutine_declarations: vec![SubroutineDeclaration {
+                subroutine_declarations: vec![Rc::new(SubroutineDeclaration {
                     subroutine_kind: SubroutineKind::Constructor,
                     return_type: Some(Type::Int),
                     parameters: vec![],
                     name: "blah".to_string(),
-                    body: SubroutineBody {
+                    body: Rc::new(SubroutineBody {
                         var_declarations: vec![VarDeclaration {
                             type_name: Type::Int,
                             var_names: vec!["a".to_string()],
                         }],
                         statements: vec![
-                            Statement::Let {
+                            Rc::new(Statement::Let {
                                 var_name: "a".to_string(),
                                 array_index: None,
-                                value: Expression::PrimitiveTerm(IntegerConstant(
+                                value: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
                                     "1234".to_string()
-                                ))
-                            },
-                            Statement::Let {
+                                )))
+                            }),
+                            Rc::new(Statement::Let {
                                 var_name: "b".to_string(),
-                                array_index: Some(Expression::PrimitiveTerm(IntegerConstant(
-                                    "22".to_string()
+                                array_index: Some(Rc::new(Expression::PrimitiveTerm(
+                                    IntegerConstant("22".to_string())
                                 ))),
-                                value: Expression::PrimitiveTerm(IntegerConstant(
+                                value: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
                                     "123".to_string()
-                                ))
-                            },
-                            Statement::If {
-                                condition: Expression::PrimitiveTerm(IntegerConstant(
+                                )))
+                            }),
+                            Rc::new(Statement::If {
+                                condition: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
                                     "1".to_string()
-                                )),
-                                if_statements: vec![Statement::While {
-                                    condition: Expression::PrimitiveTerm(IntegerConstant(
+                                ))),
+                                if_statements: vec![Rc::new(Statement::While {
+                                    condition: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
                                         "1".to_string()
-                                    )),
+                                    ))),
                                     statements: vec![
-                                        Statement::Do(SubroutineCall::Direct {
+                                        Rc::new(Statement::Do(Rc::new(SubroutineCall::Direct {
                                             subroutine_name: "foobar".to_string(),
                                             arguments: vec![]
-                                        }),
-                                        Statement::Do(SubroutineCall::Direct {
+                                        }))),
+                                        Rc::new(Statement::Do(Rc::new(SubroutineCall::Direct {
                                             subroutine_name: "foobar".to_string(),
-                                            arguments: vec![Expression::PrimitiveTerm(
+                                            arguments: vec![Rc::new(Expression::PrimitiveTerm(
                                                 IntegerConstant("1".to_string())
-                                            )]
-                                        }),
-                                        Statement::Do(SubroutineCall::Direct {
+                                            ))]
+                                        }))),
+                                        Rc::new(Statement::Do(Rc::new(SubroutineCall::Direct {
                                             subroutine_name: "foobar".to_string(),
                                             arguments: vec![
-                                                Expression::PrimitiveTerm(IntegerConstant(
-                                                    "1".to_string()
+                                                Rc::new(Expression::PrimitiveTerm(
+                                                    IntegerConstant("1".to_string())
                                                 )),
-                                                Expression::PrimitiveTerm(IntegerConstant(
-                                                    "2".to_string()
+                                                Rc::new(Expression::PrimitiveTerm(
+                                                    IntegerConstant("2".to_string())
                                                 )),
-                                                Expression::PrimitiveTerm(IntegerConstant(
-                                                    "3".to_string()
+                                                Rc::new(Expression::PrimitiveTerm(
+                                                    IntegerConstant("3".to_string())
                                                 ))
                                             ]
-                                        }),
-                                        Statement::Do(SubroutineCall::Method {
+                                        }))),
+                                        Rc::new(Statement::Do(Rc::new(SubroutineCall::Method {
                                             this_name: "foo".to_string(),
                                             method_name: "bar".to_string(),
                                             arguments: vec![]
-                                        }),
-                                        Statement::Do(SubroutineCall::Method {
+                                        }))),
+                                        Rc::new(Statement::Do(Rc::new(SubroutineCall::Method {
                                             this_name: "foo".to_string(),
                                             method_name: "bar".to_string(),
-                                            arguments: vec![Expression::PrimitiveTerm(
+                                            arguments: vec![Rc::new(Expression::PrimitiveTerm(
                                                 IntegerConstant("1".to_string())
-                                            )]
-                                        }),
-                                        Statement::Do(SubroutineCall::Method {
+                                            ))]
+                                        }))),
+                                        Rc::new(Statement::Do(Rc::new(SubroutineCall::Method {
                                             this_name: "foo".to_string(),
                                             method_name: "bar".to_string(),
                                             arguments: vec![
-                                                Expression::PrimitiveTerm(IntegerConstant(
-                                                    "1".to_string()
+                                                Rc::new(Expression::PrimitiveTerm(
+                                                    IntegerConstant("1".to_string())
                                                 )),
-                                                Expression::PrimitiveTerm(IntegerConstant(
-                                                    "2".to_string()
+                                                Rc::new(Expression::PrimitiveTerm(
+                                                    IntegerConstant("2".to_string())
                                                 )),
-                                                Expression::PrimitiveTerm(IntegerConstant(
-                                                    "3".to_string()
+                                                Rc::new(Expression::PrimitiveTerm(
+                                                    IntegerConstant("3".to_string())
                                                 ))
                                             ]
-                                        })
+                                        })))
                                     ]
-                                }],
-                                else_statements: Some(vec![Statement::Return(Some(
-                                    Expression::PrimitiveTerm(IntegerConstant("123".to_string()))
-                                ))])
-                            }
+                                })],
+                                else_statements: Some(vec![Rc::new(Statement::Return(Some(
+                                    Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                        "123".to_string()
+                                    )))
+                                )))])
+                            })
                         ],
-                    },
-                }],
+                    }),
+                })],
             }
         );
     }
@@ -1046,7 +1096,7 @@ mod tests {
     #[test]
     fn test_simple_expression() {
         assert_eq!(
-            parse_expression("1"),
+            *parse_expression("1"),
             Expression::PrimitiveTerm(IntegerConstant("1".to_string()))
         )
     }
@@ -1054,11 +1104,11 @@ mod tests {
     #[test]
     fn test_simple_binary_expression() {
         assert_eq!(
-            parse_expression("1 + 2"),
+            *parse_expression("1 + 2"),
             Expression::Binary {
                 operator: BinaryOperator::Plus,
-                lhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
-                rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                lhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
             }
         )
     }
@@ -1066,7 +1116,7 @@ mod tests {
     #[test]
     fn test_simple_binary_expression_within_class() {
         assert_eq!(
-            parse(
+            *parse(
                 "
             class foo {
                 method void bar () {
@@ -1078,34 +1128,34 @@ mod tests {
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![],
-                subroutine_declarations: vec![SubroutineDeclaration {
+                subroutine_declarations: vec![Rc::new(SubroutineDeclaration {
                     subroutine_kind: SubroutineKind::Method,
                     return_type: None,
                     parameters: vec![],
                     name: "bar".to_string(),
-                    body: SubroutineBody {
+                    body: Rc::new(SubroutineBody {
                         var_declarations: vec![],
-                        statements: vec![Statement::Let {
+                        statements: vec![Rc::new(Statement::Let {
                             var_name: "a".to_string(),
                             array_index: None,
-                            value: Expression::Binary {
+                            value: Rc::new(Expression::Binary {
                                 operator: BinaryOperator::Plus,
-                                lhs: Box::new(Expression::Binary {
+                                lhs: Rc::new(Expression::Binary {
                                     operator: BinaryOperator::Plus,
-                                    lhs: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                    lhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
                                         "1".to_string()
                                     ))),
-                                    rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                    rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
                                         "2".to_string()
                                     ))),
                                 }),
-                                rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
                                     "3".to_string()
                                 ))),
-                            }
-                        }],
-                    },
-                }],
+                            })
+                        })],
+                    }),
+                })],
             }
         )
     }
@@ -1114,19 +1164,19 @@ mod tests {
     fn test_simple_left_associating_expression() {
         assert_eq!(
             parse_expression("1 + 2 + 3 + 4"),
-            Expression::Binary {
+            Rc::new(Expression::Binary {
                 operator: BinaryOperator::Plus,
-                lhs: Box::new(Expression::Binary {
+                lhs: Rc::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
-                    lhs: Box::new(Expression::Binary {
+                    lhs: Rc::new(Expression::Binary {
                         operator: BinaryOperator::Plus,
-                        lhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
-                        rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                        lhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                        rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                     }),
-                    rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
+                    rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
                 }),
-                rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("4".to_string()))),
-            }
+                rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("4".to_string()))),
+            })
         )
     }
 
@@ -1134,19 +1184,19 @@ mod tests {
     fn test_binary_precedence() {
         assert_eq!(
             parse_expression("1 + 2 * 3 + 4"),
-            Expression::Binary {
+            Rc::new(Expression::Binary {
                 operator: BinaryOperator::Plus,
-                lhs: Box::new(Expression::Binary {
+                lhs: Rc::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
-                    lhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
-                    rhs: Box::new(Expression::Binary {
+                    lhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                    rhs: Rc::new(Expression::Binary {
                         operator: BinaryOperator::Multiply,
-                        lhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
-                        rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
+                        lhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                        rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
                     })
                 }),
-                rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("4".to_string()))),
-            }
+                rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("4".to_string()))),
+            })
         )
     }
 
@@ -1154,10 +1204,10 @@ mod tests {
     fn test_simple_unary_expression() {
         assert_eq!(
             parse_expression("~1"),
-            Expression::Unary {
+            Rc::new(Expression::Unary {
                 operator: UnaryOperator::Not,
-                operand: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
-            }
+                operand: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+            })
         )
     }
 
@@ -1165,17 +1215,17 @@ mod tests {
     fn test_simple_combined_unary_and_binary_expression() {
         assert_eq!(
             parse_expression("~1 + ~2"),
-            Expression::Binary {
+            Rc::new(Expression::Binary {
                 operator: BinaryOperator::Plus,
-                lhs: Box::new(Expression::Unary {
+                lhs: Rc::new(Expression::Unary {
                     operator: UnaryOperator::Not,
-                    operand: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                    operand: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                 }),
-                rhs: Box::new(Expression::Unary {
+                rhs: Rc::new(Expression::Unary {
                     operator: UnaryOperator::Not,
-                    operand: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                    operand: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                 }),
-            }
+            })
         )
     }
 
@@ -1183,29 +1233,41 @@ mod tests {
     fn test_expression_with_subroutine_calls() {
         assert_eq!(
             parse_expression("1 + foo(1, baz.bar(1, 2), 3) + 2"),
-            Expression::Binary {
+            Rc::new(Expression::Binary {
                 operator: BinaryOperator::Plus,
-                lhs: Box::new(Expression::Binary {
+                lhs: Rc::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
-                    lhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
-                    rhs: Box::new(Expression::SubroutineCall(SubroutineCall::Direct {
-                        subroutine_name: "foo".to_string(),
-                        arguments: vec![
-                            Expression::PrimitiveTerm(IntegerConstant("1".to_string())),
-                            Expression::SubroutineCall(SubroutineCall::Method {
-                                this_name: "baz".to_string(),
-                                method_name: "bar".to_string(),
-                                arguments: vec![
-                                    Expression::PrimitiveTerm(IntegerConstant("1".to_string())),
-                                    Expression::PrimitiveTerm(IntegerConstant("2".to_string())),
-                                ]
-                            }),
-                            Expression::PrimitiveTerm(IntegerConstant("3".to_string())),
-                        ]
-                    })),
+                    lhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                    rhs: Rc::new(Expression::SubroutineCall(Rc::new(
+                        SubroutineCall::Direct {
+                            subroutine_name: "foo".to_string(),
+                            arguments: vec![
+                                Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                    "1".to_string()
+                                ))),
+                                Rc::new(Expression::SubroutineCall(Rc::new(
+                                    SubroutineCall::Method {
+                                        this_name: "baz".to_string(),
+                                        method_name: "bar".to_string(),
+                                        arguments: vec![
+                                            Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                                "1".to_string()
+                                            ))),
+                                            Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                                "2".to_string()
+                                            ))),
+                                        ]
+                                    }
+                                ))),
+                                Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                    "3".to_string()
+                                ))),
+                            ]
+                        }
+                    ))),
                 }),
-                rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
-            }
+                rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+            })
         )
     }
 
@@ -1213,33 +1275,39 @@ mod tests {
     fn test_expression_with_subroutine_call_and_array_access() {
         assert_eq!(
             parse_expression("1 + foo(1, bar[1 + 2], 3) + 2"),
-            Expression::Binary {
+            Rc::new(Expression::Binary {
                 operator: BinaryOperator::Plus,
-                lhs: Box::new(Expression::Binary {
+                lhs: Rc::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
-                    lhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
-                    rhs: Box::new(Expression::SubroutineCall(SubroutineCall::Direct {
-                        subroutine_name: "foo".to_string(),
-                        arguments: vec![
-                            Expression::PrimitiveTerm(IntegerConstant("1".to_string())),
-                            Expression::ArrayAccess {
-                                var_name: "bar".to_string(),
-                                index: Box::new(Expression::Binary {
-                                    operator: BinaryOperator::Plus,
-                                    lhs: Box::new(Expression::PrimitiveTerm(IntegerConstant(
-                                        "1".to_string()
-                                    ))),
-                                    rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant(
-                                        "2".to_string()
-                                    ))),
-                                })
-                            },
-                            Expression::PrimitiveTerm(IntegerConstant("3".to_string())),
-                        ]
-                    })),
+                    lhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                    rhs: Rc::new(Expression::SubroutineCall(Rc::new(
+                        SubroutineCall::Direct {
+                            subroutine_name: "foo".to_string(),
+                            arguments: vec![
+                                Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                    "1".to_string()
+                                ))),
+                                Rc::new(Expression::ArrayAccess {
+                                    var_name: "bar".to_string(),
+                                    index: Rc::new(Expression::Binary {
+                                        operator: BinaryOperator::Plus,
+                                        lhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                            "1".to_string()
+                                        ))),
+                                        rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                            "2".to_string()
+                                        ))),
+                                    })
+                                }),
+                                Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                    "3".to_string()
+                                ))),
+                            ]
+                        }
+                    ))),
                 }),
-                rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
-            }
+                rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+            })
         )
     }
 
@@ -1247,34 +1315,36 @@ mod tests {
     fn test_expression_with_variables_subroutine_calls_and_array_access() {
         assert_eq!(
             parse_expression("foo + bar[baz + buz.boz(qux, wox[123]) / bing]"),
-            Expression::Binary {
+            Rc::new(Expression::Binary {
                 operator: BinaryOperator::Plus,
-                lhs: Box::new(Expression::Variable("foo".to_string())),
-                rhs: Box::new(Expression::ArrayAccess {
+                lhs: Rc::new(Expression::Variable("foo".to_string())),
+                rhs: Rc::new(Expression::ArrayAccess {
                     var_name: "bar".to_string(),
-                    index: Box::new(Expression::Binary {
+                    index: Rc::new(Expression::Binary {
                         operator: BinaryOperator::Plus,
-                        lhs: Box::new(Expression::Variable("baz".to_string())),
-                        rhs: Box::new(Expression::Binary {
+                        lhs: Rc::new(Expression::Variable("baz".to_string())),
+                        rhs: Rc::new(Expression::Binary {
                             operator: BinaryOperator::Divide,
-                            lhs: Box::new(Expression::SubroutineCall(SubroutineCall::Method {
-                                this_name: "buz".to_string(),
-                                method_name: "boz".to_string(),
-                                arguments: vec![
-                                    Expression::Variable("qux".to_string()),
-                                    Expression::ArrayAccess {
-                                        var_name: "wox".to_string(),
-                                        index: Box::new(Expression::PrimitiveTerm(
-                                            IntegerConstant("123".to_string())
-                                        ))
-                                    }
-                                ]
-                            })),
-                            rhs: Box::new(Expression::Variable("bing".to_string()))
+                            lhs: Rc::new(Expression::SubroutineCall(Rc::new(
+                                SubroutineCall::Method {
+                                    this_name: "buz".to_string(),
+                                    method_name: "boz".to_string(),
+                                    arguments: vec![
+                                        Rc::new(Expression::Variable("qux".to_string())),
+                                        Rc::new(Expression::ArrayAccess {
+                                            var_name: "wox".to_string(),
+                                            index: Rc::new(Expression::PrimitiveTerm(
+                                                IntegerConstant("123".to_string())
+                                            ))
+                                        })
+                                    ]
+                                }
+                            ))),
+                            rhs: Rc::new(Expression::Variable("bing".to_string()))
                         })
                     })
                 })
-            }
+            })
         )
     }
 
@@ -1282,31 +1352,31 @@ mod tests {
     fn test_primitive_terms() {
         assert_eq!(
             parse_expression("1 + \"hello\" + true + false + null + this"),
-            Expression::Binary {
+            Rc::new(Expression::Binary {
                 operator: BinaryOperator::Plus,
-                lhs: Box::new(Expression::Binary {
+                lhs: Rc::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
-                    lhs: Box::new(Expression::Binary {
+                    lhs: Rc::new(Expression::Binary {
                         operator: BinaryOperator::Plus,
-                        lhs: Box::new(Expression::Binary {
+                        lhs: Rc::new(Expression::Binary {
                             operator: BinaryOperator::Plus,
-                            lhs: Box::new(Expression::Binary {
+                            lhs: Rc::new(Expression::Binary {
                                 operator: BinaryOperator::Plus,
-                                lhs: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                lhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
                                     "1".to_string()
                                 ))),
-                                rhs: Box::new(Expression::PrimitiveTerm(StringConstant(
+                                rhs: Rc::new(Expression::PrimitiveTerm(StringConstant(
                                     "hello".to_string()
                                 ))),
                             }),
-                            rhs: Box::new(Expression::PrimitiveTerm(PrimitiveTermVariant::True)),
+                            rhs: Rc::new(Expression::PrimitiveTerm(PrimitiveTermVariant::True)),
                         }),
-                        rhs: Box::new(Expression::PrimitiveTerm(PrimitiveTermVariant::False)),
+                        rhs: Rc::new(Expression::PrimitiveTerm(PrimitiveTermVariant::False)),
                     }),
-                    rhs: Box::new(Expression::PrimitiveTerm(PrimitiveTermVariant::Null)),
+                    rhs: Rc::new(Expression::PrimitiveTerm(PrimitiveTermVariant::Null)),
                 }),
-                rhs: Box::new(Expression::PrimitiveTerm(PrimitiveTermVariant::This))
-            }
+                rhs: Rc::new(Expression::PrimitiveTerm(PrimitiveTermVariant::This))
+            })
         )
     }
 
@@ -1314,15 +1384,15 @@ mod tests {
     fn test_parenthesized_expression() {
         assert_eq!(
             parse_expression("(1 + 2) * 3"),
-            Expression::Binary {
+            Rc::new(Expression::Binary {
                 operator: BinaryOperator::Multiply,
-                lhs: Box::new(Expression::Binary {
+                lhs: Rc::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
-                    lhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
-                    rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                    lhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                    rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                 }),
-                rhs: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
-            }
+                rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
+            })
         )
     }
 }

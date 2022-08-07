@@ -9,7 +9,7 @@ use ts_rs::TS;
 pub struct Class {
     pub name: String,
     pub var_declarations: Vec<ClassVarDeclaration>,
-    pub subroutine_declarations: Vec<SubroutineDeclaration>,
+    pub subroutine_declarations: Vec<Rc<SubroutineDeclaration>>,
 }
 
 #[derive(Serialize, TS, Debug, PartialEq)]
@@ -103,7 +103,7 @@ pub enum Expression {
     SubroutineCall(Rc<SubroutineCall>),
     ArrayAccess {
         var_name: String,
-        index: Box<Expression>,
+        index: Rc<Expression>,
     },
 }
 
@@ -121,12 +121,12 @@ pub struct Parameter {
 pub enum SubroutineCall {
     Direct {
         subroutine_name: String,
-        arguments: Vec<Expression>,
+        arguments: Vec<Rc<Expression>>,
     },
     Method {
         this_name: String,
         method_name: String,
-        arguments: Vec<Expression>,
+        arguments: Vec<Rc<Expression>>,
     },
 }
 
@@ -136,20 +136,20 @@ pub enum SubroutineCall {
 pub enum Statement {
     Let {
         var_name: String,
-        array_index: Option<Expression>,
-        value: Expression,
+        array_index: Option<Rc<Expression>>,
+        value: Rc<Expression>,
     },
     If {
-        condition: Expression,
-        if_statements: Vec<Statement>,
-        else_statements: Option<Vec<Statement>>,
+        condition: Rc<Expression>,
+        if_statements: Vec<Rc<Statement>>,
+        else_statements: Option<Vec<Rc<Statement>>>,
     },
     While {
-        condition: Expression,
-        statements: Vec<Statement>,
+        condition: Rc<Expression>,
+        statements: Vec<Rc<Statement>>,
     },
     Do(Rc<SubroutineCall>),
-    Return(Option<Expression>),
+    Return(Option<Rc<Expression>>),
 }
 #[derive(Serialize, TS, Debug, PartialEq)]
 #[ts(export)]
@@ -164,7 +164,7 @@ pub struct VarDeclaration {
 #[ts(export_to = "../bindings/")]
 pub struct SubroutineBody {
     pub var_declarations: Vec<VarDeclaration>,
-    pub statements: Vec<Statement>,
+    pub statements: Vec<Rc<Statement>>,
 }
 #[derive(Serialize, TS, Debug, PartialEq)]
 #[ts(export)]
@@ -174,5 +174,5 @@ pub struct SubroutineDeclaration {
     pub return_type: Option<Type>,
     pub parameters: Vec<Parameter>,
     pub name: String,
-    pub body: SubroutineBody,
+    pub body: Rc<SubroutineBody>,
 }

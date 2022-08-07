@@ -1,16 +1,21 @@
 use std::{collections::HashMap, ops::Range, rc::Rc};
 
 use super::jack_node_types::{
-    Class, Expression, Statement, SubroutineBody, SubroutineCall, SubroutineDeclaration,
+    Class, ClassVarDeclaration, ClassVarDeclarationKind, Expression, Parameter, Statement,
+    SubroutineBody, SubroutineCall, SubroutineDeclaration, VarDeclaration,
 };
 
 pub enum JackNode {
     ClassNode(Rc<Class>),
+    ClassVarDeclarationKindNode(Rc<ClassVarDeclarationKind>),
+    ClassVarDeclarationNode(Rc<ClassVarDeclaration>),
     ExpressionNode(Rc<Expression>),
+    ParameterNode(Rc<Parameter>),
     SubroutineCallNode(Rc<SubroutineCall>),
     StatementNode(Rc<Statement>),
     SubroutineBodyNode(Rc<SubroutineBody>),
     SubroutineDeclarationNode(Rc<SubroutineDeclaration>),
+    VarDeclarationNode(Rc<VarDeclaration>),
 }
 
 pub struct SourceMap {

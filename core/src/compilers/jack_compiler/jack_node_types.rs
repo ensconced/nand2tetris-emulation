@@ -8,7 +8,7 @@ use ts_rs::TS;
 #[ts(export_to = "../bindings/")]
 pub struct Class {
     pub name: String,
-    pub var_declarations: Vec<ClassVarDeclaration>,
+    pub var_declarations: Vec<Rc<ClassVarDeclaration>>,
     pub subroutine_declarations: Vec<Rc<SubroutineDeclaration>>,
 }
 
@@ -35,7 +35,7 @@ pub enum Type {
 #[ts(export_to = "../bindings/")]
 pub struct ClassVarDeclaration {
     pub type_name: Type,
-    pub qualifier: ClassVarDeclarationKind,
+    pub qualifier: Rc<ClassVarDeclarationKind>,
     pub var_names: Vec<String>,
 }
 
@@ -163,7 +163,7 @@ pub struct VarDeclaration {
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub struct SubroutineBody {
-    pub var_declarations: Vec<VarDeclaration>,
+    pub var_declarations: Vec<Rc<VarDeclaration>>,
     pub statements: Vec<Rc<Statement>>,
 }
 #[derive(Serialize, TS, Debug, PartialEq)]
@@ -172,7 +172,7 @@ pub struct SubroutineBody {
 pub struct SubroutineDeclaration {
     pub subroutine_kind: SubroutineKind,
     pub return_type: Option<Type>,
-    pub parameters: Vec<Parameter>,
+    pub parameters: Vec<Rc<Parameter>>,
     pub name: String,
     pub body: Rc<SubroutineBody>,
 }

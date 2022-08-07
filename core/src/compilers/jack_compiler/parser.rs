@@ -235,7 +235,7 @@ impl Parser {
             let rc = Rc::new(exp);
             let token_range = op_token_idx..operand_token_range.end;
             self.record_jack_node(JackNode::ExpressionNode(rc.clone()), token_range.clone());
-            (rc, token_range.clone())
+            (rc, token_range)
         } else {
             self.maybe_take_primitive_expression()
                 .or_else(|| self.maybe_take_term_starting_with_identifier())
@@ -399,17 +399,21 @@ impl Parser {
         }
     }
 
-    fn maybe_take_parameter(&mut self) -> Option<Parameter> {
+    fn maybe_take_parameter(&mut self) -> Option<Rc<Parameter>> {
         self.maybe_take_type().map(|type_name| {
-            let (var_name, _) = self.take_identifier();
-            Parameter {
+            let (var_name, identifier_token_idx) = self.take_identifier();
+            let parameter = Parameter {
                 type_name,
                 var_name,
-            }
+            };
+            let rc = Rc::new(parameter);
+            let token_range = identifier_token_idx..identifier_token_idx + 1;
+            self.record_jack_node(JackNode::ParameterNode(rc.clone()), token_range.clone());
+            rc
         })
     }
 
-    fn take_parameters(&mut self) -> Vec<Parameter> {
+    fn take_parameters(&mut self) -> Vec<Rc<Parameter>> {
         let mut result = Vec::new();
         if let Some(parameter) = self.maybe_take_parameter() {
             result.push(parameter);
@@ -515,7 +519,7 @@ impl Parser {
     ) -> (Rc<Statement>, Range<usize>) {
         self.token_iter.next(); // "while" keyword
         self.take_token(TokenKind::LParen);
-        let (condition, condition_token_range) = self.take_expression();
+        let (condition, _) = self.take_expression();
         self.take_token(TokenKind::RParen);
         let (statements, statements_token_range) = self.take_statement_block();
         let statement = Statement::While {
@@ -585,25 +589,33 @@ impl Parser {
         result
     }
 
-    fn take_var_declaration(&mut self) -> VarDeclaration {
+    fn take_var_declaration(&mut self) -> Rc<VarDeclaration> {
         if let Some(Token {
             kind: TokenKind::Keyword(KeywordTokenVariant::Var),
+            idx: var_keyword_token_idx,
             ..
         }) = self.token_iter.next()
         {
             let type_name = self.take_type();
             let var_names = self.take_var_names();
-            self.take_token(TokenKind::Semicolon);
-            VarDeclaration {
+            let semicolon = self.take_token(TokenKind::Semicolon);
+            let var_declaration = VarDeclaration {
                 type_name,
                 var_names,
-            }
+            };
+            let rc = Rc::new(var_declaration);
+            let token_range = var_keyword_token_idx..semicolon.idx + 1;
+            self.record_jack_node(
+                JackNode::VarDeclarationNode(rc.clone()),
+                token_range.clone(),
+            );
+            rc
         } else {
             panic!("expected var keyword");
         }
     }
 
-    fn take_var_declarations(&mut self) -> Vec<VarDeclaration> {
+    fn take_var_declarations(&mut self) -> Vec<Rc<VarDeclaration>> {
         let mut result = Vec::new();
         while let Some(Token {
             kind: TokenKind::Keyword(KeywordTokenVariant::Var),
@@ -697,17 +709,29 @@ impl Parser {
         result
     }
 
-    fn take_class_var_declaration_qualifier(&mut self) -> ClassVarDeclarationKind {
+    fn take_class_var_declaration_qualifier(
+        &mut self,
+    ) -> (Rc<ClassVarDeclarationKind>, Range<usize>) {
         use KeywordTokenVariant::*;
         match self.token_iter.next() {
             Some(Token {
                 kind: TokenKind::Keyword(keyword),
+                idx: token_idx,
                 ..
-            }) => match keyword {
-                Static => ClassVarDeclarationKind::Static,
-                Field => ClassVarDeclarationKind::Field,
-                _ => panic!("expected var declaration qualifier",),
-            },
+            }) => {
+                let qualifier = match keyword {
+                    Static => ClassVarDeclarationKind::Static,
+                    Field => ClassVarDeclarationKind::Field,
+                    _ => panic!("expected var declaration qualifier",),
+                };
+                let rc = Rc::new(qualifier);
+                let token_range = token_idx..token_idx + 1;
+                self.record_jack_node(
+                    JackNode::ClassVarDeclarationKindNode(rc.clone()),
+                    token_range.clone(),
+                );
+                (rc, token_range)
+            }
             _ => panic!("expected var declaration qualifier",),
         }
     }
@@ -770,30 +794,40 @@ impl Parser {
         }
     }
 
-    fn take_class_var_declaration(&mut self) -> ClassVarDeclaration {
-        let qualifier = self.take_class_var_declaration_qualifier();
+    fn take_class_var_declaration(&mut self) -> (Rc<ClassVarDeclaration>, Range<usize>) {
+        let (qualifier, qualifier_token_range) = self.take_class_var_declaration_qualifier();
         let type_name = self.take_type();
         let var_names = self.take_var_names();
-        self.take_token(TokenKind::Semicolon);
-        ClassVarDeclaration {
+        let semicolon = self.take_token(TokenKind::Semicolon);
+        let class_var_declaration = ClassVarDeclaration {
             qualifier,
             type_name,
             var_names,
-        }
+        };
+        let rc = Rc::new(class_var_declaration);
+        let token_range = qualifier_token_range.start..semicolon.idx + 1;
+        self.record_jack_node(
+            JackNode::ClassVarDeclarationNode(rc.clone()),
+            token_range.clone(),
+        );
+        (rc, token_range)
     }
 
-    fn maybe_take_class_var_declaration(&mut self) -> Option<ClassVarDeclaration> {
+    fn maybe_take_class_var_declaration(&mut self) -> Option<Rc<ClassVarDeclaration>> {
         use KeywordTokenVariant::*;
         match self.token_iter.peek().expect("unexpected end of input") {
             Token {
                 kind: TokenKind::Keyword(Static | Field),
                 ..
-            } => Some(self.take_class_var_declaration()),
+            } => {
+                let (class_var_declaration, _) = self.take_class_var_declaration();
+                Some(class_var_declaration)
+            }
             _ => None,
         }
     }
 
-    fn take_class_var_declarations(&mut self) -> Vec<ClassVarDeclaration> {
+    fn take_class_var_declarations(&mut self) -> Vec<Rc<ClassVarDeclaration>> {
         let mut result = Vec::new();
         while let Some(class_var_declaration) = self.maybe_take_class_var_declaration() {
             result.push(class_var_declaration);
@@ -871,11 +905,11 @@ mod tests {
             ),
             Class {
                 name: "foo".to_string(),
-                var_declarations: vec![ClassVarDeclaration {
-                    qualifier: ClassVarDeclarationKind::Static,
+                var_declarations: vec![Rc::new(ClassVarDeclaration {
+                    qualifier: Rc::new(ClassVarDeclarationKind::Static),
                     type_name: Type::Int,
                     var_names: vec!["bar".to_string()],
-                }],
+                })],
                 subroutine_declarations: vec![],
             }
         );
@@ -895,21 +929,21 @@ mod tests {
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![
-                    ClassVarDeclaration {
-                        qualifier: ClassVarDeclarationKind::Static,
+                    Rc::new(ClassVarDeclaration {
+                        qualifier: Rc::new(ClassVarDeclarationKind::Static),
                         type_name: Type::Int,
                         var_names: vec!["bar".to_string()],
-                    },
-                    ClassVarDeclaration {
-                        qualifier: ClassVarDeclarationKind::Field,
+                    }),
+                    Rc::new(ClassVarDeclaration {
+                        qualifier: Rc::new(ClassVarDeclarationKind::Field),
                         type_name: Type::Char,
                         var_names: vec!["baz".to_string(), "buz".to_string(), "boz".to_string()],
-                    },
-                    ClassVarDeclaration {
-                        qualifier: ClassVarDeclarationKind::Field,
+                    }),
+                    Rc::new(ClassVarDeclaration {
+                        qualifier: Rc::new(ClassVarDeclarationKind::Field),
                         type_name: Type::Boolean,
                         var_names: vec!["a".to_string(), "b".to_string(), "c".to_string(),],
-                    }
+                    })
                 ],
                 subroutine_declarations: vec![],
             }
@@ -938,18 +972,18 @@ mod tests {
                         subroutine_kind: SubroutineKind::Constructor,
                         return_type: Some(Type::Boolean),
                         parameters: vec![
-                            Parameter {
+                            Rc::new(Parameter {
                                 type_name: Type::Int,
                                 var_name: "abc".to_string(),
-                            },
-                            Parameter {
+                            }),
+                            Rc::new(Parameter {
                                 type_name: Type::Char,
                                 var_name: "def".to_string(),
-                            },
-                            Parameter {
+                            }),
+                            Rc::new(Parameter {
                                 type_name: Type::ClassName("foo".to_string()),
                                 var_name: "ghi".to_string(),
-                            }
+                            })
                         ],
                         name: "bar".to_string(),
                         body: Rc::new(SubroutineBody {
@@ -960,10 +994,10 @@ mod tests {
                     Rc::new(SubroutineDeclaration {
                         subroutine_kind: SubroutineKind::Function,
                         return_type: Some(Type::Char),
-                        parameters: vec![Parameter {
+                        parameters: vec![Rc::new(Parameter {
                             type_name: Type::Boolean,
                             var_name: "_123".to_string(),
-                        },],
+                        })],
                         name: "baz".to_string(),
                         body: Rc::new(SubroutineBody {
                             var_declarations: vec![],
@@ -1019,10 +1053,10 @@ mod tests {
                     parameters: vec![],
                     name: "blah".to_string(),
                     body: Rc::new(SubroutineBody {
-                        var_declarations: vec![VarDeclaration {
+                        var_declarations: vec![Rc::new(VarDeclaration {
                             type_name: Type::Int,
                             var_names: vec!["a".to_string()],
-                        }],
+                        })],
                         statements: vec![
                             Rc::new(Statement::Let {
                                 var_name: "a".to_string(),

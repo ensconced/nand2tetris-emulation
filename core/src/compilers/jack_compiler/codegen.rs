@@ -80,7 +80,7 @@ impl CodeGenerator {
 
     fn compile_subroutine_var_declarations(
         &mut self,
-        var_declarations: &Vec<VarDeclaration>,
+        var_declarations: &Vec<Rc<VarDeclaration>>,
     ) -> usize {
         let mut count = 0;
         for var_declaration in var_declarations {
@@ -683,7 +683,7 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_subroutine_parameters(&mut self, parameters: &Vec<Parameter>) {
+    fn compile_subroutine_parameters(&mut self, parameters: &Vec<Rc<Parameter>>) {
         for parameter in parameters {
             let offset = if self.subroutine_kind == Some(SubroutineKind::Method) {
                 self.subroutine_parameters.len() + 1
@@ -777,11 +777,11 @@ impl CodeGenerator {
 
     pub fn compile_var_declarations(
         &mut self,
-        var_declarations: &Vec<ClassVarDeclaration>,
+        var_declarations: &Vec<Rc<ClassVarDeclaration>>,
     ) -> usize {
         let mut instance_size = 0;
         for var_declaration in var_declarations {
-            let (hashmap, symbol_kind) = match var_declaration.qualifier {
+            let (hashmap, symbol_kind) = match *var_declaration.qualifier {
                 ClassVarDeclarationKind::Static => (&mut self.class_statics, SymbolKind::Static),
                 ClassVarDeclarationKind::Field => (&mut self.class_fields, SymbolKind::Field),
             };

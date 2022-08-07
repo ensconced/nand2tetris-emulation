@@ -61,7 +61,6 @@ pub fn parse(source: &str) -> Class {
 }
 
 struct Parser {
-    // tokens: Vec<Token<TokenKind>>,
     token_iter: PeekableTokens<TokenKind>,
     sourcemap: SourceMap,
 }

@@ -292,7 +292,11 @@ mod tests {
         let result = tokens.next();
         assert_eq!(
             result,
-            Some(Token::new(Identifier("not".to_string()), "not".to_string()))
+            Some(Token::new(
+                Identifier("not".to_string()),
+                "not".to_string(),
+                0
+            ),)
         );
     }
 
@@ -306,7 +310,8 @@ mod tests {
             remaining,
             Some(Token::new(
                 Identifier("hello".to_string()),
-                "hello".to_string()
+                "hello".to_string(),
+                1
             ))
         );
     }

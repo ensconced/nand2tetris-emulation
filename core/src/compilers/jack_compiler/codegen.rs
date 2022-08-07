@@ -9,7 +9,7 @@ use super::jack_node_types::{
     PrimitiveTermVariant, Statement, SubroutineCall, SubroutineDeclaration, SubroutineKind, Type,
     UnaryOperator, VarDeclaration,
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
 
 #[derive(Clone, PartialEq)]
 enum SymbolKind {
@@ -110,7 +110,7 @@ impl CodeGenerator {
     fn compile_let_statement(
         &mut self,
         var_name: &str,
-        array_index: &Option<Expression>,
+        array_index: &Option<Rc<Expression>>,
         value: &Expression,
     ) -> Vec<Command> {
         let compiled_value = self.compile_expression(value);
@@ -160,8 +160,8 @@ impl CodeGenerator {
     fn compile_if_statement(
         &mut self,
         condition: &Expression,
-        if_statements: &[Statement],
-        else_statements: &Option<Vec<Statement>>,
+        if_statements: &[Rc<Statement>],
+        else_statements: &Option<Vec<Rc<Statement>>>,
     ) -> Vec<Command> {
         let if_count = self.subroutine_if_count;
         self.subroutine_if_count += 1;
@@ -209,7 +209,7 @@ impl CodeGenerator {
             .collect()
     }
 
-    fn compile_return_statement(&mut self, return_value: &Option<Expression>) -> Vec<Command> {
+    fn compile_return_statement(&mut self, return_value: &Option<Rc<Expression>>) -> Vec<Command> {
         let push_return_value = if let Some(expression) = return_value {
             self.compile_expression(expression)
         } else {
@@ -443,7 +443,7 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_push_arguments(&mut self, arguments: &[Expression]) -> Vec<Command> {
+    fn compile_push_arguments(&mut self, arguments: &[Rc<Expression>]) -> Vec<Command> {
         arguments
             .iter()
             .flat_map(|argument| self.compile_expression(argument))
@@ -454,7 +454,7 @@ impl CodeGenerator {
         &mut self,
         this_name: &str,
         method_name: &str,
-        arguments: &[Expression],
+        arguments: &[Rc<Expression>],
     ) -> Vec<Command> {
         let arg_count = arguments.len();
         let push_arguments = self.compile_push_arguments(arguments);
@@ -496,7 +496,7 @@ impl CodeGenerator {
     fn compile_direct_subroutine_call_expression(
         &mut self,
         subroutine_name: &str,
-        arguments: &Vec<Expression>,
+        arguments: &Vec<Rc<Expression>>,
     ) -> Vec<Command> {
         let arg_count = arguments.len();
         let class_name = self.get_class_name().to_owned();
@@ -610,7 +610,7 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_statements(&mut self, statements: &[Statement]) -> Vec<Command> {
+    fn compile_statements(&mut self, statements: &[Rc<Statement>]) -> Vec<Command> {
         statements
             .iter()
             .flat_map(|statement| self.compile_statement(statement))
@@ -620,7 +620,7 @@ impl CodeGenerator {
     fn compile_while_statement(
         &mut self,
         condition: &Expression,
-        statements: &[Statement],
+        statements: &[Rc<Statement>],
     ) -> Vec<Command> {
         let while_idx = self.subroutine_while_count;
         self.subroutine_while_count += 1;
@@ -766,7 +766,7 @@ impl CodeGenerator {
 
     pub fn compile_subroutines(
         &mut self,
-        subroutine_declarations: &[SubroutineDeclaration],
+        subroutine_declarations: &[Rc<SubroutineDeclaration>],
         instance_size: usize,
     ) -> Vec<Command> {
         subroutine_declarations

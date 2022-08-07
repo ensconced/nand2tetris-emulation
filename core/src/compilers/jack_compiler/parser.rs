@@ -38,9 +38,23 @@ fn infix_precedence(operator: OperatorVariant) -> Option<(u8, u8)> {
 }
 
 pub fn parse(source: &str) -> Class {
-    let tokens = Tokenizer::new(token_defs()).tokenize(source).into_iter();
+    let tokens: Vec<_> = Tokenizer::new(token_defs())
+        .tokenize(source)
+        .into_iter()
+        .filter(|token| {
+            !matches!(
+                token,
+                Token {
+                    kind: TokenKind::Whitespace
+                        | TokenKind::MultiLineComment
+                        | TokenKind::SingleLineComment,
+                    ..
+                }
+            )
+        })
+        .collect();
     let mut parser = Parser {
-        token_iter: tokens.peekable(),
+        token_iter: tokens.into_iter().peekable(),
         sourcemap: SourceMap::new(),
     };
     parser.take_class()
@@ -671,9 +685,23 @@ mod tests {
     use super::*;
 
     fn parse_expression(source: &str) -> Expression {
-        let tokens = Tokenizer::new(token_defs()).tokenize(source).into_iter();
+        let tokens: Vec<_> = Tokenizer::new(token_defs())
+            .tokenize(source)
+            .into_iter()
+            .filter(|token| {
+                !matches!(
+                    token,
+                    Token {
+                        kind: TokenKind::Whitespace
+                            | TokenKind::MultiLineComment
+                            | TokenKind::SingleLineComment,
+                        ..
+                    }
+                )
+            })
+            .collect();
         let mut parser = Parser {
-            token_iter: tokens.peekable(),
+            token_iter: tokens.into_iter().peekable(),
             sourcemap: SourceMap::new(),
         };
         parser.take_expression()

@@ -1,11 +1,15 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Range, rc::Rc};
 
-pub struct JackNode {
-    id: usize,
+use super::jack_node_types::{Expression, Statement, SubroutineCall};
+
+pub enum JackNode {
+    ExpressionNode(Rc<Expression>),
+    SubroutineCallNode(Rc<SubroutineCall>),
+    StatementNode(Rc<Statement>),
 }
 
 pub struct SourceMap {
-    jack_node_idx_to_token_idx: HashMap<usize, usize>,
+    pub jack_node_idx_to_token_idx: HashMap<usize, Range<usize>>,
     // jack_node_idx_to_vm_command_idx: HashMap<usize, usize>,
     // token_idx_to_jack_node_idx: HashMap<usize, usize>,
     // vm_command_idx_to_jack_node_idx: HashMap<usize, usize>,

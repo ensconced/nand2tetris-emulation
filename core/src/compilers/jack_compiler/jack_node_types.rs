@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use serde::Serialize;
 use ts_rs::TS;
 
@@ -90,15 +92,15 @@ pub enum Expression {
     PrimitiveTerm(PrimitiveTermVariant),
     Binary {
         operator: BinaryOperator,
-        lhs: Box<Expression>,
-        rhs: Box<Expression>,
+        lhs: Rc<Expression>,
+        rhs: Rc<Expression>,
     },
     Unary {
         operator: UnaryOperator,
-        operand: Box<Expression>,
+        operand: Rc<Expression>,
     },
     Variable(String),
-    SubroutineCall(SubroutineCall),
+    SubroutineCall(Rc<SubroutineCall>),
     ArrayAccess {
         var_name: String,
         index: Box<Expression>,
@@ -146,7 +148,7 @@ pub enum Statement {
         condition: Expression,
         statements: Vec<Statement>,
     },
-    Do(SubroutineCall),
+    Do(Rc<SubroutineCall>),
     Return(Option<Expression>),
 }
 #[derive(Serialize, TS, Debug, PartialEq)]

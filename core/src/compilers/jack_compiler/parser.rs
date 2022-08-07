@@ -1,6 +1,8 @@
+use std::{ops::Range, rc::Rc};
+
 use super::{
     jack_node_types::{PrimitiveTermVariant::*, *},
-    sourcemap::SourceMap,
+    sourcemap::{JackNode, SourceMap},
     tokenizer::{
         token_defs, KeywordTokenVariant,
         OperatorVariant::{self, *},
@@ -56,6 +58,7 @@ pub fn parse(source: &str) -> Class {
     let mut parser = Parser {
         token_iter: tokens.into_iter().peekable(),
         sourcemap: SourceMap::new(),
+        jack_nodes: Vec::new(),
     };
     parser.take_class()
 }
@@ -63,74 +66,107 @@ pub fn parse(source: &str) -> Class {
 struct Parser {
     token_iter: PeekableTokens<TokenKind>,
     sourcemap: SourceMap,
+    jack_nodes: Vec<JackNode>,
 }
 
 impl Parser {
-    fn maybe_take_primitive_expression(&mut self) -> Option<Expression> {
+    fn record_jack_node(&mut self, jack_node: JackNode, token_range: Range<usize>) {
+        let idx = self.jack_nodes.len();
+        self.jack_nodes.push(jack_node);
+        self.sourcemap
+            .jack_node_idx_to_token_idx
+            .insert(idx, token_range);
+    }
+
+    fn maybe_take_primitive_expression(&mut self) -> Option<(Rc<Expression>, Range<usize>)> {
         use TokenKind::*;
         let peeked_token = self.token_iter.peek().cloned();
-        peeked_token.and_then(|token| match token.kind {
-            IntegerLiteral(string) => {
-                self.token_iter.next();
-                Some(Expression::PrimitiveTerm(IntegerConstant(string)))
-            }
-            StringLiteral(string) => {
-                self.token_iter.next();
-                Some(Expression::PrimitiveTerm(StringConstant(string)))
-            }
-            Keyword(KeywordTokenVariant::True) => {
-                self.token_iter.next();
-                Some(Expression::PrimitiveTerm(PrimitiveTermVariant::True))
-            }
-            Keyword(KeywordTokenVariant::False) => {
-                self.token_iter.next();
-                Some(Expression::PrimitiveTerm(PrimitiveTermVariant::False))
-            }
-            Keyword(KeywordTokenVariant::Null) => {
-                self.token_iter.next();
-                Some(Expression::PrimitiveTerm(PrimitiveTermVariant::Null))
-            }
-            Keyword(KeywordTokenVariant::This) => {
-                self.token_iter.next();
-                Some(Expression::PrimitiveTerm(PrimitiveTermVariant::This))
-            }
-            _ => None,
-        })
+        let (expression, exp_token_idx) = peeked_token.and_then(|token| {
+            let maybe_exp = match token.kind {
+                IntegerLiteral(string) => {
+                    self.token_iter.next();
+                    Some(Expression::PrimitiveTerm(IntegerConstant(string)))
+                }
+                StringLiteral(string) => {
+                    self.token_iter.next();
+                    Some(Expression::PrimitiveTerm(StringConstant(string)))
+                }
+                Keyword(KeywordTokenVariant::True) => {
+                    self.token_iter.next();
+                    Some(Expression::PrimitiveTerm(PrimitiveTermVariant::True))
+                }
+                Keyword(KeywordTokenVariant::False) => {
+                    self.token_iter.next();
+                    Some(Expression::PrimitiveTerm(PrimitiveTermVariant::False))
+                }
+                Keyword(KeywordTokenVariant::Null) => {
+                    self.token_iter.next();
+                    Some(Expression::PrimitiveTerm(PrimitiveTermVariant::Null))
+                }
+                Keyword(KeywordTokenVariant::This) => {
+                    self.token_iter.next();
+                    Some(Expression::PrimitiveTerm(PrimitiveTermVariant::This))
+                }
+                _ => None,
+            };
+            maybe_exp.map(|exp| (exp, token.idx))
+        })?;
+        let rc = Rc::new(expression);
+        let jack_node = JackNode::ExpressionNode(rc);
+        let token_range = exp_token_idx..exp_token_idx + 1;
+        self.record_jack_node(jack_node, token_range);
+        Some((rc, token_range))
     }
 
-    fn take_array_access(&mut self, var_name: String) -> Expression {
+    fn take_array_access(&mut self, var_name: String) -> (Rc<Expression>, Range<usize>) {
         use TokenKind::*;
-        self.take_token(LSquareBracket);
+        let l_bracket = self.take_token(LSquareBracket);
         let index = self.take_expression();
-        self.take_token(RSquareBracket);
-        Expression::ArrayAccess {
+        let r_bracket = self.take_token(RSquareBracket);
+        let rc = Rc::new(Expression::ArrayAccess {
             var_name,
             index: Box::new(index),
-        }
+        });
+        let jack_node = JackNode::ExpressionNode(rc);
+        let token_range = l_bracket.idx..r_bracket.idx + 1;
+        self.record_jack_node(jack_node, token_range);
+        (rc, token_range)
     }
 
-    fn maybe_take_parenthesized_expression(&mut self) -> Option<Expression> {
+    fn maybe_take_parenthesized_expression(&mut self) -> Option<Rc<Expression>> {
         use TokenKind::*;
-        if let Some(Token { kind: LParen, .. }) = self.token_iter.peek() {
+        if let Some(Token {
+            kind: LParen,
+            idx: l_paren_idx,
+            ..
+        }) = self.token_iter.peek()
+        {
             self.token_iter.next();
             let expr = self.take_expression();
-            self.take_token(RParen);
-            Some(expr)
+            let rc = Rc::new(expr);
+            let r_paren = self.take_token(RParen);
+            let jack_node = JackNode::ExpressionNode(rc);
+            self.record_jack_node(jack_node, *l_paren_idx..r_paren.idx + 1);
+            Some(rc)
         } else {
             None
         }
     }
 
-    fn maybe_take_term_starting_with_identifier(&mut self) -> Option<Expression> {
+    fn maybe_take_term_starting_with_identifier(
+        &mut self,
+    ) -> Option<(Rc<Expression>, Range<usize>)> {
         use TokenKind::*;
-        let p = self.token_iter.peek();
+        // TODO - this is not very nice...maybe we should just use two tokens of
+        // lookahead instead? (I think itertools would make that easy).
+        let peeked_token = self.token_iter.peek();
         if let Some(Token {
             kind: Identifier(string),
             ..
-        }) = p
+        }) = peeked_token
         {
             let string = string.to_string();
-            let identifier = self.take_identifier();
+            let (identifier, identifier_token_idx) = self.take_identifier();
             match self.token_iter.peek() {
                 Some(Token {
                     kind: LSquareBracket,
@@ -138,10 +174,24 @@ impl Parser {
                 }) => Some(self.take_array_access(identifier)),
                 Some(Token {
                     kind: Dot | LParen, ..
-                }) => Some(Expression::SubroutineCall(
-                    self.take_subroutine_call(identifier),
-                )),
-                _ => Some(Expression::Variable(string)),
+                }) => {
+                    let (subroutine_call, subroutine_call_token_range) =
+                        self.take_subroutine_call(identifier, identifier_token_idx);
+                    let expr = Expression::SubroutineCall(subroutine_call);
+                    let rc = Rc::new(expr);
+                    self.record_jack_node(
+                        JackNode::ExpressionNode(rc),
+                        subroutine_call_token_range,
+                    );
+                    Some((rc, subroutine_call_token_range))
+                }
+                _ => {
+                    let expr = Expression::Variable(string);
+                    let rc = Rc::new(expr);
+                    let token_range = identifier_token_idx..identifier_token_idx + 1;
+                    self.record_jack_node(JackNode::ExpressionNode(rc), token_range);
+                    Some((rc, token_range))
+                }
             }
         } else {
             None
@@ -151,16 +201,19 @@ impl Parser {
     fn maybe_take_expression_with_binding_power(
         &mut self,
         binding_power: u8,
-    ) -> Option<Expression> {
+    ) -> Option<(Rc<Expression>, Range<usize>)> {
         use TokenKind::*;
-        let mut lhs = if let Some(Token {
-            kind: Operator(op), ..
+        let (mut lhs, lhs_token_range) = if let Some(Token {
+            kind: Operator(op),
+            idx: op_token_idx,
+            ..
         }) = self.token_iter.peek()
         {
+            // start with a unary expression
+            self.token_iter.next();
             let op = op.clone();
             let rbp = prefix_precedence(op.clone()).expect("invalid prefix operator");
-            self.token_iter.next();
-            let operand = self
+            let (operand, operand_token_range) = self
                 .maybe_take_expression_with_binding_power(rbp)
                 .expect("unary operator has no operand");
             let operator = match op {
@@ -168,10 +221,12 @@ impl Parser {
                 OperatorVariant::Tilde => UnaryOperator::Not,
                 _ => panic!("invalid unary operator"),
             };
-            Expression::Unary {
-                operator,
-                operand: Box::new(operand),
-            }
+            let exp = Expression::Unary { operator, operand };
+            let rc = Rc::new(exp);
+            let jack_node = JackNode::ExpressionNode(rc);
+            let token_range = *op_token_idx..operand_token_range.end;
+            self.record_jack_node(jack_node, token_range);
+            (rc, token_range)
         } else {
             self.maybe_take_primitive_expression()
                 .or_else(|| self.maybe_take_term_starting_with_identifier())
@@ -181,7 +236,9 @@ impl Parser {
         loop {
             match self.token_iter.peek() {
                 Some(Token {
-                    kind: Operator(op), ..
+                    kind: Operator(op),
+                    idx: op_token_idx,
+                    ..
                 }) => {
                     let op = op.clone();
                     let (lbp, rbp) = infix_precedence(op.clone()).expect("invalid infix operator");
@@ -189,7 +246,7 @@ impl Parser {
                         break;
                     }
                     self.token_iter.next();
-                    let rhs = self
+                    let (rhs, rhs_exp_token_range) = self
                         .maybe_take_expression_with_binding_power(rbp)
                         .expect("expected rhs for binary operator");
                     let operator = match op {
@@ -207,13 +264,11 @@ impl Parser {
                         _ => panic!("invalid binary operator"),
                     };
 
-                    lhs = Expression::Binary {
-                        operator,
-                        lhs: Box::new(lhs),
-                        rhs: Box::new(rhs),
-                    };
+                    lhs = Rc::new(Expression::Binary { operator, lhs, rhs });
+                    lhs_token_range = lhs_token_range.start..rhs_exp_token_range.end;
+                    self.record_jack_node(JackNode::ExpressionNode(lhs.clone()), lhs_token_range)
                 }
-                None => return Some(lhs),
+                None => return Some((lhs, lhs_token_range)),
                 _ => break,
             }
         }
@@ -241,13 +296,14 @@ impl Parser {
             .unwrap_or_else(|| panic!("expected token {:?}", token_kind))
     }
 
-    fn take_identifier(&mut self) -> String {
+    fn take_identifier(&mut self) -> (String, usize) {
         if let Some(Token {
             kind: TokenKind::Identifier(string),
+            idx: identifier_token_idx,
             ..
         }) = self.token_iter.next()
         {
-            string
+            (string, identifier_token_idx)
         } else {
             panic!("expected identifier")
         }
@@ -258,10 +314,10 @@ impl Parser {
             .expect("expected expression")
     }
 
-    fn take_expression_list(&mut self) -> Vec<Expression> {
+    fn take_expression_list(&mut self) -> Vec<Rc<Expression>> {
         use TokenKind::*;
         let mut result = Vec::new();
-        if let Some(expression) = self.maybe_take_expression_with_binding_power(0) {
+        if let Some((expression, _)) = self.maybe_take_expression_with_binding_power(0) {
             result.push(expression);
             while let Some(Token { kind: Comma, .. }) = self.token_iter.peek() {
                 self.token_iter.next();
@@ -271,18 +327,26 @@ impl Parser {
         result
     }
 
-    fn take_subroutine_call(&mut self, name: String) -> SubroutineCall {
+    fn take_subroutine_call(
+        &mut self,
+        name: String,
+        identifier_token_idx: usize,
+    ) -> (Rc<SubroutineCall>, Range<usize>) {
         use TokenKind::*;
         match self.token_iter.peek() {
             Some(Token { kind: LParen, .. }) => {
                 // Direct function call
                 self.token_iter.next(); // LParen
                 let arguments = self.take_expression_list();
-                self.take_token(RParen);
-                SubroutineCall::Direct {
+                let r_paren = self.take_token(RParen);
+                let subroutine_call = SubroutineCall::Direct {
                     subroutine_name: name,
                     arguments,
-                }
+                };
+                let rc = Rc::new(subroutine_call);
+                let jack_node = JackNode::SubroutineCallNode(rc);
+                self.record_jack_node(jack_node, identifier_token_idx..r_paren.idx + 1);
+                rc
             }
             Some(Token { kind: Dot, .. }) => {
                 // Method call
@@ -423,12 +487,18 @@ impl Parser {
         }
     }
 
-    fn take_do_statement(&mut self) -> Statement {
+    fn take_do_statement(&mut self, do_keyword_token_idx: usize) -> Statement {
         self.token_iter.next(); // "do" keyword
-        let identifier = self.take_identifier();
-        let subroutine_call = self.take_subroutine_call(identifier);
-        self.take_token(TokenKind::Semicolon);
-        Statement::Do(subroutine_call)
+        let (identifier, identifier_token_idx) = self.take_identifier();
+        let (subroutine_call, _) = self.take_subroutine_call(identifier, identifier_token_idx);
+        let semicolon = self.take_token(TokenKind::Semicolon);
+        let statement = Statement::Do(subroutine_call);
+        let rc = Rc::new(statement);
+        self.record_jack_node(
+            JackNode::StatementNode(rc),
+            do_keyword_token_idx..semicolon.idx + 1,
+        );
+        statement
     }
 
     fn take_return_statement(&mut self) -> Statement {
@@ -442,6 +512,7 @@ impl Parser {
         use KeywordTokenVariant::*;
         if let Some(Token {
             kind: TokenKind::Keyword(keyword),
+            idx: statement_keyword_idx,
             ..
         }) = self.token_iter.peek()
         {
@@ -449,7 +520,7 @@ impl Parser {
                 Let => Some(self.take_let_statement()),
                 If => Some(self.take_if_statement()),
                 While => Some(self.take_while_statement()),
-                Do => Some(self.take_do_statement()),
+                Do => Some(self.take_do_statement(statement_keyword_idx)),
                 Return => Some(self.take_return_statement()),
                 _ => None,
             }
@@ -702,6 +773,7 @@ mod tests {
         let mut parser = Parser {
             token_iter: tokens.into_iter().peekable(),
             sourcemap: SourceMap::new(),
+            jack_nodes: Vec::new(),
         };
         parser.take_expression()
     }

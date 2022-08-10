@@ -81,9 +81,10 @@ fn main() {
             source_path: source_path_maybe,
             dest_path: dest_path_maybe,
         } => {
-            // let source_path = source_path_maybe.as_ref().expect("source path is required");
+            let source_path = source_path_maybe.as_ref().expect("source path is required");
             let dest_path = dest_path_maybe.as_ref().expect("dest path is required");
-            let debug_output = parse_with_debug_output("class foo {}");
+            let source = fs::read_to_string(source_path).expect("failed to read source file");
+            let debug_output = parse_with_debug_output(&source);
             let json = serde_json::to_string_pretty(&debug_output).unwrap();
             fs::write(dest_path, json).unwrap();
         }

@@ -8,16 +8,16 @@ use super::jack_node_types::{
 
 #[derive(Serialize)]
 pub enum JackNode {
-    ClassNode(Rc<Class>),
-    ClassVarDeclarationKindNode(Rc<ClassVarDeclarationKind>),
-    ClassVarDeclarationNode(Rc<ClassVarDeclaration>),
-    ExpressionNode(Rc<Expression>),
-    ParameterNode(Rc<Parameter>),
-    SubroutineCallNode(Rc<SubroutineCall>),
-    StatementNode(Rc<Statement>),
-    SubroutineBodyNode(Rc<SubroutineBody>),
-    SubroutineDeclarationNode(Rc<SubroutineDeclaration>),
-    VarDeclarationNode(Rc<VarDeclaration>),
+    ClassNode(#[serde(skip_serializing)] Rc<Class>),
+    ClassVarDeclarationKindNode(#[serde(skip_serializing)] Rc<ClassVarDeclarationKind>),
+    ClassVarDeclarationNode(#[serde(skip_serializing)] Rc<ClassVarDeclaration>),
+    ExpressionNode(#[serde(skip_serializing)] Rc<Expression>),
+    ParameterNode(#[serde(skip_serializing)] Rc<Parameter>),
+    SubroutineCallNode(#[serde(skip_serializing)] Rc<SubroutineCall>),
+    StatementNode(#[serde(skip_serializing)] Rc<Statement>),
+    SubroutineBodyNode(#[serde(skip_serializing)] Rc<SubroutineBody>),
+    SubroutineDeclarationNode(#[serde(skip_serializing)] Rc<SubroutineDeclaration>),
+    VarDeclarationNode(#[serde(skip_serializing)] Rc<VarDeclaration>),
 }
 
 #[derive(Serialize)]

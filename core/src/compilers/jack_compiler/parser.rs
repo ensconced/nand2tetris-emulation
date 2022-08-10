@@ -48,21 +48,7 @@ fn infix_precedence(operator: OperatorVariant) -> Option<(u8, u8)> {
 }
 
 pub fn parse(source: &str) -> Rc<Class> {
-    let tokens: Vec<_> = Tokenizer::new(token_defs())
-        .tokenize(source)
-        .into_iter()
-        .filter(|token| {
-            !matches!(
-                token,
-                Token {
-                    kind: TokenKind::Whitespace
-                        | TokenKind::MultiLineComment
-                        | TokenKind::SingleLineComment,
-                    ..
-                }
-            )
-        })
-        .collect();
+    let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(source);
     let mut parser = Parser {
         token_iter: tokens.iter().peekable(),
         sourcemap: SourceMap::new(),
@@ -79,9 +65,9 @@ pub struct DebugOutput {
 }
 
 pub fn parse_with_debug_output(source: &str) -> DebugOutput {
-    let tokens: Vec<_> = Tokenizer::new(token_defs())
-        .tokenize(source)
-        .into_iter()
+    let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(source);
+    let tokens_without_whitespace: Vec<_> = tokens
+        .iter()
         .filter(|token| {
             !matches!(
                 token,
@@ -94,8 +80,13 @@ pub fn parse_with_debug_output(source: &str) -> DebugOutput {
             )
         })
         .collect();
+
+    let cloned_tokens_without_whitespace: Vec<_> = tokens_without_whitespace
+        .into_iter()
+        .map(|x| x.clone())
+        .collect();
     let mut parser = Parser {
-        token_iter: tokens.iter().peekable(),
+        token_iter: cloned_tokens_without_whitespace.iter().peekable(),
         sourcemap: SourceMap::new(),
         jack_nodes: Vec::new(),
     };

@@ -61,7 +61,7 @@ pub fn parse(source: &str) -> Rc<Class> {
         })
         .collect();
     let mut parser = Parser {
-        token_iter: tokens.into_iter().peekable(),
+        token_iter: tokens.iter().peekable(),
         sourcemap: SourceMap::new(),
         jack_nodes: Vec::new(),
     };

@@ -49,8 +49,22 @@ fn infix_precedence(operator: OperatorVariant) -> Option<(u8, u8)> {
 
 pub fn parse(source: &str) -> Rc<Class> {
     let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(source);
+    let tokens_without_whitespace: Vec<_> = tokens
+        .into_iter()
+        .filter(|token| {
+            !matches!(
+                token,
+                Token {
+                    kind: TokenKind::Whitespace
+                        | TokenKind::MultiLineComment
+                        | TokenKind::SingleLineComment,
+                    ..
+                }
+            )
+        })
+        .collect();
     let mut parser = Parser {
-        token_iter: tokens.iter().peekable(),
+        token_iter: tokens_without_whitespace.iter().peekable(),
         sourcemap: SourceMap::new(),
         jack_nodes: Vec::new(),
     };

@@ -80,7 +80,16 @@ impl Parser {
         self.jack_nodes.push(jack_node);
         self.sourcemap
             .jack_node_idx_to_token_idx
-            .insert(idx, token_range);
+            .insert(idx, token_range.clone());
+
+        for token_idx in token_range {
+            let token_jack_node_idxs = self
+                .sourcemap
+                .token_idx_to_jack_node_idxs
+                .entry(token_idx)
+                .or_default();
+            token_jack_node_idxs.push(idx);
+        }
     }
 
     fn maybe_take_primitive_expression(&mut self) -> Option<(Rc<Expression>, Range<usize>)> {

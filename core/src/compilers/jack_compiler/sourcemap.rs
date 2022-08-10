@@ -1,3 +1,4 @@
+use serde::Serialize;
 use std::{collections::HashMap, ops::Range, rc::Rc};
 
 use super::jack_node_types::{
@@ -5,6 +6,7 @@ use super::jack_node_types::{
     SubroutineBody, SubroutineCall, SubroutineDeclaration, VarDeclaration,
 };
 
+#[derive(Serialize)]
 pub enum JackNode {
     ClassNode(Rc<Class>),
     ClassVarDeclarationKindNode(Rc<ClassVarDeclarationKind>),
@@ -18,6 +20,7 @@ pub enum JackNode {
     VarDeclarationNode(Rc<VarDeclaration>),
 }
 
+#[derive(Serialize)]
 pub struct SourceMap {
     pub jack_node_idx_to_token_idx: HashMap<usize, Range<usize>>,
     pub token_idx_to_jack_node_idxs: HashMap<usize, Vec<usize>>,

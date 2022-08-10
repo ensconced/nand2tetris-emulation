@@ -29,8 +29,8 @@ pub enum Command {
 fn take_a_value(tokens: &mut PeekableTokens<TokenKind>) -> AValue {
     match tokens.next() {
         Some(Token { kind, .. }) => match kind {
-            Number(numeric_string) => AValue::Numeric(numeric_string),
-            Identifier(identifier_string) => AValue::Symbolic(identifier_string),
+            Number(numeric_string) => AValue::Numeric(numeric_string.to_string()),
+            Identifier(identifier_string) => AValue::Symbolic(identifier_string.to_string()),
             _ => panic!("failed to parse a-command as either number or identifier.",),
         },
         _ => panic!("unexpected end of line"),
@@ -56,7 +56,7 @@ fn take_l_command(tokens: &mut PeekableTokens<TokenKind>) -> Command {
     };
     match tokens.next() {
         Some(Token { kind: RParen, .. }) => Command::L {
-            identifier: identifier_string,
+            identifier: identifier_string.to_string(),
         },
         Some(_) => panic!("failed to parse l-command. missing \")\".",),
         None => panic!("failed to parse l-command. unexpected end of line."),
@@ -71,7 +71,7 @@ fn maybe_take_jump(tokens: &mut PeekableTokens<TokenKind>) -> Option<String> {
             ..
         }) = tokens.next()
         {
-            Some(identifier_string)
+            Some(identifier_string.to_string())
         } else {
             None
         }
@@ -100,13 +100,14 @@ fn maybe_take_unary_expression(tokens: &mut PeekableTokens<TokenKind>) -> Option
     }) = tokens.peek()
     {
         if let Some(Token {
-            kind: Operator(mut op_string),
+            kind: Operator(op_string),
             ..
         }) = tokens.next()
         {
             let operand = take_single_expression_term(tokens);
-            op_string.push_str(&operand);
-            Some(op_string)
+            let mut string_copy = op_string.to_string();
+            string_copy.push_str(&operand);
+            Some(string_copy)
         } else {
             None
         }
@@ -118,8 +119,8 @@ fn maybe_take_unary_expression(tokens: &mut PeekableTokens<TokenKind>) -> Option
 fn take_single_expression_term(tokens: &mut PeekableTokens<TokenKind>) -> String {
     match tokens.next() {
         Some(Token { kind, .. }) => match kind {
-            Number(num_string) => num_string,
-            Identifier(ident_string) => ident_string,
+            Number(num_string) => num_string.to_string(),
+            Identifier(ident_string) => ident_string.to_string(),
             _ => panic!("expected number or identifier as single expression term.",),
         },
         _ => panic!("unexpected end of input."),
@@ -180,7 +181,8 @@ fn take_command_line(tokens: &mut PeekableTokens<TokenKind>) -> Command {
 
 pub fn parse(source: &str) -> impl Iterator<Item = Command> + '_ {
     let tokenizer = Tokenizer::new(token_defs());
-    let mut tokens = tokenizer.tokenize(source).into_iter().peekable();
+    let token_vec = tokenizer.tokenize(source);
+    let mut tokens = token_vec.iter().peekable();
     let mut result = Vec::new();
 
     maybe_take(&mut tokens, &TokenKind::LineBreakingWhitespace);
@@ -212,7 +214,8 @@ mod tests {
     #[test]
     fn test_take_c_command() {
         let tokenizer = Tokenizer::new(token_defs());
-        let mut tokens = tokenizer.tokenize("M=M+1;JGT").into_iter().peekable();
+        let token_vec = tokenizer.tokenize("M=M+1;JGT");
+        let mut tokens = token_vec.iter().peekable();
         let c_command = take_c_command(&mut tokens);
         assert_eq!(
             c_command,
@@ -223,7 +226,8 @@ mod tests {
             }
         );
 
-        let mut tokens = tokenizer.tokenize("AMD=A|D;JLT").into_iter().peekable();
+        let token_vec = tokenizer.tokenize("AMD=A|D;JLT");
+        let mut tokens = token_vec.iter().peekable();
         let c_command = take_c_command(&mut tokens);
         assert_eq!(
             c_command,
@@ -234,7 +238,8 @@ mod tests {
             }
         );
 
-        let mut tokens = tokenizer.tokenize("M+1").into_iter().peekable();
+        let token_vec = tokenizer.tokenize("M+1");
+        let mut tokens = token_vec.iter().peekable();
         let c_command = take_c_command(&mut tokens);
         assert_eq!(
             c_command,
@@ -245,7 +250,8 @@ mod tests {
             }
         );
 
-        let mut tokens = tokenizer.tokenize("D&M;JGT").into_iter().peekable();
+        let token_vec = tokenizer.tokenize("D&M;JGT");
+        let mut tokens = token_vec.iter().peekable();
         let c_command = take_c_command(&mut tokens);
         assert_eq!(
             c_command,
@@ -256,7 +262,8 @@ mod tests {
             }
         );
 
-        let mut tokens = tokenizer.tokenize("!M;JGT").into_iter().peekable();
+        let token_vec = tokenizer.tokenize("!M;JGT");
+        let mut tokens = token_vec.iter().peekable();
         let c_command = take_c_command(&mut tokens);
         assert_eq!(
             c_command,
@@ -267,7 +274,8 @@ mod tests {
             }
         );
 
-        let mut chars = tokenizer.tokenize("MD=-A").into_iter().peekable();
+        let token_vec = tokenizer.tokenize("MD=-A");
+        let mut chars = token_vec.iter().peekable();
         let c_command = take_c_command(&mut chars);
         assert_eq!(
             c_command,
@@ -282,17 +290,19 @@ mod tests {
     #[test]
     fn test_skip_optional_comment() {
         let tokenizer = Tokenizer::new(token_defs());
-        let mut tokens = tokenizer.tokenize("// hey there").into_iter().peekable();
+        let token_vec = tokenizer.tokenize("// hey there");
+        let mut tokens = token_vec.iter().peekable();
         maybe_take(&mut tokens, &Comment);
         let remaining = tokens.next();
         assert_eq!(remaining, None);
 
-        let mut tokens = tokenizer.tokenize("not a comment").into_iter().peekable();
+        let token_vec = tokenizer.tokenize("not a comment");
+        let mut tokens = token_vec.iter().peekable();
         maybe_take(&mut tokens, &Comment);
         let result = tokens.next();
         assert_eq!(
             result,
-            Some(Token::new(
+            Some(&Token::new(
                 Identifier("not".to_string()),
                 "not".to_string(),
                 0
@@ -303,12 +313,13 @@ mod tests {
     #[test]
     fn test_skip_optional_whitespace() {
         let tokenizer = Tokenizer::new(token_defs());
-        let mut tokens = tokenizer.tokenize("      hello").into_iter().peekable();
+        let token_vec = tokenizer.tokenize("      hello");
+        let mut tokens = token_vec.iter().peekable();
         maybe_take(&mut tokens, &InlineWhitespace);
         let remaining = tokens.next();
         assert_eq!(
             remaining,
-            Some(Token::new(
+            Some(&Token::new(
                 Identifier("hello".to_string()),
                 "hello".to_string(),
                 1
@@ -319,10 +330,8 @@ mod tests {
     #[test]
     fn test_skip_optional_whitespace_and_comment() {
         let tokenizer = Tokenizer::new(token_defs());
-        let mut tokens = tokenizer
-            .tokenize("      // this is a comment")
-            .into_iter()
-            .peekable();
+        let token_vec = tokenizer.tokenize("      // this is a comment");
+        let mut tokens = token_vec.iter().peekable();
         maybe_take(&mut tokens, &InlineWhitespace);
         maybe_take(&mut tokens, &Comment);
         let remaining = tokens.next();
@@ -332,11 +341,13 @@ mod tests {
     #[test]
     fn test_take_a_command() {
         let tokenizer = Tokenizer::new(token_defs());
-        let mut tokens = tokenizer.tokenize("@1234").into_iter().peekable();
+        let token_vec = tokenizer.tokenize("@1234");
+        let mut tokens = token_vec.iter().peekable();
         let a_command = take_a_command(&mut tokens);
         assert_eq!(a_command, Command::A(AValue::Numeric("1234".to_string())));
 
-        let mut tokens = tokenizer.tokenize("@FOOBAR").into_iter().peekable();
+        let token_vec = tokenizer.tokenize("@FOOBAR");
+        let mut tokens = token_vec.iter().peekable();
         let a_command = take_a_command(&mut tokens);
         assert_eq!(
             a_command,
@@ -347,7 +358,8 @@ mod tests {
     #[test]
     fn test_take_l_command() {
         let tokenizer = Tokenizer::new(token_defs());
-        let mut tokens = tokenizer.tokenize("(TEST)").into_iter().peekable();
+        let token_vec = tokenizer.tokenize("(TEST)");
+        let mut tokens = token_vec.iter().peekable();
         let a_command = take_l_command(&mut tokens);
         assert_eq!(
             a_command,
@@ -356,7 +368,8 @@ mod tests {
             }
         );
 
-        let mut tokens = tokenizer.tokenize("(_TEST)").into_iter().peekable();
+        let token_vec = tokenizer.tokenize("(_TEST)");
+        let mut tokens = token_vec.iter().peekable();
         let a_command = take_l_command(&mut tokens);
         assert_eq!(
             a_command,
@@ -365,7 +378,8 @@ mod tests {
             }
         );
 
-        let mut tokens = tokenizer.tokenize("(T:E$S.T)").into_iter().peekable();
+        let token_vec = tokenizer.tokenize("(T:E$S.T)");
+        let mut tokens = token_vec.iter().peekable();
         let a_command = take_l_command(&mut tokens);
         assert_eq!(
             a_command,

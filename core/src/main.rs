@@ -5,13 +5,17 @@ mod fonts;
 use clap::{Parser, Subcommand};
 use compilers::{
     assembler::assemble_file,
-    jack_compiler::{self, jack_node_types::Class},
+    jack_compiler::{
+        self,
+        jack_node_types::Class,
+        parser::{self, parse, parse_with_debug_output},
+    },
     vm_compiler,
 };
 use emulator::run::run;
 use fonts::glyphs_class;
 use serde::Serialize;
-use std::{fs, path::Path, rc::Rc};
+use std::{fmt::Write, fs, path::Path, rc::Rc};
 use ts_rs::TS;
 
 use crate::compilers::jack_compiler::compile;
@@ -35,6 +39,11 @@ struct Args {
 enum Commands {
     /// Compile jack code to machine code
     CompileJack {
+        source_path: Option<String>,
+        dest_path: Option<String>,
+    },
+    /// Compile jack code, generating JSON output including a sourcemap
+    DebugCompile {
         source_path: Option<String>,
         dest_path: Option<String>,
     },
@@ -67,6 +76,16 @@ fn main() {
             let source_path = source_path_maybe.as_ref().expect("source path is required");
             let dest_path = dest_path_maybe.as_ref().expect("dest path is required");
             compile(Path::new(source_path), Path::new(dest_path)).unwrap()
+        }
+        Commands::DebugCompile {
+            source_path: source_path_maybe,
+            dest_path: dest_path_maybe,
+        } => {
+            // let source_path = source_path_maybe.as_ref().expect("source path is required");
+            let dest_path = dest_path_maybe.as_ref().expect("dest path is required");
+            let debug_output = parse_with_debug_output("class foo {}");
+            let json = serde_json::to_string_pretty(&debug_output).unwrap();
+            fs::write(dest_path, json).unwrap();
         }
         Commands::Assemble {
             source_path: source_path_maybe,

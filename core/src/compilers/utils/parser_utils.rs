@@ -1,12 +1,12 @@
 use super::tokenizer::Token;
 use std::{iter::Peekable, slice::Iter};
 
-pub type PeekableTokens<TokenKind> = Peekable<Iter<Token<TokenKind>>>;
+pub type PeekableTokens<'a, TokenKind> = Peekable<Iter<'a, Token<TokenKind>>>;
 
-pub fn maybe_take<TokenKind>(
-    tokens: &mut PeekableTokens<TokenKind>,
+pub fn maybe_take<'a, TokenKind>(
+    tokens: &'a mut PeekableTokens<TokenKind>,
     token_kind: &TokenKind,
-) -> Option<Token<TokenKind>>
+) -> Option<&'a Token<TokenKind>>
 where
     TokenKind: 'static + std::cmp::PartialEq,
 {

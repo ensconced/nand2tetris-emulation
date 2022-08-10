@@ -181,7 +181,7 @@ fn take_label(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> Str
         Some(Token {
             kind: TokenKind::LabelIdentifier(string),
             ..
-        }) => string,
+        }) => string.to_string(),
         _ => panic!("expected label. line: {}", line_number),
     }
 }
@@ -198,7 +198,7 @@ fn take_fn_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -
                 let label = take_label(tokens, line_number);
                 take_whitespace(tokens, line_number);
                 let arg_count = take_number(tokens, line_number);
-                if fn_cmd_token == FunctionCmdTokenVariant::Define {
+                if *fn_cmd_token == FunctionCmdTokenVariant::Define {
                     Function(Define(label, arg_count))
                 } else {
                     Function(Call(label, arg_count))
@@ -243,7 +243,8 @@ fn maybe_take_command(
 
 pub fn parse_into_vm_commands(source: &str) -> impl Iterator<Item = Command> {
     let tokenizer = Tokenizer::new(token_defs());
-    let mut tokens = tokenizer.tokenize(source).into_iter().peekable();
+    let token_vec = tokenizer.tokenize(source);
+    let mut tokens = token_vec.iter().peekable();
 
     let mut result = Vec::new();
     while tokens.peek().is_some() {

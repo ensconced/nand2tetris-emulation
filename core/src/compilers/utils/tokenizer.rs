@@ -1,4 +1,5 @@
 use regex::{Match, Regex};
+use serde::Serialize;
 use std::fmt::Debug;
 
 pub struct Tokenizer<LangTokenKind> {
@@ -24,7 +25,7 @@ impl<LangTokenKind: Debug> Tokenizer<LangTokenKind> {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Token<LangTokenKind>
 where
     LangTokenKind: 'static,

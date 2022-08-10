@@ -1,4 +1,7 @@
-use std::{ops::Range, rc::Rc};
+use std::rc::Rc;
+
+use serde::Serialize;
+use std::ops::Range;
 
 use super::{
     jack_node_types::{PrimitiveTermVariant::*, *},
@@ -68,13 +71,49 @@ pub fn parse(source: &str) -> Rc<Class> {
     parser.take_class()
 }
 
-struct Parser {
-    token_iter: PeekableTokens<TokenKind>,
+#[derive(Serialize)]
+pub struct DebugOutput {
+    sourcemap: SourceMap,
+    jack_nodes: Vec<JackNode>,
+    tokens: Vec<Token<TokenKind>>,
+}
+
+pub fn parse_with_debug_output(source: &str) -> DebugOutput {
+    let tokens: Vec<_> = Tokenizer::new(token_defs())
+        .tokenize(source)
+        .into_iter()
+        .filter(|token| {
+            !matches!(
+                token,
+                Token {
+                    kind: TokenKind::Whitespace
+                        | TokenKind::MultiLineComment
+                        | TokenKind::SingleLineComment,
+                    ..
+                }
+            )
+        })
+        .collect();
+    let mut parser = Parser {
+        token_iter: tokens.iter().peekable(),
+        sourcemap: SourceMap::new(),
+        jack_nodes: Vec::new(),
+    };
+    parser.take_class();
+    DebugOutput {
+        sourcemap: parser.sourcemap,
+        jack_nodes: parser.jack_nodes,
+        tokens,
+    }
+}
+
+struct Parser<'a> {
+    token_iter: PeekableTokens<'a, TokenKind>,
     sourcemap: SourceMap,
     jack_nodes: Vec<JackNode>,
 }
 
-impl Parser {
+impl<'a> Parser<'a> {
     fn record_jack_node(&mut self, jack_node: JackNode, token_range: Range<usize>) {
         let idx = self.jack_nodes.len();
         self.jack_nodes.push(jack_node);
@@ -96,14 +135,18 @@ impl Parser {
         use TokenKind::*;
         let peeked_token = self.token_iter.peek().cloned();
         let (expression, exp_token_idx) = peeked_token.and_then(|token| {
-            let maybe_exp = match token.kind {
+            let maybe_exp = match &token.kind {
                 IntegerLiteral(string) => {
                     self.token_iter.next();
-                    Some(Expression::PrimitiveTerm(IntegerConstant(string)))
+                    Some(Expression::PrimitiveTerm(IntegerConstant(
+                        string.to_string(),
+                    )))
                 }
                 StringLiteral(string) => {
                     self.token_iter.next();
-                    Some(Expression::PrimitiveTerm(StringConstant(string)))
+                    Some(Expression::PrimitiveTerm(StringConstant(
+                        string.to_string(),
+                    )))
                 }
                 Keyword(KeywordTokenVariant::True) => {
                     self.token_iter.next();
@@ -295,7 +338,7 @@ impl Parser {
         Some((lhs, lhs_token_range))
     }
 
-    fn take_class_keyword(&mut self) -> Token<TokenKind> {
+    fn take_class_keyword(&mut self) -> &'a Token<TokenKind> {
         self.token_iter
             .next_if(|token| {
                 matches!(
@@ -309,7 +352,7 @@ impl Parser {
             .expect("expected keyword \"class\".")
     }
 
-    fn take_token(&mut self, token_kind: TokenKind) -> Token<TokenKind> {
+    fn take_token(&mut self, token_kind: TokenKind) -> &'a Token<TokenKind> {
         self.token_iter
             .next_if(|token| token.kind == token_kind)
             .unwrap_or_else(|| panic!("expected token {:?}", token_kind))
@@ -322,7 +365,7 @@ impl Parser {
             ..
         }) = self.token_iter.next()
         {
-            (string, identifier_token_idx)
+            (string.to_string(), *identifier_token_idx)
         } else {
             panic!("expected identifier")
         }
@@ -417,7 +460,7 @@ impl Parser {
             };
             let rc = Rc::new(parameter);
             let token_range = identifier_token_idx..identifier_token_idx + 1;
-            self.record_jack_node(JackNode::ParameterNode(rc.clone()), token_range.clone());
+            self.record_jack_node(JackNode::ParameterNode(rc.clone()), token_range);
             rc
         })
     }
@@ -613,11 +656,8 @@ impl Parser {
                 var_names,
             };
             let rc = Rc::new(var_declaration);
-            let token_range = var_keyword_token_idx..semicolon.idx + 1;
-            self.record_jack_node(
-                JackNode::VarDeclarationNode(rc.clone()),
-                token_range.clone(),
-            );
+            let token_range = *var_keyword_token_idx..semicolon.idx + 1;
+            self.record_jack_node(JackNode::VarDeclarationNode(rc.clone()), token_range);
             rc
         } else {
             panic!("expected var keyword");
@@ -683,7 +723,7 @@ impl Parser {
                 body,
             };
             let rc = Rc::new(subroutine_declaration);
-            let token_range = subroutine_kind_token_idx..body_token_range.end;
+            let token_range = *subroutine_kind_token_idx..body_token_range.end;
 
             self.record_jack_node(
                 JackNode::SubroutineDeclarationNode(rc.clone()),
@@ -734,7 +774,7 @@ impl Parser {
                     _ => panic!("expected var declaration qualifier",),
                 };
                 let rc = Rc::new(qualifier);
-                let token_range = token_idx..token_idx + 1;
+                let token_range = *token_idx..token_idx + 1;
                 self.record_jack_node(
                     JackNode::ClassVarDeclarationKindNode(rc.clone()),
                     token_range.clone(),
@@ -751,7 +791,7 @@ impl Parser {
             ..
         }) = self.token_iter.next()
         {
-            var_name
+            var_name.to_string()
         } else {
             panic!("expected var name")
         }
@@ -780,7 +820,7 @@ impl Parser {
                 TokenKind::Keyword(Int) => Type::Int,
                 TokenKind::Keyword(Char) => Type::Char,
                 TokenKind::Keyword(Boolean) => Type::Boolean,
-                TokenKind::Identifier(class_name) => Type::ClassName(class_name),
+                TokenKind::Identifier(class_name) => Type::ClassName(class_name.to_string()),
                 _ => panic!("expected var type name"),
             },
             _ => panic!("expected var type name"),
@@ -884,7 +924,7 @@ mod tests {
             })
             .collect();
         let mut parser = Parser {
-            token_iter: tokens.into_iter().peekable(),
+            token_iter: tokens.iter().peekable(),
             sourcemap: SourceMap::new(),
             jack_nodes: Vec::new(),
         };

@@ -1,5 +1,3 @@
-- add text info to tokens
-
 - this in turn will allow me to turn the compilation process into less of a series
   of translations from one language to another, and more like a series of transformations
   of one data structure - i.e. it should be easier to keep information around so you know

@@ -8,7 +8,8 @@ use ts_rs::TS;
 #[ts(export_to = "../bindings/")]
 pub struct Class {
     pub name: String,
-    pub var_declarations: Vec<Rc<ClassVarDeclaration>>,
+    // TODO - try this out - usize would be the idx of the ClassVarDeclaration within the jack_nodes vec...?
+    pub var_declarations: Vec<(Rc<ClassVarDeclaration>, usize)>,
     pub subroutine_declarations: Vec<Rc<SubroutineDeclaration>>,
 }
 

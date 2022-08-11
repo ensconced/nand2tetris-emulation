@@ -24,7 +24,7 @@ pub enum JackNode {
 pub struct SourceMap {
     pub jack_node_idx_to_token_idx: HashMap<usize, Range<usize>>,
     pub token_idx_to_jack_node_idxs: HashMap<usize, Vec<usize>>,
-    // jack_node_idx_to_vm_command_idx: HashMap<usize, usize>,
+    pub jack_node_idx_to_vm_command_idx: HashMap<usize, Range<usize>>,
     // vm_command_idx_to_jack_node_idx: HashMap<usize, usize>,
 }
 
@@ -33,7 +33,7 @@ impl SourceMap {
         SourceMap {
             jack_node_idx_to_token_idx: HashMap::new(),
             token_idx_to_jack_node_idxs: HashMap::new(),
-            // jack_node_idx_to_vm_command_idx: HashMap::new(),
+            jack_node_idx_to_vm_command_idx: HashMap::new(),
             // token_idx_to_jack_node_idx: HashMap::new(),
             // vm_command_idx_to_jack_node_idx: HashMap::new(),
         }

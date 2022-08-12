@@ -766,21 +766,23 @@ impl CodeGenerator {
 
     pub fn compile_subroutines(
         &mut self,
-        subroutine_declarations: &[Rc<SubroutineDeclaration>],
+        subroutine_declarations: &[(Rc<SubroutineDeclaration>, usize)],
         instance_size: usize,
     ) -> Vec<Command> {
         subroutine_declarations
             .iter()
-            .flat_map(|subroutine| self.compile_subroutine(subroutine, instance_size))
+            .flat_map(|(subroutine, _jack_node_idx)| {
+                self.compile_subroutine(subroutine, instance_size)
+            })
             .collect()
     }
 
     pub fn compile_var_declarations(
         &mut self,
-        var_declarations: &Vec<Rc<ClassVarDeclaration>>,
+        var_declarations: &Vec<(Rc<ClassVarDeclaration>, usize)>,
     ) -> usize {
         let mut instance_size = 0;
-        for var_declaration in var_declarations {
+        for (var_declaration, _jack_node_idx) in var_declarations {
             let (hashmap, symbol_kind) = match *var_declaration.qualifier {
                 ClassVarDeclarationKind::Static => (&mut self.class_statics, SymbolKind::Static),
                 ClassVarDeclarationKind::Field => (&mut self.class_fields, SymbolKind::Field),

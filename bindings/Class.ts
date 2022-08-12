@@ -2,4 +2,4 @@
 import type { ClassVarDeclaration } from "./ClassVarDeclaration";
 import type { SubroutineDeclaration } from "./SubroutineDeclaration";
 
-export interface Class { name: string, var_declarations: Array<ClassVarDeclaration>, subroutine_declarations: Array<SubroutineDeclaration>, }
+export interface Class { name: string, var_declarations: Array<[ClassVarDeclaration, number]>, subroutine_declarations: Array<[SubroutineDeclaration, number]>, }

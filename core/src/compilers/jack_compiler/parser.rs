@@ -119,7 +119,7 @@ struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    fn record_jack_node(&mut self, jack_node: JackNode, token_range: Range<usize>) {
+    fn record_jack_node(&mut self, jack_node: JackNode, token_range: Range<usize>) -> usize {
         let idx = self.jack_nodes.len();
         self.jack_nodes.push(jack_node);
         self.sourcemap
@@ -134,6 +134,7 @@ impl<'a> Parser<'a> {
                 .or_default();
             token_jack_node_idxs.push(idx);
         }
+        idx
     }
 
     fn maybe_take_primitive_expression(&mut self) -> Option<(Rc<Expression>, Range<usize>)> {
@@ -333,7 +334,7 @@ impl<'a> Parser<'a> {
                     self.record_jack_node(
                         JackNode::ExpressionNode(lhs.clone()),
                         lhs_token_range.clone(),
-                    )
+                    );
                 }
                 None => return Some((lhs, lhs_token_range)),
                 _ => break,
@@ -699,7 +700,9 @@ impl<'a> Parser<'a> {
         (rc, token_range)
     }
 
-    fn take_subroutine_declaration(&mut self) -> (Rc<SubroutineDeclaration>, Range<usize>) {
+    fn take_subroutine_declaration(
+        &mut self,
+    ) -> ((Rc<SubroutineDeclaration>, usize), Range<usize>) {
         use KeywordTokenVariant::*;
         if let Some(Token {
             kind: TokenKind::Keyword(keyword),
@@ -730,11 +733,11 @@ impl<'a> Parser<'a> {
             let rc = Rc::new(subroutine_declaration);
             let token_range = *subroutine_kind_token_idx..body_token_range.end;
 
-            self.record_jack_node(
+            let jack_node_idx = self.record_jack_node(
                 JackNode::SubroutineDeclarationNode(rc.clone()),
                 token_range.clone(),
             );
-            (rc, token_range)
+            ((rc, jack_node_idx), token_range)
         } else {
             panic!("expected subroutine kind");
         }
@@ -742,7 +745,7 @@ impl<'a> Parser<'a> {
 
     fn maybe_take_subroutine_declaration(
         &mut self,
-    ) -> Option<(Rc<SubroutineDeclaration>, Range<usize>)> {
+    ) -> Option<((Rc<SubroutineDeclaration>, usize), Range<usize>)> {
         use KeywordTokenVariant::*;
         if let Some(Token {
             kind: TokenKind::Keyword(Constructor | Function | Method),
@@ -755,7 +758,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn take_class_subroutine_declarations(&mut self) -> Vec<Rc<SubroutineDeclaration>> {
+    fn take_class_subroutine_declarations(&mut self) -> Vec<(Rc<SubroutineDeclaration>, usize)> {
         let mut result = Vec::new();
         while let Some((subroutine_declaration, _)) = self.maybe_take_subroutine_declaration() {
             result.push(subroutine_declaration);
@@ -848,7 +851,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn take_class_var_declaration(&mut self) -> (Rc<ClassVarDeclaration>, Range<usize>) {
+    fn take_class_var_declaration(&mut self) -> ((Rc<ClassVarDeclaration>, usize), Range<usize>) {
         let (qualifier, qualifier_token_range) = self.take_class_var_declaration_qualifier();
         let type_name = self.take_type();
         let var_names = self.take_var_names();
@@ -860,14 +863,14 @@ impl<'a> Parser<'a> {
         };
         let rc = Rc::new(class_var_declaration);
         let token_range = qualifier_token_range.start..semicolon.idx + 1;
-        self.record_jack_node(
+        let jack_node_idx = self.record_jack_node(
             JackNode::ClassVarDeclarationNode(rc.clone()),
             token_range.clone(),
         );
-        (rc, token_range)
+        ((rc, jack_node_idx), token_range)
     }
 
-    fn maybe_take_class_var_declaration(&mut self) -> Option<Rc<ClassVarDeclaration>> {
+    fn maybe_take_class_var_declaration(&mut self) -> Option<(Rc<ClassVarDeclaration>, usize)> {
         use KeywordTokenVariant::*;
         match self.token_iter.peek().expect("unexpected end of input") {
             Token {
@@ -881,7 +884,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn take_class_var_declarations(&mut self) -> Vec<Rc<ClassVarDeclaration>> {
+    fn take_class_var_declarations(&mut self) -> Vec<(Rc<ClassVarDeclaration>, usize)> {
         let mut result = Vec::new();
         while let Some(class_var_declaration) = self.maybe_take_class_var_declaration() {
             result.push(class_var_declaration);
@@ -959,11 +962,14 @@ mod tests {
             ),
             Class {
                 name: "foo".to_string(),
-                var_declarations: vec![Rc::new(ClassVarDeclaration {
-                    qualifier: Rc::new(ClassVarDeclarationKind::Static),
-                    type_name: Type::Int,
-                    var_names: vec!["bar".to_string()],
-                })],
+                var_declarations: vec![(
+                    Rc::new(ClassVarDeclaration {
+                        qualifier: Rc::new(ClassVarDeclarationKind::Static),
+                        type_name: Type::Int,
+                        var_names: vec!["bar".to_string()],
+                    }),
+                    1
+                )],
                 subroutine_declarations: vec![],
             }
         );
@@ -983,21 +989,34 @@ mod tests {
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![
-                    Rc::new(ClassVarDeclaration {
-                        qualifier: Rc::new(ClassVarDeclarationKind::Static),
-                        type_name: Type::Int,
-                        var_names: vec!["bar".to_string()],
-                    }),
-                    Rc::new(ClassVarDeclaration {
-                        qualifier: Rc::new(ClassVarDeclarationKind::Field),
-                        type_name: Type::Char,
-                        var_names: vec!["baz".to_string(), "buz".to_string(), "boz".to_string()],
-                    }),
-                    Rc::new(ClassVarDeclaration {
-                        qualifier: Rc::new(ClassVarDeclarationKind::Field),
-                        type_name: Type::Boolean,
-                        var_names: vec!["a".to_string(), "b".to_string(), "c".to_string(),],
-                    })
+                    (
+                        Rc::new(ClassVarDeclaration {
+                            qualifier: Rc::new(ClassVarDeclarationKind::Static),
+                            type_name: Type::Int,
+                            var_names: vec!["bar".to_string()],
+                        }),
+                        1
+                    ),
+                    (
+                        Rc::new(ClassVarDeclaration {
+                            qualifier: Rc::new(ClassVarDeclarationKind::Field),
+                            type_name: Type::Char,
+                            var_names: vec![
+                                "baz".to_string(),
+                                "buz".to_string(),
+                                "boz".to_string()
+                            ],
+                        }),
+                        3
+                    ),
+                    (
+                        Rc::new(ClassVarDeclaration {
+                            qualifier: Rc::new(ClassVarDeclarationKind::Field),
+                            type_name: Type::Boolean,
+                            var_names: vec!["a".to_string(), "b".to_string(), "c".to_string(),],
+                        }),
+                        5
+                    )
                 ],
                 subroutine_declarations: vec![],
             }
@@ -1022,52 +1041,61 @@ mod tests {
                 name: "foo".to_string(),
                 var_declarations: vec![],
                 subroutine_declarations: vec![
-                    Rc::new(SubroutineDeclaration {
-                        subroutine_kind: SubroutineKind::Constructor,
-                        return_type: Some(Type::Boolean),
-                        parameters: vec![
-                            Rc::new(Parameter {
-                                type_name: Type::Int,
-                                var_name: "abc".to_string(),
+                    (
+                        Rc::new(SubroutineDeclaration {
+                            subroutine_kind: SubroutineKind::Constructor,
+                            return_type: Some(Type::Boolean),
+                            parameters: vec![
+                                Rc::new(Parameter {
+                                    type_name: Type::Int,
+                                    var_name: "abc".to_string(),
+                                }),
+                                Rc::new(Parameter {
+                                    type_name: Type::Char,
+                                    var_name: "def".to_string(),
+                                }),
+                                Rc::new(Parameter {
+                                    type_name: Type::ClassName("foo".to_string()),
+                                    var_name: "ghi".to_string(),
+                                })
+                            ],
+                            name: "bar".to_string(),
+                            body: Rc::new(SubroutineBody {
+                                var_declarations: vec![],
+                                statements: vec![],
                             }),
-                            Rc::new(Parameter {
-                                type_name: Type::Char,
-                                var_name: "def".to_string(),
+                        }),
+                        1
+                    ),
+                    (
+                        Rc::new(SubroutineDeclaration {
+                            subroutine_kind: SubroutineKind::Function,
+                            return_type: Some(Type::Char),
+                            parameters: vec![Rc::new(Parameter {
+                                type_name: Type::Boolean,
+                                var_name: "_123".to_string(),
+                            })],
+                            name: "baz".to_string(),
+                            body: Rc::new(SubroutineBody {
+                                var_declarations: vec![],
+                                statements: vec![],
                             }),
-                            Rc::new(Parameter {
-                                type_name: Type::ClassName("foo".to_string()),
-                                var_name: "ghi".to_string(),
-                            })
-                        ],
-                        name: "bar".to_string(),
-                        body: Rc::new(SubroutineBody {
-                            var_declarations: vec![],
-                            statements: vec![],
                         }),
-                    }),
-                    Rc::new(SubroutineDeclaration {
-                        subroutine_kind: SubroutineKind::Function,
-                        return_type: Some(Type::Char),
-                        parameters: vec![Rc::new(Parameter {
-                            type_name: Type::Boolean,
-                            var_name: "_123".to_string(),
-                        })],
-                        name: "baz".to_string(),
-                        body: Rc::new(SubroutineBody {
-                            var_declarations: vec![],
-                            statements: vec![],
+                        2
+                    ),
+                    (
+                        Rc::new(SubroutineDeclaration {
+                            subroutine_kind: SubroutineKind::Method,
+                            return_type: None,
+                            parameters: vec![],
+                            name: "qux".to_string(),
+                            body: Rc::new(SubroutineBody {
+                                var_declarations: vec![],
+                                statements: vec![],
+                            }),
                         }),
-                    }),
-                    Rc::new(SubroutineDeclaration {
-                        subroutine_kind: SubroutineKind::Method,
-                        return_type: None,
-                        parameters: vec![],
-                        name: "qux".to_string(),
-                        body: Rc::new(SubroutineBody {
-                            var_declarations: vec![],
-                            statements: vec![],
-                        }),
-                    })
+                        3
+                    )
                 ],
             }
         );
@@ -1101,104 +1129,123 @@ mod tests {
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![],
-                subroutine_declarations: vec![Rc::new(SubroutineDeclaration {
-                    subroutine_kind: SubroutineKind::Constructor,
-                    return_type: Some(Type::Int),
-                    parameters: vec![],
-                    name: "blah".to_string(),
-                    body: Rc::new(SubroutineBody {
-                        var_declarations: vec![Rc::new(VarDeclaration {
-                            type_name: Type::Int,
-                            var_names: vec!["a".to_string()],
-                        })],
-                        statements: vec![
-                            Rc::new(Statement::Let {
-                                var_name: "a".to_string(),
-                                array_index: None,
-                                value: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                    "1234".to_string()
-                                )))
-                            }),
-                            Rc::new(Statement::Let {
-                                var_name: "b".to_string(),
-                                array_index: Some(Rc::new(Expression::PrimitiveTerm(
-                                    IntegerConstant("22".to_string())
-                                ))),
-                                value: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                    "123".to_string()
-                                )))
-                            }),
-                            Rc::new(Statement::If {
-                                condition: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                    "1".to_string()
-                                ))),
-                                if_statements: vec![Rc::new(Statement::While {
+                subroutine_declarations: vec![(
+                    Rc::new(SubroutineDeclaration {
+                        subroutine_kind: SubroutineKind::Constructor,
+                        return_type: Some(Type::Int),
+                        parameters: vec![],
+                        name: "blah".to_string(),
+                        body: Rc::new(SubroutineBody {
+                            var_declarations: vec![Rc::new(VarDeclaration {
+                                type_name: Type::Int,
+                                var_names: vec!["a".to_string()],
+                            })],
+                            statements: vec![
+                                Rc::new(Statement::Let {
+                                    var_name: "a".to_string(),
+                                    array_index: None,
+                                    value: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                        "1234".to_string()
+                                    )))
+                                }),
+                                Rc::new(Statement::Let {
+                                    var_name: "b".to_string(),
+                                    array_index: Some(Rc::new(Expression::PrimitiveTerm(
+                                        IntegerConstant("22".to_string())
+                                    ))),
+                                    value: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                        "123".to_string()
+                                    )))
+                                }),
+                                Rc::new(Statement::If {
                                     condition: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
                                         "1".to_string()
                                     ))),
-                                    statements: vec![
-                                        Rc::new(Statement::Do(Rc::new(SubroutineCall::Direct {
-                                            subroutine_name: "foobar".to_string(),
-                                            arguments: vec![]
-                                        }))),
-                                        Rc::new(Statement::Do(Rc::new(SubroutineCall::Direct {
-                                            subroutine_name: "foobar".to_string(),
-                                            arguments: vec![Rc::new(Expression::PrimitiveTerm(
-                                                IntegerConstant("1".to_string())
-                                            ))]
-                                        }))),
-                                        Rc::new(Statement::Do(Rc::new(SubroutineCall::Direct {
-                                            subroutine_name: "foobar".to_string(),
-                                            arguments: vec![
-                                                Rc::new(Expression::PrimitiveTerm(
-                                                    IntegerConstant("1".to_string())
-                                                )),
-                                                Rc::new(Expression::PrimitiveTerm(
-                                                    IntegerConstant("2".to_string())
-                                                )),
-                                                Rc::new(Expression::PrimitiveTerm(
-                                                    IntegerConstant("3".to_string())
-                                                ))
-                                            ]
-                                        }))),
-                                        Rc::new(Statement::Do(Rc::new(SubroutineCall::Method {
-                                            this_name: "foo".to_string(),
-                                            method_name: "bar".to_string(),
-                                            arguments: vec![]
-                                        }))),
-                                        Rc::new(Statement::Do(Rc::new(SubroutineCall::Method {
-                                            this_name: "foo".to_string(),
-                                            method_name: "bar".to_string(),
-                                            arguments: vec![Rc::new(Expression::PrimitiveTerm(
-                                                IntegerConstant("1".to_string())
-                                            ))]
-                                        }))),
-                                        Rc::new(Statement::Do(Rc::new(SubroutineCall::Method {
-                                            this_name: "foo".to_string(),
-                                            method_name: "bar".to_string(),
-                                            arguments: vec![
-                                                Rc::new(Expression::PrimitiveTerm(
-                                                    IntegerConstant("1".to_string())
-                                                )),
-                                                Rc::new(Expression::PrimitiveTerm(
-                                                    IntegerConstant("2".to_string())
-                                                )),
-                                                Rc::new(Expression::PrimitiveTerm(
-                                                    IntegerConstant("3".to_string())
-                                                ))
-                                            ]
-                                        })))
-                                    ]
-                                })],
-                                else_statements: Some(vec![Rc::new(Statement::Return(Some(
-                                    Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                        "123".to_string()
-                                    )))
-                                )))])
-                            })
-                        ],
+                                    if_statements: vec![Rc::new(Statement::While {
+                                        condition: Rc::new(Expression::PrimitiveTerm(
+                                            IntegerConstant("1".to_string())
+                                        )),
+                                        statements: vec![
+                                            Rc::new(Statement::Do(Rc::new(
+                                                SubroutineCall::Direct {
+                                                    subroutine_name: "foobar".to_string(),
+                                                    arguments: vec![]
+                                                }
+                                            ))),
+                                            Rc::new(Statement::Do(Rc::new(
+                                                SubroutineCall::Direct {
+                                                    subroutine_name: "foobar".to_string(),
+                                                    arguments: vec![Rc::new(
+                                                        Expression::PrimitiveTerm(IntegerConstant(
+                                                            "1".to_string()
+                                                        ))
+                                                    )]
+                                                }
+                                            ))),
+                                            Rc::new(Statement::Do(Rc::new(
+                                                SubroutineCall::Direct {
+                                                    subroutine_name: "foobar".to_string(),
+                                                    arguments: vec![
+                                                        Rc::new(Expression::PrimitiveTerm(
+                                                            IntegerConstant("1".to_string())
+                                                        )),
+                                                        Rc::new(Expression::PrimitiveTerm(
+                                                            IntegerConstant("2".to_string())
+                                                        )),
+                                                        Rc::new(Expression::PrimitiveTerm(
+                                                            IntegerConstant("3".to_string())
+                                                        ))
+                                                    ]
+                                                }
+                                            ))),
+                                            Rc::new(Statement::Do(Rc::new(
+                                                SubroutineCall::Method {
+                                                    this_name: "foo".to_string(),
+                                                    method_name: "bar".to_string(),
+                                                    arguments: vec![]
+                                                }
+                                            ))),
+                                            Rc::new(Statement::Do(Rc::new(
+                                                SubroutineCall::Method {
+                                                    this_name: "foo".to_string(),
+                                                    method_name: "bar".to_string(),
+                                                    arguments: vec![Rc::new(
+                                                        Expression::PrimitiveTerm(IntegerConstant(
+                                                            "1".to_string()
+                                                        ))
+                                                    )]
+                                                }
+                                            ))),
+                                            Rc::new(Statement::Do(Rc::new(
+                                                SubroutineCall::Method {
+                                                    this_name: "foo".to_string(),
+                                                    method_name: "bar".to_string(),
+                                                    arguments: vec![
+                                                        Rc::new(Expression::PrimitiveTerm(
+                                                            IntegerConstant("1".to_string())
+                                                        )),
+                                                        Rc::new(Expression::PrimitiveTerm(
+                                                            IntegerConstant("2".to_string())
+                                                        )),
+                                                        Rc::new(Expression::PrimitiveTerm(
+                                                            IntegerConstant("3".to_string())
+                                                        ))
+                                                    ]
+                                                }
+                                            )))
+                                        ]
+                                    })],
+                                    else_statements: Some(vec![Rc::new(Statement::Return(Some(
+                                        Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                            "123".to_string()
+                                        )))
+                                    )))])
+                                })
+                            ],
+                        }),
                     }),
-                })],
+                    1
+                )],
             }
         );
     }
@@ -1238,34 +1285,37 @@ mod tests {
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![],
-                subroutine_declarations: vec![Rc::new(SubroutineDeclaration {
-                    subroutine_kind: SubroutineKind::Method,
-                    return_type: None,
-                    parameters: vec![],
-                    name: "bar".to_string(),
-                    body: Rc::new(SubroutineBody {
-                        var_declarations: vec![],
-                        statements: vec![Rc::new(Statement::Let {
-                            var_name: "a".to_string(),
-                            array_index: None,
-                            value: Rc::new(Expression::Binary {
-                                operator: BinaryOperator::Plus,
-                                lhs: Rc::new(Expression::Binary {
+                subroutine_declarations: vec![(
+                    Rc::new(SubroutineDeclaration {
+                        subroutine_kind: SubroutineKind::Method,
+                        return_type: None,
+                        parameters: vec![],
+                        name: "bar".to_string(),
+                        body: Rc::new(SubroutineBody {
+                            var_declarations: vec![],
+                            statements: vec![Rc::new(Statement::Let {
+                                var_name: "a".to_string(),
+                                array_index: None,
+                                value: Rc::new(Expression::Binary {
                                     operator: BinaryOperator::Plus,
-                                    lhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                        "1".to_string()
-                                    ))),
+                                    lhs: Rc::new(Expression::Binary {
+                                        operator: BinaryOperator::Plus,
+                                        lhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                            "1".to_string()
+                                        ))),
+                                        rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                            "2".to_string()
+                                        ))),
+                                    }),
                                     rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                        "2".to_string()
+                                        "3".to_string()
                                     ))),
-                                }),
-                                rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                    "3".to_string()
-                                ))),
-                            })
-                        })],
+                                })
+                            })],
+                        }),
                     }),
-                })],
+                    1
+                )],
             }
         )
     }

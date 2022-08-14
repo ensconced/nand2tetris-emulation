@@ -286,8 +286,7 @@ impl<'a> Parser<'a> {
                 OperatorVariant::Tilde => UnaryOperator::Not,
                 _ => panic!("invalid unary operator"),
             };
-            let exp = Expression::Unary { operator, operand };
-            let rc = Rc::new(exp);
+            let rc = Rc::new(Expression::Unary { operator, operand });
             let token_range = op_token_idx..operand_token_range.end;
             self.record_jack_node(JackNode::ExpressionNode(rc.clone()), token_range.clone());
             Some((rc, token_range))
@@ -312,7 +311,6 @@ impl<'a> Parser<'a> {
                 Some(Token {
                     kind: Operator(op), ..
                 }) => {
-                    let op = op.clone();
                     let (lbp, rbp) = infix_precedence(op.clone()).expect("invalid infix operator");
                     if lbp < binding_power {
                         break;
@@ -343,8 +341,8 @@ impl<'a> Parser<'a> {
                         lhs_token_range.clone(),
                     );
                 }
+                Some(_) => break,
                 None => return Some((lhs, lhs_token_range)),
-                _ => break,
             }
         }
 

@@ -210,12 +210,13 @@ impl<'a> Parser<'a> {
         {
             let token_range_start = *l_paren_idx;
             self.token_iter.next();
-            let ((expr, _), _) = self.take_expression();
-            let jack_node = JackNode::ExpressionNode(expr.clone());
+            let (expr, _) = self.take_expression();
+            let parenthesized_expr = Rc::new(Expression::Parenthesized(expr));
+            let jack_node = JackNode::ExpressionNode(parenthesized_expr.clone());
             let r_paren = self.take_token(RParen);
             let token_range = token_range_start..r_paren.idx + 1;
             let jack_node_idx = self.record_jack_node(jack_node, token_range.clone());
-            Some(((expr, jack_node_idx), token_range))
+            Some(((parenthesized_expr, jack_node_idx), token_range))
         } else {
             None
         }
@@ -1827,7 +1828,7 @@ mod tests {
                                                                 Rc::new(Expression::Variable(
                                                                     "qux".to_string()
                                                                 )),
-                                                                0
+                                                                2
                                                             ),
                                                             (
                                                                 Rc::new(Expression::ArrayAccess {
@@ -1838,31 +1839,31 @@ mod tests {
                                                                                 "123".to_string()
                                                                             )
                                                                         )
-                                                                    ), 1)
+                                                                    ), 3)
                                                                 }),
-                                                                2
+                                                                4
                                                             )
                                                         ]
                                                     }),
-                                                    3
+                                                    5
                                                 ))),
-                                                4
+                                                6
                                             ),
                                             rhs: (
                                                 Rc::new(Expression::Variable("bing".to_string())),
-                                                5
+                                                7
                                             )
                                         }),
-                                        6
+                                        8
                                     )
                                 }),
-                                7
+                                9
                             )
                         }),
-                        8
+                        10
                     )
                 }),
-                9
+                11
             )
         )
     }
@@ -1944,29 +1945,32 @@ mod tests {
                 Rc::new(Expression::Binary {
                     operator: BinaryOperator::Multiply,
                     lhs: (
-                        Rc::new(Expression::Binary {
-                            operator: BinaryOperator::Plus,
-                            lhs: (
-                                Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                    "1".to_string()
-                                ))),
-                                0
-                            ),
-                            rhs: (
-                                Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                    "2".to_string()
-                                ))),
-                                1
-                            ),
-                        }),
-                        2
+                        Rc::new(Expression::Parenthesized((
+                            Rc::new(Expression::Binary {
+                                operator: BinaryOperator::Plus,
+                                lhs: (
+                                    Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                        "1".to_string()
+                                    ))),
+                                    0
+                                ),
+                                rhs: (
+                                    Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                        "2".to_string()
+                                    ))),
+                                    1
+                                ),
+                            }),
+                            2
+                        ))),
+                        3
                     ),
                     rhs: (
                         Rc::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
-                        3
+                        4
                     ),
                 }),
-                4
+                5
             )
         )
     }

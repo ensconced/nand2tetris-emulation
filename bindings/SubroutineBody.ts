@@ -2,4 +2,4 @@
 import type { Statement } from "./Statement";
 import type { VarDeclaration } from "./VarDeclaration";
 
-export interface SubroutineBody { var_declarations: Array<VarDeclaration>, statements: Array<Statement>, }
+export interface SubroutineBody { var_declarations: Array<[VarDeclaration, number]>, statements: Array<[Statement, number]>, }

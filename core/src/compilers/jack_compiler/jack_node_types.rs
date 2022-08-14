@@ -89,6 +89,7 @@ pub enum UnaryOperator {
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub enum Expression {
+    Parenthesized((Rc<Expression>, usize)),
     PrimitiveTerm(PrimitiveTermVariant),
     Binary {
         operator: BinaryOperator,

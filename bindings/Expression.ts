@@ -4,4 +4,4 @@ import type { PrimitiveTermVariant } from "./PrimitiveTermVariant";
 import type { SubroutineCall } from "./SubroutineCall";
 import type { UnaryOperator } from "./UnaryOperator";
 
-export type Expression = { PrimitiveTerm: PrimitiveTermVariant } | { Binary: { operator: BinaryOperator, lhs: Expression, rhs: Expression, } } | { Unary: { operator: UnaryOperator, operand: Expression, } } | { Variable: string } | { SubroutineCall: SubroutineCall } | { ArrayAccess: { var_name: string, index: Expression, } };
+export type Expression = { Parenthesized: [Expression, number] } | { PrimitiveTerm: PrimitiveTermVariant } | { Binary: { operator: BinaryOperator, lhs: [Expression, number], rhs: [Expression, number], } } | { Unary: { operator: UnaryOperator, operand: [Expression, number], } } | { Variable: string } | { SubroutineCall: [SubroutineCall, number] } | { ArrayAccess: { var_name: string, index: [Expression, number], } };

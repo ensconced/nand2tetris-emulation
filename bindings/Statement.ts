@@ -2,4 +2,4 @@
 import type { Expression } from "./Expression";
 import type { SubroutineCall } from "./SubroutineCall";
 
-export type Statement = { Let: { var_name: string, array_index: Expression | null, value: Expression, } } | { If: { condition: Expression, if_statements: Array<Statement>, else_statements: Array<Statement> | null, } } | { While: { condition: Expression, statements: Array<Statement>, } } | { Do: SubroutineCall } | { Return: Expression | null };
+export type Statement = { Let: { var_name: string, array_index: [Expression, number] | null, value: [Expression, number], } } | { If: { condition: [Expression, number], if_statements: Array<[Statement, number]>, else_statements: Array<[Statement, number]> | null, } } | { While: { condition: [Expression, number], statements: Array<[Statement, number]>, } } | { Do: [SubroutineCall, number] } | { Return: [Expression, number] | null };

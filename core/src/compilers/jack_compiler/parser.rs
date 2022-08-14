@@ -424,7 +424,7 @@ impl<'a> Parser<'a> {
         &mut self,
         name: String,
         identifier_token_idx: usize,
-    ) -> (Rc<SubroutineCall>, Range<usize>) {
+    ) -> ((Rc<SubroutineCall>, usize), Range<usize>) {
         use TokenKind::*;
         match self.token_iter.peek() {
             Some(Token { kind: LParen, .. }) => {
@@ -438,11 +438,11 @@ impl<'a> Parser<'a> {
                 };
                 let rc = Rc::new(subroutine_call);
                 let token_range = identifier_token_idx..r_paren.idx + 1;
-                self.record_jack_node(
+                let jack_node_idx = self.record_jack_node(
                     JackNode::SubroutineCallNode(rc.clone()),
                     token_range.clone(),
                 );
-                (rc, token_range)
+                ((rc, jack_node_idx), token_range)
             }
             Some(Token { kind: Dot, .. }) => {
                 // Method call
@@ -458,11 +458,11 @@ impl<'a> Parser<'a> {
                 };
                 let rc = Rc::new(method);
                 let token_range = method_name_token_idx..r_paren.idx + 1;
-                self.record_jack_node(
+                let jack_node_idx = self.record_jack_node(
                     JackNode::SubroutineCallNode(rc.clone()),
                     token_range.clone(),
                 );
-                (rc, token_range)
+                ((rc, jack_node_idx), token_range)
             }
             _ => panic!("expected subroutine call"),
         }
@@ -629,7 +629,7 @@ impl<'a> Parser<'a> {
         let (identifier, identifier_token_idx) = self.take_identifier();
         let (subroutine_call, _) = self.take_subroutine_call(identifier, identifier_token_idx);
         let semicolon = self.take_token(TokenKind::Semicolon);
-        let statement = Statement::Do(subroutine_call);
+        let statement = Statement::Do(subroutine_call.0, subroutine_call.1);
         let rc = Rc::new(statement);
         let token_range = do_keyword_token_idx..semicolon.idx + 1;
         let jack_node_idx =
@@ -1083,24 +1083,36 @@ mod tests {
                             subroutine_kind: SubroutineKind::Constructor,
                             return_type: Some(Type::Boolean),
                             parameters: vec![
-                                Rc::new(Parameter {
-                                    type_name: Type::Int,
-                                    var_name: "abc".to_string(),
-                                }),
-                                Rc::new(Parameter {
-                                    type_name: Type::Char,
-                                    var_name: "def".to_string(),
-                                }),
-                                Rc::new(Parameter {
-                                    type_name: Type::ClassName("foo".to_string()),
-                                    var_name: "ghi".to_string(),
-                                })
+                                (
+                                    Rc::new(Parameter {
+                                        type_name: Type::Int,
+                                        var_name: "abc".to_string(),
+                                    }),
+                                    0
+                                ),
+                                (
+                                    Rc::new(Parameter {
+                                        type_name: Type::Char,
+                                        var_name: "def".to_string(),
+                                    }),
+                                    1
+                                ),
+                                (
+                                    Rc::new(Parameter {
+                                        type_name: Type::ClassName("foo".to_string()),
+                                        var_name: "ghi".to_string(),
+                                    }),
+                                    2
+                                )
                             ],
                             name: "bar".to_string(),
-                            body: Rc::new(SubroutineBody {
-                                var_declarations: vec![],
-                                statements: vec![],
-                            }),
+                            body: (
+                                Rc::new(SubroutineBody {
+                                    var_declarations: vec![],
+                                    statements: vec![],
+                                }),
+                                3
+                            ),
                         }),
                         4
                     ),
@@ -1108,15 +1120,21 @@ mod tests {
                         Rc::new(SubroutineDeclaration {
                             subroutine_kind: SubroutineKind::Function,
                             return_type: Some(Type::Char),
-                            parameters: vec![Rc::new(Parameter {
-                                type_name: Type::Boolean,
-                                var_name: "_123".to_string(),
-                            })],
+                            parameters: vec![(
+                                Rc::new(Parameter {
+                                    type_name: Type::Boolean,
+                                    var_name: "_123".to_string(),
+                                }),
+                                5
+                            )],
                             name: "baz".to_string(),
-                            body: Rc::new(SubroutineBody {
-                                var_declarations: vec![],
-                                statements: vec![],
-                            }),
+                            body: (
+                                Rc::new(SubroutineBody {
+                                    var_declarations: vec![],
+                                    statements: vec![],
+                                }),
+                                6
+                            ),
                         }),
                         7
                     ),
@@ -1126,10 +1144,13 @@ mod tests {
                             return_type: None,
                             parameters: vec![],
                             name: "qux".to_string(),
-                            body: Rc::new(SubroutineBody {
-                                var_declarations: vec![],
-                                statements: vec![],
-                            }),
+                            body: (
+                                Rc::new(SubroutineBody {
+                                    var_declarations: vec![],
+                                    statements: vec![],
+                                }),
+                                8
+                            ),
                         }),
                         9
                     )
@@ -1140,6 +1161,128 @@ mod tests {
 
     #[test]
     fn test_all_statement_types() {
+        let if_statements = vec![(
+            Rc::new(Statement::While {
+                condition: (
+                    Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                    7,
+                ),
+                statements: vec![
+                    (
+                        Rc::new(Statement::Do(
+                            Rc::new(SubroutineCall::Direct {
+                                subroutine_name: "foobar".to_string(),
+                                arguments: vec![],
+                            }),
+                            8,
+                        )),
+                        9,
+                    ),
+                    (
+                        Rc::new(Statement::Do(
+                            Rc::new(SubroutineCall::Direct {
+                                subroutine_name: "foobar".to_string(),
+                                arguments: vec![(
+                                    Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                        "1".to_string(),
+                                    ))),
+                                    10,
+                                )],
+                            }),
+                            11,
+                        )),
+                        12,
+                    ),
+                    (
+                        Rc::new(Statement::Do(
+                            Rc::new(SubroutineCall::Direct {
+                                subroutine_name: "foobar".to_string(),
+                                arguments: vec![
+                                    (
+                                        Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                            "1".to_string(),
+                                        ))),
+                                        13,
+                                    ),
+                                    (
+                                        Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                            "2".to_string(),
+                                        ))),
+                                        14,
+                                    ),
+                                    (
+                                        Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                            "3".to_string(),
+                                        ))),
+                                        15,
+                                    ),
+                                ],
+                            }),
+                            16,
+                        )),
+                        17,
+                    ),
+                    (
+                        Rc::new(Statement::Do(
+                            Rc::new(SubroutineCall::Method {
+                                this_name: "foo".to_string(),
+                                method_name: "bar".to_string(),
+                                arguments: vec![],
+                            }),
+                            18,
+                        )),
+                        19,
+                    ),
+                    (
+                        Rc::new(Statement::Do(
+                            Rc::new(SubroutineCall::Method {
+                                this_name: "foo".to_string(),
+                                method_name: "bar".to_string(),
+                                arguments: vec![(
+                                    Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                        "1".to_string(),
+                                    ))),
+                                    20,
+                                )],
+                            }),
+                            21,
+                        )),
+                        22,
+                    ),
+                    (
+                        Rc::new(Statement::Do(
+                            Rc::new(SubroutineCall::Method {
+                                this_name: "foo".to_string(),
+                                method_name: "bar".to_string(),
+                                arguments: vec![
+                                    (
+                                        Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                            "1".to_string(),
+                                        ))),
+                                        23,
+                                    ),
+                                    (
+                                        Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                            "2".to_string(),
+                                        ))),
+                                        24,
+                                    ),
+                                    (
+                                        Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                            "3".to_string(),
+                                        ))),
+                                        25,
+                                    ),
+                                ],
+                            }),
+                            26,
+                        )),
+                        27,
+                    ),
+                ],
+            }),
+            28,
+        )];
         assert_eq!(
             *parse(
                 "
@@ -1172,114 +1315,72 @@ mod tests {
                         return_type: Some(Type::Int),
                         parameters: vec![],
                         name: "blah".to_string(),
-                        body: Rc::new(SubroutineBody {
-                            var_declarations: vec![Rc::new(VarDeclaration {
-                                type_name: Type::Int,
-                                var_names: vec!["a".to_string()],
-                            })],
-                            statements: vec![
-                                Rc::new(Statement::Let {
-                                    var_name: "a".to_string(),
-                                    array_index: None,
-                                    value: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                        "1234".to_string()
-                                    )))
-                                }),
-                                Rc::new(Statement::Let {
-                                    var_name: "b".to_string(),
-                                    array_index: Some(Rc::new(Expression::PrimitiveTerm(
-                                        IntegerConstant("22".to_string())
-                                    ))),
-                                    value: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                        "123".to_string()
-                                    )))
-                                }),
-                                Rc::new(Statement::If {
-                                    condition: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                        "1".to_string()
-                                    ))),
-                                    if_statements: vec![Rc::new(Statement::While {
-                                        condition: Rc::new(Expression::PrimitiveTerm(
-                                            IntegerConstant("1".to_string())
-                                        )),
-                                        statements: vec![
-                                            Rc::new(Statement::Do(Rc::new(
-                                                SubroutineCall::Direct {
-                                                    subroutine_name: "foobar".to_string(),
-                                                    arguments: vec![]
-                                                }
-                                            ))),
-                                            Rc::new(Statement::Do(Rc::new(
-                                                SubroutineCall::Direct {
-                                                    subroutine_name: "foobar".to_string(),
-                                                    arguments: vec![Rc::new(
-                                                        Expression::PrimitiveTerm(IntegerConstant(
-                                                            "1".to_string()
-                                                        ))
-                                                    )]
-                                                }
-                                            ))),
-                                            Rc::new(Statement::Do(Rc::new(
-                                                SubroutineCall::Direct {
-                                                    subroutine_name: "foobar".to_string(),
-                                                    arguments: vec![
-                                                        Rc::new(Expression::PrimitiveTerm(
-                                                            IntegerConstant("1".to_string())
-                                                        )),
-                                                        Rc::new(Expression::PrimitiveTerm(
-                                                            IntegerConstant("2".to_string())
-                                                        )),
-                                                        Rc::new(Expression::PrimitiveTerm(
-                                                            IntegerConstant("3".to_string())
-                                                        ))
-                                                    ]
-                                                }
-                                            ))),
-                                            Rc::new(Statement::Do(Rc::new(
-                                                SubroutineCall::Method {
-                                                    this_name: "foo".to_string(),
-                                                    method_name: "bar".to_string(),
-                                                    arguments: vec![]
-                                                }
-                                            ))),
-                                            Rc::new(Statement::Do(Rc::new(
-                                                SubroutineCall::Method {
-                                                    this_name: "foo".to_string(),
-                                                    method_name: "bar".to_string(),
-                                                    arguments: vec![Rc::new(
-                                                        Expression::PrimitiveTerm(IntegerConstant(
-                                                            "1".to_string()
-                                                        ))
-                                                    )]
-                                                }
-                                            ))),
-                                            Rc::new(Statement::Do(Rc::new(
-                                                SubroutineCall::Method {
-                                                    this_name: "foo".to_string(),
-                                                    method_name: "bar".to_string(),
-                                                    arguments: vec![
-                                                        Rc::new(Expression::PrimitiveTerm(
-                                                            IntegerConstant("1".to_string())
-                                                        )),
-                                                        Rc::new(Expression::PrimitiveTerm(
-                                                            IntegerConstant("2".to_string())
-                                                        )),
-                                                        Rc::new(Expression::PrimitiveTerm(
-                                                            IntegerConstant("3".to_string())
-                                                        ))
-                                                    ]
-                                                }
-                                            )))
-                                        ]
-                                    })],
-                                    else_statements: Some(vec![Rc::new(Statement::Return(Some(
-                                        Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                            "123".to_string()
-                                        )))
-                                    )))])
-                                })
-                            ],
-                        }),
+                        body: (
+                            Rc::new(SubroutineBody {
+                                var_declarations: vec![(
+                                    Rc::new(VarDeclaration {
+                                        type_name: Type::Int,
+                                        var_names: vec!["a".to_string()],
+                                    }),
+                                    0,
+                                )],
+                                statements: vec![
+                                    (
+                                        Rc::new(Statement::Let {
+                                            var_name: "a".to_string(),
+                                            array_index: None,
+                                            value: (
+                                                Rc::new(Expression::PrimitiveTerm(
+                                                    IntegerConstant("1234".to_string(),)
+                                                )),
+                                                1,
+                                            ),
+                                        }),
+                                        2,
+                                    ),
+                                    (
+                                        Rc::new(Statement::Let {
+                                            var_name: "b".to_string(),
+                                            array_index: Some((
+                                                Rc::new(Expression::PrimitiveTerm(
+                                                    IntegerConstant("22".to_string())
+                                                )),
+                                                3,
+                                            )),
+                                            value: (
+                                                Rc::new(Expression::PrimitiveTerm(
+                                                    IntegerConstant("123".to_string(),)
+                                                )),
+                                                4,
+                                            ),
+                                        }),
+                                        5,
+                                    ),
+                                    (
+                                        Rc::new(Statement::If {
+                                            condition: (
+                                                Rc::new(Expression::PrimitiveTerm(
+                                                    IntegerConstant("1".to_string())
+                                                )),
+                                                6,
+                                            ),
+                                            if_statements,
+                                            else_statements: Some(vec![(
+                                                Rc::new(Statement::Return(Some((
+                                                    Rc::new(Expression::PrimitiveTerm(
+                                                        IntegerConstant("123".to_string(),)
+                                                    )),
+                                                    29,
+                                                )))),
+                                                30,
+                                            )]),
+                                        }),
+                                        31,
+                                    ),
+                                ],
+                            }),
+                            32
+                        ),
                     }),
                     33
                 )],
@@ -1290,20 +1391,32 @@ mod tests {
     #[test]
     fn test_simple_expression() {
         assert_eq!(
-            *parse_expression("1"),
-            Expression::PrimitiveTerm(IntegerConstant("1".to_string()))
+            parse_expression("1"),
+            (
+                Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                0
+            )
         )
     }
 
     #[test]
     fn test_simple_binary_expression() {
         assert_eq!(
-            *parse_expression("1 + 2"),
-            Expression::Binary {
-                operator: BinaryOperator::Plus,
-                lhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
-                rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
-            }
+            parse_expression("1 + 2"),
+            (
+                Rc::new(Expression::Binary {
+                    operator: BinaryOperator::Plus,
+                    lhs: (
+                        Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                        0
+                    ),
+                    rhs: (
+                        Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                        1
+                    ),
+                }),
+                2
+            )
         )
     }
 
@@ -1328,28 +1441,49 @@ mod tests {
                         return_type: None,
                         parameters: vec![],
                         name: "bar".to_string(),
-                        body: Rc::new(SubroutineBody {
-                            var_declarations: vec![],
-                            statements: vec![Rc::new(Statement::Let {
-                                var_name: "a".to_string(),
-                                array_index: None,
-                                value: Rc::new(Expression::Binary {
-                                    operator: BinaryOperator::Plus,
-                                    lhs: Rc::new(Expression::Binary {
-                                        operator: BinaryOperator::Plus,
-                                        lhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                            "1".to_string()
-                                        ))),
-                                        rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                            "2".to_string()
-                                        ))),
+                        body: (
+                            Rc::new(SubroutineBody {
+                                var_declarations: vec![],
+                                statements: vec![(
+                                    Rc::new(Statement::Let {
+                                        var_name: "a".to_string(),
+                                        array_index: None,
+                                        value: (
+                                            Rc::new(Expression::Binary {
+                                                operator: BinaryOperator::Plus,
+                                                lhs: (
+                                                    Rc::new(Expression::Binary {
+                                                        operator: BinaryOperator::Plus,
+                                                        lhs: (
+                                                            Rc::new(Expression::PrimitiveTerm(
+                                                                IntegerConstant("1".to_string())
+                                                            )),
+                                                            0
+                                                        ),
+                                                        rhs: (
+                                                            Rc::new(Expression::PrimitiveTerm(
+                                                                IntegerConstant("2".to_string())
+                                                            )),
+                                                            1
+                                                        ),
+                                                    }),
+                                                    2
+                                                ),
+                                                rhs: (
+                                                    Rc::new(Expression::PrimitiveTerm(
+                                                        IntegerConstant("3".to_string())
+                                                    )),
+                                                    3
+                                                ),
+                                            }),
+                                            4
+                                        )
                                     }),
-                                    rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                        "3".to_string()
-                                    ))),
-                                })
-                            })],
-                        }),
+                                    5
+                                )],
+                            }),
+                            6
+                        ),
                     }),
                     7
                 )],
@@ -1361,19 +1495,46 @@ mod tests {
     fn test_simple_left_associating_expression() {
         assert_eq!(
             parse_expression("1 + 2 + 3 + 4"),
-            Rc::new(Expression::Binary {
-                operator: BinaryOperator::Plus,
-                lhs: Rc::new(Expression::Binary {
+            (
+                Rc::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
-                    lhs: Rc::new(Expression::Binary {
-                        operator: BinaryOperator::Plus,
-                        lhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
-                        rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
-                    }),
-                    rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
+                    lhs: (
+                        Rc::new(Expression::Binary {
+                            operator: BinaryOperator::Plus,
+                            lhs: (
+                                Rc::new(Expression::Binary {
+                                    operator: BinaryOperator::Plus,
+                                    lhs: (
+                                        Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                            "1".to_string()
+                                        ))),
+                                        0
+                                    ),
+                                    rhs: (
+                                        Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                            "2".to_string()
+                                        ))),
+                                        1
+                                    ),
+                                }),
+                                2
+                            ),
+                            rhs: (
+                                Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                    "3".to_string()
+                                ))),
+                                3
+                            ),
+                        }),
+                        4
+                    ),
+                    rhs: (
+                        Rc::new(Expression::PrimitiveTerm(IntegerConstant("4".to_string()))),
+                        5
+                    ),
                 }),
-                rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("4".to_string()))),
-            })
+                6
+            )
         )
     }
 
@@ -1381,19 +1542,46 @@ mod tests {
     fn test_binary_precedence() {
         assert_eq!(
             parse_expression("1 + 2 * 3 + 4"),
-            Rc::new(Expression::Binary {
-                operator: BinaryOperator::Plus,
-                lhs: Rc::new(Expression::Binary {
+            (
+                Rc::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
-                    lhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
-                    rhs: Rc::new(Expression::Binary {
-                        operator: BinaryOperator::Multiply,
-                        lhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
-                        rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
-                    })
+                    lhs: (
+                        Rc::new(Expression::Binary {
+                            operator: BinaryOperator::Plus,
+                            lhs: (
+                                Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                    "1".to_string()
+                                ))),
+                                0
+                            ),
+                            rhs: (
+                                Rc::new(Expression::Binary {
+                                    operator: BinaryOperator::Multiply,
+                                    lhs: (
+                                        Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                            "2".to_string()
+                                        ))),
+                                        1
+                                    ),
+                                    rhs: (
+                                        Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                            "3".to_string()
+                                        ))),
+                                        2
+                                    ),
+                                }),
+                                3
+                            )
+                        }),
+                        4
+                    ),
+                    rhs: (
+                        Rc::new(Expression::PrimitiveTerm(IntegerConstant("4".to_string()))),
+                        5
+                    ),
                 }),
-                rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("4".to_string()))),
-            })
+                6
+            )
         )
     }
 
@@ -1401,10 +1589,16 @@ mod tests {
     fn test_simple_unary_expression() {
         assert_eq!(
             parse_expression("~1"),
-            Rc::new(Expression::Unary {
-                operator: UnaryOperator::Not,
-                operand: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
-            })
+            (
+                Rc::new(Expression::Unary {
+                    operator: UnaryOperator::Not,
+                    operand: (
+                        Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                        0
+                    ),
+                }),
+                1
+            )
         )
     }
 
@@ -1412,17 +1606,36 @@ mod tests {
     fn test_simple_combined_unary_and_binary_expression() {
         assert_eq!(
             parse_expression("~1 + ~2"),
-            Rc::new(Expression::Binary {
-                operator: BinaryOperator::Plus,
-                lhs: Rc::new(Expression::Unary {
-                    operator: UnaryOperator::Not,
-                    operand: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+            (
+                Rc::new(Expression::Binary {
+                    operator: BinaryOperator::Plus,
+                    lhs: (
+                        Rc::new(Expression::Unary {
+                            operator: UnaryOperator::Not,
+                            operand: (
+                                Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                    "1".to_string()
+                                ))),
+                                0,
+                            ),
+                        }),
+                        1
+                    ),
+                    rhs: (
+                        Rc::new(Expression::Unary {
+                            operator: UnaryOperator::Not,
+                            operand: (
+                                Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                    "2".to_string()
+                                ))),
+                                2
+                            ),
+                        }),
+                        3
+                    ),
                 }),
-                rhs: Rc::new(Expression::Unary {
-                    operator: UnaryOperator::Not,
-                    operand: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
-                }),
-            })
+                4
+            )
         )
     }
 
@@ -1430,41 +1643,79 @@ mod tests {
     fn test_expression_with_subroutine_calls() {
         assert_eq!(
             parse_expression("1 + foo(1, baz.bar(1, 2), 3) + 2"),
-            Rc::new(Expression::Binary {
-                operator: BinaryOperator::Plus,
-                lhs: Rc::new(Expression::Binary {
+            (
+                Rc::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
-                    lhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
-                    rhs: Rc::new(Expression::SubroutineCall(Rc::new(
-                        SubroutineCall::Direct {
-                            subroutine_name: "foo".to_string(),
-                            arguments: vec![
+                    lhs: (
+                        Rc::new(Expression::Binary {
+                            operator: BinaryOperator::Plus,
+                            lhs: (
                                 Rc::new(Expression::PrimitiveTerm(IntegerConstant(
                                     "1".to_string()
                                 ))),
-                                Rc::new(Expression::SubroutineCall(Rc::new(
-                                    SubroutineCall::Method {
-                                        this_name: "baz".to_string(),
-                                        method_name: "bar".to_string(),
+                                0
+                            ),
+                            rhs: (
+                                Rc::new(Expression::SubroutineCall((
+                                    Rc::new(SubroutineCall::Direct {
+                                        subroutine_name: "foo".to_string(),
                                         arguments: vec![
-                                            Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                                "1".to_string()
-                                            ))),
-                                            Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                                "2".to_string()
-                                            ))),
+                                            (
+                                                Rc::new(Expression::PrimitiveTerm(
+                                                    IntegerConstant("1".to_string())
+                                                )),
+                                                1
+                                            ),
+                                            (
+                                                Rc::new(Expression::SubroutineCall((
+                                                    Rc::new(SubroutineCall::Method {
+                                                        this_name: "baz".to_string(),
+                                                        method_name: "bar".to_string(),
+                                                        arguments: vec![
+                                                            (
+                                                                Rc::new(Expression::PrimitiveTerm(
+                                                                    IntegerConstant(
+                                                                        "1".to_string()
+                                                                    )
+                                                                )),
+                                                                2
+                                                            ),
+                                                            (
+                                                                Rc::new(Expression::PrimitiveTerm(
+                                                                    IntegerConstant(
+                                                                        "2".to_string()
+                                                                    )
+                                                                )),
+                                                                3
+                                                            ),
+                                                        ]
+                                                    }),
+                                                    4
+                                                ))),
+                                                5
+                                            ),
+                                            (
+                                                Rc::new(Expression::PrimitiveTerm(
+                                                    IntegerConstant("3".to_string())
+                                                )),
+                                                6
+                                            ),
                                         ]
-                                    }
+                                    }),
+                                    7
                                 ))),
-                                Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                    "3".to_string()
-                                ))),
-                            ]
-                        }
-                    ))),
+                                8
+                            ),
+                        }),
+                        9
+                    ),
+                    rhs: (
+                        Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                        10
+                    ),
                 }),
-                rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
-            })
+                11
+            )
         )
     }
 
@@ -1472,39 +1723,79 @@ mod tests {
     fn test_expression_with_subroutine_call_and_array_access() {
         assert_eq!(
             parse_expression("1 + foo(1, bar[1 + 2], 3) + 2"),
-            Rc::new(Expression::Binary {
-                operator: BinaryOperator::Plus,
-                lhs: Rc::new(Expression::Binary {
+            (
+                Rc::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
-                    lhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
-                    rhs: Rc::new(Expression::SubroutineCall(Rc::new(
-                        SubroutineCall::Direct {
-                            subroutine_name: "foo".to_string(),
-                            arguments: vec![
+                    lhs: (
+                        Rc::new(Expression::Binary {
+                            operator: BinaryOperator::Plus,
+                            lhs: (
                                 Rc::new(Expression::PrimitiveTerm(IntegerConstant(
                                     "1".to_string()
                                 ))),
-                                Rc::new(Expression::ArrayAccess {
-                                    var_name: "bar".to_string(),
-                                    index: Rc::new(Expression::Binary {
-                                        operator: BinaryOperator::Plus,
-                                        lhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                            "1".to_string()
-                                        ))),
-                                        rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                            "2".to_string()
-                                        ))),
-                                    })
-                                }),
-                                Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                    "3".to_string()
+                                0
+                            ),
+                            rhs: (
+                                Rc::new(Expression::SubroutineCall((
+                                    Rc::new(SubroutineCall::Direct {
+                                        subroutine_name: "foo".to_string(),
+                                        arguments: vec![
+                                            (
+                                                Rc::new(Expression::PrimitiveTerm(
+                                                    IntegerConstant("1".to_string())
+                                                )),
+                                                1
+                                            ),
+                                            (
+                                                Rc::new(Expression::ArrayAccess {
+                                                    var_name: "bar".to_string(),
+                                                    index: (
+                                                        Rc::new(Expression::Binary {
+                                                            operator: BinaryOperator::Plus,
+                                                            lhs: (
+                                                                Rc::new(Expression::PrimitiveTerm(
+                                                                    IntegerConstant(
+                                                                        "1".to_string()
+                                                                    )
+                                                                )),
+                                                                2
+                                                            ),
+                                                            rhs: (
+                                                                Rc::new(Expression::PrimitiveTerm(
+                                                                    IntegerConstant(
+                                                                        "2".to_string()
+                                                                    )
+                                                                )),
+                                                                3
+                                                            ),
+                                                        }),
+                                                        4
+                                                    )
+                                                }),
+                                                5
+                                            ),
+                                            (
+                                                Rc::new(Expression::PrimitiveTerm(
+                                                    IntegerConstant("3".to_string())
+                                                )),
+                                                6
+                                            ),
+                                        ]
+                                    }),
+                                    7
                                 ))),
-                            ]
-                        }
-                    ))),
+                                8
+                            ),
+                        }),
+                        9
+                    ),
+                    rhs: (
+                        Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                        10
+                    ),
                 }),
-                rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
-            })
+                11
+            )
         )
     }
 
@@ -1512,36 +1803,67 @@ mod tests {
     fn test_expression_with_variables_subroutine_calls_and_array_access() {
         assert_eq!(
             parse_expression("foo + bar[baz + buz.boz(qux, wox[123]) / bing]"),
-            Rc::new(Expression::Binary {
-                operator: BinaryOperator::Plus,
-                lhs: Rc::new(Expression::Variable("foo".to_string())),
-                rhs: Rc::new(Expression::ArrayAccess {
-                    var_name: "bar".to_string(),
-                    index: Rc::new(Expression::Binary {
-                        operator: BinaryOperator::Plus,
-                        lhs: Rc::new(Expression::Variable("baz".to_string())),
-                        rhs: Rc::new(Expression::Binary {
-                            operator: BinaryOperator::Divide,
-                            lhs: Rc::new(Expression::SubroutineCall(Rc::new(
-                                SubroutineCall::Method {
-                                    this_name: "buz".to_string(),
-                                    method_name: "boz".to_string(),
-                                    arguments: vec![
-                                        Rc::new(Expression::Variable("qux".to_string())),
-                                        Rc::new(Expression::ArrayAccess {
-                                            var_name: "wox".to_string(),
-                                            index: Rc::new(Expression::PrimitiveTerm(
-                                                IntegerConstant("123".to_string())
-                                            ))
-                                        })
-                                    ]
-                                }
-                            ))),
-                            rhs: Rc::new(Expression::Variable("bing".to_string()))
-                        })
-                    })
-                })
-            })
+            (
+                Rc::new(Expression::Binary {
+                    operator: BinaryOperator::Plus,
+                    lhs: (Rc::new(Expression::Variable("foo".to_string())), 0),
+                    rhs: (
+                        Rc::new(Expression::ArrayAccess {
+                            var_name: "bar".to_string(),
+                            index: (
+                                Rc::new(Expression::Binary {
+                                    operator: BinaryOperator::Plus,
+                                    lhs: (Rc::new(Expression::Variable("baz".to_string())), 1),
+                                    rhs: (
+                                        Rc::new(Expression::Binary {
+                                            operator: BinaryOperator::Divide,
+                                            lhs: (
+                                                Rc::new(Expression::SubroutineCall((
+                                                    Rc::new(SubroutineCall::Method {
+                                                        this_name: "buz".to_string(),
+                                                        method_name: "boz".to_string(),
+                                                        arguments: vec![
+                                                            (
+                                                                Rc::new(Expression::Variable(
+                                                                    "qux".to_string()
+                                                                )),
+                                                                0
+                                                            ),
+                                                            (
+                                                                Rc::new(Expression::ArrayAccess {
+                                                                    var_name: "wox".to_string(),
+                                                                    index: (Rc::new(
+                                                                        Expression::PrimitiveTerm(
+                                                                            IntegerConstant(
+                                                                                "123".to_string()
+                                                                            )
+                                                                        )
+                                                                    ), 1)
+                                                                }),
+                                                                2
+                                                            )
+                                                        ]
+                                                    }),
+                                                    3
+                                                ))),
+                                                4
+                                            ),
+                                            rhs: (
+                                                Rc::new(Expression::Variable("bing".to_string())),
+                                                5
+                                            )
+                                        }),
+                                        6
+                                    )
+                                }),
+                                7
+                            )
+                        }),
+                        8
+                    )
+                }),
+                9
+            )
         )
     }
 
@@ -1549,31 +1871,68 @@ mod tests {
     fn test_primitive_terms() {
         assert_eq!(
             parse_expression("1 + \"hello\" + true + false + null + this"),
-            Rc::new(Expression::Binary {
-                operator: BinaryOperator::Plus,
-                lhs: Rc::new(Expression::Binary {
+            (
+                Rc::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
-                    lhs: Rc::new(Expression::Binary {
-                        operator: BinaryOperator::Plus,
-                        lhs: Rc::new(Expression::Binary {
+                    lhs: (
+                        Rc::new(Expression::Binary {
                             operator: BinaryOperator::Plus,
-                            lhs: Rc::new(Expression::Binary {
-                                operator: BinaryOperator::Plus,
-                                lhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                    "1".to_string()
-                                ))),
-                                rhs: Rc::new(Expression::PrimitiveTerm(StringConstant(
-                                    "hello".to_string()
-                                ))),
-                            }),
-                            rhs: Rc::new(Expression::PrimitiveTerm(PrimitiveTermVariant::True)),
+                            lhs: (
+                                Rc::new(Expression::Binary {
+                                    operator: BinaryOperator::Plus,
+                                    lhs: (
+                                        Rc::new(Expression::Binary {
+                                            operator: BinaryOperator::Plus,
+                                            lhs: (
+                                                Rc::new(Expression::Binary {
+                                                    operator: BinaryOperator::Plus,
+                                                    lhs: (
+                                                        Rc::new(Expression::PrimitiveTerm(
+                                                            IntegerConstant("1".to_string())
+                                                        )),
+                                                        0
+                                                    ),
+                                                    rhs: (
+                                                        Rc::new(Expression::PrimitiveTerm(
+                                                            StringConstant("hello".to_string())
+                                                        )),
+                                                        1
+                                                    ),
+                                                }),
+                                                2
+                                            ),
+                                            rhs: (
+                                                Rc::new(Expression::PrimitiveTerm(
+                                                    PrimitiveTermVariant::True
+                                                )),
+                                                3
+                                            ),
+                                        }),
+                                        4
+                                    ),
+                                    rhs: (
+                                        Rc::new(Expression::PrimitiveTerm(
+                                            PrimitiveTermVariant::False
+                                        )),
+                                        5
+                                    ),
+                                }),
+                                6
+                            ),
+                            rhs: (
+                                Rc::new(Expression::PrimitiveTerm(PrimitiveTermVariant::Null)),
+                                7
+                            ),
                         }),
-                        rhs: Rc::new(Expression::PrimitiveTerm(PrimitiveTermVariant::False)),
-                    }),
-                    rhs: Rc::new(Expression::PrimitiveTerm(PrimitiveTermVariant::Null)),
+                        8
+                    ),
+                    rhs: (
+                        Rc::new(Expression::PrimitiveTerm(PrimitiveTermVariant::This)),
+                        9
+                    )
                 }),
-                rhs: Rc::new(Expression::PrimitiveTerm(PrimitiveTermVariant::This))
-            })
+                10
+            )
         )
     }
 
@@ -1581,15 +1940,34 @@ mod tests {
     fn test_parenthesized_expression() {
         assert_eq!(
             parse_expression("(1 + 2) * 3"),
-            Rc::new(Expression::Binary {
-                operator: BinaryOperator::Multiply,
-                lhs: Rc::new(Expression::Binary {
-                    operator: BinaryOperator::Plus,
-                    lhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
-                    rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+            (
+                Rc::new(Expression::Binary {
+                    operator: BinaryOperator::Multiply,
+                    lhs: (
+                        Rc::new(Expression::Binary {
+                            operator: BinaryOperator::Plus,
+                            lhs: (
+                                Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                    "1".to_string()
+                                ))),
+                                0
+                            ),
+                            rhs: (
+                                Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                    "2".to_string()
+                                ))),
+                                1
+                            ),
+                        }),
+                        2
+                    ),
+                    rhs: (
+                        Rc::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
+                        3
+                    ),
                 }),
-                rhs: Rc::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
-            })
+                4
+            )
         )
     }
 }

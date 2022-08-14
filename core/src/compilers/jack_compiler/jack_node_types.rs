@@ -100,7 +100,7 @@ pub enum Expression {
         operand: (Rc<Expression>, usize),
     },
     Variable(String),
-    SubroutineCall(Rc<SubroutineCall>),
+    SubroutineCall((Rc<SubroutineCall>, usize)),
     ArrayAccess {
         var_name: String,
         index: (Rc<Expression>, usize),
@@ -148,7 +148,7 @@ pub enum Statement {
         condition: (Rc<Expression>, usize),
         statements: Vec<(Rc<Statement>, usize)>,
     },
-    Do(Rc<SubroutineCall>),
+    Do(Rc<SubroutineCall>, usize),
     Return(Option<(Rc<Expression>, usize)>),
 }
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]

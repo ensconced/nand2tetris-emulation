@@ -217,7 +217,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn maybe_take_term_starting_with_identifier(
+    fn maybe_take_expression_starting_with_identifier(
         &mut self,
     ) -> Option<(Rc<Expression>, Range<usize>)> {
         use TokenKind::*;
@@ -349,7 +349,7 @@ impl<'a> Parser<'a> {
         let (mut lhs, mut lhs_token_range) = self
             .maybe_take_unary_expression()
             .or_else(|| self.maybe_take_primitive_expression())
-            .or_else(|| self.maybe_take_term_starting_with_identifier())
+            .or_else(|| self.maybe_take_expression_starting_with_identifier())
             .or_else(|| self.maybe_take_parenthesized_expression())?;
 
         while let Some((new_lhs, new_lhs_token_range)) =

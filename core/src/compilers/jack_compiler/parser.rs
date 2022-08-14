@@ -1065,7 +1065,7 @@ mod tests {
                                 statements: vec![],
                             }),
                         }),
-                        1
+                        4
                     ),
                     (
                         Rc::new(SubroutineDeclaration {
@@ -1081,7 +1081,7 @@ mod tests {
                                 statements: vec![],
                             }),
                         }),
-                        2
+                        7
                     ),
                     (
                         Rc::new(SubroutineDeclaration {
@@ -1094,7 +1094,7 @@ mod tests {
                                 statements: vec![],
                             }),
                         }),
-                        3
+                        9
                     )
                 ],
             }
@@ -1244,7 +1244,7 @@ mod tests {
                             ],
                         }),
                     }),
-                    1
+                    33
                 )],
             }
         );
@@ -1314,7 +1314,7 @@ mod tests {
                             })],
                         }),
                     }),
-                    1
+                    7
                 )],
             }
         )

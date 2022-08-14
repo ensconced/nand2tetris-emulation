@@ -768,7 +768,7 @@ impl<'a> Parser<'a> {
 
     fn take_class_var_declaration_qualifier(
         &mut self,
-    ) -> (Rc<ClassVarDeclarationKind>, Range<usize>) {
+    ) -> ((Rc<ClassVarDeclarationKind>, usize), Range<usize>) {
         use KeywordTokenVariant::*;
         match self.token_iter.next() {
             Some(Token {
@@ -783,11 +783,11 @@ impl<'a> Parser<'a> {
                 };
                 let rc = Rc::new(qualifier);
                 let token_range = *token_idx..token_idx + 1;
-                self.record_jack_node(
+                let jack_node_idx = self.record_jack_node(
                     JackNode::ClassVarDeclarationKindNode(rc.clone()),
                     token_range.clone(),
                 );
-                (rc, token_range)
+                ((rc, jack_node_idx), token_range)
             }
             _ => panic!("expected var declaration qualifier",),
         }
@@ -964,7 +964,7 @@ mod tests {
                 name: "foo".to_string(),
                 var_declarations: vec![(
                     Rc::new(ClassVarDeclaration {
-                        qualifier: Rc::new(ClassVarDeclarationKind::Static),
+                        qualifier: (Rc::new(ClassVarDeclarationKind::Static), 0),
                         type_name: Type::Int,
                         var_names: vec!["bar".to_string()],
                     }),
@@ -991,7 +991,7 @@ mod tests {
                 var_declarations: vec![
                     (
                         Rc::new(ClassVarDeclaration {
-                            qualifier: Rc::new(ClassVarDeclarationKind::Static),
+                            qualifier: (Rc::new(ClassVarDeclarationKind::Static), 0),
                             type_name: Type::Int,
                             var_names: vec!["bar".to_string()],
                         }),
@@ -999,7 +999,7 @@ mod tests {
                     ),
                     (
                         Rc::new(ClassVarDeclaration {
-                            qualifier: Rc::new(ClassVarDeclarationKind::Field),
+                            qualifier: (Rc::new(ClassVarDeclarationKind::Field), 2),
                             type_name: Type::Char,
                             var_names: vec![
                                 "baz".to_string(),
@@ -1011,7 +1011,7 @@ mod tests {
                     ),
                     (
                         Rc::new(ClassVarDeclaration {
-                            qualifier: Rc::new(ClassVarDeclarationKind::Field),
+                            qualifier: (Rc::new(ClassVarDeclarationKind::Field), 4),
                             type_name: Type::Boolean,
                             var_names: vec!["a".to_string(), "b".to_string(), "c".to_string(),],
                         }),

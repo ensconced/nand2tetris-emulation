@@ -35,7 +35,7 @@ pub enum Type {
 #[ts(export_to = "../bindings/")]
 pub struct ClassVarDeclaration {
     pub type_name: Type,
-    pub qualifier: Rc<ClassVarDeclarationKind>,
+    pub qualifier: (Rc<ClassVarDeclarationKind>, usize),
     pub var_names: Vec<String>,
 }
 

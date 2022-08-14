@@ -297,12 +297,14 @@ impl<'a> Parser<'a> {
 
     fn maybe_append_rhs(
         &mut self,
-        lhs: Rc<Expression>,
-        lhs_token_range: Range<usize>,
+        op: &OperatorVariant,
+        mut lhs: Rc<Expression>,
+        mut lhs_token_range: Range<usize>,
         binding_power: u8,
     ) -> Option<(Rc<Expression>, Range<usize>)> {
         let (lbp, rbp) = infix_precedence(op.clone()).expect("invalid infix operator");
         if lbp < binding_power {
+            // There is no rhs to append - the next term will instead associate towards the right.
             return None;
         }
         self.token_iter.next();
@@ -326,7 +328,10 @@ impl<'a> Parser<'a> {
 
         lhs = Rc::new(Expression::Binary { operator, lhs, rhs });
         lhs_token_range = lhs_token_range.start..rhs_exp_token_range.end;
-        self.record_jack_node(JackNode::ExpressionNode(lhs.clone()), lhs_token_range);
+        self.record_jack_node(
+            JackNode::ExpressionNode(lhs.clone()),
+            lhs_token_range.clone(),
+        );
         Some((lhs, lhs_token_range))
     }
 
@@ -341,21 +346,16 @@ impl<'a> Parser<'a> {
             .or_else(|| self.maybe_take_term_starting_with_identifier())
             .or_else(|| self.maybe_take_parenthesized_expression())?;
 
-        loop {
-            match self.token_iter.peek() {
-                Some(Token {
-                    kind: Operator(op), ..
-                }) => {
-                    if let Some(new_lhs) =
-                        self.maybe_append_rhs(lhs, lhs_token_range, binding_power)
-                    {
-                        (lhs, lhs_token_range) = new_lhs;
-                    } else {
-                        break;
-                    }
-                }
-                Some(_) => break,
-                None => return Some((lhs, lhs_token_range)),
+        while let Some(Token {
+            kind: Operator(op), ..
+        }) = self.token_iter.peek()
+        {
+            if let Some(new_lhs) =
+                self.maybe_append_rhs(op, lhs.clone(), lhs_token_range.clone(), binding_power)
+            {
+                (lhs, lhs_token_range) = new_lhs;
+            } else {
+                break;
             }
         }
 

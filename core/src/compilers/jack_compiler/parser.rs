@@ -295,7 +295,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn maybe_append_rhs(
+    fn maybe_append_rhs_to_lhs(
         &mut self,
         mut lhs: Rc<Expression>,
         mut lhs_token_range: Range<usize>,
@@ -352,10 +352,11 @@ impl<'a> Parser<'a> {
             .or_else(|| self.maybe_take_term_starting_with_identifier())
             .or_else(|| self.maybe_take_parenthesized_expression())?;
 
-        while let Some(new_lhs) =
-            self.maybe_append_rhs(lhs.clone(), lhs_token_range.clone(), binding_power)
+        while let Some((new_lhs, new_lhs_token_range)) =
+            self.maybe_append_rhs_to_lhs(lhs.clone(), lhs_token_range.clone(), binding_power)
         {
-            (lhs, lhs_token_range) = new_lhs;
+            lhs = new_lhs;
+            lhs_token_range = new_lhs_token_range
         }
 
         Some((lhs, lhs_token_range))

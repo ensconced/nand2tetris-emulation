@@ -297,66 +297,65 @@ impl<'a> Parser<'a> {
 
     fn maybe_append_rhs(
         &mut self,
-        op: &OperatorVariant,
         mut lhs: Rc<Expression>,
         mut lhs_token_range: Range<usize>,
         binding_power: u8,
     ) -> Option<(Rc<Expression>, Range<usize>)> {
-        let (lbp, rbp) = infix_precedence(op.clone()).expect("invalid infix operator");
-        if lbp < binding_power {
-            // There is no rhs to append - the next term will instead associate towards the right.
-            return None;
-        }
-        self.token_iter.next();
-        let (rhs, rhs_exp_token_range) = self
-            .maybe_take_expression_with_binding_power(rbp)
-            .expect("expected rhs for binary operator");
-        let operator = match op {
-            Plus => BinaryOperator::Plus,
-            Minus => BinaryOperator::Minus,
-            Star => BinaryOperator::Multiply,
-            Slash => BinaryOperator::Divide,
-            Ampersand => BinaryOperator::And,
-            Pipe => BinaryOperator::Or,
-            LessThan => BinaryOperator::LessThan,
-            LessThanOrEquals => BinaryOperator::LessThanOrEquals,
-            GreaterThan => BinaryOperator::GreaterThan,
-            GreaterThanOrEquals => BinaryOperator::GreaterThanOrEquals,
-            Equals => BinaryOperator::Equals,
-            _ => panic!("invalid binary operator"),
-        };
+        use TokenKind::*;
+        if let Some(Token {
+            kind: Operator(op), ..
+        }) = self.token_iter.peek()
+        {
+            let (lbp, rbp) = infix_precedence(op.clone()).expect("invalid infix operator");
+            if lbp < binding_power {
+                // There is no rhs to append - the next term will instead associate towards the right.
+                return None;
+            }
+            self.token_iter.next();
+            let (rhs, rhs_exp_token_range) = self
+                .maybe_take_expression_with_binding_power(rbp)
+                .expect("expected rhs for binary operator");
+            let operator = match op {
+                Plus => BinaryOperator::Plus,
+                Minus => BinaryOperator::Minus,
+                Star => BinaryOperator::Multiply,
+                Slash => BinaryOperator::Divide,
+                Ampersand => BinaryOperator::And,
+                Pipe => BinaryOperator::Or,
+                LessThan => BinaryOperator::LessThan,
+                LessThanOrEquals => BinaryOperator::LessThanOrEquals,
+                GreaterThan => BinaryOperator::GreaterThan,
+                GreaterThanOrEquals => BinaryOperator::GreaterThanOrEquals,
+                Equals => BinaryOperator::Equals,
+                _ => panic!("invalid binary operator"),
+            };
 
-        lhs = Rc::new(Expression::Binary { operator, lhs, rhs });
-        lhs_token_range = lhs_token_range.start..rhs_exp_token_range.end;
-        self.record_jack_node(
-            JackNode::ExpressionNode(lhs.clone()),
-            lhs_token_range.clone(),
-        );
-        Some((lhs, lhs_token_range))
+            lhs = Rc::new(Expression::Binary { operator, lhs, rhs });
+            lhs_token_range = lhs_token_range.start..rhs_exp_token_range.end;
+            self.record_jack_node(
+                JackNode::ExpressionNode(lhs.clone()),
+                lhs_token_range.clone(),
+            );
+            Some((lhs, lhs_token_range))
+        } else {
+            None
+        }
     }
 
     fn maybe_take_expression_with_binding_power(
         &mut self,
         binding_power: u8,
     ) -> Option<(Rc<Expression>, Range<usize>)> {
-        use TokenKind::*;
         let (mut lhs, mut lhs_token_range) = self
             .maybe_take_unary_expression()
             .or_else(|| self.maybe_take_primitive_expression())
             .or_else(|| self.maybe_take_term_starting_with_identifier())
             .or_else(|| self.maybe_take_parenthesized_expression())?;
 
-        while let Some(Token {
-            kind: Operator(op), ..
-        }) = self.token_iter.peek()
+        while let Some(new_lhs) =
+            self.maybe_append_rhs(lhs.clone(), lhs_token_range.clone(), binding_power)
         {
-            if let Some(new_lhs) =
-                self.maybe_append_rhs(op, lhs.clone(), lhs_token_range.clone(), binding_power)
-            {
-                (lhs, lhs_token_range) = new_lhs;
-            } else {
-                break;
-            }
+            (lhs, lhs_token_range) = new_lhs;
         }
 
         Some((lhs, lhs_token_range))

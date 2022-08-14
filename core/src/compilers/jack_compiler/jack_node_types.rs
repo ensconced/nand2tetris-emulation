@@ -92,18 +92,18 @@ pub enum Expression {
     PrimitiveTerm(PrimitiveTermVariant),
     Binary {
         operator: BinaryOperator,
-        lhs: Rc<Expression>,
-        rhs: Rc<Expression>,
+        lhs: (Rc<Expression>, usize),
+        rhs: (Rc<Expression>, usize),
     },
     Unary {
         operator: UnaryOperator,
-        operand: Rc<Expression>,
+        operand: (Rc<Expression>, usize),
     },
     Variable(String),
     SubroutineCall(Rc<SubroutineCall>),
     ArrayAccess {
         var_name: String,
-        index: Rc<Expression>,
+        index: (Rc<Expression>, usize),
     },
 }
 
@@ -121,12 +121,12 @@ pub struct Parameter {
 pub enum SubroutineCall {
     Direct {
         subroutine_name: String,
-        arguments: Vec<Rc<Expression>>,
+        arguments: Vec<(Rc<Expression>, usize)>,
     },
     Method {
         this_name: String,
         method_name: String,
-        arguments: Vec<Rc<Expression>>,
+        arguments: Vec<(Rc<Expression>, usize)>,
     },
 }
 
@@ -136,20 +136,20 @@ pub enum SubroutineCall {
 pub enum Statement {
     Let {
         var_name: String,
-        array_index: Option<Rc<Expression>>,
-        value: Rc<Expression>,
+        array_index: Option<(Rc<Expression>, usize)>,
+        value: (Rc<Expression>, usize),
     },
     If {
-        condition: Rc<Expression>,
-        if_statements: Vec<Rc<Statement>>,
-        else_statements: Option<Vec<Rc<Statement>>>,
+        condition: (Rc<Expression>, usize),
+        if_statements: Vec<(Rc<Statement>, usize)>,
+        else_statements: Option<Vec<(Rc<Statement>, usize)>>,
     },
     While {
-        condition: Rc<Expression>,
-        statements: Vec<Rc<Statement>>,
+        condition: (Rc<Expression>, usize),
+        statements: Vec<(Rc<Statement>, usize)>,
     },
     Do(Rc<SubroutineCall>),
-    Return(Option<Rc<Expression>>),
+    Return(Option<(Rc<Expression>, usize)>),
 }
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
@@ -163,8 +163,8 @@ pub struct VarDeclaration {
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub struct SubroutineBody {
-    pub var_declarations: Vec<Rc<VarDeclaration>>,
-    pub statements: Vec<Rc<Statement>>,
+    pub var_declarations: Vec<(Rc<VarDeclaration>, usize)>,
+    pub statements: Vec<(Rc<Statement>, usize)>,
 }
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
@@ -172,7 +172,7 @@ pub struct SubroutineBody {
 pub struct SubroutineDeclaration {
     pub subroutine_kind: SubroutineKind,
     pub return_type: Option<Type>,
-    pub parameters: Vec<Rc<Parameter>>,
+    pub parameters: Vec<(Rc<Parameter>, usize)>,
     pub name: String,
-    pub body: Rc<SubroutineBody>,
+    pub body: (Rc<SubroutineBody>, usize),
 }

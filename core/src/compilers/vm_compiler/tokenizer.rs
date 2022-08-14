@@ -1,6 +1,6 @@
 use crate::compilers::utils::tokenizer::TokenDef;
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum ArithmeticCmdTokenVariant {
     Add,
     Sub,
@@ -13,13 +13,13 @@ pub enum ArithmeticCmdTokenVariant {
     Not,
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum MemoryCmdTokenVariant {
     Push,
     Pop,
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum MemorySegmentTokenVariant {
     Argument,
     Local,
@@ -31,21 +31,21 @@ pub enum MemorySegmentTokenVariant {
     Temp,
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum ProgramFlowCmdTokenVariant {
     GoTo,
     Label,
     IfGoTo,
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum FunctionCmdTokenVariant {
     Define,
     Call,
     Return,
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub enum TokenKind {
     Comment,
     Whitespace,

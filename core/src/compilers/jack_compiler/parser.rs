@@ -265,24 +265,21 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn maybe_take_expression_with_binding_power(
-        &mut self,
-        binding_power: u8,
-    ) -> Option<(Rc<Expression>, Range<usize>)> {
+    fn maybe_take_unary_expression(&mut self) -> Option<(Rc<Expression>, Range<usize>)> {
         use TokenKind::*;
-        let (mut lhs, mut lhs_token_range) = if let Some(Token {
+        if let Some(Token {
             kind: Operator(op),
             idx,
             ..
         }) = self.token_iter.peek()
         {
-            // start with a unary expression
             let op_token_idx = *idx;
             let op = op.clone();
             self.token_iter.next();
-            let rbp = prefix_precedence(op.clone()).expect("invalid prefix operator");
+            let right_binding_power =
+                prefix_precedence(op.clone()).expect("invalid prefix operator");
             let (operand, operand_token_range) = self
-                .maybe_take_expression_with_binding_power(rbp)
+                .maybe_take_expression_with_binding_power(right_binding_power)
                 .expect("unary operator has no operand");
             let operator = match op {
                 OperatorVariant::Minus => UnaryOperator::Minus,
@@ -293,12 +290,22 @@ impl<'a> Parser<'a> {
             let rc = Rc::new(exp);
             let token_range = op_token_idx..operand_token_range.end;
             self.record_jack_node(JackNode::ExpressionNode(rc.clone()), token_range.clone());
-            (rc, token_range)
+            Some((rc, token_range))
         } else {
-            self.maybe_take_primitive_expression()
-                .or_else(|| self.maybe_take_term_starting_with_identifier())
-                .or_else(|| self.maybe_take_parenthesized_expression())?
-        };
+            None
+        }
+    }
+
+    fn maybe_take_expression_with_binding_power(
+        &mut self,
+        binding_power: u8,
+    ) -> Option<(Rc<Expression>, Range<usize>)> {
+        use TokenKind::*;
+        let (mut lhs, mut lhs_token_range) = self
+            .maybe_take_unary_expression()
+            .or_else(|| self.maybe_take_primitive_expression())
+            .or_else(|| self.maybe_take_term_starting_with_identifier())
+            .or_else(|| self.maybe_take_parenthesized_expression())?;
 
         loop {
             match self.token_iter.peek() {

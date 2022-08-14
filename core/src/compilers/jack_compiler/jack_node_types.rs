@@ -3,7 +3,7 @@ use std::rc::Rc;
 use serde::Serialize;
 use ts_rs::TS;
 
-#[derive(Serialize, TS, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub struct Class {
@@ -12,7 +12,7 @@ pub struct Class {
     pub subroutine_declarations: Vec<(Rc<SubroutineDeclaration>, usize)>,
 }
 
-#[derive(Serialize, TS, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub enum ClassVarDeclarationKind {
@@ -20,7 +20,7 @@ pub enum ClassVarDeclarationKind {
     Field,
 }
 
-#[derive(Serialize, TS, Clone, Debug, PartialEq)]
+#[derive(Serialize, TS, Clone, Debug, PartialEq, Eq)]
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub enum Type {
@@ -30,7 +30,7 @@ pub enum Type {
     ClassName(String),
 }
 
-#[derive(Serialize, TS, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub struct ClassVarDeclaration {
@@ -39,7 +39,7 @@ pub struct ClassVarDeclaration {
     pub var_names: Vec<String>,
 }
 
-#[derive(Serialize, TS, Copy, Clone, Debug, PartialEq)]
+#[derive(Serialize, TS, Copy, Clone, Debug, PartialEq, Eq)]
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub enum SubroutineKind {
@@ -48,7 +48,7 @@ pub enum SubroutineKind {
     Method,
 }
 
-#[derive(Serialize, TS, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub enum PrimitiveTermVariant {
@@ -60,7 +60,7 @@ pub enum PrimitiveTermVariant {
     This,
 }
 
-#[derive(Serialize, TS, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub enum BinaryOperator {
@@ -77,7 +77,7 @@ pub enum BinaryOperator {
     Equals,
 }
 
-#[derive(Serialize, TS, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub enum UnaryOperator {
@@ -85,7 +85,7 @@ pub enum UnaryOperator {
     Not,
 }
 
-#[derive(Serialize, TS, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub enum Expression {
@@ -107,7 +107,7 @@ pub enum Expression {
     },
 }
 
-#[derive(Serialize, TS, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub struct Parameter {
@@ -115,7 +115,7 @@ pub struct Parameter {
     pub var_name: String,
 }
 
-#[derive(Serialize, TS, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub enum SubroutineCall {
@@ -130,7 +130,7 @@ pub enum SubroutineCall {
     },
 }
 
-#[derive(Serialize, TS, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub enum Statement {
@@ -151,7 +151,7 @@ pub enum Statement {
     Do(Rc<SubroutineCall>),
     Return(Option<Rc<Expression>>),
 }
-#[derive(Serialize, TS, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub struct VarDeclaration {
@@ -159,14 +159,14 @@ pub struct VarDeclaration {
     pub var_names: Vec<String>,
 }
 
-#[derive(Serialize, TS, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub struct SubroutineBody {
     pub var_declarations: Vec<Rc<VarDeclaration>>,
     pub statements: Vec<Rc<Statement>>,
 }
-#[derive(Serialize, TS, Debug, PartialEq)]
+#[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub struct SubroutineDeclaration {

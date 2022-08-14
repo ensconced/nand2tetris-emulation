@@ -7,13 +7,13 @@ use crate::compilers::utils::{
     tokenizer::{Token, Tokenizer},
 };
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum UnaryArithmeticCommandVariant {
     Neg,
     Not,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum BinaryArithmeticCommandVariant {
     Add,
     Sub,
@@ -24,19 +24,19 @@ pub enum BinaryArithmeticCommandVariant {
     Or,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum ArithmeticCommandVariant {
     Unary(UnaryArithmeticCommandVariant),
     Binary(BinaryArithmeticCommandVariant),
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum MemoryCommandVariant {
     Push(MemorySegmentVariant, u16),
     Pop(MemorySegmentVariant, u16),
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum PointerSegmentVariant {
     Argument,
     Local,
@@ -44,13 +44,13 @@ pub enum PointerSegmentVariant {
     That,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum OffsetSegmentVariant {
     Pointer,
     Temp,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum MemorySegmentVariant {
     PointerSegment(PointerSegmentVariant),
     OffsetSegment(OffsetSegmentVariant),
@@ -58,21 +58,21 @@ pub enum MemorySegmentVariant {
     Constant,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum FlowCommandVariant {
     GoTo(String),
     Label(String),
     IfGoTo(String),
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum FunctionCommandVariant {
     Define(String, u16),
     Call(String, u16),
     ReturnFrom,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum Command {
     Function(FunctionCommandVariant),
     Flow(FlowCommandVariant),

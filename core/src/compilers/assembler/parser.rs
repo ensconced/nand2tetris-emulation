@@ -7,13 +7,13 @@ use crate::compilers::utils::{
     tokenizer::{Token, Tokenizer},
 };
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum AValue {
     Numeric(String),
     Symbolic(String),
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum Command {
     A(AValue),
     C {

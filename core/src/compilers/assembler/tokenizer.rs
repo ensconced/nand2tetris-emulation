@@ -1,6 +1,6 @@
 use crate::compilers::utils::tokenizer::TokenDef;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum TokenKind {
     Destination(String),
     Identifier(String),

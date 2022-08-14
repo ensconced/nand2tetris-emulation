@@ -2,7 +2,7 @@ use serde::Serialize;
 
 use crate::compilers::utils::tokenizer::TokenDef;
 
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub enum KeywordTokenVariant {
     Class,
     Constructor,
@@ -27,7 +27,7 @@ pub enum KeywordTokenVariant {
     Return,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub enum OperatorVariant {
     Plus,
     Minus,
@@ -43,7 +43,7 @@ pub enum OperatorVariant {
     Tilde,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub enum TokenKind {
     Keyword(KeywordTokenVariant),
     IntegerLiteral(String),

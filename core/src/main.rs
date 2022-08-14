@@ -5,17 +5,13 @@ mod fonts;
 use clap::{Parser, Subcommand};
 use compilers::{
     assembler::assemble_file,
-    jack_compiler::{
-        self,
-        jack_node_types::Class,
-        parser::{self, parse, parse_with_debug_output},
-    },
+    jack_compiler::{self, jack_node_types::Class, parser::parse_with_debug_output},
     vm_compiler,
 };
 use emulator::run::run;
 use fonts::glyphs_class;
 use serde::Serialize;
-use std::{fmt::Write, fs, path::Path, rc::Rc};
+use std::{fs, path::Path, rc::Rc};
 use ts_rs::TS;
 
 use crate::compilers::jack_compiler::compile;

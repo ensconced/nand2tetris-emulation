@@ -295,6 +295,41 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn maybe_append_rhs(
+        &mut self,
+        lhs: Rc<Expression>,
+        lhs_token_range: Range<usize>,
+        binding_power: u8,
+    ) -> Option<(Rc<Expression>, Range<usize>)> {
+        let (lbp, rbp) = infix_precedence(op.clone()).expect("invalid infix operator");
+        if lbp < binding_power {
+            return None;
+        }
+        self.token_iter.next();
+        let (rhs, rhs_exp_token_range) = self
+            .maybe_take_expression_with_binding_power(rbp)
+            .expect("expected rhs for binary operator");
+        let operator = match op {
+            Plus => BinaryOperator::Plus,
+            Minus => BinaryOperator::Minus,
+            Star => BinaryOperator::Multiply,
+            Slash => BinaryOperator::Divide,
+            Ampersand => BinaryOperator::And,
+            Pipe => BinaryOperator::Or,
+            LessThan => BinaryOperator::LessThan,
+            LessThanOrEquals => BinaryOperator::LessThanOrEquals,
+            GreaterThan => BinaryOperator::GreaterThan,
+            GreaterThanOrEquals => BinaryOperator::GreaterThanOrEquals,
+            Equals => BinaryOperator::Equals,
+            _ => panic!("invalid binary operator"),
+        };
+
+        lhs = Rc::new(Expression::Binary { operator, lhs, rhs });
+        lhs_token_range = lhs_token_range.start..rhs_exp_token_range.end;
+        self.record_jack_node(JackNode::ExpressionNode(lhs.clone()), lhs_token_range);
+        Some((lhs, lhs_token_range))
+    }
+
     fn maybe_take_expression_with_binding_power(
         &mut self,
         binding_power: u8,
@@ -311,35 +346,13 @@ impl<'a> Parser<'a> {
                 Some(Token {
                     kind: Operator(op), ..
                 }) => {
-                    let (lbp, rbp) = infix_precedence(op.clone()).expect("invalid infix operator");
-                    if lbp < binding_power {
+                    if let Some(new_lhs) =
+                        self.maybe_append_rhs(lhs, lhs_token_range, binding_power)
+                    {
+                        (lhs, lhs_token_range) = new_lhs;
+                    } else {
                         break;
                     }
-                    self.token_iter.next();
-                    let (rhs, rhs_exp_token_range) = self
-                        .maybe_take_expression_with_binding_power(rbp)
-                        .expect("expected rhs for binary operator");
-                    let operator = match op {
-                        Plus => BinaryOperator::Plus,
-                        Minus => BinaryOperator::Minus,
-                        Star => BinaryOperator::Multiply,
-                        Slash => BinaryOperator::Divide,
-                        Ampersand => BinaryOperator::And,
-                        Pipe => BinaryOperator::Or,
-                        LessThan => BinaryOperator::LessThan,
-                        LessThanOrEquals => BinaryOperator::LessThanOrEquals,
-                        GreaterThan => BinaryOperator::GreaterThan,
-                        GreaterThanOrEquals => BinaryOperator::GreaterThanOrEquals,
-                        Equals => BinaryOperator::Equals,
-                        _ => panic!("invalid binary operator"),
-                    };
-
-                    lhs = Rc::new(Expression::Binary { operator, lhs, rhs });
-                    lhs_token_range = lhs_token_range.start..rhs_exp_token_range.end;
-                    self.record_jack_node(
-                        JackNode::ExpressionNode(lhs.clone()),
-                        lhs_token_range.clone(),
-                    );
                 }
                 Some(_) => break,
                 None => return Some((lhs, lhs_token_range)),

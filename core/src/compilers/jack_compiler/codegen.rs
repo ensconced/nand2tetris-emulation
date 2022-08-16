@@ -6,9 +6,9 @@ use crate::compilers::vm_compiler::parser::{
 
 use super::{
     jack_node_types::{
-        BinaryOperator, Class, ClassVarDeclaration, ClassVarDeclarationKind, Expression, Parameter,
-        PrimitiveTermVariant, Statement, SubroutineCall, SubroutineDeclaration, SubroutineKind,
-        Type, UnaryOperator, VarDeclaration,
+        BinaryOperator, Class, ClassVarDeclaration, ClassVarDeclarationKind, Expression,
+        IndexedJackNode, Parameter, PrimitiveTermVariant, Statement, SubroutineCall,
+        SubroutineDeclaration, SubroutineKind, Type, UnaryOperator, VarDeclaration,
     },
     sourcemap::VMCodegenSourceMap,
 };
@@ -732,15 +732,15 @@ impl CodeGenerator {
 
     pub fn compile_var_declarations(
         &mut self,
-        var_declarations: &Vec<(Rc<ClassVarDeclaration>, usize)>,
+        var_declarations: &Vec<IndexedJackNode<ClassVarDeclaration>>,
     ) -> usize {
         let mut instance_size = 0;
-        for (var_declaration, _jack_node_idx) in var_declarations {
-            let (hashmap, symbol_kind) = match *var_declaration.qualifier.0 {
+        for var_declaration in var_declarations {
+            let (hashmap, symbol_kind) = match *var_declaration.node.qualifier.0 {
                 ClassVarDeclarationKind::Static => (&mut self.class_statics, SymbolKind::Static),
                 ClassVarDeclarationKind::Field => (&mut self.class_fields, SymbolKind::Field),
             };
-            for var_name in var_declaration.var_names.iter() {
+            for var_name in var_declaration.node.var_names.iter() {
                 if symbol_kind == SymbolKind::Field {
                     instance_size += 1;
                 }
@@ -749,7 +749,7 @@ impl CodeGenerator {
                     var_name.clone(),
                     Symbol {
                         offset: hashmap.len(),
-                        symbol_type: var_declaration.type_name.clone(),
+                        symbol_type: var_declaration.node.type_name.clone(),
                         kind: symbol_kind.clone(),
                     },
                 );

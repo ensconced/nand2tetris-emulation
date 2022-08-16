@@ -6,9 +6,17 @@ use ts_rs::TS;
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
+pub struct IndexedJackNode<T> {
+    pub node: Rc<T>,
+    pub node_idx: usize,
+}
+
+#[derive(Serialize, TS, Debug, PartialEq, Eq)]
+#[ts(export)]
+#[ts(export_to = "../bindings/")]
 pub struct Class {
     pub name: String,
-    pub var_declarations: Vec<(Rc<ClassVarDeclaration>, usize)>,
+    pub var_declarations: Vec<IndexedJackNode<ClassVarDeclaration>>,
     pub subroutine_declarations: Vec<(Rc<SubroutineDeclaration>, usize)>,
 }
 

@@ -868,7 +868,9 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn take_class_var_declaration(&mut self) -> ((Rc<ClassVarDeclaration>, usize), Range<usize>) {
+    fn take_class_var_declaration(
+        &mut self,
+    ) -> (IndexedJackNode<ClassVarDeclaration>, Range<usize>) {
         let (qualifier, qualifier_token_range) = self.take_class_var_declaration_qualifier();
         let type_name = self.take_type();
         let var_names = self.take_var_names();
@@ -880,14 +882,14 @@ impl<'a> Parser<'a> {
         };
         let rc = Rc::new(class_var_declaration);
         let token_range = qualifier_token_range.start..semicolon.idx + 1;
-        let jack_node_idx = self.record_jack_node(
+        let node_idx = self.record_jack_node(
             JackNode::ClassVarDeclarationNode(rc.clone()),
             token_range.clone(),
         );
-        ((rc, jack_node_idx), token_range)
+        (IndexedJackNode { node_idx, node: rc }, token_range)
     }
 
-    fn maybe_take_class_var_declaration(&mut self) -> Option<(Rc<ClassVarDeclaration>, usize)> {
+    fn maybe_take_class_var_declaration(&mut self) -> Option<IndexedJackNode<ClassVarDeclaration>> {
         use KeywordTokenVariant::*;
         match self.token_iter.peek().expect("unexpected end of input") {
             Token {
@@ -901,7 +903,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn take_class_var_declarations(&mut self) -> Vec<(Rc<ClassVarDeclaration>, usize)> {
+    fn take_class_var_declarations(&mut self) -> Vec<IndexedJackNode<ClassVarDeclaration>> {
         let mut result = Vec::new();
         while let Some(class_var_declaration) = self.maybe_take_class_var_declaration() {
             result.push(class_var_declaration);
@@ -980,14 +982,14 @@ mod tests {
             .class,
             Class {
                 name: "foo".to_string(),
-                var_declarations: vec![(
-                    Rc::new(ClassVarDeclaration {
+                var_declarations: vec![IndexedJackNode {
+                    node: Rc::new(ClassVarDeclaration {
                         qualifier: (Rc::new(ClassVarDeclarationKind::Static), 0),
                         type_name: Type::Int,
                         var_names: vec!["bar".to_string()],
                     }),
-                    1
-                )],
+                    node_idx: 1
+                }],
                 subroutine_declarations: vec![],
             }
         );
@@ -1008,16 +1010,16 @@ mod tests {
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![
-                    (
-                        Rc::new(ClassVarDeclaration {
+                    IndexedJackNode {
+                        node: Rc::new(ClassVarDeclaration {
                             qualifier: (Rc::new(ClassVarDeclarationKind::Static), 0),
                             type_name: Type::Int,
                             var_names: vec!["bar".to_string()],
                         }),
-                        1
-                    ),
-                    (
-                        Rc::new(ClassVarDeclaration {
+                        node_idx: 1
+                    },
+                    IndexedJackNode {
+                        node: Rc::new(ClassVarDeclaration {
                             qualifier: (Rc::new(ClassVarDeclarationKind::Field), 2),
                             type_name: Type::Char,
                             var_names: vec![
@@ -1026,16 +1028,16 @@ mod tests {
                                 "boz".to_string()
                             ],
                         }),
-                        3
-                    ),
-                    (
-                        Rc::new(ClassVarDeclaration {
+                        node_idx: 3
+                    },
+                    IndexedJackNode {
+                        node: Rc::new(ClassVarDeclaration {
                             qualifier: (Rc::new(ClassVarDeclarationKind::Field), 4),
                             type_name: Type::Boolean,
                             var_names: vec!["a".to_string(), "b".to_string(), "c".to_string(),],
                         }),
-                        5
-                    )
+                        node_idx: 5
+                    }
                 ],
                 subroutine_declarations: vec![],
             }

@@ -4,10 +4,13 @@ use crate::compilers::vm_compiler::parser::{
     PointerSegmentVariant, UnaryArithmeticCommandVariant,
 };
 
-use super::jack_node_types::{
-    BinaryOperator, Class, ClassVarDeclaration, ClassVarDeclarationKind, Expression, Parameter,
-    PrimitiveTermVariant, Statement, SubroutineCall, SubroutineDeclaration, SubroutineKind, Type,
-    UnaryOperator, VarDeclaration,
+use super::{
+    jack_node_types::{
+        BinaryOperator, Class, ClassVarDeclaration, ClassVarDeclarationKind, Expression, Parameter,
+        PrimitiveTermVariant, Statement, SubroutineCall, SubroutineDeclaration, SubroutineKind,
+        Type, UnaryOperator, VarDeclaration,
+    },
+    sourcemap::VMCodegenSourceMap,
 };
 use std::{collections::HashMap, rc::Rc};
 
@@ -29,6 +32,7 @@ pub struct CodeGenerator {
     pub class_name: Option<String>,
     class_fields: HashMap<String, Symbol>,
     class_statics: HashMap<String, Symbol>,
+    sourcemap: VMCodegenSourceMap,
     subroutine_while_count: usize,
     subroutine_if_count: usize,
     subroutine_parameters: HashMap<String, Symbol>,
@@ -56,6 +60,7 @@ impl CodeGenerator {
             class_name: None,
             class_fields: HashMap::new(),
             class_statics: HashMap::new(),
+            sourcemap: VMCodegenSourceMap::new(),
             subroutine_while_count: 0,
             subroutine_if_count: 0,
             subroutine_parameters: HashMap::new(),

@@ -668,7 +668,12 @@ impl CodeGenerator {
         self.vm_commands.extend(commands.into_iter());
     }
 
-    fn compile_subroutine(&mut self, subroutine: &SubroutineDeclaration, instance_size: usize) {
+    fn compile_subroutine(
+        &mut self,
+        indexed_subroutine: &IndexedJackNode<SubroutineDeclaration>,
+        instance_size: usize,
+    ) {
+        let subroutine = &indexed_subroutine.node;
         self.clear_subroutine();
         self.subroutine_kind = Some(subroutine.subroutine_kind);
 
@@ -722,10 +727,10 @@ impl CodeGenerator {
 
     pub fn compile_subroutines(
         &mut self,
-        subroutine_declarations: &[(Rc<SubroutineDeclaration>, usize)],
+        subroutine_declarations: &[IndexedJackNode<SubroutineDeclaration>],
         instance_size: usize,
     ) {
-        for (subroutine, _) in subroutine_declarations {
+        for subroutine in subroutine_declarations {
             self.compile_subroutine(subroutine, instance_size);
         }
     }

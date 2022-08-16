@@ -719,7 +719,7 @@ impl<'a> Parser<'a> {
 
     fn take_subroutine_declaration(
         &mut self,
-    ) -> ((Rc<SubroutineDeclaration>, usize), Range<usize>) {
+    ) -> (IndexedJackNode<SubroutineDeclaration>, Range<usize>) {
         use KeywordTokenVariant::*;
         if let Some(Token {
             kind: TokenKind::Keyword(keyword),
@@ -750,11 +750,11 @@ impl<'a> Parser<'a> {
             let rc = Rc::new(subroutine_declaration);
             let token_range = *subroutine_kind_token_idx..body_token_range.end;
 
-            let jack_node_idx = self.record_jack_node(
+            let node_idx = self.record_jack_node(
                 JackNode::SubroutineDeclarationNode(rc.clone()),
                 token_range.clone(),
             );
-            ((rc, jack_node_idx), token_range)
+            (IndexedJackNode { node: rc, node_idx }, token_range)
         } else {
             panic!("expected subroutine kind");
         }
@@ -762,7 +762,7 @@ impl<'a> Parser<'a> {
 
     fn maybe_take_subroutine_declaration(
         &mut self,
-    ) -> Option<((Rc<SubroutineDeclaration>, usize), Range<usize>)> {
+    ) -> Option<(IndexedJackNode<SubroutineDeclaration>, Range<usize>)> {
         use KeywordTokenVariant::*;
         if let Some(Token {
             kind: TokenKind::Keyword(Constructor | Function | Method),
@@ -775,7 +775,9 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn take_class_subroutine_declarations(&mut self) -> Vec<(Rc<SubroutineDeclaration>, usize)> {
+    fn take_class_subroutine_declarations(
+        &mut self,
+    ) -> Vec<IndexedJackNode<SubroutineDeclaration>> {
         let mut result = Vec::new();
         while let Some((subroutine_declaration, _)) = self.maybe_take_subroutine_declaration() {
             result.push(subroutine_declaration);
@@ -1063,8 +1065,8 @@ mod tests {
                 name: "foo".to_string(),
                 var_declarations: vec![],
                 subroutine_declarations: vec![
-                    (
-                        Rc::new(SubroutineDeclaration {
+                    IndexedJackNode {
+                        node: Rc::new(SubroutineDeclaration {
                             subroutine_kind: SubroutineKind::Constructor,
                             return_type: Some(Type::Boolean),
                             parameters: vec![
@@ -1099,10 +1101,10 @@ mod tests {
                                 3
                             ),
                         }),
-                        4
-                    ),
-                    (
-                        Rc::new(SubroutineDeclaration {
+                        node_idx: 4
+                    },
+                    IndexedJackNode {
+                        node: Rc::new(SubroutineDeclaration {
                             subroutine_kind: SubroutineKind::Function,
                             return_type: Some(Type::Char),
                             parameters: vec![(
@@ -1121,10 +1123,10 @@ mod tests {
                                 6
                             ),
                         }),
-                        7
-                    ),
-                    (
-                        Rc::new(SubroutineDeclaration {
+                        node_idx: 7
+                    },
+                    IndexedJackNode {
+                        node: Rc::new(SubroutineDeclaration {
                             subroutine_kind: SubroutineKind::Method,
                             return_type: None,
                             parameters: vec![],
@@ -1137,8 +1139,8 @@ mod tests {
                                 8
                             ),
                         }),
-                        9
-                    )
+                        node_idx: 9
+                    },
                 ],
             }
         );
@@ -1295,8 +1297,8 @@ mod tests {
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![],
-                subroutine_declarations: vec![(
-                    Rc::new(SubroutineDeclaration {
+                subroutine_declarations: vec![IndexedJackNode {
+                    node: Rc::new(SubroutineDeclaration {
                         subroutine_kind: SubroutineKind::Constructor,
                         return_type: Some(Type::Int),
                         parameters: vec![],
@@ -1368,8 +1370,8 @@ mod tests {
                             32
                         ),
                     }),
-                    33
-                )],
+                    node_idx: 33
+                }],
             }
         );
     }
@@ -1422,8 +1424,8 @@ mod tests {
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![],
-                subroutine_declarations: vec![(
-                    Rc::new(SubroutineDeclaration {
+                subroutine_declarations: vec![IndexedJackNode {
+                    node: Rc::new(SubroutineDeclaration {
                         subroutine_kind: SubroutineKind::Method,
                         return_type: None,
                         parameters: vec![],
@@ -1472,8 +1474,8 @@ mod tests {
                             6
                         ),
                     }),
-                    7
-                )],
+                    node_idx: 7
+                }],
             }
         )
     }

@@ -17,7 +17,7 @@ pub struct IndexedJackNode<T> {
 pub struct Class {
     pub name: String,
     pub var_declarations: Vec<IndexedJackNode<ClassVarDeclaration>>,
-    pub subroutine_declarations: Vec<(Rc<SubroutineDeclaration>, usize)>,
+    pub subroutine_declarations: Vec<IndexedJackNode<SubroutineDeclaration>>,
 }
 
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]

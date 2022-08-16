@@ -3,4 +3,4 @@ import type { ClassVarDeclaration } from "./ClassVarDeclaration";
 import type { IndexedJackNode } from "./IndexedJackNode";
 import type { SubroutineDeclaration } from "./SubroutineDeclaration";
 
-export interface Class { name: string, var_declarations: Array<IndexedJackNode<ClassVarDeclaration>>, subroutine_declarations: Array<[SubroutineDeclaration, number]>, }
+export interface Class { name: string, var_declarations: Array<IndexedJackNode<ClassVarDeclaration>>, subroutine_declarations: Array<IndexedJackNode<SubroutineDeclaration>>, }

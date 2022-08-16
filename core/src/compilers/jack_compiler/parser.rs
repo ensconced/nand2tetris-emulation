@@ -5,7 +5,7 @@ use std::ops::Range;
 
 use super::{
     jack_node_types::{PrimitiveTermVariant::*, *},
-    sourcemap::{JackNode, SourceMap},
+    sourcemap::{JackNode, JackParserSourceMap},
     tokenizer::{
         token_defs, KeywordTokenVariant,
         OperatorVariant::{self, *},
@@ -47,38 +47,15 @@ fn infix_precedence(operator: OperatorVariant) -> Option<(u8, u8)> {
     }
 }
 
-pub fn parse(source: &str) -> Rc<Class> {
-    let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(source);
-    let tokens_without_whitespace: Vec<_> = tokens
-        .into_iter()
-        .filter(|token| {
-            !matches!(
-                token,
-                Token {
-                    kind: TokenKind::Whitespace
-                        | TokenKind::MultiLineComment
-                        | TokenKind::SingleLineComment,
-                    ..
-                }
-            )
-        })
-        .collect();
-    let mut parser = Parser {
-        token_iter: tokens_without_whitespace.iter().peekable(),
-        sourcemap: SourceMap::new(),
-        jack_nodes: Vec::new(),
-    };
-    parser.take_class()
-}
-
 #[derive(Serialize)]
-pub struct DebugOutput {
-    sourcemap: SourceMap,
+pub struct ParserOutput {
+    pub class: Rc<Class>,
+    sourcemap: JackParserSourceMap,
     jack_nodes: Vec<JackNode>,
     tokens: Vec<Token<TokenKind>>,
 }
 
-pub fn parse_with_debug_output(source: &str) -> DebugOutput {
+pub fn parse(source: &str) -> ParserOutput {
     let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(source);
     let tokens_without_whitespace: Vec<_> = tokens
         .iter()
@@ -99,13 +76,15 @@ pub fn parse_with_debug_output(source: &str) -> DebugOutput {
         .into_iter()
         .map(|x| x.clone())
         .collect();
+
     let mut parser = Parser {
         token_iter: cloned_tokens_without_whitespace.iter().peekable(),
-        sourcemap: SourceMap::new(),
+        sourcemap: JackParserSourceMap::new(),
         jack_nodes: Vec::new(),
     };
-    parser.take_class();
-    DebugOutput {
+    let class = parser.take_class();
+    ParserOutput {
+        class,
         sourcemap: parser.sourcemap,
         jack_nodes: parser.jack_nodes,
         tokens,
@@ -114,7 +93,7 @@ pub fn parse_with_debug_output(source: &str) -> DebugOutput {
 
 struct Parser<'a> {
     token_iter: PeekableTokens<'a, TokenKind>,
-    sourcemap: SourceMap,
+    sourcemap: JackParserSourceMap,
     jack_nodes: Vec<JackNode>,
 }
 
@@ -971,7 +950,7 @@ mod tests {
             .collect();
         let mut parser = Parser {
             token_iter: tokens.iter().peekable(),
-            sourcemap: SourceMap::new(),
+            sourcemap: JackParserSourceMap::new(),
             jack_nodes: Vec::new(),
         };
         parser.take_expression().0
@@ -980,7 +959,7 @@ mod tests {
     #[test]
     fn test_simple_class() {
         assert_eq!(
-            *parse("class foo {}"),
+            *parse("class foo {}").class,
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![],
@@ -997,7 +976,8 @@ mod tests {
             class foo {
               static int bar;
             }"
-            ),
+            )
+            .class,
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![(
@@ -1023,7 +1003,8 @@ mod tests {
               field char baz, buz, boz;
               field boolean a, b, c;
             }"
-            ),
+            )
+            .class,
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![
@@ -1074,7 +1055,8 @@ mod tests {
                 method void qux() {
                 }
             }"
-            ),
+            )
+            .class,
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![],
@@ -1306,7 +1288,8 @@ mod tests {
                     }
                 }
             }"
-            ),
+            )
+            .class,
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![],
@@ -1432,7 +1415,8 @@ mod tests {
                 }
             }
             "
-            ),
+            )
+            .class,
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![],

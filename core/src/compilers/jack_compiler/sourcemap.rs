@@ -21,21 +21,31 @@ pub enum JackNode {
 }
 
 #[derive(Serialize)]
-pub struct SourceMap {
+pub struct JackParserSourceMap {
     pub jack_node_idx_to_token_idx: HashMap<usize, Range<usize>>,
     pub token_idx_to_jack_node_idxs: HashMap<usize, Vec<usize>>,
-    pub jack_node_idx_to_vm_command_idx: HashMap<usize, Range<usize>>,
-    // vm_command_idx_to_jack_node_idx: HashMap<usize, usize>,
 }
 
-impl SourceMap {
+impl JackParserSourceMap {
     pub fn new() -> Self {
-        SourceMap {
+        Self {
             jack_node_idx_to_token_idx: HashMap::new(),
             token_idx_to_jack_node_idxs: HashMap::new(),
+        }
+    }
+}
+
+#[derive(Serialize)]
+pub struct VMCodegenSourceMap {
+    pub jack_node_idx_to_vm_command_idx: HashMap<usize, Range<usize>>,
+    vm_command_idx_to_jack_node_idx: HashMap<usize, usize>,
+}
+
+impl VMCodegenSourceMap {
+    pub fn new() -> Self {
+        Self {
             jack_node_idx_to_vm_command_idx: HashMap::new(),
-            // token_idx_to_jack_node_idx: HashMap::new(),
-            // vm_command_idx_to_jack_node_idx: HashMap::new(),
+            vm_command_idx_to_jack_node_idx: HashMap::new(),
         }
     }
 }

@@ -29,7 +29,7 @@ pub fn compile_to_machine_code(jack_code: Vec<&str>) -> String {
         .iter()
         .map(|source| source.deref())
         .chain(jack_code.into_iter())
-        .map(parse)
+        .map(|src| parse(src).class)
         .collect();
 
     let parsed_vm_modules: Vec<_> = jack_classes

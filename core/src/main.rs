@@ -5,7 +5,7 @@ mod fonts;
 use clap::{Parser, Subcommand};
 use compilers::{
     assembler::assemble_file,
-    jack_compiler::{self, jack_node_types::Class, parser::parse_with_debug_output},
+    jack_compiler::{self, jack_node_types::Class, parser::parse},
     vm_compiler,
 };
 use emulator::run::run;
@@ -80,7 +80,7 @@ fn main() {
             let source_path = source_path_maybe.as_ref().expect("source path is required");
             let dest_path = dest_path_maybe.as_ref().expect("dest path is required");
             let source = fs::read_to_string(source_path).expect("failed to read source file");
-            let debug_output = parse_with_debug_output(&source);
+            let debug_output = parse(&source);
             let json = serde_json::to_string_pretty(&debug_output).unwrap();
             fs::write(dest_path, json).unwrap();
         }
@@ -123,9 +123,9 @@ fn main() {
                 .as_ref()
                 .unwrap_or_else(|| panic!("source path is required"));
             let source = fs::read_to_string(source_path).unwrap();
-            let jack_class = jack_compiler::parser::parse(&source);
+            let parser_output = jack_compiler::parser::parse(&source);
             let parser_viz_data = ParserVizData {
-                parsed_class: jack_class,
+                parsed_class: parser_output.class,
                 source,
             };
             let json = serde_json::to_string_pretty(&parser_viz_data).unwrap();

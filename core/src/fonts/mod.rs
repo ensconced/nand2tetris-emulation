@@ -250,7 +250,7 @@ mod tests {
     }
 
     #[test]
-    fn test_safe_jack_number_string() {
+    fn test_number_wrapping_strategy() {
         assert_eq!(Wrapping(32767_i16) + Wrapping(1), Wrapping(-32768));
     }
 }

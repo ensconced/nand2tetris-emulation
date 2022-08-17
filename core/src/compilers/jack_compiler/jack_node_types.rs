@@ -43,7 +43,7 @@ pub enum Type {
 #[ts(export_to = "../bindings/")]
 pub struct ClassVarDeclaration {
     pub type_name: Type,
-    pub qualifier: (Rc<ClassVarDeclarationKind>, usize),
+    pub qualifier: IndexedJackNode<ClassVarDeclarationKind>,
     pub var_names: Vec<String>,
 }
 
@@ -97,22 +97,22 @@ pub enum UnaryOperator {
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub enum Expression {
-    Parenthesized((Rc<Expression>, usize)),
+    Parenthesized(IndexedJackNode<Expression>),
     PrimitiveTerm(PrimitiveTermVariant),
     Binary {
         operator: BinaryOperator,
-        lhs: (Rc<Expression>, usize),
-        rhs: (Rc<Expression>, usize),
+        lhs: IndexedJackNode<Expression>,
+        rhs: IndexedJackNode<Expression>,
     },
     Unary {
         operator: UnaryOperator,
-        operand: (Rc<Expression>, usize),
+        operand: IndexedJackNode<Expression>,
     },
     Variable(String),
     SubroutineCall((Rc<SubroutineCall>, usize)),
     ArrayAccess {
         var_name: String,
-        index: (Rc<Expression>, usize),
+        index: IndexedJackNode<Expression>,
     },
 }
 
@@ -130,12 +130,12 @@ pub struct Parameter {
 pub enum SubroutineCall {
     Direct {
         subroutine_name: String,
-        arguments: Vec<(Rc<Expression>, usize)>,
+        arguments: Vec<IndexedJackNode<Expression>>,
     },
     Method {
         this_name: String,
         method_name: String,
-        arguments: Vec<(Rc<Expression>, usize)>,
+        arguments: Vec<IndexedJackNode<Expression>>,
     },
 }
 
@@ -145,20 +145,20 @@ pub enum SubroutineCall {
 pub enum Statement {
     Let {
         var_name: String,
-        array_index: Option<(Rc<Expression>, usize)>,
-        value: (Rc<Expression>, usize),
+        array_index: Option<IndexedJackNode<Expression>>,
+        value: IndexedJackNode<Expression>,
     },
     If {
-        condition: (Rc<Expression>, usize),
+        condition: IndexedJackNode<Expression>,
         if_statements: Vec<(Rc<Statement>, usize)>,
         else_statements: Option<Vec<(Rc<Statement>, usize)>>,
     },
     While {
-        condition: (Rc<Expression>, usize),
+        condition: IndexedJackNode<Expression>,
         statements: Vec<(Rc<Statement>, usize)>,
     },
     Do(Rc<SubroutineCall>, usize),
-    Return(Option<(Rc<Expression>, usize)>),
+    Return(Option<IndexedJackNode<Expression>>),
 }
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]

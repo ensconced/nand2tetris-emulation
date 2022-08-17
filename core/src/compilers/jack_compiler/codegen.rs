@@ -741,7 +741,7 @@ impl CodeGenerator {
     ) -> usize {
         let mut instance_size = 0;
         for var_declaration in var_declarations {
-            let (hashmap, symbol_kind) = match *var_declaration.node.qualifier.0 {
+            let (hashmap, symbol_kind) = match *var_declaration.node.qualifier.node {
                 ClassVarDeclarationKind::Static => (&mut self.class_statics, SymbolKind::Static),
                 ClassVarDeclarationKind::Field => (&mut self.class_fields, SymbolKind::Field),
             };

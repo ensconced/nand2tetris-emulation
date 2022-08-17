@@ -32,9 +32,7 @@ mod tests {
     #[test]
     fn test_initialization() {
         let mut computer = computer_from_vm_code(vec![]);
-        tick_until(&mut computer, &|computer| {
-            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
-        });
+        tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
     }
 
     #[test]
@@ -46,8 +44,7 @@ mod tests {
         ",
         ]);
         tick_until(&mut computer, &|computer| {
-            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 1
-                && nth_stack_value(computer, 0) == 123
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 1 && nth_stack_value(computer, 0) == 123
         });
     }
 
@@ -68,8 +65,7 @@ mod tests {
         ",
         ]);
         tick_until(&mut computer, &|computer| {
-            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 3
-                && nth_stack_value(computer, 0) == 3
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 3 && nth_stack_value(computer, 0) == 3
         });
         tick_until(&mut computer, &|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
@@ -97,12 +93,10 @@ mod tests {
             ",
         ]);
         tick_until(&mut computer, &|computer| {
-            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 2
-                && nth_stack_value(computer, 0) == 2051
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 2 && nth_stack_value(computer, 0) == 2051
         });
         tick_until(&mut computer, &|computer| {
-            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 1
-                && pointer(computer, 0) == 2051
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 1 && pointer(computer, 0) == 2051
         });
         tick_until(&mut computer, &|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS && this(computer, 2) == 1234
@@ -129,32 +123,24 @@ mod tests {
             ",
         ]);
         tick_until(&mut computer, &|computer| {
-            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 6
-                && nth_stack_value(computer, 0) == 3
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 6 && nth_stack_value(computer, 0) == 3
         });
         tick_until(&mut computer, &|computer| {
-            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 5
-                && nth_stack_value(computer, 0) == 5
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 5 && nth_stack_value(computer, 0) == 5
         });
         tick_until(&mut computer, &|computer| {
-            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 4
-                && nth_stack_value(computer, 0) == -1
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 4 && nth_stack_value(computer, 0) == -1
         });
         tick_until(&mut computer, &|computer| {
-            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 3
-                && nth_stack_value(computer, 0) == 3
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 3 && nth_stack_value(computer, 0) == 3
         });
         tick_until(&mut computer, &|computer| {
-            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 2
-                && nth_stack_value(computer, 0) == 5
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 2 && nth_stack_value(computer, 0) == 5
         });
         tick_until(&mut computer, &|computer| {
-            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 1
-                && nth_stack_value(computer, 0) == 0
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 1 && nth_stack_value(computer, 0) == 0
         });
-        tick_until(&mut computer, &|computer| {
-            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
-        });
+        tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
     }
 
     #[test]
@@ -176,9 +162,7 @@ mod tests {
             ",
         ]);
         // initialize
-        tick_until(&mut computer, &|computer| {
-            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
-        });
+        tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         // push first arguments to stack
         tick_until(&mut computer, &|computer| nth_stack_value(computer, 0) == 3);
         // 1 + 2 + 3 should make 6
@@ -206,9 +190,7 @@ mod tests {
             ",
         ]);
         // initialize
-        tick_until(&mut computer, &|computer| {
-            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
-        });
+        tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         // push first arguments to stack
         tick_until(&mut computer, &|computer| nth_stack_value(computer, 0) == 3);
         // 1 + 2 + 3 should make 6
@@ -264,12 +246,8 @@ mod tests {
             ",
         ]);
         // initialize
-        tick_until(&mut computer, &|computer| {
-            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
-        });
+        tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         // 1 + 2 + 3 should make 6
-        tick_until(&mut computer, &|computer| {
-            nth_stack_value(computer, 0) == 55
-        });
+        tick_until(&mut computer, &|computer| nth_stack_value(computer, 0) == 55);
     }
 }

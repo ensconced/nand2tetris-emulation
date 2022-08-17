@@ -8,10 +8,7 @@ pub fn from_string(source: String) -> [i16; 32768] {
     let mut clean_lines: Vec<String> = source
         .lines()
         .map(|line| {
-            let clean_line: String = line
-                .chars()
-                .take_while(|ch| ch.is_ascii_digit() || ch.is_whitespace())
-                .collect();
+            let clean_line: String = line.chars().take_while(|ch| ch.is_ascii_digit() || ch.is_whitespace()).collect();
             clean_line
         })
         .filter(|line| !line.is_empty())

@@ -17,11 +17,7 @@ use super::{
 };
 
 fn string_lines(source: &str) -> impl Iterator<Item = String> {
-    source
-        .lines()
-        .map(|line| line.trim_start().to_string())
-        .collect::<Vec<_>>()
-        .into_iter()
+    source.lines().map(|line| line.trim_start().to_string()).collect::<Vec<_>>().into_iter()
 }
 
 fn prelude() -> impl Iterator<Item = String> {
@@ -84,10 +80,7 @@ fn offset_address(segment: OffsetSegmentVariant, index: u16) -> u16 {
     };
     let segment_max_index = segment_top_address - segment_base_address;
     if index > segment_max_index {
-        panic!(
-            "segment index {} is too high - max is {}",
-            index, segment_max_index
-        )
+        panic!("segment index {} is too high - max is {}", index, segment_max_index)
     }
     segment_base_address + index
 }
@@ -265,9 +258,7 @@ impl CodeGenerator {
     fn push(&self, segment: MemorySegmentVariant, index: u16, filename: &OsStr) -> Vec<String> {
         match segment {
             OffsetSegment(offset_segment) => push_from_offset_memory_segment(offset_segment, index),
-            PointerSegment(pointer_segment) => {
-                push_from_pointer_memory_segment(pointer_segment, index)
-            }
+            PointerSegment(pointer_segment) => push_from_pointer_memory_segment(pointer_segment, index),
             Static => self.push_from_static(index, filename),
             Constant => push_from_constant(index),
         }
@@ -276,9 +267,7 @@ impl CodeGenerator {
     fn pop(&self, segment: MemorySegmentVariant, index: u16, filename: &OsStr) -> Vec<String> {
         match segment {
             OffsetSegment(offset_segment) => pop_into_offset_memory_segment(offset_segment, index),
-            PointerSegment(pointer_segment) => {
-                pop_into_pointer_memory_segment(pointer_segment, index)
-            }
+            PointerSegment(pointer_segment) => pop_into_pointer_memory_segment(pointer_segment, index),
             Static => self.pop_into_static_memory_segment(index, filename),
             Constant => {
                 // popping into a constant doesn't make much sense - I guess it just
@@ -295,11 +284,7 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_memory_command(
-        &self,
-        command: MemoryCommandVariant,
-        filename: &OsStr,
-    ) -> Vec<String> {
+    fn compile_memory_command(&self, command: MemoryCommandVariant, filename: &OsStr) -> Vec<String> {
         match command {
             Push(segment, index) => self.push(segment, index, filename),
             Pop(segment, index) => self.pop(segment, index, filename),
@@ -405,13 +390,11 @@ impl CodeGenerator {
         }
 
         fn save_caller_pointers() -> impl Iterator<Item = String> {
-            vec!["LCL", "ARG", "THIS", "THAT"]
-                .into_iter()
-                .flat_map(|pointer| {
-                    iter::once(format!("@{}", pointer))
-                        .chain(iter::once("D=M".to_string()))
-                        .chain(push_from_d_register())
-                })
+            vec!["LCL", "ARG", "THIS", "THAT"].into_iter().flat_map(|pointer| {
+                iter::once(format!("@{}", pointer))
+                    .chain(iter::once("D=M".to_string()))
+                    .chain(push_from_d_register())
+            })
         }
 
         fn set_arg_pointer(arg_count: u16) -> impl Iterator<Item = String> {
@@ -473,11 +456,7 @@ impl CodeGenerator {
             .collect()
     }
 
-    fn compile_function_definition(
-        &mut self,
-        function_name: String,
-        local_var_count: u16,
-    ) -> Vec<String> {
+    fn compile_function_definition(&mut self, function_name: String, local_var_count: u16) -> Vec<String> {
         fn initialize_locals(local_var_count: usize) -> impl Iterator<Item = String> {
             iter::repeat_with(|| iter::once("D=0".to_string()).chain(push_from_d_register()))
                 .take(local_var_count)
@@ -608,15 +587,10 @@ impl CodeGenerator {
             .collect()
     }
 
-    fn compile_function_command(
-        &mut self,
-        function_command: FunctionCommandVariant,
-    ) -> Vec<String> {
+    fn compile_function_command(&mut self, function_command: FunctionCommandVariant) -> Vec<String> {
         match function_command {
             Call(function_name, arg_count) => self.compile_function_call(function_name, arg_count),
-            Define(function_name, local_var_count) => {
-                self.compile_function_definition(function_name, local_var_count)
-            }
+            Define(function_name, local_var_count) => self.compile_function_definition(function_name, local_var_count),
             ReturnFrom => self.compile_function_return(),
         }
     }
@@ -632,10 +606,7 @@ impl CodeGenerator {
             ))
             .collect()
         } else {
-            panic!(
-                "not in a function definition while compiling goto label: {}",
-                label
-            )
+            panic!("not in a function definition while compiling goto label: {}", label)
         }
     }
 
@@ -643,10 +614,7 @@ impl CodeGenerator {
         if let Some(current_function) = &self.current_function {
             vec![format!("({}${})", current_function, label)]
         } else {
-            panic!(
-                "not in a function definition while compiling label: {}",
-                label
-            )
+            panic!("not in a function definition while compiling label: {}", label)
         }
     }
 
@@ -662,10 +630,7 @@ impl CodeGenerator {
                 )))
                 .collect()
         } else {
-            panic!(
-                "not in a function definition while compiling ifgoto label: {}",
-                label
-            )
+            panic!("not in a function definition while compiling ifgoto label: {}", label)
         }
     }
 

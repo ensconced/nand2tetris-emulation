@@ -1,6 +1,6 @@
 use super::tokenizer::{
-    token_defs, ArithmeticCmdTokenVariant, FunctionCmdTokenVariant, MemoryCmdTokenVariant,
-    MemorySegmentTokenVariant, ProgramFlowCmdTokenVariant, TokenKind,
+    token_defs, ArithmeticCmdTokenVariant, FunctionCmdTokenVariant, MemoryCmdTokenVariant, MemorySegmentTokenVariant, ProgramFlowCmdTokenVariant,
+    TokenKind,
 };
 use crate::compilers::utils::{
     parser_utils::{maybe_take, PeekableTokens},
@@ -111,10 +111,7 @@ fn take_arithmetic_command(tokens: &mut PeekableTokens<TokenKind>, line_number: 
     }
 }
 
-fn take_mem_segment(
-    tokens: &mut PeekableTokens<TokenKind>,
-    line_number: usize,
-) -> MemorySegmentVariant {
+fn take_mem_segment(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> MemorySegmentVariant {
     match tokens.next() {
         Some(Token {
             kind: TokenKind::MemorySegmentToken(kind),
@@ -147,8 +144,7 @@ fn take_number(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> u1
 
 fn take_whitespace(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) {
     if let Some(Token {
-        kind: TokenKind::Whitespace,
-        ..
+        kind: TokenKind::Whitespace, ..
     }) = tokens.next()
     {
         // all good
@@ -227,10 +223,7 @@ fn take_flow_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize)
     }
 }
 
-fn maybe_take_command(
-    tokens: &mut PeekableTokens<TokenKind>,
-    line_number: usize,
-) -> Option<Command> {
+fn maybe_take_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> Option<Command> {
     let first_token_kind = tokens.peek().map(|token| token.kind.clone());
     first_token_kind.and_then(|kind| match kind {
         TokenKind::ArithmeticCmdToken(_) => Some(take_arithmetic_command(tokens, line_number)),

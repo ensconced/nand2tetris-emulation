@@ -25,16 +25,9 @@ pub struct Glyph {
 const GLYPH_COUNT_IS_512_MASK: u8 = 0x01;
 const HAS_UNICODE_TABLE_MASK: u8 = 0x02;
 
-fn take_glyphs(
-    bytes: &mut impl Iterator<Item = u8>,
-    glyph_count: usize,
-    glyph_height: usize,
-) -> Vec<[u8; 9]> {
+fn take_glyphs(bytes: &mut impl Iterator<Item = u8>, glyph_count: usize, glyph_height: usize) -> Vec<[u8; 9]> {
     let glyphs: Vec<_> = bytes.take(glyph_count * glyph_height).collect();
-    glyphs
-        .chunks(glyph_height)
-        .map(|sl| <[u8; 9]>::try_from(sl).unwrap())
-        .collect()
+    glyphs.chunks(glyph_height).map(|sl| <[u8; 9]>::try_from(sl).unwrap()).collect()
 }
 
 fn take_codepoints(codepoints: &mut Peekable<impl Iterator<Item = u16>>) -> Vec<u16> {
@@ -49,9 +42,7 @@ fn take_codepoints(codepoints: &mut Peekable<impl Iterator<Item = u16>>) -> Vec<
     result
 }
 
-fn maybe_take_codepoint_sequence(
-    codepoints: &mut Peekable<impl Iterator<Item = u16>>,
-) -> Option<Vec<u16>> {
+fn maybe_take_codepoint_sequence(codepoints: &mut Peekable<impl Iterator<Item = u16>>) -> Option<Vec<u16>> {
     if let Some(&codepoint) = codepoints.peek() {
         if codepoint == 0xFFFE {
             codepoints.next();
@@ -84,9 +75,7 @@ fn take_term(codepoints: &mut Peekable<impl Iterator<Item = u16>>) {
     }
 }
 
-fn take_glyph_unicode_description(
-    codepoints: &mut Peekable<impl Iterator<Item = u16>>,
-) -> GlyphUnicodeInfo {
+fn take_glyph_unicode_description(codepoints: &mut Peekable<impl Iterator<Item = u16>>) -> GlyphUnicodeInfo {
     let individual_codepoints = take_codepoints(codepoints);
     let codepoint_sequences = take_codepoint_sequences(codepoints);
     take_term(codepoints);
@@ -96,10 +85,7 @@ fn take_glyph_unicode_description(
     }
 }
 
-fn take_unicode_info(
-    bytes: &mut impl Iterator<Item = u8>,
-    glyph_count: usize,
-) -> Vec<GlyphUnicodeInfo> {
+fn take_unicode_info(bytes: &mut impl Iterator<Item = u8>, glyph_count: usize) -> Vec<GlyphUnicodeInfo> {
     // All the remaining bytes can be considered in pairs as u16 codepoints.
     let bytes_vec: Vec<_> = bytes.collect();
     let mut codepoints = bytes_vec
@@ -183,20 +169,14 @@ pub fn glyphs_class() -> String {
             if codepoint < 32 {
                 panic!("unexpected glyph for codepoint < 32");
             }
-            let arr_idx = if codepoint == 0xFFFD {
-                0
-            } else {
-                codepoint - 32
-            };
+            let arr_idx = if codepoint == 0xFFFD { 0 } else { codepoint - 32 };
 
             // The height of the glyphs is nominally 9, but the bottom line of
             // each glyph is actually always blank, at least for the subset of
             // glyphs that I'm using. This means I can ignore the remainder here
             // when converting the bytes into 16-bit chunks.
             let sixteen_bit_chunks = bitmap.chunks_exact(2);
-            let words = sixteen_bit_chunks.map(|chunk| {
-                safe_jack_number_string(i16::from_be_bytes(<[u8; 2]>::try_from(chunk).unwrap()))
-            });
+            let words = sixteen_bit_chunks.map(|chunk| safe_jack_number_string(i16::from_be_bytes(<[u8; 2]>::try_from(chunk).unwrap())));
 
             let bitmap_allocation = words
                 .into_iter()

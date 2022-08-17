@@ -39,9 +39,7 @@ fn debug_print_slice(slice: &[i16]) -> String {
     result.push('[');
     for group in group_consecutive_identical_elements(slice) {
         match group.len().cmp(&1) {
-            std::cmp::Ordering::Greater => {
-                result.extend(format!("{} x {}, ", group[0], group.len()).chars())
-            }
+            std::cmp::Ordering::Greater => result.extend(format!("{} x {}, ", group[0], group.len()).chars()),
             _ => result.extend(format!("{}, ", group[0]).chars()),
         }
     }
@@ -178,11 +176,7 @@ impl Computer {
             DebugMode::Verbose => {
                 let ram = self.ram.lock().unwrap();
                 let sp = ram[0];
-                let stack = if sp >= 256 {
-                    &ram[256..ram[0] as usize]
-                } else {
-                    &[]
-                };
+                let stack = if sp >= 256 { &ram[256..ram[0] as usize] } else { &[] };
                 let heap = &ram[2048..18432];
                 let screen = &ram[18432..26624];
                 let temp = format!("{:?}", &ram[5..=12]);

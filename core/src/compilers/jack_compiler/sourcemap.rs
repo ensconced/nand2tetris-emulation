@@ -2,8 +2,8 @@ use serde::Serialize;
 use std::{collections::HashMap, ops::Range, rc::Rc};
 
 use super::jack_node_types::{
-    Class, ClassVarDeclaration, ClassVarDeclarationKind, Expression, Parameter, Statement,
-    SubroutineBody, SubroutineCall, SubroutineDeclaration, VarDeclaration,
+    Class, ClassVarDeclaration, ClassVarDeclarationKind, Expression, Parameter, Statement, SubroutineBody, SubroutineCall, SubroutineDeclaration,
+    VarDeclaration,
 };
 
 #[derive(Serialize)]

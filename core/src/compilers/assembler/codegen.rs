@@ -113,18 +113,11 @@ fn jump_code(jump_opt: Option<&String>) -> &'static str {
 }
 
 fn c_command_code(expr: &str, dest: Option<&String>, jump: Option<&String>) -> String {
-    format!(
-        "111{}{}{}",
-        expression_code(expr),
-        dest_code(dest),
-        jump_code(jump)
-    )
+    format!("111{}{}{}", expression_code(expr), dest_code(dest), jump_code(jump))
 }
 
 fn numeric_a_command_code(num_string: &str) -> String {
-    let num = num_string
-        .parse::<i16>()
-        .expect("failed to parse numeric a-command");
+    let num = num_string.parse::<i16>().expect("failed to parse numeric a-command");
     if num < 0 {
         // The most significant bit (msb) is reserved for distinguishing between
         // A-commands and C-commands. This means the msb is always 0 for
@@ -151,32 +144,30 @@ impl CodeGenerator {
     }
 
     pub fn generate(&mut self) -> impl Iterator<Item = String> + '_ {
-        self.commands_without_labels
-            .iter()
-            .map(|command| match command {
-                C { expr, dest, jump } => c_command_code(expr, dest.as_ref(), jump.as_ref()),
-                A(Numeric(num)) => numeric_a_command_code(num),
-                A(Symbolic(sym)) => {
-                    if sym == "$return_point_99" {
-                        println!("here we are");
-                    }
-                    let index = predefined_symbol_code(sym)
-                        .or_else(|| self.resolved_symbols.get(sym).copied())
-                        .unwrap_or_else(|| {
-                            let address = self.address_next_static_variable;
-                            if address > 255 {
-                              panic!("too many static variables - ran out of place while trying to place \"{}\"", sym)
-                            }
-                            self.resolved_symbols.insert(sym.to_string(), address);
-                            self.address_next_static_variable += 1;
-                            address
-                        });
-                    format!("{:016b}", index)
+        self.commands_without_labels.iter().map(|command| match command {
+            C { expr, dest, jump } => c_command_code(expr, dest.as_ref(), jump.as_ref()),
+            A(Numeric(num)) => numeric_a_command_code(num),
+            A(Symbolic(sym)) => {
+                if sym == "$return_point_99" {
+                    println!("here we are");
                 }
-                L { identifier: _ } => {
-                    panic!("unexpected l_command remaining after first pass")
-                }
-            })
+                let index = predefined_symbol_code(sym)
+                    .or_else(|| self.resolved_symbols.get(sym).copied())
+                    .unwrap_or_else(|| {
+                        let address = self.address_next_static_variable;
+                        if address > 255 {
+                            panic!("too many static variables - ran out of place while trying to place \"{}\"", sym)
+                        }
+                        self.resolved_symbols.insert(sym.to_string(), address);
+                        self.address_next_static_variable += 1;
+                        address
+                    });
+                format!("{:016b}", index)
+            }
+            L { identifier: _ } => {
+                panic!("unexpected l_command remaining after first pass")
+            }
+        })
     }
 }
 

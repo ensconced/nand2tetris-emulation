@@ -63,19 +63,14 @@ pub fn parse(source: &str) -> ParserOutput {
             !matches!(
                 token,
                 Token {
-                    kind: TokenKind::Whitespace
-                        | TokenKind::MultiLineComment
-                        | TokenKind::SingleLineComment,
+                    kind: TokenKind::Whitespace | TokenKind::MultiLineComment | TokenKind::SingleLineComment,
                     ..
                 }
             )
         })
         .collect();
 
-    let cloned_tokens_without_whitespace: Vec<_> = tokens_without_whitespace
-        .into_iter()
-        .map(|x| x.clone())
-        .collect();
+    let cloned_tokens_without_whitespace: Vec<_> = tokens_without_whitespace.into_iter().map(|x| x.clone()).collect();
 
     let mut parser = Parser {
         token_iter: cloned_tokens_without_whitespace.iter().peekable(),
@@ -101,39 +96,27 @@ impl<'a> Parser<'a> {
     fn record_jack_node(&mut self, jack_node: JackNode, token_range: Range<usize>) -> usize {
         let idx = self.jack_nodes.len();
         self.jack_nodes.push(jack_node);
-        self.sourcemap
-            .jack_node_idx_to_token_idx
-            .insert(idx, token_range.clone());
+        self.sourcemap.jack_node_idx_to_token_idx.insert(idx, token_range.clone());
 
         for token_idx in token_range {
-            let token_jack_node_idxs = self
-                .sourcemap
-                .token_idx_to_jack_node_idxs
-                .entry(token_idx)
-                .or_default();
+            let token_jack_node_idxs = self.sourcemap.token_idx_to_jack_node_idxs.entry(token_idx).or_default();
             token_jack_node_idxs.push(idx);
         }
         idx
     }
 
-    fn maybe_take_primitive_expression(
-        &mut self,
-    ) -> Option<(IndexedJackNode<Expression>, Range<usize>)> {
+    fn maybe_take_primitive_expression(&mut self) -> Option<(IndexedJackNode<Expression>, Range<usize>)> {
         use TokenKind::*;
         let peeked_token = self.token_iter.peek().cloned();
         let (expression, exp_token_idx) = peeked_token.and_then(|token| {
             let maybe_exp = match &token.kind {
                 IntegerLiteral(string) => {
                     self.token_iter.next();
-                    Some(Expression::PrimitiveTerm(IntegerConstant(
-                        string.to_string(),
-                    )))
+                    Some(Expression::PrimitiveTerm(IntegerConstant(string.to_string())))
                 }
                 StringLiteral(string) => {
                     self.token_iter.next();
-                    Some(Expression::PrimitiveTerm(StringConstant(
-                        string.to_string(),
-                    )))
+                    Some(Expression::PrimitiveTerm(StringConstant(string.to_string())))
                 }
                 Keyword(KeywordTokenVariant::True) => {
                     self.token_iter.next();
@@ -162,27 +145,19 @@ impl<'a> Parser<'a> {
         Some((IndexedJackNode { node: rc, node_idx }, token_range))
     }
 
-    fn take_array_access(
-        &mut self,
-        var_name: String,
-    ) -> (IndexedJackNode<Expression>, Range<usize>) {
+    fn take_array_access(&mut self, var_name: String) -> (IndexedJackNode<Expression>, Range<usize>) {
         use TokenKind::*;
         let l_bracket = self.take_token(LSquareBracket);
         let (index_expr, _) = self.take_expression();
         let r_bracket = self.take_token(RSquareBracket);
-        let rc = Rc::new(Expression::ArrayAccess {
-            var_name,
-            index: index_expr,
-        });
+        let rc = Rc::new(Expression::ArrayAccess { var_name, index: index_expr });
         let jack_node = JackNode::ExpressionNode(rc.clone());
         let token_range = l_bracket.idx..r_bracket.idx + 1;
         let node_idx = self.record_jack_node(jack_node, token_range.clone());
         (IndexedJackNode { node: rc, node_idx }, token_range)
     }
 
-    fn maybe_take_parenthesized_expression(
-        &mut self,
-    ) -> Option<(IndexedJackNode<Expression>, Range<usize>)> {
+    fn maybe_take_parenthesized_expression(&mut self) -> Option<(IndexedJackNode<Expression>, Range<usize>)> {
         use TokenKind::*;
         if let Some(Token {
             kind: LParen,
@@ -210,49 +185,31 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn maybe_take_expression_starting_with_identifier(
-        &mut self,
-    ) -> Option<(IndexedJackNode<Expression>, Range<usize>)> {
+    fn maybe_take_expression_starting_with_identifier(&mut self) -> Option<(IndexedJackNode<Expression>, Range<usize>)> {
         use TokenKind::*;
         // TODO - this is not very nice...maybe we should just use two tokens of
         // lookahead instead? (I think itertools would make that easy).
         let peeked_token = self.token_iter.peek();
         if let Some(Token {
-            kind: Identifier(string),
-            ..
+            kind: Identifier(string), ..
         }) = peeked_token
         {
             let string = string.to_string();
             let (identifier, identifier_token_idx) = self.take_identifier();
             match self.token_iter.peek() {
-                Some(Token {
-                    kind: LSquareBracket,
-                    ..
-                }) => Some(self.take_array_access(identifier)),
-                Some(Token {
-                    kind: Dot | LParen, ..
-                }) => {
-                    let (subroutine_call, subroutine_call_token_range) =
-                        self.take_subroutine_call(identifier, identifier_token_idx);
+                Some(Token { kind: LSquareBracket, .. }) => Some(self.take_array_access(identifier)),
+                Some(Token { kind: Dot | LParen, .. }) => {
+                    let (subroutine_call, subroutine_call_token_range) = self.take_subroutine_call(identifier, identifier_token_idx);
                     let expr = Expression::SubroutineCall(subroutine_call);
                     let rc = Rc::new(expr);
-                    let node_idx = self.record_jack_node(
-                        JackNode::ExpressionNode(rc.clone()),
-                        subroutine_call_token_range.clone(),
-                    );
-                    Some((
-                        IndexedJackNode { node: rc, node_idx },
-                        subroutine_call_token_range,
-                    ))
+                    let node_idx = self.record_jack_node(JackNode::ExpressionNode(rc.clone()), subroutine_call_token_range.clone());
+                    Some((IndexedJackNode { node: rc, node_idx }, subroutine_call_token_range))
                 }
                 _ => {
                     let expr = Expression::Variable(string);
                     let rc = Rc::new(expr);
                     let token_range = identifier_token_idx..identifier_token_idx + 1;
-                    let node_idx = self.record_jack_node(
-                        JackNode::ExpressionNode(rc.clone()),
-                        token_range.clone(),
-                    );
+                    let node_idx = self.record_jack_node(JackNode::ExpressionNode(rc.clone()), token_range.clone());
                     Some((IndexedJackNode { node: rc, node_idx }, token_range))
                 }
             }
@@ -261,21 +218,13 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn maybe_take_unary_expression(
-        &mut self,
-    ) -> Option<(IndexedJackNode<Expression>, Range<usize>)> {
+    fn maybe_take_unary_expression(&mut self) -> Option<(IndexedJackNode<Expression>, Range<usize>)> {
         use TokenKind::*;
-        if let Some(Token {
-            kind: Operator(op),
-            idx,
-            ..
-        }) = self.token_iter.peek()
-        {
+        if let Some(Token { kind: Operator(op), idx, .. }) = self.token_iter.peek() {
             let op_token_idx = *idx;
             let op = op.clone();
             self.token_iter.next();
-            let right_binding_power =
-                prefix_precedence(op.clone()).expect("invalid prefix operator");
+            let right_binding_power = prefix_precedence(op.clone()).expect("invalid prefix operator");
             let (operand, operand_token_range) = self
                 .maybe_take_expression_with_binding_power(right_binding_power)
                 .expect("unary operator has no operand");
@@ -286,8 +235,7 @@ impl<'a> Parser<'a> {
             };
             let rc = Rc::new(Expression::Unary { operator, operand });
             let token_range = op_token_idx..operand_token_range.end;
-            let node_idx =
-                self.record_jack_node(JackNode::ExpressionNode(rc.clone()), token_range.clone());
+            let node_idx = self.record_jack_node(JackNode::ExpressionNode(rc.clone()), token_range.clone());
             Some((IndexedJackNode { node: rc, node_idx }, token_range))
         } else {
             None
@@ -296,15 +244,13 @@ impl<'a> Parser<'a> {
 
     fn maybe_append_rhs_to_lhs(
         &mut self,
-        mut lhs: IndexedJackNode<Expression>,
+        lhs_node: Rc<Expression>,
+        lhs_node_idx: usize,
         mut lhs_token_range: Range<usize>,
         binding_power: u8,
     ) -> Option<(IndexedJackNode<Expression>, Range<usize>)> {
         use TokenKind::*;
-        if let Some(Token {
-            kind: Operator(op), ..
-        }) = self.token_iter.peek()
-        {
+        if let Some(Token { kind: Operator(op), .. }) = self.token_iter.peek() {
             let (lbp, rbp) = infix_precedence(op.clone()).expect("invalid infix operator");
             if lbp < binding_power {
                 // There is no rhs to append - the next term will instead associate towards the right.
@@ -329,26 +275,29 @@ impl<'a> Parser<'a> {
                 _ => panic!("invalid binary operator"),
             };
 
-            let new_lhs = Rc::new(Expression::Binary { operator, lhs, rhs });
+            let new_lhs_node = Rc::new(Expression::Binary {
+                operator,
+                lhs: IndexedJackNode {
+                    node: lhs_node,
+                    node_idx: lhs_node_idx,
+                },
+                rhs,
+            });
             lhs_token_range = lhs_token_range.start..rhs_exp_token_range.end;
-            let new_lhs_jack_node_idx = self.record_jack_node(
-                JackNode::ExpressionNode(new_lhs.clone()),
-                lhs_token_range.clone(),
-            );
-            lhs = IndexedJackNode {
-                node: new_lhs,
-                node_idx: new_lhs_jack_node_idx,
-            };
-            Some((lhs, lhs_token_range))
+            let new_lhs_jack_node_idx = self.record_jack_node(JackNode::ExpressionNode(new_lhs_node.clone()), lhs_token_range.clone());
+            Some((
+                IndexedJackNode {
+                    node: new_lhs_node,
+                    node_idx: new_lhs_jack_node_idx,
+                },
+                lhs_token_range,
+            ))
         } else {
             None
         }
     }
 
-    fn maybe_take_expression_with_binding_power(
-        &mut self,
-        binding_power: u8,
-    ) -> Option<(IndexedJackNode<Expression>, Range<usize>)> {
+    fn maybe_take_expression_with_binding_power(&mut self, binding_power: u8) -> Option<(IndexedJackNode<Expression>, Range<usize>)> {
         let (mut lhs, mut lhs_token_range) = self
             .maybe_take_unary_expression()
             .or_else(|| self.maybe_take_primitive_expression())
@@ -356,7 +305,7 @@ impl<'a> Parser<'a> {
             .or_else(|| self.maybe_take_parenthesized_expression())?;
 
         while let Some((new_lhs, new_lhs_token_range)) =
-            self.maybe_append_rhs_to_lhs(lhs, lhs_token_range.clone(), binding_power)
+            self.maybe_append_rhs_to_lhs(lhs.node.clone(), lhs.node_idx, lhs_token_range.clone(), binding_power)
         {
             lhs = new_lhs;
             lhs_token_range = new_lhs_token_range
@@ -399,8 +348,7 @@ impl<'a> Parser<'a> {
     }
 
     fn take_expression(&mut self) -> (IndexedJackNode<Expression>, Range<usize>) {
-        self.maybe_take_expression_with_binding_power(0)
-            .expect("expected expression")
+        self.maybe_take_expression_with_binding_power(0).expect("expected expression")
     }
 
     fn take_expression_list(&mut self) -> Vec<IndexedJackNode<Expression>> {
@@ -417,11 +365,7 @@ impl<'a> Parser<'a> {
         result
     }
 
-    fn take_subroutine_call(
-        &mut self,
-        name: String,
-        identifier_token_idx: usize,
-    ) -> ((Rc<SubroutineCall>, usize), Range<usize>) {
+    fn take_subroutine_call(&mut self, name: String, identifier_token_idx: usize) -> ((Rc<SubroutineCall>, usize), Range<usize>) {
         use TokenKind::*;
         match self.token_iter.peek() {
             Some(Token { kind: LParen, .. }) => {
@@ -435,10 +379,7 @@ impl<'a> Parser<'a> {
                 };
                 let rc = Rc::new(subroutine_call);
                 let token_range = identifier_token_idx..r_paren.idx + 1;
-                let jack_node_idx = self.record_jack_node(
-                    JackNode::SubroutineCallNode(rc.clone()),
-                    token_range.clone(),
-                );
+                let jack_node_idx = self.record_jack_node(JackNode::SubroutineCallNode(rc.clone()), token_range.clone());
                 ((rc, jack_node_idx), token_range)
             }
             Some(Token { kind: Dot, .. }) => {
@@ -455,10 +396,7 @@ impl<'a> Parser<'a> {
                 };
                 let rc = Rc::new(method);
                 let token_range = method_name_token_idx..r_paren.idx + 1;
-                let jack_node_idx = self.record_jack_node(
-                    JackNode::SubroutineCallNode(rc.clone()),
-                    token_range.clone(),
-                );
+                let jack_node_idx = self.record_jack_node(JackNode::SubroutineCallNode(rc.clone()), token_range.clone());
                 ((rc, jack_node_idx), token_range)
             }
             _ => panic!("expected subroutine call"),
@@ -481,14 +419,10 @@ impl<'a> Parser<'a> {
     fn maybe_take_parameter(&mut self) -> Option<(Rc<Parameter>, usize)> {
         self.maybe_take_type().map(|type_name| {
             let (var_name, identifier_token_idx) = self.take_identifier();
-            let parameter = Parameter {
-                type_name,
-                var_name,
-            };
+            let parameter = Parameter { type_name, var_name };
             let rc = Rc::new(parameter);
             let token_range = identifier_token_idx..identifier_token_idx + 1;
-            let jack_node_idx =
-                self.record_jack_node(JackNode::ParameterNode(rc.clone()), token_range);
+            let jack_node_idx = self.record_jack_node(JackNode::ParameterNode(rc.clone()), token_range);
             (rc, jack_node_idx)
         })
     }
@@ -498,16 +432,9 @@ impl<'a> Parser<'a> {
         if let Some(parameter) = self.maybe_take_parameter() {
             result.push(parameter);
 
-            while let Some(Token {
-                kind: TokenKind::Comma,
-                ..
-            }) = self.token_iter.peek()
-            {
+            while let Some(Token { kind: TokenKind::Comma, .. }) = self.token_iter.peek() {
                 self.token_iter.next(); // comma
-                result.push(
-                    self.maybe_take_parameter()
-                        .unwrap_or_else(|| panic!("expected parameter after comma")),
-                );
+                result.push(self.maybe_take_parameter().unwrap_or_else(|| panic!("expected parameter after comma")));
             }
         }
         result
@@ -531,10 +458,7 @@ impl<'a> Parser<'a> {
             })
     }
 
-    fn take_let_statement(
-        &mut self,
-        let_keyword_token_idx: usize,
-    ) -> ((Rc<Statement>, usize), Range<usize>) {
+    fn take_let_statement(&mut self, let_keyword_token_idx: usize) -> ((Rc<Statement>, usize), Range<usize>) {
         self.token_iter.next(); // "let" keyword
         let (var_name, _) = self.take_identifier();
         let array_index = self.maybe_take_array_index();
@@ -548,8 +472,7 @@ impl<'a> Parser<'a> {
         };
         let rc = Rc::new(statement);
         let token_range = let_keyword_token_idx..semicolon.idx + 1;
-        let jack_node_idx =
-            self.record_jack_node(JackNode::StatementNode(rc.clone()), token_range.clone());
+        let jack_node_idx = self.record_jack_node(JackNode::StatementNode(rc.clone()), token_range.clone());
         ((rc, jack_node_idx), token_range)
     }
 
@@ -574,10 +497,7 @@ impl<'a> Parser<'a> {
             .map(|_| self.take_statement_block())
     }
 
-    fn take_if_statement(
-        &mut self,
-        if_keyword_token_idx: usize,
-    ) -> ((Rc<Statement>, usize), Range<usize>) {
+    fn take_if_statement(&mut self, if_keyword_token_idx: usize) -> ((Rc<Statement>, usize), Range<usize>) {
         self.token_iter.next(); // "if" keyword
         self.take_token(TokenKind::LParen);
         let (condition, _) = self.take_expression();
@@ -593,35 +513,24 @@ impl<'a> Parser<'a> {
 
         let last_part_of_token_range = else_block_token_range.unwrap_or(if_statements_token_range);
         let token_range = if_keyword_token_idx..last_part_of_token_range.end;
-        let jack_node_idx =
-            self.record_jack_node(JackNode::StatementNode(rc.clone()), token_range.clone());
+        let jack_node_idx = self.record_jack_node(JackNode::StatementNode(rc.clone()), token_range.clone());
         ((rc, jack_node_idx), token_range)
     }
 
-    fn take_while_statement(
-        &mut self,
-        while_keyword_token_idx: usize,
-    ) -> ((Rc<Statement>, usize), Range<usize>) {
+    fn take_while_statement(&mut self, while_keyword_token_idx: usize) -> ((Rc<Statement>, usize), Range<usize>) {
         self.token_iter.next(); // "while" keyword
         self.take_token(TokenKind::LParen);
         let (condition, _) = self.take_expression();
         self.take_token(TokenKind::RParen);
         let (statements, statements_token_range) = self.take_statement_block();
-        let statement = Statement::While {
-            condition,
-            statements,
-        };
+        let statement = Statement::While { condition, statements };
         let rc = Rc::new(statement);
         let token_range = while_keyword_token_idx..statements_token_range.end;
-        let jack_node_idx =
-            self.record_jack_node(JackNode::StatementNode(rc.clone()), token_range.clone());
+        let jack_node_idx = self.record_jack_node(JackNode::StatementNode(rc.clone()), token_range.clone());
         ((rc, jack_node_idx), token_range)
     }
 
-    fn take_do_statement(
-        &mut self,
-        do_keyword_token_idx: usize,
-    ) -> ((Rc<Statement>, usize), Range<usize>) {
+    fn take_do_statement(&mut self, do_keyword_token_idx: usize) -> ((Rc<Statement>, usize), Range<usize>) {
         self.token_iter.next(); // "do" keyword
         let (identifier, identifier_token_idx) = self.take_identifier();
         let (subroutine_call, _) = self.take_subroutine_call(identifier, identifier_token_idx);
@@ -629,15 +538,11 @@ impl<'a> Parser<'a> {
         let statement = Statement::Do(subroutine_call.0, subroutine_call.1);
         let rc = Rc::new(statement);
         let token_range = do_keyword_token_idx..semicolon.idx + 1;
-        let jack_node_idx =
-            self.record_jack_node(JackNode::StatementNode(rc.clone()), token_range.clone());
+        let jack_node_idx = self.record_jack_node(JackNode::StatementNode(rc.clone()), token_range.clone());
         ((rc, jack_node_idx), token_range)
     }
 
-    fn take_return_statement(
-        &mut self,
-        return_keyword_token_idx: usize,
-    ) -> ((Rc<Statement>, usize), Range<usize>) {
+    fn take_return_statement(&mut self, return_keyword_token_idx: usize) -> ((Rc<Statement>, usize), Range<usize>) {
         self.token_iter.next(); // "return" keyword
         let expression_result = self.maybe_take_expression_with_binding_power(0);
         let expression = expression_result.map(|(expr, _)| expr);
@@ -645,8 +550,7 @@ impl<'a> Parser<'a> {
         let statement = Statement::Return(expression);
         let rc = Rc::new(statement);
         let token_range = return_keyword_token_idx..semicolon.idx + 1;
-        let jack_node_idx =
-            self.record_jack_node(JackNode::StatementNode(rc.clone()), token_range.clone());
+        let jack_node_idx = self.record_jack_node(JackNode::StatementNode(rc.clone()), token_range.clone());
         ((rc, jack_node_idx), token_range)
     }
 
@@ -690,14 +594,10 @@ impl<'a> Parser<'a> {
             let type_name = self.take_type();
             let var_names = self.take_var_names();
             let semicolon = self.take_token(TokenKind::Semicolon);
-            let var_declaration = VarDeclaration {
-                type_name,
-                var_names,
-            };
+            let var_declaration = VarDeclaration { type_name, var_names };
             let rc = Rc::new(var_declaration);
             let token_range = *var_keyword_token_idx..semicolon.idx + 1;
-            let jack_node_idx =
-                self.record_jack_node(JackNode::VarDeclarationNode(rc.clone()), token_range);
+            let jack_node_idx = self.record_jack_node(JackNode::VarDeclarationNode(rc.clone()), token_range);
             (rc, jack_node_idx)
         } else {
             panic!("expected var keyword");
@@ -727,16 +627,11 @@ impl<'a> Parser<'a> {
         };
         let rc = Rc::new(subroutine_body);
         let token_range = l_curly.idx..r_curly.idx + 1;
-        let jack_node_idx = self.record_jack_node(
-            JackNode::SubroutineBodyNode(rc.clone()),
-            token_range.clone(),
-        );
+        let jack_node_idx = self.record_jack_node(JackNode::SubroutineBodyNode(rc.clone()), token_range.clone());
         ((rc, jack_node_idx), token_range)
     }
 
-    fn take_subroutine_declaration(
-        &mut self,
-    ) -> (IndexedJackNode<SubroutineDeclaration>, Range<usize>) {
+    fn take_subroutine_declaration(&mut self) -> (IndexedJackNode<SubroutineDeclaration>, Range<usize>) {
         use KeywordTokenVariant::*;
         if let Some(Token {
             kind: TokenKind::Keyword(keyword),
@@ -767,19 +662,14 @@ impl<'a> Parser<'a> {
             let rc = Rc::new(subroutine_declaration);
             let token_range = *subroutine_kind_token_idx..body_token_range.end;
 
-            let node_idx = self.record_jack_node(
-                JackNode::SubroutineDeclarationNode(rc.clone()),
-                token_range.clone(),
-            );
+            let node_idx = self.record_jack_node(JackNode::SubroutineDeclarationNode(rc.clone()), token_range.clone());
             (IndexedJackNode { node: rc, node_idx }, token_range)
         } else {
             panic!("expected subroutine kind");
         }
     }
 
-    fn maybe_take_subroutine_declaration(
-        &mut self,
-    ) -> Option<(IndexedJackNode<SubroutineDeclaration>, Range<usize>)> {
+    fn maybe_take_subroutine_declaration(&mut self) -> Option<(IndexedJackNode<SubroutineDeclaration>, Range<usize>)> {
         use KeywordTokenVariant::*;
         if let Some(Token {
             kind: TokenKind::Keyword(Constructor | Function | Method),
@@ -792,9 +682,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn take_class_subroutine_declarations(
-        &mut self,
-    ) -> Vec<IndexedJackNode<SubroutineDeclaration>> {
+    fn take_class_subroutine_declarations(&mut self) -> Vec<IndexedJackNode<SubroutineDeclaration>> {
         let mut result = Vec::new();
         while let Some((subroutine_declaration, _)) = self.maybe_take_subroutine_declaration() {
             result.push(subroutine_declaration);
@@ -802,9 +690,7 @@ impl<'a> Parser<'a> {
         result
     }
 
-    fn take_class_var_declaration_qualifier(
-        &mut self,
-    ) -> (IndexedJackNode<ClassVarDeclarationKind>, Range<usize>) {
+    fn take_class_var_declaration_qualifier(&mut self) -> (IndexedJackNode<ClassVarDeclarationKind>, Range<usize>) {
         use KeywordTokenVariant::*;
         match self.token_iter.next() {
             Some(Token {
@@ -819,10 +705,7 @@ impl<'a> Parser<'a> {
                 };
                 let rc = Rc::new(qualifier);
                 let token_range = *token_idx..token_idx + 1;
-                let node_idx = self.record_jack_node(
-                    JackNode::ClassVarDeclarationKindNode(rc.clone()),
-                    token_range.clone(),
-                );
+                let node_idx = self.record_jack_node(JackNode::ClassVarDeclarationKindNode(rc.clone()), token_range.clone());
                 (IndexedJackNode { node: rc, node_idx }, token_range)
             }
             _ => panic!("expected var declaration qualifier",),
@@ -845,11 +728,7 @@ impl<'a> Parser<'a> {
         // There has to be at least one var name.
         let first_var = self.take_var_name();
         let mut names = vec![first_var];
-        while let Some(Token {
-            kind: TokenKind::Comma,
-            ..
-        }) = self.token_iter.peek()
-        {
+        while let Some(Token { kind: TokenKind::Comma, .. }) = self.token_iter.peek() {
             self.token_iter.next(); // comma
             let var = self.take_var_name();
             names.push(var);
@@ -887,9 +766,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn take_class_var_declaration(
-        &mut self,
-    ) -> (IndexedJackNode<ClassVarDeclaration>, Range<usize>) {
+    fn take_class_var_declaration(&mut self) -> (IndexedJackNode<ClassVarDeclaration>, Range<usize>) {
         let (qualifier, qualifier_token_range) = self.take_class_var_declaration_qualifier();
         let type_name = self.take_type();
         let var_names = self.take_var_names();
@@ -901,10 +778,7 @@ impl<'a> Parser<'a> {
         };
         let rc = Rc::new(class_var_declaration);
         let token_range = qualifier_token_range.start..semicolon.idx + 1;
-        let node_idx = self.record_jack_node(
-            JackNode::ClassVarDeclarationNode(rc.clone()),
-            token_range.clone(),
-        );
+        let node_idx = self.record_jack_node(JackNode::ClassVarDeclarationNode(rc.clone()), token_range.clone());
         (IndexedJackNode { node_idx, node: rc }, token_range)
     }
 
@@ -961,9 +835,7 @@ mod tests {
                 !matches!(
                     token,
                     Token {
-                        kind: TokenKind::Whitespace
-                            | TokenKind::MultiLineComment
-                            | TokenKind::SingleLineComment,
+                        kind: TokenKind::Whitespace | TokenKind::MultiLineComment | TokenKind::SingleLineComment,
                         ..
                     }
                 )
@@ -1050,11 +922,7 @@ mod tests {
                                 node_idx: 2
                             },
                             type_name: Type::Char,
-                            var_names: vec![
-                                "baz".to_string(),
-                                "buz".to_string(),
-                                "boz".to_string()
-                            ],
+                            var_names: vec!["baz".to_string(), "buz".to_string(), "boz".to_string()],
                         }),
                         node_idx: 3
                     },
@@ -1200,9 +1068,7 @@ mod tests {
                                 subroutine_name: "foobar".to_string(),
                                 arguments: vec![
                                     (IndexedJackNode {
-                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                            "1".to_string(),
-                                        ))),
+                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                         node_idx: 10,
                                     }),
                                 ],
@@ -1217,21 +1083,15 @@ mod tests {
                                 subroutine_name: "foobar".to_string(),
                                 arguments: vec![
                                     IndexedJackNode {
-                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                            "1".to_string(),
-                                        ))),
+                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                         node_idx: 13,
                                     },
                                     IndexedJackNode {
-                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                            "2".to_string(),
-                                        ))),
+                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                                         node_idx: 14,
                                     },
                                     (IndexedJackNode {
-                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                            "3".to_string(),
-                                        ))),
+                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
                                         node_idx: 15,
                                     }),
                                 ],
@@ -1257,9 +1117,7 @@ mod tests {
                                 this_name: "foo".to_string(),
                                 method_name: "bar".to_string(),
                                 arguments: vec![IndexedJackNode {
-                                    node: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                        "1".to_string(),
-                                    ))),
+                                    node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                     node_idx: 20,
                                 }],
                             }),
@@ -1274,21 +1132,15 @@ mod tests {
                                 method_name: "bar".to_string(),
                                 arguments: vec![
                                     IndexedJackNode {
-                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                            "1".to_string(),
-                                        ))),
+                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                         node_idx: 23,
                                     },
                                     IndexedJackNode {
-                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                            "2".to_string(),
-                                        ))),
+                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                                         node_idx: 24,
                                     },
                                     IndexedJackNode {
-                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                            "3".to_string(),
-                                        ))),
+                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
                                         node_idx: 25,
                                     },
                                 ],
@@ -1349,9 +1201,7 @@ mod tests {
                                             var_name: "a".to_string(),
                                             array_index: None,
                                             value: IndexedJackNode {
-                                                node: Rc::new(Expression::PrimitiveTerm(
-                                                    IntegerConstant("1234".to_string(),)
-                                                )),
+                                                node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1234".to_string(),))),
                                                 node_idx: 1
                                             },
                                         }),
@@ -1361,15 +1211,11 @@ mod tests {
                                         Rc::new(Statement::Let {
                                             var_name: "b".to_string(),
                                             array_index: Some(IndexedJackNode {
-                                                node: Rc::new(Expression::PrimitiveTerm(
-                                                    IntegerConstant("22".to_string())
-                                                )),
+                                                node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("22".to_string()))),
                                                 node_idx: 3
                                             }),
                                             value: IndexedJackNode {
-                                                node: Rc::new(Expression::PrimitiveTerm(
-                                                    IntegerConstant("123".to_string(),)
-                                                )),
+                                                node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("123".to_string(),))),
                                                 node_idx: 4,
                                             }
                                         }),
@@ -1378,17 +1224,13 @@ mod tests {
                                     (
                                         Rc::new(Statement::If {
                                             condition: IndexedJackNode {
-                                                node: Rc::new(Expression::PrimitiveTerm(
-                                                    IntegerConstant("1".to_string())
-                                                )),
+                                                node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                                 node_idx: 6
                                             },
                                             if_statements,
                                             else_statements: Some(vec![(
                                                 Rc::new(Statement::Return(Some(IndexedJackNode {
-                                                    node: Rc::new(Expression::PrimitiveTerm(
-                                                        IntegerConstant("123".to_string(),)
-                                                    )),
+                                                    node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("123".to_string(),))),
                                                     node_idx: 29
                                                 },))),
                                                 30,
@@ -1475,32 +1317,18 @@ mod tests {
                                                     node: Rc::new(Expression::Binary {
                                                         operator: BinaryOperator::Plus,
                                                         lhs: IndexedJackNode {
-                                                            node: Rc::new(
-                                                                Expression::PrimitiveTerm(
-                                                                    IntegerConstant(
-                                                                        "1".to_string()
-                                                                    )
-                                                                )
-                                                            ),
+                                                            node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                                             node_idx: 0
                                                         },
                                                         rhs: IndexedJackNode {
-                                                            node: Rc::new(
-                                                                Expression::PrimitiveTerm(
-                                                                    IntegerConstant(
-                                                                        "2".to_string()
-                                                                    )
-                                                                )
-                                                            ),
+                                                            node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                                                             node_idx: 1
                                                         },
                                                     }),
                                                     node_idx: 2
                                                 },
                                                 rhs: IndexedJackNode {
-                                                    node: Rc::new(Expression::PrimitiveTerm(
-                                                        IntegerConstant("3".to_string())
-                                                    )),
+                                                    node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
                                                     node_idx: 3
                                                 },
                                             }),
@@ -1533,24 +1361,18 @@ mod tests {
                                 node: Rc::new(Expression::Binary {
                                     operator: BinaryOperator::Plus,
                                     lhs: IndexedJackNode {
-                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                            "1".to_string()
-                                        ))),
+                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                         node_idx: 0
                                     },
                                     rhs: IndexedJackNode {
-                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                            "2".to_string()
-                                        ))),
+                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                                         node_idx: 1
                                     },
                                 }),
                                 node_idx: 2
                             },
                             rhs: IndexedJackNode {
-                                node: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                    "3".to_string()
-                                ))),
+                                node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
                                 node_idx: 3
                             },
                         }),
@@ -1577,24 +1399,18 @@ mod tests {
                         node: Rc::new(Expression::Binary {
                             operator: BinaryOperator::Plus,
                             lhs: IndexedJackNode {
-                                node: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                    "1".to_string()
-                                ))),
+                                node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                 node_idx: 0
                             },
                             rhs: IndexedJackNode {
                                 node: Rc::new(Expression::Binary {
                                     operator: BinaryOperator::Multiply,
                                     lhs: IndexedJackNode {
-                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                            "2".to_string()
-                                        ))),
+                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                                         node_idx: 1
                                     },
                                     rhs: IndexedJackNode {
-                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                            "3".to_string()
-                                        ))),
+                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
                                         node_idx: 2
                                     },
                                 }),
@@ -1641,9 +1457,7 @@ mod tests {
                         node: Rc::new(Expression::Unary {
                             operator: UnaryOperator::Not,
                             operand: IndexedJackNode {
-                                node: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                    "1".to_string()
-                                ))),
+                                node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                 node_idx: 0
                             },
                         }),
@@ -1653,9 +1467,7 @@ mod tests {
                         node: Rc::new(Expression::Unary {
                             operator: UnaryOperator::Not,
                             operand: IndexedJackNode {
-                                node: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                    "2".to_string()
-                                ))),
+                                node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                                 node_idx: 2
                             }
                         }),
@@ -1678,9 +1490,7 @@ mod tests {
                         node: Rc::new(Expression::Binary {
                             operator: BinaryOperator::Plus,
                             lhs: IndexedJackNode {
-                                node: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                    "1".to_string()
-                                ))),
+                                node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                 node_idx: 0
                             },
                             rhs: IndexedJackNode {
@@ -1689,9 +1499,7 @@ mod tests {
                                         subroutine_name: "foo".to_string(),
                                         arguments: vec![
                                             IndexedJackNode {
-                                                node: Rc::new(Expression::PrimitiveTerm(
-                                                    IntegerConstant("1".to_string())
-                                                )),
+                                                node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                                 node_idx: 1
                                             },
                                             IndexedJackNode {
@@ -1701,23 +1509,11 @@ mod tests {
                                                         method_name: "bar".to_string(),
                                                         arguments: vec![
                                                             IndexedJackNode {
-                                                                node: Rc::new(
-                                                                    Expression::PrimitiveTerm(
-                                                                        IntegerConstant(
-                                                                            "1".to_string()
-                                                                        )
-                                                                    )
-                                                                ),
+                                                                node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                                                 node_idx: 2
                                                             },
                                                             IndexedJackNode {
-                                                                node: Rc::new(
-                                                                    Expression::PrimitiveTerm(
-                                                                        IntegerConstant(
-                                                                            "2".to_string()
-                                                                        )
-                                                                    )
-                                                                ),
+                                                                node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                                                                 node_idx: 3
                                                             },
                                                         ]
@@ -1727,9 +1523,7 @@ mod tests {
                                                 node_idx: 5
                                             },
                                             IndexedJackNode {
-                                                node: Rc::new(Expression::PrimitiveTerm(
-                                                    IntegerConstant("3".to_string())
-                                                )),
+                                                node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
                                                 node_idx: 6
                                             },
                                         ]
@@ -1762,9 +1556,7 @@ mod tests {
                         node: Rc::new(Expression::Binary {
                             operator: BinaryOperator::Plus,
                             lhs: IndexedJackNode {
-                                node: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                    "1".to_string()
-                                ))),
+                                node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                 node_idx: 0
                             },
                             rhs: IndexedJackNode {
@@ -1773,9 +1565,7 @@ mod tests {
                                         subroutine_name: "foo".to_string(),
                                         arguments: vec![
                                             IndexedJackNode {
-                                                node: Rc::new(Expression::PrimitiveTerm(
-                                                    IntegerConstant("1".to_string())
-                                                )),
+                                                node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                                 node_idx: 1
                                             },
                                             IndexedJackNode {
@@ -1785,23 +1575,11 @@ mod tests {
                                                         node: Rc::new(Expression::Binary {
                                                             operator: BinaryOperator::Plus,
                                                             lhs: IndexedJackNode {
-                                                                node: Rc::new(
-                                                                    Expression::PrimitiveTerm(
-                                                                        IntegerConstant(
-                                                                            "1".to_string()
-                                                                        )
-                                                                    )
-                                                                ),
+                                                                node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                                                 node_idx: 2
                                                             },
                                                             rhs: IndexedJackNode {
-                                                                node: Rc::new(
-                                                                    Expression::PrimitiveTerm(
-                                                                        IntegerConstant(
-                                                                            "2".to_string()
-                                                                        )
-                                                                    )
-                                                                ),
+                                                                node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                                                                 node_idx: 3
                                                             },
                                                         }),
@@ -1811,9 +1589,7 @@ mod tests {
                                                 node_idx: 5
                                             },
                                             IndexedJackNode {
-                                                node: Rc::new(Expression::PrimitiveTerm(
-                                                    IntegerConstant("3".to_string())
-                                                )),
+                                                node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
                                                 node_idx: 6
                                             },
                                         ]
@@ -1865,31 +1641,30 @@ mod tests {
                                                         this_name: "buz".to_string(),
                                                         method_name: "boz".to_string(),
                                                         arguments: vec![
-                                                                IndexedJackNode{node: Rc::new(Expression::Variable(
-                                                                    "qux".to_string()
-                                                                )),
-                                                                node_idx: 2},
-                                              IndexedJackNode{node:    Rc::new(Expression::ArrayAccess {
+                                                            IndexedJackNode {
+                                                                node: Rc::new(Expression::Variable("qux".to_string())),
+                                                                node_idx: 2
+                                                            },
+                                                            IndexedJackNode {
+                                                                node: Rc::new(Expression::ArrayAccess {
                                                                     var_name: "wox".to_string(),
-                                                                    index: (Rc::new(
-                                                                        Expression::PrimitiveTerm(
-                                                                            IntegerConstant(
-                                                                                "123".to_string()
-                                                                            )
-                                                                        )
-                                                                    ), 3)
+                                                                    index: IndexedJackNode {
+                                                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("123".to_string()))),
+                                                                        node_idx: 3
+                                                                    }
                                                                 }),
-                                                                node_idx: 4},
+                                                                node_idx: 4
+                                                            },
                                                         ]
                                                     }),
                                                     5
                                                 ))),
                                                 node_idx: 6
                                             },
-                                            rhs: (
-                                                Rc::new(Expression::Variable("bing".to_string())),
-                                                7
-                                            )
+                                            rhs: IndexedJackNode {
+                                                node: Rc::new(Expression::Variable("bing".to_string())),
+                                                node_idx: 7
+                                            }
                                         }),
                                         node_idx: 8
                                     },
@@ -1909,68 +1684,60 @@ mod tests {
     fn test_primitive_terms() {
         assert_eq!(
             parse_expression("1 + \"hello\" + true + false + null + this"),
-            (
-                Rc::new(Expression::Binary {
+            IndexedJackNode {
+                node: Rc::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
-                    lhs: (
-                        Rc::new(Expression::Binary {
+                    lhs: IndexedJackNode {
+                        node: Rc::new(Expression::Binary {
                             operator: BinaryOperator::Plus,
-                            lhs: (
-                                Rc::new(Expression::Binary {
+                            lhs: IndexedJackNode {
+                                node: Rc::new(Expression::Binary {
                                     operator: BinaryOperator::Plus,
-                                    lhs: (
-                                        Rc::new(Expression::Binary {
+                                    lhs: IndexedJackNode {
+                                        node: Rc::new(Expression::Binary {
                                             operator: BinaryOperator::Plus,
-                                            lhs: (
-                                                Rc::new(Expression::Binary {
+                                            lhs: IndexedJackNode {
+                                                node: Rc::new(Expression::Binary {
                                                     operator: BinaryOperator::Plus,
-                                                    lhs: (
-                                                        Rc::new(Expression::PrimitiveTerm(
-                                                            IntegerConstant("1".to_string())
-                                                        )),
-                                                        0
-                                                    ),
-                                                    rhs: (
-                                                        Rc::new(Expression::PrimitiveTerm(
-                                                            StringConstant("hello".to_string())
-                                                        )),
-                                                        1
-                                                    ),
+                                                    lhs: IndexedJackNode {
+                                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                                        node_idx: 0
+                                                    },
+                                                    rhs: IndexedJackNode {
+                                                        node: Rc::new(Expression::PrimitiveTerm(StringConstant("hello".to_string()))),
+                                                        node_idx: 1
+                                                    },
                                                 }),
-                                                2
-                                            ),
-                                            rhs: (
-                                                Rc::new(Expression::PrimitiveTerm(
-                                                    PrimitiveTermVariant::True
-                                                )),
-                                                3
-                                            ),
+                                                node_idx: 2
+                                            },
+                                            rhs: IndexedJackNode {
+                                                node: Rc::new(Expression::PrimitiveTerm(PrimitiveTermVariant::True)),
+                                                node_idx: 3
+                                            },
                                         }),
-                                        4
-                                    ),
-                                    rhs: (
-                                        Rc::new(Expression::PrimitiveTerm(
-                                            PrimitiveTermVariant::False
-                                        )),
-                                        5
-                                    ),
+                                        node_idx: 4
+                                    },
+                                    rhs: IndexedJackNode {
+                                        node: Rc::new(Expression::PrimitiveTerm(PrimitiveTermVariant::False)),
+                                        node_idx: 5
+                                    },
                                 }),
-                                6
-                            ),
-                            rhs: (
-                                Rc::new(Expression::PrimitiveTerm(PrimitiveTermVariant::Null)),
-                                7
-                            ),
+                                node_idx: 6
+                            },
+                            rhs: IndexedJackNode {
+                                node: Rc::new(Expression::PrimitiveTerm(PrimitiveTermVariant::Null)),
+                                node_idx: 7
+                            },
                         }),
-                        8
-                    ),
-                    rhs: (
-                        Rc::new(Expression::PrimitiveTerm(PrimitiveTermVariant::This)),
-                        9
-                    )
+                        node_idx: 8
+                    },
+                    rhs: IndexedJackNode {
+                        node: Rc::new(Expression::PrimitiveTerm(PrimitiveTermVariant::This)),
+                        node_idx: 9
+                    }
                 }),
-                10
-            )
+                node_idx: 10
+            }
         )
     }
 
@@ -1978,37 +1745,33 @@ mod tests {
     fn test_parenthesized_expression() {
         assert_eq!(
             parse_expression("(1 + 2) * 3"),
-            (
-                Rc::new(Expression::Binary {
+            IndexedJackNode {
+                node: Rc::new(Expression::Binary {
                     operator: BinaryOperator::Multiply,
-                    lhs: (
-                        Rc::new(Expression::Parenthesized((
-                            Rc::new(Expression::Binary {
+                    lhs: IndexedJackNode {
+                        node: Rc::new(Expression::Parenthesized(IndexedJackNode {
+                            node: Rc::new(Expression::Binary {
                                 operator: BinaryOperator::Plus,
-                                lhs: (
-                                    Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                        "1".to_string()
-                                    ))),
-                                    0
-                                ),
-                                rhs: (
-                                    Rc::new(Expression::PrimitiveTerm(IntegerConstant(
-                                        "2".to_string()
-                                    ))),
-                                    1
-                                ),
+                                lhs: IndexedJackNode {
+                                    node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                    node_idx: 0
+                                },
+                                rhs: IndexedJackNode {
+                                    node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                                    node_idx: 1
+                                },
                             }),
-                            2
-                        ))),
-                        3
-                    ),
-                    rhs: (
-                        Rc::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
-                        4
-                    ),
+                            node_idx: 2
+                        })),
+                        node_idx: 3
+                    },
+                    rhs: IndexedJackNode {
+                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
+                        node_idx: 4
+                    },
                 }),
-                5
-            )
+                node_idx: 5
+            }
         )
     }
 }

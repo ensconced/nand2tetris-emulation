@@ -137,9 +137,7 @@ impl IO {
                 self.last_draw_time = time;
             }
             ram.lock().unwrap()[26624] = kbd_output(self.window.get_keys());
-            self.window
-                .update_with_buffer(&self.buffer, WIDTH, HEIGHT)
-                .unwrap();
+            self.window.update_with_buffer(&self.buffer, WIDTH, HEIGHT).unwrap();
         }
     }
 }

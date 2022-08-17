@@ -91,11 +91,7 @@ fn main() {
             let source_path = source_path_maybe.as_ref().expect("source path is required");
             let dest_path = dest_path_maybe.as_ref().expect("dest path is required");
             println!("assembling {} to {}", source_path, dest_path);
-            assemble_file(
-                Path::new(source_path),
-                Path::new(dest_path),
-                emulator::config::ROM_DEPTH,
-            );
+            assemble_file(Path::new(source_path), Path::new(dest_path), emulator::config::ROM_DEPTH);
         }
         Commands::Compile {
             source_path: source_path_maybe,
@@ -106,9 +102,7 @@ fn main() {
             println!("assembling {} to {}", source_path, dest_path);
             vm_compiler::compile(Path::new(source_path), Path::new(dest_path)).unwrap();
         }
-        Commands::Run {
-            file_path: file_path_maybe,
-        } => {
+        Commands::Run { file_path: file_path_maybe } => {
             let file_path = file_path_maybe.as_ref().expect("path is required");
             println!("running {}", file_path);
             run(file_path);
@@ -119,9 +113,7 @@ fn main() {
         Commands::JackParserViz {
             source_path: source_path_maybe,
         } => {
-            let source_path = source_path_maybe
-                .as_ref()
-                .unwrap_or_else(|| panic!("source path is required"));
+            let source_path = source_path_maybe.as_ref().unwrap_or_else(|| panic!("source path is required"));
             let source = fs::read_to_string(source_path).unwrap();
             let parser_output = jack_compiler::parser::parse(&source);
             let parser_viz_data = ParserVizData {

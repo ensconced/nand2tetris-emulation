@@ -95,13 +95,9 @@ fn maybe_take_destination(tokens: &mut PeekableTokens<TokenKind>) -> Option<Stri
 }
 
 fn maybe_take_unary_expression(tokens: &mut PeekableTokens<TokenKind>) -> Option<String> {
-    if let Some(Token {
-        kind: Operator(_), ..
-    }) = tokens.peek()
-    {
+    if let Some(Token { kind: Operator(_), .. }) = tokens.peek() {
         if let Some(Token {
-            kind: Operator(op_string),
-            ..
+            kind: Operator(op_string), ..
         }) = tokens.next()
         {
             let operand = take_single_expression_term(tokens);
@@ -300,14 +296,7 @@ mod tests {
         let mut tokens = token_vec.iter().peekable();
         maybe_take(&mut tokens, &Comment);
         let result = tokens.next();
-        assert_eq!(
-            result,
-            Some(&Token::new(
-                Identifier("not".to_string()),
-                "not".to_string(),
-                0
-            ),)
-        );
+        assert_eq!(result, Some(&Token::new(Identifier("not".to_string()), "not".to_string(), 0),));
     }
 
     #[test]
@@ -317,14 +306,7 @@ mod tests {
         let mut tokens = token_vec.iter().peekable();
         maybe_take(&mut tokens, &InlineWhitespace);
         let remaining = tokens.next();
-        assert_eq!(
-            remaining,
-            Some(&Token::new(
-                Identifier("hello".to_string()),
-                "hello".to_string(),
-                1
-            ))
-        );
+        assert_eq!(remaining, Some(&Token::new(Identifier("hello".to_string()), "hello".to_string(), 1)));
     }
 
     #[test]
@@ -349,10 +331,7 @@ mod tests {
         let token_vec = tokenizer.tokenize("@FOOBAR");
         let mut tokens = token_vec.iter().peekable();
         let a_command = take_a_command(&mut tokens);
-        assert_eq!(
-            a_command,
-            Command::A(AValue::Symbolic("FOOBAR".to_string()))
-        );
+        assert_eq!(a_command, Command::A(AValue::Symbolic("FOOBAR".to_string())));
     }
 
     #[test]
@@ -409,17 +388,11 @@ mod tests {
 
         let line = "@1234";
         let mut result = parse(line);
-        assert_eq!(
-            result.next(),
-            Some(Command::A(AValue::Numeric("1234".to_string())))
-        );
+        assert_eq!(result.next(), Some(Command::A(AValue::Numeric("1234".to_string()))));
 
         let line = "   @1234  // here is a comment  ";
         let mut result = parse(line);
-        assert_eq!(
-            result.next(),
-            Some(Command::A(AValue::Numeric("1234".to_string())))
-        );
+        assert_eq!(result.next(), Some(Command::A(AValue::Numeric("1234".to_string()))));
     }
 
     #[test]
@@ -427,10 +400,7 @@ mod tests {
     fn test_parse_panic() {
         let line = "   @1234 blah blah blah";
         let mut result = parse(line);
-        assert_eq!(
-            result.next(),
-            Some(Command::A(AValue::Numeric("1234".to_string())))
-        );
+        assert_eq!(result.next(), Some(Command::A(AValue::Numeric("1234".to_string()))));
     }
 
     #[test]

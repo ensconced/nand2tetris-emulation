@@ -136,9 +136,7 @@ pub mod test_utils {
 
     pub fn step_out(computer: &mut Computer) {
         let start_frame_depth = frame_stack_depth(computer);
-        tick_until(computer, &|comp| {
-            frame_stack_depth(comp) == start_frame_depth - 1
-        })
+        tick_until(computer, &|comp| frame_stack_depth(comp) == start_frame_depth - 1)
     }
 
     pub fn step_over(computer: &mut Computer) {

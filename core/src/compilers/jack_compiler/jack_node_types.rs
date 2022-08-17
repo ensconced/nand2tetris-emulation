@@ -109,7 +109,7 @@ pub enum Expression {
         operand: IndexedJackNode<Expression>,
     },
     Variable(String),
-    SubroutineCall((Rc<SubroutineCall>, usize)),
+    SubroutineCall(IndexedJackNode<SubroutineCall>),
     ArrayAccess {
         var_name: String,
         index: IndexedJackNode<Expression>,
@@ -157,7 +157,7 @@ pub enum Statement {
         condition: IndexedJackNode<Expression>,
         statements: Vec<IndexedJackNode<Statement>>,
     },
-    Do(Rc<SubroutineCall>, usize),
+    Do(IndexedJackNode<SubroutineCall>),
     Return(Option<IndexedJackNode<Expression>>),
 }
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
@@ -172,7 +172,7 @@ pub struct VarDeclaration {
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub struct SubroutineBody {
-    pub var_declarations: Vec<(Rc<VarDeclaration>, usize)>,
+    pub var_declarations: Vec<IndexedJackNode<VarDeclaration>>,
     pub statements: Vec<IndexedJackNode<Statement>>,
 }
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
@@ -181,7 +181,7 @@ pub struct SubroutineBody {
 pub struct SubroutineDeclaration {
     pub subroutine_kind: SubroutineKind,
     pub return_type: Option<Type>,
-    pub parameters: Vec<(Rc<Parameter>, usize)>,
+    pub parameters: Vec<IndexedJackNode<Parameter>>,
     pub name: String,
-    pub body: (Rc<SubroutineBody>, usize),
+    pub body: IndexedJackNode<SubroutineBody>,
 }

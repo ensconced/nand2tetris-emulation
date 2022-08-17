@@ -365,7 +365,7 @@ impl<'a> Parser<'a> {
         result
     }
 
-    fn take_subroutine_call(&mut self, name: String, identifier_token_idx: usize) -> ((Rc<SubroutineCall>, usize), Range<usize>) {
+    fn take_subroutine_call(&mut self, name: String, identifier_token_idx: usize) -> (IndexedJackNode<SubroutineCall>, Range<usize>) {
         use TokenKind::*;
         match self.token_iter.peek() {
             Some(Token { kind: LParen, .. }) => {
@@ -379,8 +379,8 @@ impl<'a> Parser<'a> {
                 };
                 let rc = Rc::new(subroutine_call);
                 let token_range = identifier_token_idx..r_paren.idx + 1;
-                let jack_node_idx = self.record_jack_node(JackNode::SubroutineCallNode(rc.clone()), token_range.clone());
-                ((rc, jack_node_idx), token_range)
+                let node_idx = self.record_jack_node(JackNode::SubroutineCallNode(rc.clone()), token_range.clone());
+                (IndexedJackNode { node: rc, node_idx }, token_range)
             }
             Some(Token { kind: Dot, .. }) => {
                 // Method call
@@ -396,8 +396,8 @@ impl<'a> Parser<'a> {
                 };
                 let rc = Rc::new(method);
                 let token_range = method_name_token_idx..r_paren.idx + 1;
-                let jack_node_idx = self.record_jack_node(JackNode::SubroutineCallNode(rc.clone()), token_range.clone());
-                ((rc, jack_node_idx), token_range)
+                let node_idx = self.record_jack_node(JackNode::SubroutineCallNode(rc.clone()), token_range.clone());
+                (IndexedJackNode { node: rc, node_idx }, token_range)
             }
             _ => panic!("expected subroutine call"),
         }
@@ -416,18 +416,18 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn maybe_take_parameter(&mut self) -> Option<(Rc<Parameter>, usize)> {
+    fn maybe_take_parameter(&mut self) -> Option<IndexedJackNode<Parameter>> {
         self.maybe_take_type().map(|type_name| {
             let (var_name, identifier_token_idx) = self.take_identifier();
             let parameter = Parameter { type_name, var_name };
             let rc = Rc::new(parameter);
             let token_range = identifier_token_idx..identifier_token_idx + 1;
-            let jack_node_idx = self.record_jack_node(JackNode::ParameterNode(rc.clone()), token_range);
-            (rc, jack_node_idx)
+            let node_idx = self.record_jack_node(JackNode::ParameterNode(rc.clone()), token_range);
+            IndexedJackNode { node: rc, node_idx }
         })
     }
 
-    fn take_parameters(&mut self) -> Vec<(Rc<Parameter>, usize)> {
+    fn take_parameters(&mut self) -> Vec<IndexedJackNode<Parameter>> {
         let mut result = Vec::new();
         if let Some(parameter) = self.maybe_take_parameter() {
             result.push(parameter);
@@ -535,7 +535,7 @@ impl<'a> Parser<'a> {
         let (identifier, identifier_token_idx) = self.take_identifier();
         let (subroutine_call, _) = self.take_subroutine_call(identifier, identifier_token_idx);
         let semicolon = self.take_token(TokenKind::Semicolon);
-        let statement = Statement::Do(subroutine_call.0, subroutine_call.1);
+        let statement = Statement::Do(subroutine_call);
         let rc = Rc::new(statement);
         let token_range = do_keyword_token_idx..semicolon.idx + 1;
         let node_idx = self.record_jack_node(JackNode::StatementNode(rc.clone()), token_range.clone());
@@ -584,7 +584,7 @@ impl<'a> Parser<'a> {
         result
     }
 
-    fn take_var_declaration(&mut self) -> (Rc<VarDeclaration>, usize) {
+    fn take_var_declaration(&mut self) -> IndexedJackNode<VarDeclaration> {
         if let Some(Token {
             kind: TokenKind::Keyword(KeywordTokenVariant::Var),
             idx: var_keyword_token_idx,
@@ -597,14 +597,14 @@ impl<'a> Parser<'a> {
             let var_declaration = VarDeclaration { type_name, var_names };
             let rc = Rc::new(var_declaration);
             let token_range = *var_keyword_token_idx..semicolon.idx + 1;
-            let jack_node_idx = self.record_jack_node(JackNode::VarDeclarationNode(rc.clone()), token_range);
-            (rc, jack_node_idx)
+            let node_idx = self.record_jack_node(JackNode::VarDeclarationNode(rc.clone()), token_range);
+            IndexedJackNode { node: rc, node_idx }
         } else {
             panic!("expected var keyword");
         }
     }
 
-    fn take_var_declarations(&mut self) -> Vec<(Rc<VarDeclaration>, usize)> {
+    fn take_var_declarations(&mut self) -> Vec<IndexedJackNode<VarDeclaration>> {
         let mut result = Vec::new();
         while let Some(Token {
             kind: TokenKind::Keyword(KeywordTokenVariant::Var),
@@ -616,7 +616,7 @@ impl<'a> Parser<'a> {
         result
     }
 
-    fn take_subroutine_body(&mut self) -> ((Rc<SubroutineBody>, usize), Range<usize>) {
+    fn take_subroutine_body(&mut self) -> (IndexedJackNode<SubroutineBody>, Range<usize>) {
         let l_curly = self.take_token(TokenKind::LCurly);
         let var_declarations = self.take_var_declarations();
         let statements = self.take_statements();
@@ -627,8 +627,8 @@ impl<'a> Parser<'a> {
         };
         let rc = Rc::new(subroutine_body);
         let token_range = l_curly.idx..r_curly.idx + 1;
-        let jack_node_idx = self.record_jack_node(JackNode::SubroutineBodyNode(rc.clone()), token_range.clone());
-        ((rc, jack_node_idx), token_range)
+        let node_idx = self.record_jack_node(JackNode::SubroutineBodyNode(rc.clone()), token_range.clone());
+        (IndexedJackNode { node: rc, node_idx }, token_range)
     }
 
     fn take_subroutine_declaration(&mut self) -> (IndexedJackNode<SubroutineDeclaration>, Range<usize>) {
@@ -967,36 +967,36 @@ mod tests {
                             subroutine_kind: SubroutineKind::Constructor,
                             return_type: Some(Type::Boolean),
                             parameters: vec![
-                                (
-                                    Rc::new(Parameter {
+                                IndexedJackNode {
+                                    node: Rc::new(Parameter {
                                         type_name: Type::Int,
                                         var_name: "abc".to_string(),
                                     }),
-                                    0
-                                ),
-                                (
-                                    Rc::new(Parameter {
+                                    node_idx: 0
+                                },
+                                IndexedJackNode {
+                                    node: Rc::new(Parameter {
                                         type_name: Type::Char,
                                         var_name: "def".to_string(),
                                     }),
-                                    1
-                                ),
-                                (
-                                    Rc::new(Parameter {
+                                    node_idx: 1
+                                },
+                                IndexedJackNode {
+                                    node: Rc::new(Parameter {
                                         type_name: Type::ClassName("foo".to_string()),
                                         var_name: "ghi".to_string(),
                                     }),
-                                    2
-                                )
+                                    node_idx: 2
+                                }
                             ],
                             name: "bar".to_string(),
-                            body: (
-                                Rc::new(SubroutineBody {
+                            body: IndexedJackNode {
+                                node: Rc::new(SubroutineBody {
                                     var_declarations: vec![],
                                     statements: vec![],
                                 }),
-                                3
-                            ),
+                                node_idx: 3
+                            },
                         }),
                         node_idx: 4
                     },
@@ -1004,21 +1004,21 @@ mod tests {
                         node: Rc::new(SubroutineDeclaration {
                             subroutine_kind: SubroutineKind::Function,
                             return_type: Some(Type::Char),
-                            parameters: vec![(
-                                Rc::new(Parameter {
+                            parameters: vec![IndexedJackNode {
+                                node: Rc::new(Parameter {
                                     type_name: Type::Boolean,
                                     var_name: "_123".to_string(),
                                 }),
-                                5
-                            )],
+                                node_idx: 5
+                            }],
                             name: "baz".to_string(),
-                            body: (
-                                Rc::new(SubroutineBody {
+                            body: IndexedJackNode {
+                                node: Rc::new(SubroutineBody {
                                     var_declarations: vec![],
                                     statements: vec![],
                                 }),
-                                6
-                            ),
+                                node_idx: 6
+                            },
                         }),
                         node_idx: 7
                     },
@@ -1028,13 +1028,13 @@ mod tests {
                             return_type: None,
                             parameters: vec![],
                             name: "qux".to_string(),
-                            body: (
-                                Rc::new(SubroutineBody {
+                            body: IndexedJackNode {
+                                node: Rc::new(SubroutineBody {
                                     var_declarations: vec![],
                                     statements: vec![],
                                 }),
-                                8
-                            ),
+                                node_idx: 8
+                            }
                         }),
                         node_idx: 9
                     },
@@ -1078,15 +1078,15 @@ mod tests {
                         return_type: Some(Type::Int),
                         parameters: vec![],
                         name: "blah".to_string(),
-                        body: (
-                            Rc::new(SubroutineBody {
-                                var_declarations: vec![(
-                                    Rc::new(VarDeclaration {
+                        body: IndexedJackNode {
+                            node: Rc::new(SubroutineBody {
+                                var_declarations: vec![IndexedJackNode {
+                                    node: Rc::new(VarDeclaration {
                                         type_name: Type::Int,
                                         var_names: vec!["a".to_string()],
                                     }),
-                                    0,
-                                )],
+                                    node_idx: 0
+                                }],
                                 statements: vec![
                                     IndexedJackNode {
                                         node: Rc::new(Statement::Let {
@@ -1127,18 +1127,18 @@ mod tests {
                                                     }),
                                                     statements: vec![
                                                         IndexedJackNode {
-                                                            node: Rc::new(Statement::Do(
-                                                                Rc::new(SubroutineCall::Direct {
+                                                            node: Rc::new(Statement::Do(IndexedJackNode {
+                                                                node: Rc::new(SubroutineCall::Direct {
                                                                     subroutine_name: "foobar".to_string(),
                                                                     arguments: vec![],
                                                                 }),
-                                                                8,
-                                                            )),
+                                                                node_idx: 8,
+                                                            })),
                                                             node_idx: 9,
                                                         },
                                                         IndexedJackNode {
-                                                            node: Rc::new(Statement::Do(
-                                                                Rc::new(SubroutineCall::Direct {
+                                                            node: Rc::new(Statement::Do(IndexedJackNode {
+                                                                node: Rc::new(SubroutineCall::Direct {
                                                                     subroutine_name: "foobar".to_string(),
                                                                     arguments: vec![
                                                                         (IndexedJackNode {
@@ -1149,13 +1149,13 @@ mod tests {
                                                                         }),
                                                                     ],
                                                                 }),
-                                                                11,
-                                                            )),
+                                                                node_idx: 11
+                                                            },)),
                                                             node_idx: 12,
                                                         },
                                                         IndexedJackNode {
-                                                            node: Rc::new(Statement::Do(
-                                                                Rc::new(SubroutineCall::Direct {
+                                                            node: Rc::new(Statement::Do(IndexedJackNode {
+                                                                node: Rc::new(SubroutineCall::Direct {
                                                                     subroutine_name: "foobar".to_string(),
                                                                     arguments: vec![
                                                                         IndexedJackNode {
@@ -1178,24 +1178,24 @@ mod tests {
                                                                         }),
                                                                     ],
                                                                 }),
-                                                                16,
-                                                            )),
+                                                                node_idx: 16
+                                                            })),
                                                             node_idx: 17,
                                                         },
                                                         IndexedJackNode {
-                                                            node: Rc::new(Statement::Do(
-                                                                Rc::new(SubroutineCall::Method {
+                                                            node: Rc::new(Statement::Do(IndexedJackNode {
+                                                                node: Rc::new(SubroutineCall::Method {
                                                                     this_name: "foo".to_string(),
                                                                     method_name: "bar".to_string(),
                                                                     arguments: vec![],
                                                                 }),
-                                                                18,
-                                                            )),
+                                                                node_idx: 18
+                                                            })),
                                                             node_idx: 19,
                                                         },
                                                         IndexedJackNode {
-                                                            node: Rc::new(Statement::Do(
-                                                                Rc::new(SubroutineCall::Method {
+                                                            node: Rc::new(Statement::Do(IndexedJackNode {
+                                                                node: Rc::new(SubroutineCall::Method {
                                                                     this_name: "foo".to_string(),
                                                                     method_name: "bar".to_string(),
                                                                     arguments: vec![IndexedJackNode {
@@ -1203,13 +1203,13 @@ mod tests {
                                                                         node_idx: 20,
                                                                     }],
                                                                 }),
-                                                                21,
-                                                            )),
+                                                                node_idx: 21
+                                                            })),
                                                             node_idx: 22,
                                                         },
                                                         IndexedJackNode {
-                                                            node: Rc::new(Statement::Do(
-                                                                Rc::new(SubroutineCall::Method {
+                                                            node: Rc::new(Statement::Do(IndexedJackNode {
+                                                                node: Rc::new(SubroutineCall::Method {
                                                                     this_name: "foo".to_string(),
                                                                     method_name: "bar".to_string(),
                                                                     arguments: vec![
@@ -1233,8 +1233,8 @@ mod tests {
                                                                         },
                                                                     ],
                                                                 }),
-                                                                26,
-                                                            )),
+                                                                node_idx: 26
+                                                            },)),
                                                             node_idx: 27,
                                                         },
                                                     ],
@@ -1253,8 +1253,8 @@ mod tests {
                                     },
                                 ],
                             }),
-                            32
-                        ),
+                            node_idx: 32
+                        },
                     }),
                     node_idx: 33
                 }],
@@ -1316,8 +1316,8 @@ mod tests {
                         return_type: None,
                         parameters: vec![],
                         name: "bar".to_string(),
-                        body: (
-                            Rc::new(SubroutineBody {
+                        body: IndexedJackNode {
+                            node: Rc::new(SubroutineBody {
                                 var_declarations: vec![],
                                 statements: vec![IndexedJackNode {
                                     node: Rc::new(Statement::Let {
@@ -1351,8 +1351,8 @@ mod tests {
                                     node_idx: 5
                                 }],
                             }),
-                            6
-                        ),
+                            node_idx: 6
+                        },
                     }),
                     node_idx: 7
                 }],
@@ -1507,8 +1507,8 @@ mod tests {
                                 node_idx: 0
                             },
                             rhs: IndexedJackNode {
-                                node: Rc::new(Expression::SubroutineCall((
-                                    Rc::new(SubroutineCall::Direct {
+                                node: Rc::new(Expression::SubroutineCall(IndexedJackNode {
+                                    node: Rc::new(SubroutineCall::Direct {
                                         subroutine_name: "foo".to_string(),
                                         arguments: vec![
                                             IndexedJackNode {
@@ -1516,8 +1516,8 @@ mod tests {
                                                 node_idx: 1
                                             },
                                             IndexedJackNode {
-                                                node: Rc::new(Expression::SubroutineCall((
-                                                    Rc::new(SubroutineCall::Method {
+                                                node: Rc::new(Expression::SubroutineCall(IndexedJackNode {
+                                                    node: Rc::new(SubroutineCall::Method {
                                                         this_name: "baz".to_string(),
                                                         method_name: "bar".to_string(),
                                                         arguments: vec![
@@ -1531,8 +1531,8 @@ mod tests {
                                                             },
                                                         ]
                                                     }),
-                                                    4
-                                                ))),
+                                                    node_idx: 4
+                                                })),
                                                 node_idx: 5
                                             },
                                             IndexedJackNode {
@@ -1541,8 +1541,8 @@ mod tests {
                                             },
                                         ]
                                     }),
-                                    7
-                                ))),
+                                    node_idx: 7
+                                })),
                                 node_idx: 8
                             },
                         }),
@@ -1573,8 +1573,8 @@ mod tests {
                                 node_idx: 0
                             },
                             rhs: IndexedJackNode {
-                                node: Rc::new(Expression::SubroutineCall((
-                                    Rc::new(SubroutineCall::Direct {
+                                node: Rc::new(Expression::SubroutineCall(IndexedJackNode {
+                                    node: Rc::new(SubroutineCall::Direct {
                                         subroutine_name: "foo".to_string(),
                                         arguments: vec![
                                             IndexedJackNode {
@@ -1607,8 +1607,8 @@ mod tests {
                                             },
                                         ]
                                     }),
-                                    7
-                                ))),
+                                    node_idx: 7
+                                })),
                                 node_idx: 8
                             },
                         }),
@@ -1649,8 +1649,8 @@ mod tests {
                                         node: Rc::new(Expression::Binary {
                                             operator: BinaryOperator::Divide,
                                             lhs: IndexedJackNode {
-                                                node: Rc::new(Expression::SubroutineCall((
-                                                    Rc::new(SubroutineCall::Method {
+                                                node: Rc::new(Expression::SubroutineCall(IndexedJackNode {
+                                                    node: Rc::new(SubroutineCall::Method {
                                                         this_name: "buz".to_string(),
                                                         method_name: "boz".to_string(),
                                                         arguments: vec![
@@ -1670,8 +1670,8 @@ mod tests {
                                                             },
                                                         ]
                                                     }),
-                                                    5
-                                                ))),
+                                                    node_idx: 5
+                                                })),
                                                 node_idx: 6
                                             },
                                             rhs: IndexedJackNode {

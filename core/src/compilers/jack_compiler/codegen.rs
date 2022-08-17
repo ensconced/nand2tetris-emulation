@@ -67,16 +67,16 @@ impl CodeGenerator {
         self.subroutine_kind = None;
     }
 
-    fn compile_subroutine_var_declarations(&mut self, var_declarations: &[(Rc<VarDeclaration>, usize)]) -> usize {
+    fn compile_subroutine_var_declarations(&mut self, var_declarations: &[IndexedJackNode<VarDeclaration>]) -> usize {
         let mut count = 0;
-        for (var_declaration, _) in var_declarations {
-            for var_name in var_declaration.var_names.iter() {
+        for var_declaration in var_declarations {
+            for var_name in var_declaration.node.var_names.iter() {
                 count += 1;
                 self.subroutine_vars.insert(
                     var_name.clone(),
                     Symbol {
                         offset: self.subroutine_vars.len(),
-                        symbol_type: var_declaration.type_name.clone(),
+                        symbol_type: var_declaration.node.type_name.clone(),
                         kind: SymbolKind::Local,
                     },
                 );
@@ -84,7 +84,7 @@ impl CodeGenerator {
         }
         count
     }
-    fn compile_do_statement(&mut self, subroutine_call: &(Rc<SubroutineCall>, usize)) {
+    fn compile_do_statement(&mut self, subroutine_call: &IndexedJackNode<SubroutineCall>) {
         let pop_return_val = Command::Memory(MemoryCommandVariant::Pop(MemorySegmentVariant::Constant, 0));
         self.compile_subroutine_call_expression(subroutine_call);
         self.vm_commands.push(pop_return_val);
@@ -339,8 +339,8 @@ impl CodeGenerator {
         )));
     }
 
-    fn compile_subroutine_call_expression(&mut self, subroutine_call: &(Rc<SubroutineCall>, usize)) {
-        match &*subroutine_call.0 {
+    fn compile_subroutine_call_expression(&mut self, subroutine_call: &IndexedJackNode<SubroutineCall>) {
+        match &*subroutine_call.node {
             SubroutineCall::Direct { subroutine_name, arguments } => self.compile_direct_subroutine_call_expression(subroutine_name, arguments),
             SubroutineCall::Method {
                 this_name,
@@ -440,7 +440,7 @@ impl CodeGenerator {
 
     fn compile_statement(&mut self, statement: &IndexedJackNode<Statement>) {
         match &*statement.node {
-            Statement::Do(subroutine_call, jack_node_idx) => self.compile_do_statement(&(subroutine_call.clone(), *jack_node_idx)),
+            Statement::Do(subroutine_call) => self.compile_do_statement(&subroutine_call),
             Statement::Let {
                 var_name,
                 array_index,
@@ -456,8 +456,8 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_subroutine_parameters(&mut self, parameters: &Vec<(Rc<Parameter>, usize)>) {
-        for (parameter, _) in parameters {
+    fn compile_subroutine_parameters(&mut self, parameters: &Vec<IndexedJackNode<Parameter>>) {
+        for parameter in parameters {
             let offset = if self.subroutine_kind == Some(SubroutineKind::Method) {
                 self.subroutine_parameters.len() + 1
             } else {
@@ -465,10 +465,10 @@ impl CodeGenerator {
             };
 
             self.subroutine_parameters.insert(
-                parameter.var_name.clone(),
+                parameter.node.var_name.clone(),
                 Symbol {
                     offset,
-                    symbol_type: parameter.type_name.clone(),
+                    symbol_type: parameter.node.type_name.clone(),
                     kind: SymbolKind::Parameter,
                 },
             );
@@ -495,7 +495,7 @@ impl CodeGenerator {
 
         self.compile_subroutine_parameters(&subroutine.parameters);
 
-        let locals_count = self.compile_subroutine_var_declarations(&subroutine.body.0.var_declarations);
+        let locals_count = self.compile_subroutine_var_declarations(&subroutine.body.node.var_declarations);
 
         let class_name = self.get_class_name();
 
@@ -533,7 +533,7 @@ impl CodeGenerator {
         };
 
         self.vm_commands.extend(commands.into_iter());
-        self.compile_statements(&subroutine.body.0.statements);
+        self.compile_statements(&subroutine.body.node.statements);
         self.implicit_return(&subroutine.return_type);
     }
 

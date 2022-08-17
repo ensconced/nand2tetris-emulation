@@ -458,7 +458,7 @@ impl<'a> Parser<'a> {
             })
     }
 
-    fn take_let_statement(&mut self, let_keyword_token_idx: usize) -> ((Rc<Statement>, usize), Range<usize>) {
+    fn take_let_statement(&mut self, let_keyword_token_idx: usize) -> (IndexedJackNode<Statement>, Range<usize>) {
         self.token_iter.next(); // "let" keyword
         let (var_name, _) = self.take_identifier();
         let array_index = self.maybe_take_array_index();
@@ -472,18 +472,18 @@ impl<'a> Parser<'a> {
         };
         let rc = Rc::new(statement);
         let token_range = let_keyword_token_idx..semicolon.idx + 1;
-        let jack_node_idx = self.record_jack_node(JackNode::StatementNode(rc.clone()), token_range.clone());
-        ((rc, jack_node_idx), token_range)
+        let node_idx = self.record_jack_node(JackNode::StatementNode(rc.clone()), token_range.clone());
+        (IndexedJackNode { node: rc, node_idx }, token_range)
     }
 
-    fn take_statement_block(&mut self) -> (Vec<(Rc<Statement>, usize)>, Range<usize>) {
+    fn take_statement_block(&mut self) -> (Vec<IndexedJackNode<Statement>>, Range<usize>) {
         let l_curly = self.take_token(TokenKind::LCurly);
         let statements = self.take_statements();
         let r_curly = self.take_token(TokenKind::RCurly);
         (statements, l_curly.idx..r_curly.idx + 1)
     }
 
-    fn maybe_take_else_block(&mut self) -> Option<(Vec<(Rc<Statement>, usize)>, Range<usize>)> {
+    fn maybe_take_else_block(&mut self) -> Option<(Vec<IndexedJackNode<Statement>>, Range<usize>)> {
         self.token_iter
             .next_if(|token| {
                 matches!(
@@ -497,7 +497,7 @@ impl<'a> Parser<'a> {
             .map(|_| self.take_statement_block())
     }
 
-    fn take_if_statement(&mut self, if_keyword_token_idx: usize) -> ((Rc<Statement>, usize), Range<usize>) {
+    fn take_if_statement(&mut self, if_keyword_token_idx: usize) -> (IndexedJackNode<Statement>, Range<usize>) {
         self.token_iter.next(); // "if" keyword
         self.take_token(TokenKind::LParen);
         let (condition, _) = self.take_expression();
@@ -513,11 +513,11 @@ impl<'a> Parser<'a> {
 
         let last_part_of_token_range = else_block_token_range.unwrap_or(if_statements_token_range);
         let token_range = if_keyword_token_idx..last_part_of_token_range.end;
-        let jack_node_idx = self.record_jack_node(JackNode::StatementNode(rc.clone()), token_range.clone());
-        ((rc, jack_node_idx), token_range)
+        let node_idx = self.record_jack_node(JackNode::StatementNode(rc.clone()), token_range.clone());
+        (IndexedJackNode { node: rc, node_idx }, token_range)
     }
 
-    fn take_while_statement(&mut self, while_keyword_token_idx: usize) -> ((Rc<Statement>, usize), Range<usize>) {
+    fn take_while_statement(&mut self, while_keyword_token_idx: usize) -> (IndexedJackNode<Statement>, Range<usize>) {
         self.token_iter.next(); // "while" keyword
         self.take_token(TokenKind::LParen);
         let (condition, _) = self.take_expression();
@@ -526,11 +526,11 @@ impl<'a> Parser<'a> {
         let statement = Statement::While { condition, statements };
         let rc = Rc::new(statement);
         let token_range = while_keyword_token_idx..statements_token_range.end;
-        let jack_node_idx = self.record_jack_node(JackNode::StatementNode(rc.clone()), token_range.clone());
-        ((rc, jack_node_idx), token_range)
+        let node_idx = self.record_jack_node(JackNode::StatementNode(rc.clone()), token_range.clone());
+        (IndexedJackNode { node: rc, node_idx }, token_range)
     }
 
-    fn take_do_statement(&mut self, do_keyword_token_idx: usize) -> ((Rc<Statement>, usize), Range<usize>) {
+    fn take_do_statement(&mut self, do_keyword_token_idx: usize) -> (IndexedJackNode<Statement>, Range<usize>) {
         self.token_iter.next(); // "do" keyword
         let (identifier, identifier_token_idx) = self.take_identifier();
         let (subroutine_call, _) = self.take_subroutine_call(identifier, identifier_token_idx);
@@ -538,11 +538,11 @@ impl<'a> Parser<'a> {
         let statement = Statement::Do(subroutine_call.0, subroutine_call.1);
         let rc = Rc::new(statement);
         let token_range = do_keyword_token_idx..semicolon.idx + 1;
-        let jack_node_idx = self.record_jack_node(JackNode::StatementNode(rc.clone()), token_range.clone());
-        ((rc, jack_node_idx), token_range)
+        let node_idx = self.record_jack_node(JackNode::StatementNode(rc.clone()), token_range.clone());
+        (IndexedJackNode { node: rc, node_idx }, token_range)
     }
 
-    fn take_return_statement(&mut self, return_keyword_token_idx: usize) -> ((Rc<Statement>, usize), Range<usize>) {
+    fn take_return_statement(&mut self, return_keyword_token_idx: usize) -> (IndexedJackNode<Statement>, Range<usize>) {
         self.token_iter.next(); // "return" keyword
         let expression_result = self.maybe_take_expression_with_binding_power(0);
         let expression = expression_result.map(|(expr, _)| expr);
@@ -550,11 +550,11 @@ impl<'a> Parser<'a> {
         let statement = Statement::Return(expression);
         let rc = Rc::new(statement);
         let token_range = return_keyword_token_idx..semicolon.idx + 1;
-        let jack_node_idx = self.record_jack_node(JackNode::StatementNode(rc.clone()), token_range.clone());
-        ((rc, jack_node_idx), token_range)
+        let node_idx = self.record_jack_node(JackNode::StatementNode(rc.clone()), token_range.clone());
+        (IndexedJackNode { node: rc, node_idx }, token_range)
     }
 
-    fn maybe_take_statement(&mut self) -> Option<((Rc<Statement>, usize), Range<usize>)> {
+    fn maybe_take_statement(&mut self) -> Option<(IndexedJackNode<Statement>, Range<usize>)> {
         use KeywordTokenVariant::*;
         if let Some(Token {
             kind: TokenKind::Keyword(keyword),
@@ -576,7 +576,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn take_statements(&mut self) -> Vec<(Rc<Statement>, usize)> {
+    fn take_statements(&mut self) -> Vec<IndexedJackNode<Statement>> {
         let mut result = Vec::new();
         while let Some((statement, _)) = self.maybe_take_statement() {
             result.push(statement);
@@ -1045,114 +1045,6 @@ mod tests {
 
     #[test]
     fn test_all_statement_types() {
-        let if_statements = vec![(
-            Rc::new(Statement::While {
-                condition: (IndexedJackNode {
-                    node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
-                    node_idx: 7,
-                }),
-                statements: vec![
-                    (
-                        Rc::new(Statement::Do(
-                            Rc::new(SubroutineCall::Direct {
-                                subroutine_name: "foobar".to_string(),
-                                arguments: vec![],
-                            }),
-                            8,
-                        )),
-                        9,
-                    ),
-                    (
-                        Rc::new(Statement::Do(
-                            Rc::new(SubroutineCall::Direct {
-                                subroutine_name: "foobar".to_string(),
-                                arguments: vec![
-                                    (IndexedJackNode {
-                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
-                                        node_idx: 10,
-                                    }),
-                                ],
-                            }),
-                            11,
-                        )),
-                        12,
-                    ),
-                    (
-                        Rc::new(Statement::Do(
-                            Rc::new(SubroutineCall::Direct {
-                                subroutine_name: "foobar".to_string(),
-                                arguments: vec![
-                                    IndexedJackNode {
-                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
-                                        node_idx: 13,
-                                    },
-                                    IndexedJackNode {
-                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
-                                        node_idx: 14,
-                                    },
-                                    (IndexedJackNode {
-                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
-                                        node_idx: 15,
-                                    }),
-                                ],
-                            }),
-                            16,
-                        )),
-                        17,
-                    ),
-                    (
-                        Rc::new(Statement::Do(
-                            Rc::new(SubroutineCall::Method {
-                                this_name: "foo".to_string(),
-                                method_name: "bar".to_string(),
-                                arguments: vec![],
-                            }),
-                            18,
-                        )),
-                        19,
-                    ),
-                    (
-                        Rc::new(Statement::Do(
-                            Rc::new(SubroutineCall::Method {
-                                this_name: "foo".to_string(),
-                                method_name: "bar".to_string(),
-                                arguments: vec![IndexedJackNode {
-                                    node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
-                                    node_idx: 20,
-                                }],
-                            }),
-                            21,
-                        )),
-                        22,
-                    ),
-                    (
-                        Rc::new(Statement::Do(
-                            Rc::new(SubroutineCall::Method {
-                                this_name: "foo".to_string(),
-                                method_name: "bar".to_string(),
-                                arguments: vec![
-                                    IndexedJackNode {
-                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
-                                        node_idx: 23,
-                                    },
-                                    IndexedJackNode {
-                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
-                                        node_idx: 24,
-                                    },
-                                    IndexedJackNode {
-                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
-                                        node_idx: 25,
-                                    },
-                                ],
-                            }),
-                            26,
-                        )),
-                        27,
-                    ),
-                ],
-            }),
-            28,
-        )];
         assert_eq!(
             *parse(
                 "
@@ -1196,8 +1088,8 @@ mod tests {
                                     0,
                                 )],
                                 statements: vec![
-                                    (
-                                        Rc::new(Statement::Let {
+                                    IndexedJackNode {
+                                        node: Rc::new(Statement::Let {
                                             var_name: "a".to_string(),
                                             array_index: None,
                                             value: IndexedJackNode {
@@ -1205,10 +1097,10 @@ mod tests {
                                                 node_idx: 1
                                             },
                                         }),
-                                        2,
-                                    ),
-                                    (
-                                        Rc::new(Statement::Let {
+                                        node_idx: 2
+                                    },
+                                    IndexedJackNode {
+                                        node: Rc::new(Statement::Let {
                                             var_name: "b".to_string(),
                                             array_index: Some(IndexedJackNode {
                                                 node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("22".to_string()))),
@@ -1219,25 +1111,146 @@ mod tests {
                                                 node_idx: 4,
                                             }
                                         }),
-                                        5,
-                                    ),
-                                    (
-                                        Rc::new(Statement::If {
+                                        node_idx: 5
+                                    },
+                                    IndexedJackNode {
+                                        node: Rc::new(Statement::If {
                                             condition: IndexedJackNode {
                                                 node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                                 node_idx: 6
                                             },
-                                            if_statements,
-                                            else_statements: Some(vec![(
-                                                Rc::new(Statement::Return(Some(IndexedJackNode {
+                                            if_statements: vec![IndexedJackNode {
+                                                node: Rc::new(Statement::While {
+                                                    condition: (IndexedJackNode {
+                                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                                        node_idx: 7,
+                                                    }),
+                                                    statements: vec![
+                                                        IndexedJackNode {
+                                                            node: Rc::new(Statement::Do(
+                                                                Rc::new(SubroutineCall::Direct {
+                                                                    subroutine_name: "foobar".to_string(),
+                                                                    arguments: vec![],
+                                                                }),
+                                                                8,
+                                                            )),
+                                                            node_idx: 9,
+                                                        },
+                                                        IndexedJackNode {
+                                                            node: Rc::new(Statement::Do(
+                                                                Rc::new(SubroutineCall::Direct {
+                                                                    subroutine_name: "foobar".to_string(),
+                                                                    arguments: vec![
+                                                                        (IndexedJackNode {
+                                                                            node: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                                                                "1".to_string()
+                                                                            ))),
+                                                                            node_idx: 10,
+                                                                        }),
+                                                                    ],
+                                                                }),
+                                                                11,
+                                                            )),
+                                                            node_idx: 12,
+                                                        },
+                                                        IndexedJackNode {
+                                                            node: Rc::new(Statement::Do(
+                                                                Rc::new(SubroutineCall::Direct {
+                                                                    subroutine_name: "foobar".to_string(),
+                                                                    arguments: vec![
+                                                                        IndexedJackNode {
+                                                                            node: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                                                                "1".to_string()
+                                                                            ))),
+                                                                            node_idx: 13,
+                                                                        },
+                                                                        IndexedJackNode {
+                                                                            node: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                                                                "2".to_string()
+                                                                            ))),
+                                                                            node_idx: 14,
+                                                                        },
+                                                                        (IndexedJackNode {
+                                                                            node: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                                                                "3".to_string()
+                                                                            ))),
+                                                                            node_idx: 15,
+                                                                        }),
+                                                                    ],
+                                                                }),
+                                                                16,
+                                                            )),
+                                                            node_idx: 17,
+                                                        },
+                                                        IndexedJackNode {
+                                                            node: Rc::new(Statement::Do(
+                                                                Rc::new(SubroutineCall::Method {
+                                                                    this_name: "foo".to_string(),
+                                                                    method_name: "bar".to_string(),
+                                                                    arguments: vec![],
+                                                                }),
+                                                                18,
+                                                            )),
+                                                            node_idx: 19,
+                                                        },
+                                                        IndexedJackNode {
+                                                            node: Rc::new(Statement::Do(
+                                                                Rc::new(SubroutineCall::Method {
+                                                                    this_name: "foo".to_string(),
+                                                                    method_name: "bar".to_string(),
+                                                                    arguments: vec![IndexedJackNode {
+                                                                        node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                                                        node_idx: 20,
+                                                                    }],
+                                                                }),
+                                                                21,
+                                                            )),
+                                                            node_idx: 22,
+                                                        },
+                                                        IndexedJackNode {
+                                                            node: Rc::new(Statement::Do(
+                                                                Rc::new(SubroutineCall::Method {
+                                                                    this_name: "foo".to_string(),
+                                                                    method_name: "bar".to_string(),
+                                                                    arguments: vec![
+                                                                        IndexedJackNode {
+                                                                            node: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                                                                "1".to_string()
+                                                                            ))),
+                                                                            node_idx: 23,
+                                                                        },
+                                                                        IndexedJackNode {
+                                                                            node: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                                                                "2".to_string()
+                                                                            ))),
+                                                                            node_idx: 24,
+                                                                        },
+                                                                        IndexedJackNode {
+                                                                            node: Rc::new(Expression::PrimitiveTerm(IntegerConstant(
+                                                                                "3".to_string()
+                                                                            ))),
+                                                                            node_idx: 25,
+                                                                        },
+                                                                    ],
+                                                                }),
+                                                                26,
+                                                            )),
+                                                            node_idx: 27,
+                                                        },
+                                                    ],
+                                                }),
+                                                node_idx: 28
+                                            },],
+                                            else_statements: Some(vec![IndexedJackNode {
+                                                node: Rc::new(Statement::Return(Some(IndexedJackNode {
                                                     node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("123".to_string(),))),
                                                     node_idx: 29
                                                 },))),
-                                                30,
-                                            )]),
+                                                node_idx: 30
+                                            },]),
                                         }),
-                                        31,
-                                    ),
+                                        node_idx: 31
+                                    },
                                 ],
                             }),
                             32
@@ -1306,8 +1319,8 @@ mod tests {
                         body: (
                             Rc::new(SubroutineBody {
                                 var_declarations: vec![],
-                                statements: vec![(
-                                    Rc::new(Statement::Let {
+                                statements: vec![IndexedJackNode {
+                                    node: Rc::new(Statement::Let {
                                         var_name: "a".to_string(),
                                         array_index: None,
                                         value: IndexedJackNode {
@@ -1335,8 +1348,8 @@ mod tests {
                                             node_idx: 4
                                         }
                                     }),
-                                    5
-                                )],
+                                    node_idx: 5
+                                }],
                             }),
                             6
                         ),

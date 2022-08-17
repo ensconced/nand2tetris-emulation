@@ -121,8 +121,8 @@ impl CodeGenerator {
     fn compile_if_statement(
         &mut self,
         condition: &IndexedJackNode<Expression>,
-        if_statements: &[(Rc<Statement>, usize)],
-        else_statements: &Option<Vec<(Rc<Statement>, usize)>>,
+        if_statements: &[IndexedJackNode<Statement>],
+        else_statements: &Option<Vec<IndexedJackNode<Statement>>>,
     ) {
         let if_count = self.subroutine_if_count;
         self.subroutine_if_count += 1;
@@ -407,13 +407,13 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_statements(&mut self, statements: &[(Rc<Statement>, usize)]) {
+    fn compile_statements(&mut self, statements: &[IndexedJackNode<Statement>]) {
         for statement in statements {
             self.compile_statement(statement);
         }
     }
 
-    fn compile_while_statement(&mut self, condition: &IndexedJackNode<Expression>, statements: &[(Rc<Statement>, usize)]) {
+    fn compile_while_statement(&mut self, condition: &IndexedJackNode<Expression>, statements: &[IndexedJackNode<Statement>]) {
         let while_idx = self.subroutine_while_count;
         self.subroutine_while_count += 1;
 
@@ -438,8 +438,8 @@ impl CodeGenerator {
         self.vm_commands.extend(cmds.into_iter());
     }
 
-    fn compile_statement(&mut self, statement: &(Rc<Statement>, usize)) {
-        match &*statement.0 {
+    fn compile_statement(&mut self, statement: &IndexedJackNode<Statement>) {
+        match &*statement.node {
             Statement::Do(subroutine_call, jack_node_idx) => self.compile_do_statement(&(subroutine_call.clone(), *jack_node_idx)),
             Statement::Let {
                 var_name,

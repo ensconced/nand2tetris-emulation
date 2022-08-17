@@ -3,4 +3,4 @@ import type { Expression } from "./Expression";
 import type { IndexedJackNode } from "./IndexedJackNode";
 import type { SubroutineCall } from "./SubroutineCall";
 
-export type Statement = { Let: { var_name: string, array_index: IndexedJackNode<Expression> | null, value: IndexedJackNode<Expression>, } } | { If: { condition: IndexedJackNode<Expression>, if_statements: Array<[Statement, number]>, else_statements: Array<[Statement, number]> | null, } } | { While: { condition: IndexedJackNode<Expression>, statements: Array<[Statement, number]>, } } | { Do: [SubroutineCall, number] } | { Return: IndexedJackNode<Expression> | null };
+export type Statement = { Let: { var_name: string, array_index: IndexedJackNode<Expression> | null, value: IndexedJackNode<Expression>, } } | { If: { condition: IndexedJackNode<Expression>, if_statements: Array<IndexedJackNode<Statement>>, else_statements: Array<IndexedJackNode<Statement>> | null, } } | { While: { condition: IndexedJackNode<Expression>, statements: Array<IndexedJackNode<Statement>>, } } | { Do: [SubroutineCall, number] } | { Return: IndexedJackNode<Expression> | null };

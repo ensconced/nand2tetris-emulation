@@ -150,12 +150,12 @@ pub enum Statement {
     },
     If {
         condition: IndexedJackNode<Expression>,
-        if_statements: Vec<(Rc<Statement>, usize)>,
-        else_statements: Option<Vec<(Rc<Statement>, usize)>>,
+        if_statements: Vec<IndexedJackNode<Statement>>,
+        else_statements: Option<Vec<IndexedJackNode<Statement>>>,
     },
     While {
         condition: IndexedJackNode<Expression>,
-        statements: Vec<(Rc<Statement>, usize)>,
+        statements: Vec<IndexedJackNode<Statement>>,
     },
     Do(Rc<SubroutineCall>, usize),
     Return(Option<IndexedJackNode<Expression>>),
@@ -173,7 +173,7 @@ pub struct VarDeclaration {
 #[ts(export_to = "../bindings/")]
 pub struct SubroutineBody {
     pub var_declarations: Vec<(Rc<VarDeclaration>, usize)>,
-    pub statements: Vec<(Rc<Statement>, usize)>,
+    pub statements: Vec<IndexedJackNode<Statement>>,
 }
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]

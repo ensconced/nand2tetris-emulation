@@ -5,4 +5,4 @@ import type { PrimitiveTermVariant } from "./PrimitiveTermVariant";
 import type { SubroutineCall } from "./SubroutineCall";
 import type { UnaryOperator } from "./UnaryOperator";
 
-export type Expression = { Parenthesized: IndexedJackNode<Expression> } | { PrimitiveTerm: PrimitiveTermVariant } | { Binary: { operator: BinaryOperator, lhs: IndexedJackNode<Expression>, rhs: IndexedJackNode<Expression>, } } | { Unary: { operator: UnaryOperator, operand: IndexedJackNode<Expression>, } } | { Variable: string } | { SubroutineCall: [SubroutineCall, number] } | { ArrayAccess: { var_name: string, index: IndexedJackNode<Expression>, } };
+export type Expression = { Parenthesized: IndexedJackNode<Expression> } | { PrimitiveTerm: PrimitiveTermVariant } | { Binary: { operator: BinaryOperator, lhs: IndexedJackNode<Expression>, rhs: IndexedJackNode<Expression>, } } | { Unary: { operator: UnaryOperator, operand: IndexedJackNode<Expression>, } } | { Variable: string } | { SubroutineCall: IndexedJackNode<SubroutineCall> } | { ArrayAccess: { var_name: string, index: IndexedJackNode<Expression>, } };

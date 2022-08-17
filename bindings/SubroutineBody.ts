@@ -3,4 +3,4 @@ import type { IndexedJackNode } from "./IndexedJackNode";
 import type { Statement } from "./Statement";
 import type { VarDeclaration } from "./VarDeclaration";
 
-export interface SubroutineBody { var_declarations: Array<[VarDeclaration, number]>, statements: Array<IndexedJackNode<Statement>>, }
+export interface SubroutineBody { var_declarations: Array<IndexedJackNode<VarDeclaration>>, statements: Array<IndexedJackNode<Statement>>, }

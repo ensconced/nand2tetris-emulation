@@ -1326,16 +1326,16 @@ mod tests {
                     lhs: IndexedJackNode {
                         node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                         node_idx: 0,
-                        token_range: 0..1,
+                        token_range: 0..5,
                     },
                     rhs: IndexedJackNode {
                         node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                         node_idx: 1,
-                        token_range: 0..1,
+                        token_range: 4..5,
                     }
                 }),
                 node_idx: 2,
-                token_range: 0..1,
+                token_range: 0..5,
             }
         )
     }
@@ -1542,11 +1542,11 @@ mod tests {
                             operand: IndexedJackNode {
                                 node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                 node_idx: 0,
-                                token_range: 0..1
+                                token_range: 1..2
                             },
                         }),
                         node_idx: 1,
-                        token_range: 0..1
+                        token_range: 0..7
                     },
                     rhs: IndexedJackNode {
                         node: Rc::new(Expression::Unary {
@@ -1554,15 +1554,15 @@ mod tests {
                             operand: IndexedJackNode {
                                 node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                                 node_idx: 2,
-                                token_range: 0..1
+                                token_range: 6..7
                             }
                         }),
                         node_idx: 3,
-                        token_range: 0..1
+                        token_range: 5..7
                     },
                 }),
                 node_idx: 4,
-                token_range: 0..1
+                token_range: 0..7
             }
         )
     }
@@ -1826,52 +1826,52 @@ mod tests {
                                                     lhs: IndexedJackNode {
                                                         node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                                         node_idx: 0,
-                                                        token_range: 0..1
+                                                        token_range: 0..5
                                                     },
                                                     rhs: IndexedJackNode {
                                                         node: Rc::new(Expression::PrimitiveTerm(StringConstant("hello".to_string()))),
                                                         node_idx: 1,
-                                                        token_range: 0..1
+                                                        token_range: 4..5
                                                     },
                                                 }),
                                                 node_idx: 2,
-                                                token_range: 0..1
+                                                token_range: 0..9
                                             },
                                             rhs: IndexedJackNode {
                                                 node: Rc::new(Expression::PrimitiveTerm(PrimitiveTermVariant::True)),
                                                 node_idx: 3,
-                                                token_range: 0..1
+                                                token_range: 8..9
                                             },
                                         }),
                                         node_idx: 4,
-                                        token_range: 0..1
+                                        token_range: 0..13
                                     },
                                     rhs: IndexedJackNode {
                                         node: Rc::new(Expression::PrimitiveTerm(PrimitiveTermVariant::False)),
                                         node_idx: 5,
-                                        token_range: 0..1
+                                        token_range: 12..13
                                     },
                                 }),
                                 node_idx: 6,
-                                token_range: 0..1
+                                token_range: 0..17
                             },
                             rhs: IndexedJackNode {
                                 node: Rc::new(Expression::PrimitiveTerm(PrimitiveTermVariant::Null)),
                                 node_idx: 7,
-                                token_range: 0..1
+                                token_range: 16..17
                             },
                         }),
                         node_idx: 8,
-                        token_range: 0..1
+                        token_range: 0..21
                     },
                     rhs: IndexedJackNode {
                         node: Rc::new(Expression::PrimitiveTerm(PrimitiveTermVariant::This)),
                         node_idx: 9,
-                        token_range: 0..1
+                        token_range: 20..21
                     }
                 }),
                 node_idx: 10,
-                token_range: 0..1
+                token_range: 0..21
             }
         )
     }
@@ -1890,28 +1890,28 @@ mod tests {
                                 lhs: IndexedJackNode {
                                     node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                     node_idx: 0,
-                                    token_range: 0..1
+                                    token_range: 1..6
                                 },
                                 rhs: IndexedJackNode {
                                     node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                                     node_idx: 1,
-                                    token_range: 0..1
+                                    token_range: 5..6
                                 },
                             }),
                             node_idx: 2,
-                            token_range: 0..1
+                            token_range: 1..6
                         })),
                         node_idx: 3,
-                        token_range: 0..1
+                        token_range: 0..11
                     },
                     rhs: IndexedJackNode {
                         node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
                         node_idx: 4,
-                        token_range: 0..1
+                        token_range: 10..11
                     },
                 }),
                 node_idx: 5,
-                token_range: 0..1
+                token_range: 0..11
             }
         )
     }

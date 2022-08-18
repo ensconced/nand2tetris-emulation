@@ -1733,7 +1733,7 @@ mod tests {
                     lhs: IndexedJackNode {
                         node: Rc::new(Expression::Variable("foo".to_string())),
                         node_idx: 0,
-                        token_range: 0..1
+                        token_range: 0..27
                     },
                     rhs: IndexedJackNode {
                         node: Rc::new(Expression::ArrayAccess {
@@ -1744,7 +1744,7 @@ mod tests {
                                     lhs: IndexedJackNode {
                                         node: Rc::new(Expression::Variable("baz".to_string())),
                                         node_idx: 1,
-                                        token_range: 0..1
+                                        token_range: 6..26
                                     },
                                     rhs: IndexedJackNode {
                                         node: Rc::new(Expression::Binary {
@@ -1758,7 +1758,7 @@ mod tests {
                                                             IndexedJackNode {
                                                                 node: Rc::new(Expression::Variable("qux".to_string())),
                                                                 node_idx: 2,
-                                                                token_range: 0..1
+                                                                token_range: 14..15
                                                             },
                                                             IndexedJackNode {
                                                                 node: Rc::new(Expression::ArrayAccess {
@@ -1766,40 +1766,40 @@ mod tests {
                                                                     index: IndexedJackNode {
                                                                         node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("123".to_string()))),
                                                                         node_idx: 3,
-                                                                        token_range: 0..1
+                                                                        token_range: 19..20
                                                                     }
                                                                 }),
                                                                 node_idx: 4,
-                                                                token_range: 0..1
+                                                                token_range: 18..21
                                                             },
                                                         ]
                                                     }),
                                                     node_idx: 5,
-                                                    token_range: 0..1
+                                                    token_range: 12..22
                                                 })),
                                                 node_idx: 6,
-                                                token_range: 0..1
+                                                token_range: 12..26
                                             },
                                             rhs: IndexedJackNode {
                                                 node: Rc::new(Expression::Variable("bing".to_string())),
                                                 node_idx: 7,
-                                                token_range: 0..1
+                                                token_range: 25..26
                                             }
                                         }),
                                         node_idx: 8,
-                                        token_range: 0..1
+                                        token_range: 12..26
                                     },
                                 }),
                                 node_idx: 9,
-                                token_range: 0..1
+                                token_range: 6..26
                             }
                         }),
                         node_idx: 10,
-                        token_range: 0..1
+                        token_range: 5..27
                     },
                 }),
                 node_idx: 11,
-                token_range: 0..1
+                token_range: 0..27
             })
         )
     }

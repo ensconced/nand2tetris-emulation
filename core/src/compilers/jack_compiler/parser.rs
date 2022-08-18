@@ -1580,7 +1580,7 @@ mod tests {
                             lhs: IndexedJackNode {
                                 node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                 node_idx: 0,
-                                token_range: 0..1
+                                token_range: 0..22
                             },
                             rhs: IndexedJackNode {
                                 node: Rc::new(Expression::SubroutineCall(IndexedJackNode {
@@ -1590,7 +1590,7 @@ mod tests {
                                             IndexedJackNode {
                                                 node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                                 node_idx: 1,
-                                                token_range: 0..1
+                                                token_range: 6..7
                                             },
                                             IndexedJackNode {
                                                 node: Rc::new(Expression::SubroutineCall(IndexedJackNode {
@@ -1601,46 +1601,46 @@ mod tests {
                                                             IndexedJackNode {
                                                                 node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                                                 node_idx: 2,
-                                                                token_range: 0..1
+                                                                token_range: 13..14
                                                             },
                                                             IndexedJackNode {
                                                                 node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                                                                 node_idx: 3,
-                                                                token_range: 0..1
+                                                                token_range: 16..17
                                                             },
                                                         ]
                                                     }),
                                                     node_idx: 4,
-                                                    token_range: 0..1
+                                                    token_range: 11..18
                                                 })),
                                                 node_idx: 5,
-                                                token_range: 0..1
+                                                token_range: 11..18
                                             },
                                             IndexedJackNode {
                                                 node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
                                                 node_idx: 6,
-                                                token_range: 0..1
+                                                token_range: 20..21
                                             },
                                         ]
                                     }),
                                     node_idx: 7,
-                                    token_range: 0..1
+                                    token_range: 4..22
                                 })),
                                 node_idx: 8,
-                                token_range: 0..1
+                                token_range: 4..22
                             },
                         }),
                         node_idx: 9,
-                        token_range: 0..1
+                        token_range: 0..26
                     },
                     rhs: IndexedJackNode {
                         node: Rc::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                         node_idx: 10,
-                        token_range: 0..1
+                        token_range: 25..26
                     },
                 }),
                 node_idx: 11,
-                token_range: 0..1
+                token_range: 0..26
             }
         )
     }

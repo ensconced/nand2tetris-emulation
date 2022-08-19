@@ -1,23 +1,44 @@
 use serde::Serialize;
-use std::{collections::HashMap, ops::Range, rc::Rc};
-
-use super::jack_node_types::{
-    Class, ClassVarDeclaration, ClassVarDeclarationKind, Expression, Parameter, Statement, SubroutineBody, SubroutineCall, SubroutineDeclaration,
-    VarDeclaration,
-};
+use std::{collections::HashMap, ops::Range};
 
 #[derive(Serialize)]
-pub enum JackNode {
-    ClassNode(#[serde(skip_serializing)] Rc<Class>),
-    ClassVarDeclarationKindNode(#[serde(skip_serializing)] Rc<ClassVarDeclarationKind>),
-    ClassVarDeclarationNode(#[serde(skip_serializing)] Rc<ClassVarDeclaration>),
-    ExpressionNode(#[serde(skip_serializing)] Rc<Expression>),
-    ParameterNode(#[serde(skip_serializing)] Rc<Parameter>),
-    SubroutineCallNode(#[serde(skip_serializing)] Rc<SubroutineCall>),
-    StatementNode(#[serde(skip_serializing)] Rc<Statement>),
-    SubroutineBodyNode(#[serde(skip_serializing)] Rc<SubroutineBody>),
-    SubroutineDeclarationNode(#[serde(skip_serializing)] Rc<SubroutineDeclaration>),
-    VarDeclarationNode(#[serde(skip_serializing)] Rc<VarDeclaration>),
+pub struct JackNode {
+    pub token_range: Range<usize>,
+    pub node_type: JackNodeType,
+}
+
+#[derive(Serialize)]
+pub enum ExpressionType {
+    Parenthesized,
+    PrimitiveTerm,
+    Binary,
+    Unary,
+    Variable,
+    SubroutineCall,
+    ArrayAccess,
+}
+
+#[derive(Serialize)]
+pub enum StatementType {
+    Let,
+    If,
+    While,
+    Do,
+    Return,
+}
+
+#[derive(Serialize)]
+pub enum JackNodeType {
+    ClassNode,
+    ClassVarDeclarationKindNode,
+    ClassVarDeclarationNode,
+    ExpressionNode(ExpressionType),
+    ParameterNode,
+    SubroutineCallNode,
+    StatementNode(StatementType),
+    SubroutineBodyNode,
+    SubroutineDeclarationNode,
+    VarDeclarationNode,
 }
 
 #[derive(Serialize)]

@@ -5,7 +5,7 @@ use crate::compilers::vm_compiler::parser::{
 
 use super::{
     jack_node_types::{
-        BinaryOperator, Class, ClassVarDeclaration, ClassVarDeclarationKind, Expression, IndexedJackNode, Parameter, PrimitiveTermVariant, Statement,
+        ASTNode, BinaryOperator, Class, ClassVarDeclaration, ClassVarDeclarationKind, Expression, Parameter, PrimitiveTermVariant, Statement,
         SubroutineCall, SubroutineDeclaration, SubroutineKind, Type, UnaryOperator, VarDeclaration,
     },
     sourcemap::VMCodegenSourceMap,
@@ -67,7 +67,7 @@ impl CodeGenerator {
         self.subroutine_kind = None;
     }
 
-    fn compile_subroutine_var_declarations(&mut self, var_declarations: &[IndexedJackNode<VarDeclaration>]) -> usize {
+    fn compile_subroutine_var_declarations(&mut self, var_declarations: &[ASTNode<VarDeclaration>]) -> usize {
         let mut count = 0;
         for var_declaration in var_declarations {
             for var_name in var_declaration.node.var_names.iter() {
@@ -84,13 +84,13 @@ impl CodeGenerator {
         }
         count
     }
-    fn compile_do_statement(&mut self, subroutine_call: &IndexedJackNode<SubroutineCall>) {
+    fn compile_do_statement(&mut self, subroutine_call: &ASTNode<SubroutineCall>) {
         let pop_return_val = Command::Memory(MemoryCommandVariant::Pop(MemorySegmentVariant::Constant, 0));
         self.compile_subroutine_call_expression(subroutine_call);
         self.vm_commands.push(pop_return_val);
     }
 
-    fn compile_let_statement(&mut self, var_name: &str, array_index: &Option<IndexedJackNode<Expression>>, value: &IndexedJackNode<Expression>) {
+    fn compile_let_statement(&mut self, var_name: &str, array_index: &Option<ASTNode<Expression>>, value: &ASTNode<Expression>) {
         self.compile_expression(value);
         let (var_mem_segment, var_seg_idx) = self.compile_variable(var_name);
 
@@ -120,9 +120,9 @@ impl CodeGenerator {
 
     fn compile_if_statement(
         &mut self,
-        condition: &IndexedJackNode<Expression>,
-        if_statements: &[IndexedJackNode<Statement>],
-        else_statements: &Option<Vec<IndexedJackNode<Statement>>>,
+        condition: &ASTNode<Expression>,
+        if_statements: &[ASTNode<Statement>],
+        else_statements: &Option<Vec<ASTNode<Statement>>>,
     ) {
         let if_count = self.subroutine_if_count;
         self.subroutine_if_count += 1;
@@ -149,7 +149,7 @@ impl CodeGenerator {
             .push(Command::Flow(FlowCommandVariant::Label(format!("end_if_{}", if_count))));
     }
 
-    fn compile_return_statement(&mut self, return_value: &Option<IndexedJackNode<Expression>>) {
+    fn compile_return_statement(&mut self, return_value: &Option<ASTNode<Expression>>) {
         if let Some(expression) = return_value {
             self.compile_expression(expression);
         } else {
@@ -160,7 +160,7 @@ impl CodeGenerator {
         self.vm_commands.push(Command::Function(FunctionCommandVariant::ReturnFrom))
     }
 
-    fn compile_array_access_expression(&mut self, var_name: &str, index: &IndexedJackNode<Expression>) {
+    fn compile_array_access_expression(&mut self, var_name: &str, index: &ASTNode<Expression>) {
         let (arr_mem_seg, arr_seg_idx) = self.compile_variable(var_name);
 
         self.vm_commands
@@ -185,7 +185,7 @@ impl CodeGenerator {
         self.vm_commands.extend(cmds.into_iter());
     }
 
-    fn compile_binary_expression(&mut self, operator: &BinaryOperator, lhs: &IndexedJackNode<Expression>, rhs: &IndexedJackNode<Expression>) {
+    fn compile_binary_expression(&mut self, operator: &BinaryOperator, lhs: &ASTNode<Expression>, rhs: &ASTNode<Expression>) {
         self.compile_expression(lhs);
         self.compile_expression(rhs);
 
@@ -292,13 +292,13 @@ impl CodeGenerator {
         self.vm_commands.extend(cmds.into_iter());
     }
 
-    fn compile_push_arguments(&mut self, arguments: &[IndexedJackNode<Expression>]) {
+    fn compile_push_arguments(&mut self, arguments: &[ASTNode<Expression>]) {
         for argument in arguments {
             self.compile_expression(argument);
         }
     }
 
-    fn compile_method_subroutine_call_expression(&mut self, this_name: &str, method_name: &str, arguments: &[IndexedJackNode<Expression>]) {
+    fn compile_method_subroutine_call_expression(&mut self, this_name: &str, method_name: &str, arguments: &[ASTNode<Expression>]) {
         let arg_count = arguments.len();
 
         if let Some(symbol) = self.maybe_resolve_symbol(this_name) {
@@ -329,7 +329,7 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_direct_subroutine_call_expression(&mut self, subroutine_name: &str, arguments: &Vec<IndexedJackNode<Expression>>) {
+    fn compile_direct_subroutine_call_expression(&mut self, subroutine_name: &str, arguments: &Vec<ASTNode<Expression>>) {
         let arg_count = arguments.len();
         let class_name = self.get_class_name().to_owned();
         self.compile_push_arguments(arguments);
@@ -339,7 +339,7 @@ impl CodeGenerator {
         )));
     }
 
-    fn compile_subroutine_call_expression(&mut self, subroutine_call: &IndexedJackNode<SubroutineCall>) {
+    fn compile_subroutine_call_expression(&mut self, subroutine_call: &ASTNode<SubroutineCall>) {
         match &*subroutine_call.node {
             SubroutineCall::Direct { subroutine_name, arguments } => self.compile_direct_subroutine_call_expression(subroutine_name, arguments),
             SubroutineCall::Method {
@@ -350,7 +350,7 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_unary_expression(&mut self, operator: &UnaryOperator, operand: &IndexedJackNode<Expression>) {
+    fn compile_unary_expression(&mut self, operator: &UnaryOperator, operand: &ASTNode<Expression>) {
         let perform_op = match operator {
             UnaryOperator::Minus => Command::Arithmetic(ArithmeticCommandVariant::Unary(UnaryArithmeticCommandVariant::Neg)),
             UnaryOperator::Not => Command::Arithmetic(ArithmeticCommandVariant::Unary(UnaryArithmeticCommandVariant::Not)),
@@ -391,7 +391,7 @@ impl CodeGenerator {
         (symbol_kind, symbol.offset)
     }
 
-    fn compile_expression(&mut self, expression: &IndexedJackNode<Expression>) {
+    fn compile_expression(&mut self, expression: &ASTNode<Expression>) {
         match &*expression.node {
             Expression::Parenthesized(expr) => self.compile_expression(expr),
             Expression::ArrayAccess { var_name, index } => self.compile_array_access_expression(var_name, index),
@@ -407,13 +407,13 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_statements(&mut self, statements: &[IndexedJackNode<Statement>]) {
+    fn compile_statements(&mut self, statements: &[ASTNode<Statement>]) {
         for statement in statements {
             self.compile_statement(statement);
         }
     }
 
-    fn compile_while_statement(&mut self, condition: &IndexedJackNode<Expression>, statements: &[IndexedJackNode<Statement>]) {
+    fn compile_while_statement(&mut self, condition: &ASTNode<Expression>, statements: &[ASTNode<Statement>]) {
         let while_idx = self.subroutine_while_count;
         self.subroutine_while_count += 1;
 
@@ -438,7 +438,7 @@ impl CodeGenerator {
         self.vm_commands.extend(cmds.into_iter());
     }
 
-    fn compile_statement(&mut self, statement: &IndexedJackNode<Statement>) {
+    fn compile_statement(&mut self, statement: &ASTNode<Statement>) {
         match &*statement.node {
             Statement::Do(subroutine_call) => self.compile_do_statement(&subroutine_call),
             Statement::Let {
@@ -456,7 +456,7 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_subroutine_parameters(&mut self, parameters: &Vec<IndexedJackNode<Parameter>>) {
+    fn compile_subroutine_parameters(&mut self, parameters: &Vec<ASTNode<Parameter>>) {
         for parameter in parameters {
             let offset = if self.subroutine_kind == Some(SubroutineKind::Method) {
                 self.subroutine_parameters.len() + 1
@@ -488,7 +488,7 @@ impl CodeGenerator {
         self.vm_commands.extend(commands.into_iter());
     }
 
-    fn compile_subroutine(&mut self, indexed_subroutine: &IndexedJackNode<SubroutineDeclaration>, instance_size: usize) {
+    fn compile_subroutine(&mut self, indexed_subroutine: &ASTNode<SubroutineDeclaration>, instance_size: usize) {
         let subroutine = &indexed_subroutine.node;
         self.clear_subroutine();
         self.subroutine_kind = Some(subroutine.subroutine_kind);
@@ -537,13 +537,13 @@ impl CodeGenerator {
         self.implicit_return(&subroutine.return_type);
     }
 
-    pub fn compile_subroutines(&mut self, subroutine_declarations: &[IndexedJackNode<SubroutineDeclaration>], instance_size: usize) {
+    pub fn compile_subroutines(&mut self, subroutine_declarations: &[ASTNode<SubroutineDeclaration>], instance_size: usize) {
         for subroutine in subroutine_declarations {
             self.compile_subroutine(subroutine, instance_size);
         }
     }
 
-    pub fn compile_var_declarations(&mut self, var_declarations: &Vec<IndexedJackNode<ClassVarDeclaration>>) -> usize {
+    pub fn compile_var_declarations(&mut self, var_declarations: &Vec<ASTNode<ClassVarDeclaration>>) -> usize {
         let mut instance_size = 0;
         for var_declaration in var_declarations {
             let (hashmap, symbol_kind) = match *var_declaration.node.qualifier.node {

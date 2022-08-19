@@ -6,7 +6,7 @@ use ts_rs::TS;
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
-pub struct IndexedJackNode<T> {
+pub struct ASTNode<T> {
     pub node: Box<T>,
     pub node_idx: usize,
     pub token_range: Range<usize>,
@@ -17,8 +17,8 @@ pub struct IndexedJackNode<T> {
 #[ts(export_to = "../bindings/")]
 pub struct Class {
     pub name: String,
-    pub var_declarations: Vec<IndexedJackNode<ClassVarDeclaration>>,
-    pub subroutine_declarations: Vec<IndexedJackNode<SubroutineDeclaration>>,
+    pub var_declarations: Vec<ASTNode<ClassVarDeclaration>>,
+    pub subroutine_declarations: Vec<ASTNode<SubroutineDeclaration>>,
 }
 
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
@@ -44,7 +44,7 @@ pub enum Type {
 #[ts(export_to = "../bindings/")]
 pub struct ClassVarDeclaration {
     pub type_name: Type,
-    pub qualifier: IndexedJackNode<ClassVarDeclarationKind>,
+    pub qualifier: ASTNode<ClassVarDeclarationKind>,
     pub var_names: Vec<String>,
 }
 
@@ -98,22 +98,22 @@ pub enum UnaryOperator {
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub enum Expression {
-    Parenthesized(IndexedJackNode<Expression>),
+    Parenthesized(ASTNode<Expression>),
     PrimitiveTerm(PrimitiveTermVariant),
     Binary {
         operator: BinaryOperator,
-        lhs: IndexedJackNode<Expression>,
-        rhs: IndexedJackNode<Expression>,
+        lhs: ASTNode<Expression>,
+        rhs: ASTNode<Expression>,
     },
     Unary {
         operator: UnaryOperator,
-        operand: IndexedJackNode<Expression>,
+        operand: ASTNode<Expression>,
     },
     Variable(String),
-    SubroutineCall(IndexedJackNode<SubroutineCall>),
+    SubroutineCall(ASTNode<SubroutineCall>),
     ArrayAccess {
         var_name: String,
-        index: IndexedJackNode<Expression>,
+        index: ASTNode<Expression>,
     },
 }
 
@@ -131,12 +131,12 @@ pub struct Parameter {
 pub enum SubroutineCall {
     Direct {
         subroutine_name: String,
-        arguments: Vec<IndexedJackNode<Expression>>,
+        arguments: Vec<ASTNode<Expression>>,
     },
     Method {
         this_name: String,
         method_name: String,
-        arguments: Vec<IndexedJackNode<Expression>>,
+        arguments: Vec<ASTNode<Expression>>,
     },
 }
 
@@ -146,20 +146,20 @@ pub enum SubroutineCall {
 pub enum Statement {
     Let {
         var_name: String,
-        array_index: Option<IndexedJackNode<Expression>>,
-        value: IndexedJackNode<Expression>,
+        array_index: Option<ASTNode<Expression>>,
+        value: ASTNode<Expression>,
     },
     If {
-        condition: IndexedJackNode<Expression>,
-        if_statements: Vec<IndexedJackNode<Statement>>,
-        else_statements: Option<Vec<IndexedJackNode<Statement>>>,
+        condition: ASTNode<Expression>,
+        if_statements: Vec<ASTNode<Statement>>,
+        else_statements: Option<Vec<ASTNode<Statement>>>,
     },
     While {
-        condition: IndexedJackNode<Expression>,
-        statements: Vec<IndexedJackNode<Statement>>,
+        condition: ASTNode<Expression>,
+        statements: Vec<ASTNode<Statement>>,
     },
-    Do(IndexedJackNode<SubroutineCall>),
-    Return(Option<IndexedJackNode<Expression>>),
+    Do(ASTNode<SubroutineCall>),
+    Return(Option<ASTNode<Expression>>),
 }
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
@@ -173,8 +173,8 @@ pub struct VarDeclaration {
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub struct SubroutineBody {
-    pub var_declarations: Vec<IndexedJackNode<VarDeclaration>>,
-    pub statements: Vec<IndexedJackNode<Statement>>,
+    pub var_declarations: Vec<ASTNode<VarDeclaration>>,
+    pub statements: Vec<ASTNode<Statement>>,
 }
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
@@ -182,7 +182,7 @@ pub struct SubroutineBody {
 pub struct SubroutineDeclaration {
     pub subroutine_kind: SubroutineKind,
     pub return_type: Option<Type>,
-    pub parameters: Vec<IndexedJackNode<Parameter>>,
+    pub parameters: Vec<ASTNode<Parameter>>,
     pub name: String,
-    pub body: IndexedJackNode<SubroutineBody>,
+    pub body: ASTNode<SubroutineBody>,
 }

@@ -3,7 +3,7 @@ use std::ops::Range;
 
 use super::{
     jack_node_types::{PrimitiveTermVariant::*, *},
-    sourcemap::{ExpressionType, JackNode, JackNodeType, JackParserSourceMap, StatementType},
+    sourcemap::{ExpressionType, JackNodeType, JackParserSourceMap, StatementType},
     tokenizer::{
         token_defs, KeywordTokenVariant,
         OperatorVariant::{self, *},
@@ -15,7 +15,7 @@ use crate::compilers::utils::{
     tokenizer::{Token, Tokenizer},
 };
 
-// Soon a version of this should actually be present in the std lib.
+// A version of this should doon be present in the std lib https://github.com/rust-lang/rust/issues/87800
 fn unzip<T, S>(tuple_opt: Option<(T, S)>) -> (Option<T>, Option<S>) {
     tuple_opt.map_or_else(|| (None, None), |(t, s)| (Some(t), Some(s)))
 }
@@ -49,7 +49,6 @@ fn infix_precedence(operator: OperatorVariant) -> Option<(u8, u8)> {
 pub struct ParserOutput {
     pub class: Class,
     sourcemap: JackParserSourceMap,
-    jack_nodes: Vec<JackNode>,
     tokens: Vec<Token<TokenKind>>,
 }
 
@@ -73,13 +72,11 @@ pub fn parse(source: &str) -> ParserOutput {
     let mut parser = Parser {
         token_iter: cloned_tokens_without_whitespace.iter().peekable(),
         sourcemap: JackParserSourceMap::new(),
-        jack_nodes: Vec::new(),
     };
     let class = parser.take_class();
     ParserOutput {
         class,
         sourcemap: parser.sourcemap,
-        jack_nodes: parser.jack_nodes,
         tokens,
     }
 }
@@ -87,31 +84,20 @@ pub fn parse(source: &str) -> ParserOutput {
 struct Parser<'a> {
     token_iter: PeekableTokens<'a, TokenKind>,
     sourcemap: JackParserSourceMap,
-    jack_nodes: Vec<JackNode>,
 }
 
 impl<'a> Parser<'a> {
     // TODO - can we abolish JackNodeType and instead just get some description of the node directly off the ast nodes?
-    fn record_jack_node<T>(&mut self, ast_node: T, node_type: JackNodeType, token_range: Range<usize>) -> IndexedJackNode<T> {
-        let idx = self.jack_nodes.len();
-        self.jack_nodes.push(JackNode {
-            token_range: token_range.clone(),
-            node_type,
-        });
-        self.sourcemap.jack_node_idx_to_token_idx.insert(idx, token_range.clone());
-        for token_idx in token_range.clone() {
-            let token_jack_node_idxs = self.sourcemap.token_idx_to_jack_node_idxs.entry(token_idx).or_default();
-            token_jack_node_idxs.push(idx);
-        }
-        IndexedJackNode {
+    fn make_ast_node<T>(&mut self, ast_node: T, node_type: JackNodeType, token_range: Range<usize>) -> ASTNode<T> {
+        let node_idx = self.sourcemap.record_node(token_range.clone(), node_type);
+        ASTNode {
             node: Box::new(ast_node),
-            node_idx: idx,
-            // TODO - can we remove token_range here? you can get it from the node_idx anyway, using the sourcemap.
+            node_idx,
             token_range,
         }
     }
 
-    fn maybe_take_primitive_expression(&mut self) -> Option<IndexedJackNode<Expression>> {
+    fn maybe_take_primitive_expression(&mut self) -> Option<ASTNode<Expression>> {
         use TokenKind::*;
         let peeked_token = self.token_iter.peek().cloned();
         let (expression, exp_token_idx) = peeked_token.and_then(|token| {
@@ -145,23 +131,23 @@ impl<'a> Parser<'a> {
             maybe_exp.map(|exp| (exp, token.idx))
         })?;
         let token_range = exp_token_idx..exp_token_idx + 1;
-        Some(self.record_jack_node(expression, JackNodeType::ExpressionNode(ExpressionType::PrimitiveTerm), token_range))
+        Some(self.make_ast_node(expression, JackNodeType::ExpressionNode(ExpressionType::PrimitiveTerm), token_range))
     }
 
-    fn take_array_access(&mut self, var_name: String) -> IndexedJackNode<Expression> {
+    fn take_array_access(&mut self, var_name: String) -> ASTNode<Expression> {
         use TokenKind::*;
         let l_bracket = self.take_token(LSquareBracket);
         let index_expr = self.take_expression();
         let r_bracket = self.take_token(RSquareBracket);
         let token_range = l_bracket.idx..r_bracket.idx + 1;
-        self.record_jack_node(
+        self.make_ast_node(
             Expression::ArrayAccess { var_name, index: index_expr },
             JackNodeType::ExpressionNode(ExpressionType::ArrayAccess),
             token_range,
         )
     }
 
-    fn maybe_take_parenthesized_expression(&mut self) -> Option<IndexedJackNode<Expression>> {
+    fn maybe_take_parenthesized_expression(&mut self) -> Option<ASTNode<Expression>> {
         use TokenKind::*;
         if let Some(Token {
             kind: LParen,
@@ -175,7 +161,7 @@ impl<'a> Parser<'a> {
             // let jack_node = JackNode::ExpressionNode(rc.clone());
             let r_paren = self.take_token(RParen);
             let token_range = token_range_start..r_paren.idx + 1;
-            Some(self.record_jack_node(
+            Some(self.make_ast_node(
                 Expression::Parenthesized(expr),
                 JackNodeType::ExpressionNode(ExpressionType::Parenthesized),
                 token_range,
@@ -185,7 +171,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn maybe_take_expression_starting_with_identifier(&mut self) -> Option<IndexedJackNode<Expression>> {
+    fn maybe_take_expression_starting_with_identifier(&mut self) -> Option<ASTNode<Expression>> {
         use TokenKind::*;
         // TODO - this is not very nice...maybe we should just use two tokens of
         // lookahead instead? (I think itertools would make that easy).
@@ -202,7 +188,7 @@ impl<'a> Parser<'a> {
                     let subroutine_call = self.take_subroutine_call(identifier, identifier_token_idx);
                     let subroutine_call_token_range = subroutine_call.token_range.clone();
                     let expr = Expression::SubroutineCall(subroutine_call);
-                    Some(self.record_jack_node(
+                    Some(self.make_ast_node(
                         expr,
                         JackNodeType::ExpressionNode(ExpressionType::SubroutineCall),
                         subroutine_call_token_range,
@@ -210,7 +196,7 @@ impl<'a> Parser<'a> {
                 }
                 _ => {
                     let token_range = identifier_token_idx..identifier_token_idx + 1;
-                    Some(self.record_jack_node(
+                    Some(self.make_ast_node(
                         Expression::Variable(string),
                         JackNodeType::ExpressionNode(ExpressionType::Variable),
                         token_range,
@@ -222,7 +208,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn maybe_take_unary_expression(&mut self) -> Option<IndexedJackNode<Expression>> {
+    fn maybe_take_unary_expression(&mut self) -> Option<ASTNode<Expression>> {
         use TokenKind::*;
         if let Some(Token { kind: Operator(op), idx, .. }) = self.token_iter.peek() {
             let op_token_idx = *idx;
@@ -238,7 +224,7 @@ impl<'a> Parser<'a> {
                 _ => panic!("invalid unary operator"),
             };
             let token_range = op_token_idx..operand.token_range.end;
-            Some(self.record_jack_node(
+            Some(self.make_ast_node(
                 Expression::Unary { operator, operand },
                 JackNodeType::ExpressionNode(ExpressionType::Unary),
                 token_range,
@@ -248,7 +234,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn maybe_append_rhs_to_lhs(&mut self, lhs_node: IndexedJackNode<Expression>, binding_power: u8) -> (IndexedJackNode<Expression>, bool) {
+    fn maybe_append_rhs_to_lhs(&mut self, lhs_node: ASTNode<Expression>, binding_power: u8) -> (ASTNode<Expression>, bool) {
         use TokenKind::*;
         if let Some(Token { kind: Operator(op), .. }) = self.token_iter.peek() {
             let (lbp, rbp) = infix_precedence(op.clone()).expect("invalid infix operator");
@@ -278,7 +264,7 @@ impl<'a> Parser<'a> {
             let new_token_range = lhs_node.token_range.start..rhs.token_range.end;
             let new_lhs_node = Expression::Binary {
                 operator,
-                lhs: IndexedJackNode {
+                lhs: ASTNode {
                     node: lhs_node.node,
                     node_idx: lhs_node.node_idx,
                     token_range: new_token_range.clone(),
@@ -286,7 +272,7 @@ impl<'a> Parser<'a> {
                 rhs,
             };
             (
-                self.record_jack_node(new_lhs_node, JackNodeType::ExpressionNode(ExpressionType::Binary), new_token_range),
+                self.make_ast_node(new_lhs_node, JackNodeType::ExpressionNode(ExpressionType::Binary), new_token_range),
                 false,
             )
         } else {
@@ -294,7 +280,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn maybe_take_expression_with_binding_power(&mut self, binding_power: u8) -> Option<IndexedJackNode<Expression>> {
+    fn maybe_take_expression_with_binding_power(&mut self, binding_power: u8) -> Option<ASTNode<Expression>> {
         let mut lhs = self
             .maybe_take_unary_expression()
             .or_else(|| self.maybe_take_primitive_expression())
@@ -345,11 +331,11 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn take_expression(&mut self) -> IndexedJackNode<Expression> {
+    fn take_expression(&mut self) -> ASTNode<Expression> {
         self.maybe_take_expression_with_binding_power(0).expect("expected expression")
     }
 
-    fn take_expression_list(&mut self) -> Vec<IndexedJackNode<Expression>> {
+    fn take_expression_list(&mut self) -> Vec<ASTNode<Expression>> {
         use TokenKind::*;
         let mut result = Vec::new();
         if let Some(expression) = self.maybe_take_expression_with_binding_power(0) {
@@ -362,7 +348,7 @@ impl<'a> Parser<'a> {
         result
     }
 
-    fn take_subroutine_call(&mut self, name: String, identifier_token_idx: usize) -> IndexedJackNode<SubroutineCall> {
+    fn take_subroutine_call(&mut self, name: String, identifier_token_idx: usize) -> ASTNode<SubroutineCall> {
         use TokenKind::*;
         match self.token_iter.peek() {
             Some(Token { kind: LParen, .. }) => {
@@ -375,7 +361,7 @@ impl<'a> Parser<'a> {
                     arguments,
                 };
                 let token_range = identifier_token_idx..r_paren.idx + 1;
-                self.record_jack_node(subroutine_call, JackNodeType::SubroutineCallNode, token_range)
+                self.make_ast_node(subroutine_call, JackNodeType::SubroutineCallNode, token_range)
             }
             Some(Token { kind: Dot, .. }) => {
                 // Method call
@@ -390,7 +376,7 @@ impl<'a> Parser<'a> {
                     arguments,
                 };
                 let token_range = method_name_token_idx..r_paren.idx + 1;
-                self.record_jack_node(method, JackNodeType::SubroutineCallNode, token_range)
+                self.make_ast_node(method, JackNodeType::SubroutineCallNode, token_range)
             }
             _ => panic!("expected subroutine call"),
         }
@@ -409,16 +395,16 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn maybe_take_parameter(&mut self) -> Option<IndexedJackNode<Parameter>> {
+    fn maybe_take_parameter(&mut self) -> Option<ASTNode<Parameter>> {
         self.maybe_take_type().map(|type_name| {
             let (var_name, identifier_token_idx) = self.take_identifier();
             let parameter = Parameter { type_name, var_name };
             let token_range = identifier_token_idx..identifier_token_idx + 1;
-            self.record_jack_node(parameter, JackNodeType::ParameterNode, token_range)
+            self.make_ast_node(parameter, JackNodeType::ParameterNode, token_range)
         })
     }
 
-    fn take_parameters(&mut self) -> Vec<IndexedJackNode<Parameter>> {
+    fn take_parameters(&mut self) -> Vec<ASTNode<Parameter>> {
         let mut result = Vec::new();
         if let Some(parameter) = self.maybe_take_parameter() {
             result.push(parameter);
@@ -431,7 +417,7 @@ impl<'a> Parser<'a> {
         result
     }
 
-    fn maybe_take_array_index(&mut self) -> Option<IndexedJackNode<Expression>> {
+    fn maybe_take_array_index(&mut self) -> Option<ASTNode<Expression>> {
         self.token_iter
             .next_if(|token| {
                 matches!(
@@ -449,7 +435,7 @@ impl<'a> Parser<'a> {
             })
     }
 
-    fn take_let_statement(&mut self, let_keyword_token_idx: usize) -> IndexedJackNode<Statement> {
+    fn take_let_statement(&mut self, let_keyword_token_idx: usize) -> ASTNode<Statement> {
         self.token_iter.next(); // "let" keyword
         let (var_name, _) = self.take_identifier();
         let array_index = self.maybe_take_array_index();
@@ -462,17 +448,17 @@ impl<'a> Parser<'a> {
             value,
         };
         let token_range = let_keyword_token_idx..semicolon.idx + 1;
-        self.record_jack_node(statement, JackNodeType::StatementNode(StatementType::Let), token_range)
+        self.make_ast_node(statement, JackNodeType::StatementNode(StatementType::Let), token_range)
     }
 
-    fn take_statement_block(&mut self) -> (Vec<IndexedJackNode<Statement>>, Range<usize>) {
+    fn take_statement_block(&mut self) -> (Vec<ASTNode<Statement>>, Range<usize>) {
         let l_curly = self.take_token(TokenKind::LCurly);
         let statements = self.take_statements();
         let r_curly = self.take_token(TokenKind::RCurly);
         (statements, l_curly.idx..r_curly.idx + 1)
     }
 
-    fn maybe_take_else_block(&mut self) -> Option<(Vec<IndexedJackNode<Statement>>, Range<usize>)> {
+    fn maybe_take_else_block(&mut self) -> Option<(Vec<ASTNode<Statement>>, Range<usize>)> {
         self.token_iter
             .next_if(|token| {
                 matches!(
@@ -486,7 +472,7 @@ impl<'a> Parser<'a> {
             .map(|_| self.take_statement_block())
     }
 
-    fn take_if_statement(&mut self, if_keyword_token_idx: usize) -> IndexedJackNode<Statement> {
+    fn take_if_statement(&mut self, if_keyword_token_idx: usize) -> ASTNode<Statement> {
         self.token_iter.next(); // "if" keyword
         self.take_token(TokenKind::LParen);
         let condition = self.take_expression();
@@ -500,10 +486,10 @@ impl<'a> Parser<'a> {
         };
         let last_part_of_token_range = else_block_token_range.unwrap_or(if_statements_token_range);
         let token_range = if_keyword_token_idx..last_part_of_token_range.end;
-        self.record_jack_node(statement, JackNodeType::StatementNode(StatementType::If), token_range)
+        self.make_ast_node(statement, JackNodeType::StatementNode(StatementType::If), token_range)
     }
 
-    fn take_while_statement(&mut self, while_keyword_token_idx: usize) -> IndexedJackNode<Statement> {
+    fn take_while_statement(&mut self, while_keyword_token_idx: usize) -> ASTNode<Statement> {
         self.token_iter.next(); // "while" keyword
         self.take_token(TokenKind::LParen);
         let condition = self.take_expression();
@@ -511,29 +497,29 @@ impl<'a> Parser<'a> {
         let (statements, statements_token_range) = self.take_statement_block();
         let statement = Statement::While { condition, statements };
         let token_range = while_keyword_token_idx..statements_token_range.end;
-        self.record_jack_node(statement, JackNodeType::StatementNode(StatementType::While), token_range)
+        self.make_ast_node(statement, JackNodeType::StatementNode(StatementType::While), token_range)
     }
 
-    fn take_do_statement(&mut self, do_keyword_token_idx: usize) -> IndexedJackNode<Statement> {
+    fn take_do_statement(&mut self, do_keyword_token_idx: usize) -> ASTNode<Statement> {
         self.token_iter.next(); // "do" keyword
         let (identifier, identifier_token_idx) = self.take_identifier();
         let subroutine_call = self.take_subroutine_call(identifier, identifier_token_idx);
         let semicolon = self.take_token(TokenKind::Semicolon);
         let statement = Statement::Do(subroutine_call);
         let token_range = do_keyword_token_idx..semicolon.idx + 1;
-        self.record_jack_node(statement, JackNodeType::StatementNode(StatementType::Do), token_range)
+        self.make_ast_node(statement, JackNodeType::StatementNode(StatementType::Do), token_range)
     }
 
-    fn take_return_statement(&mut self, return_keyword_token_idx: usize) -> IndexedJackNode<Statement> {
+    fn take_return_statement(&mut self, return_keyword_token_idx: usize) -> ASTNode<Statement> {
         self.token_iter.next(); // "return" keyword
         let expression = self.maybe_take_expression_with_binding_power(0);
         let semicolon = self.take_token(TokenKind::Semicolon);
         let statement = Statement::Return(expression);
         let token_range = return_keyword_token_idx..semicolon.idx + 1;
-        self.record_jack_node(statement, JackNodeType::StatementNode(StatementType::Return), token_range)
+        self.make_ast_node(statement, JackNodeType::StatementNode(StatementType::Return), token_range)
     }
 
-    fn maybe_take_statement(&mut self) -> Option<IndexedJackNode<Statement>> {
+    fn maybe_take_statement(&mut self) -> Option<ASTNode<Statement>> {
         use KeywordTokenVariant::*;
         if let Some(Token {
             kind: TokenKind::Keyword(keyword),
@@ -555,7 +541,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn take_statements(&mut self) -> Vec<IndexedJackNode<Statement>> {
+    fn take_statements(&mut self) -> Vec<ASTNode<Statement>> {
         let mut result = Vec::new();
         while let Some(statement) = self.maybe_take_statement() {
             result.push(statement);
@@ -563,7 +549,7 @@ impl<'a> Parser<'a> {
         result
     }
 
-    fn take_var_declaration(&mut self) -> IndexedJackNode<VarDeclaration> {
+    fn take_var_declaration(&mut self) -> ASTNode<VarDeclaration> {
         if let Some(Token {
             kind: TokenKind::Keyword(KeywordTokenVariant::Var),
             idx: var_keyword_token_idx,
@@ -575,13 +561,13 @@ impl<'a> Parser<'a> {
             let semicolon = self.take_token(TokenKind::Semicolon);
             let var_declaration = VarDeclaration { type_name, var_names };
             let token_range = *var_keyword_token_idx..semicolon.idx + 1;
-            self.record_jack_node(var_declaration, JackNodeType::VarDeclarationNode, token_range)
+            self.make_ast_node(var_declaration, JackNodeType::VarDeclarationNode, token_range)
         } else {
             panic!("expected var keyword");
         }
     }
 
-    fn take_var_declarations(&mut self) -> Vec<IndexedJackNode<VarDeclaration>> {
+    fn take_var_declarations(&mut self) -> Vec<ASTNode<VarDeclaration>> {
         let mut result = Vec::new();
         while let Some(Token {
             kind: TokenKind::Keyword(KeywordTokenVariant::Var),
@@ -593,7 +579,7 @@ impl<'a> Parser<'a> {
         result
     }
 
-    fn take_subroutine_body(&mut self) -> IndexedJackNode<SubroutineBody> {
+    fn take_subroutine_body(&mut self) -> ASTNode<SubroutineBody> {
         let l_curly = self.take_token(TokenKind::LCurly);
         let var_declarations = self.take_var_declarations();
         let statements = self.take_statements();
@@ -603,10 +589,10 @@ impl<'a> Parser<'a> {
             statements,
         };
         let token_range = l_curly.idx..r_curly.idx + 1;
-        self.record_jack_node(subroutine_body, JackNodeType::SubroutineBodyNode, token_range)
+        self.make_ast_node(subroutine_body, JackNodeType::SubroutineBodyNode, token_range)
     }
 
-    fn take_subroutine_declaration(&mut self) -> IndexedJackNode<SubroutineDeclaration> {
+    fn take_subroutine_declaration(&mut self) -> ASTNode<SubroutineDeclaration> {
         use KeywordTokenVariant::*;
         if let Some(Token {
             kind: TokenKind::Keyword(keyword),
@@ -635,13 +621,13 @@ impl<'a> Parser<'a> {
                 parameters,
                 body,
             };
-            self.record_jack_node(subroutine_declaration, JackNodeType::SubroutineDeclarationNode, token_range)
+            self.make_ast_node(subroutine_declaration, JackNodeType::SubroutineDeclarationNode, token_range)
         } else {
             panic!("expected subroutine kind");
         }
     }
 
-    fn maybe_take_subroutine_declaration(&mut self) -> Option<IndexedJackNode<SubroutineDeclaration>> {
+    fn maybe_take_subroutine_declaration(&mut self) -> Option<ASTNode<SubroutineDeclaration>> {
         use KeywordTokenVariant::*;
         if let Some(Token {
             kind: TokenKind::Keyword(Constructor | Function | Method),
@@ -654,7 +640,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn take_class_subroutine_declarations(&mut self) -> Vec<IndexedJackNode<SubroutineDeclaration>> {
+    fn take_class_subroutine_declarations(&mut self) -> Vec<ASTNode<SubroutineDeclaration>> {
         let mut result = Vec::new();
         while let Some(subroutine_declaration) = self.maybe_take_subroutine_declaration() {
             result.push(subroutine_declaration);
@@ -662,7 +648,7 @@ impl<'a> Parser<'a> {
         result
     }
 
-    fn take_class_var_declaration_qualifier(&mut self) -> IndexedJackNode<ClassVarDeclarationKind> {
+    fn take_class_var_declaration_qualifier(&mut self) -> ASTNode<ClassVarDeclarationKind> {
         use KeywordTokenVariant::*;
         match self.token_iter.next() {
             Some(Token {
@@ -676,7 +662,7 @@ impl<'a> Parser<'a> {
                     _ => panic!("expected var declaration qualifier",),
                 };
                 let token_range = *token_idx..token_idx + 1;
-                self.record_jack_node(qualifier, JackNodeType::ClassVarDeclarationKindNode, token_range)
+                self.make_ast_node(qualifier, JackNodeType::ClassVarDeclarationKindNode, token_range)
             }
             _ => panic!("expected var declaration qualifier",),
         }
@@ -736,7 +722,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn take_class_var_declaration(&mut self) -> IndexedJackNode<ClassVarDeclaration> {
+    fn take_class_var_declaration(&mut self) -> ASTNode<ClassVarDeclaration> {
         let qualifier = self.take_class_var_declaration_qualifier();
         let type_name = self.take_type();
         let var_names = self.take_var_names();
@@ -747,10 +733,10 @@ impl<'a> Parser<'a> {
             type_name,
             var_names,
         };
-        self.record_jack_node(class_var_declaration, JackNodeType::VarDeclarationNode, token_range)
+        self.make_ast_node(class_var_declaration, JackNodeType::VarDeclarationNode, token_range)
     }
 
-    fn maybe_take_class_var_declaration(&mut self) -> Option<IndexedJackNode<ClassVarDeclaration>> {
+    fn maybe_take_class_var_declaration(&mut self) -> Option<ASTNode<ClassVarDeclaration>> {
         use KeywordTokenVariant::*;
         match self.token_iter.peek().expect("unexpected end of input") {
             Token {
@@ -764,7 +750,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn take_class_var_declarations(&mut self) -> Vec<IndexedJackNode<ClassVarDeclaration>> {
+    fn take_class_var_declarations(&mut self) -> Vec<ASTNode<ClassVarDeclaration>> {
         let mut result = Vec::new();
         while let Some(class_var_declaration) = self.maybe_take_class_var_declaration() {
             result.push(class_var_declaration);
@@ -785,7 +771,7 @@ impl<'a> Parser<'a> {
             subroutine_declarations,
         };
         let token_range = class_keyword.idx..r_curly.idx + 1;
-        let res = self.record_jack_node(class, JackNodeType::ClassNode, token_range);
+        let res = self.make_ast_node(class, JackNodeType::ClassNode, token_range);
         *res.node
     }
 }
@@ -796,7 +782,7 @@ mod tests {
 
     use pretty_assertions::assert_eq;
 
-    fn parse_expression(source: &str) -> IndexedJackNode<Expression> {
+    fn parse_expression(source: &str) -> ASTNode<Expression> {
         let tokens: Vec<_> = Tokenizer::new(token_defs())
             .tokenize(source)
             .into_iter()
@@ -813,7 +799,6 @@ mod tests {
         let mut parser = Parser {
             token_iter: tokens.iter().peekable(),
             sourcemap: JackParserSourceMap::new(),
-            jack_nodes: Vec::new(),
         };
         parser.take_expression()
     }
@@ -842,9 +827,9 @@ mod tests {
             .class,
             Class {
                 name: "foo".to_string(),
-                var_declarations: vec![IndexedJackNode {
+                var_declarations: vec![ASTNode {
                     node: Box::new(ClassVarDeclaration {
-                        qualifier: IndexedJackNode {
+                        qualifier: ASTNode {
                             node: Box::new(ClassVarDeclarationKind::Static),
                             node_idx: 0,
                             token_range: 7..8,
@@ -875,9 +860,9 @@ mod tests {
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![
-                    IndexedJackNode {
+                    ASTNode {
                         node: Box::new(ClassVarDeclaration {
-                            qualifier: IndexedJackNode {
+                            qualifier: ASTNode {
                                 node: Box::new(ClassVarDeclarationKind::Static),
                                 node_idx: 0,
                                 token_range: 7..8,
@@ -888,9 +873,9 @@ mod tests {
                         node_idx: 1,
                         token_range: 7..13,
                     },
-                    IndexedJackNode {
+                    ASTNode {
                         node: Box::new(ClassVarDeclaration {
-                            qualifier: IndexedJackNode {
+                            qualifier: ASTNode {
                                 node: Box::new(ClassVarDeclarationKind::Field),
                                 node_idx: 2,
                                 token_range: 14..15,
@@ -901,9 +886,9 @@ mod tests {
                         node_idx: 3,
                         token_range: 14..26,
                     },
-                    IndexedJackNode {
+                    ASTNode {
                         node: Box::new(ClassVarDeclaration {
-                            qualifier: IndexedJackNode {
+                            qualifier: ASTNode {
                                 node: Box::new(ClassVarDeclarationKind::Field),
                                 node_idx: 4,
                                 token_range: 27..28,
@@ -939,12 +924,12 @@ mod tests {
                 name: "foo".to_string(),
                 var_declarations: vec![],
                 subroutine_declarations: vec![
-                    IndexedJackNode {
+                    ASTNode {
                         node: Box::new(SubroutineDeclaration {
                             subroutine_kind: SubroutineKind::Constructor,
                             return_type: Some(Type::Boolean),
                             parameters: vec![
-                                IndexedJackNode {
+                                ASTNode {
                                     node: Box::new(Parameter {
                                         type_name: Type::Int,
                                         var_name: "abc".to_string(),
@@ -952,7 +937,7 @@ mod tests {
                                     node_idx: 0,
                                     token_range: 15..16,
                                 },
-                                IndexedJackNode {
+                                ASTNode {
                                     node: Box::new(Parameter {
                                         type_name: Type::Char,
                                         var_name: "def".to_string(),
@@ -960,7 +945,7 @@ mod tests {
                                     node_idx: 1,
                                     token_range: 20..21,
                                 },
-                                IndexedJackNode {
+                                ASTNode {
                                     node: Box::new(Parameter {
                                         type_name: Type::ClassName("foo".to_string()),
                                         var_name: "ghi".to_string(),
@@ -970,7 +955,7 @@ mod tests {
                                 }
                             ],
                             name: "bar".to_string(),
-                            body: IndexedJackNode {
+                            body: ASTNode {
                                 node: Box::new(SubroutineBody {
                                     var_declarations: vec![],
                                     statements: vec![],
@@ -982,11 +967,11 @@ mod tests {
                         node_idx: 4,
                         token_range: 7..31
                     },
-                    IndexedJackNode {
+                    ASTNode {
                         node: Box::new(SubroutineDeclaration {
                             subroutine_kind: SubroutineKind::Function,
                             return_type: Some(Type::Char),
-                            parameters: vec![IndexedJackNode {
+                            parameters: vec![ASTNode {
                                 node: Box::new(Parameter {
                                     type_name: Type::Boolean,
                                     var_name: "_123".to_string(),
@@ -995,7 +980,7 @@ mod tests {
                                 token_range: 40..41,
                             }],
                             name: "baz".to_string(),
-                            body: IndexedJackNode {
+                            body: ASTNode {
                                 node: Box::new(SubroutineBody {
                                     var_declarations: vec![],
                                     statements: vec![],
@@ -1007,13 +992,13 @@ mod tests {
                         node_idx: 7,
                         token_range: 32..46
                     },
-                    IndexedJackNode {
+                    ASTNode {
                         node: Box::new(SubroutineDeclaration {
                             subroutine_kind: SubroutineKind::Method,
                             return_type: None,
                             parameters: vec![],
                             name: "qux".to_string(),
-                            body: IndexedJackNode {
+                            body: ASTNode {
                                 node: Box::new(SubroutineBody {
                                     var_declarations: vec![],
                                     statements: vec![],
@@ -1059,15 +1044,15 @@ mod tests {
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![],
-                subroutine_declarations: vec![IndexedJackNode {
+                subroutine_declarations: vec![ASTNode {
                     node: Box::new(SubroutineDeclaration {
                         subroutine_kind: SubroutineKind::Constructor,
                         return_type: Some(Type::Int),
                         parameters: vec![],
                         name: "blah".to_string(),
-                        body: IndexedJackNode {
+                        body: ASTNode {
                             node: Box::new(SubroutineBody {
-                                var_declarations: vec![IndexedJackNode {
+                                var_declarations: vec![ASTNode {
                                     node: Box::new(VarDeclaration {
                                         type_name: Type::Int,
                                         var_names: vec!["a".to_string()],
@@ -1076,11 +1061,11 @@ mod tests {
                                     token_range: 17..23,
                                 }],
                                 statements: vec![
-                                    IndexedJackNode {
+                                    ASTNode {
                                         node: Box::new(Statement::Let {
                                             var_name: "a".to_string(),
                                             array_index: None,
-                                            value: IndexedJackNode {
+                                            value: ASTNode {
                                                 node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1234".to_string(),))),
                                                 node_idx: 1,
                                                 token_range: 30..31,
@@ -1089,15 +1074,15 @@ mod tests {
                                         node_idx: 2,
                                         token_range: 24..32,
                                     },
-                                    IndexedJackNode {
+                                    ASTNode {
                                         node: Box::new(Statement::Let {
                                             var_name: "b".to_string(),
-                                            array_index: Some(IndexedJackNode {
+                                            array_index: Some(ASTNode {
                                                 node: Box::new(Expression::PrimitiveTerm(IntegerConstant("22".to_string()))),
                                                 node_idx: 3,
                                                 token_range: 37..38,
                                             }),
-                                            value: IndexedJackNode {
+                                            value: ASTNode {
                                                 node: Box::new(Expression::PrimitiveTerm(IntegerConstant("123".to_string(),))),
                                                 node_idx: 4,
                                                 token_range: 42..43,
@@ -1106,23 +1091,23 @@ mod tests {
                                         node_idx: 5,
                                         token_range: 33..44
                                     },
-                                    IndexedJackNode {
+                                    ASTNode {
                                         node: Box::new(Statement::If {
-                                            condition: IndexedJackNode {
+                                            condition: ASTNode {
                                                 node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                                 node_idx: 6,
                                                 token_range: 48..49,
                                             },
-                                            if_statements: vec![IndexedJackNode {
+                                            if_statements: vec![ASTNode {
                                                 node: Box::new(Statement::While {
-                                                    condition: (IndexedJackNode {
+                                                    condition: (ASTNode {
                                                         node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                                         node_idx: 7,
                                                         token_range: 56..57,
                                                     }),
                                                     statements: vec![
-                                                        IndexedJackNode {
-                                                            node: Box::new(Statement::Do(IndexedJackNode {
+                                                        ASTNode {
+                                                            node: Box::new(Statement::Do(ASTNode {
                                                                 node: Box::new(SubroutineCall::Direct {
                                                                     subroutine_name: "foobar".to_string(),
                                                                     arguments: vec![],
@@ -1133,12 +1118,12 @@ mod tests {
                                                             node_idx: 9,
                                                             token_range: 61..67,
                                                         },
-                                                        IndexedJackNode {
-                                                            node: Box::new(Statement::Do(IndexedJackNode {
+                                                        ASTNode {
+                                                            node: Box::new(Statement::Do(ASTNode {
                                                                 node: Box::new(SubroutineCall::Direct {
                                                                     subroutine_name: "foobar".to_string(),
                                                                     arguments: vec![
-                                                                        (IndexedJackNode {
+                                                                        (ASTNode {
                                                                             node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
                                                                                 "1".to_string()
                                                                             ))),
@@ -1153,26 +1138,26 @@ mod tests {
                                                             node_idx: 12,
                                                             token_range: 68..75,
                                                         },
-                                                        IndexedJackNode {
-                                                            node: Box::new(Statement::Do(IndexedJackNode {
+                                                        ASTNode {
+                                                            node: Box::new(Statement::Do(ASTNode {
                                                                 node: Box::new(SubroutineCall::Direct {
                                                                     subroutine_name: "foobar".to_string(),
                                                                     arguments: vec![
-                                                                        IndexedJackNode {
+                                                                        ASTNode {
                                                                             node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
                                                                                 "1".to_string()
                                                                             ))),
                                                                             node_idx: 13,
                                                                             token_range: 80..81,
                                                                         },
-                                                                        IndexedJackNode {
+                                                                        ASTNode {
                                                                             node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
                                                                                 "2".to_string()
                                                                             ))),
                                                                             node_idx: 14,
                                                                             token_range: 83..84,
                                                                         },
-                                                                        IndexedJackNode {
+                                                                        ASTNode {
                                                                             node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
                                                                                 "3".to_string()
                                                                             ))),
@@ -1187,8 +1172,8 @@ mod tests {
                                                             node_idx: 17,
                                                             token_range: 76..89,
                                                         },
-                                                        IndexedJackNode {
-                                                            node: Box::new(Statement::Do(IndexedJackNode {
+                                                        ASTNode {
+                                                            node: Box::new(Statement::Do(ASTNode {
                                                                 node: Box::new(SubroutineCall::Method {
                                                                     this_name: "foo".to_string(),
                                                                     method_name: "bar".to_string(),
@@ -1200,12 +1185,12 @@ mod tests {
                                                             node_idx: 19,
                                                             token_range: 90..98,
                                                         },
-                                                        IndexedJackNode {
-                                                            node: Box::new(Statement::Do(IndexedJackNode {
+                                                        ASTNode {
+                                                            node: Box::new(Statement::Do(ASTNode {
                                                                 node: Box::new(SubroutineCall::Method {
                                                                     this_name: "foo".to_string(),
                                                                     method_name: "bar".to_string(),
-                                                                    arguments: vec![IndexedJackNode {
+                                                                    arguments: vec![ASTNode {
                                                                         node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                                                         node_idx: 20,
                                                                         token_range: 105..106,
@@ -1217,27 +1202,27 @@ mod tests {
                                                             node_idx: 22,
                                                             token_range: 99..108,
                                                         },
-                                                        IndexedJackNode {
-                                                            node: Box::new(Statement::Do(IndexedJackNode {
+                                                        ASTNode {
+                                                            node: Box::new(Statement::Do(ASTNode {
                                                                 node: Box::new(SubroutineCall::Method {
                                                                     this_name: "foo".to_string(),
                                                                     method_name: "bar".to_string(),
                                                                     arguments: vec![
-                                                                        IndexedJackNode {
+                                                                        ASTNode {
                                                                             node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
                                                                                 "1".to_string()
                                                                             ))),
                                                                             node_idx: 23,
                                                                             token_range: 115..116
                                                                         },
-                                                                        IndexedJackNode {
+                                                                        ASTNode {
                                                                             node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
                                                                                 "2".to_string()
                                                                             ))),
                                                                             node_idx: 24,
                                                                             token_range: 118..119
                                                                         },
-                                                                        IndexedJackNode {
+                                                                        ASTNode {
                                                                             node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
                                                                                 "3".to_string()
                                                                             ))),
@@ -1257,8 +1242,8 @@ mod tests {
                                                 node_idx: 28,
                                                 token_range: 53..126
                                             },],
-                                            else_statements: Some(vec![IndexedJackNode {
-                                                node: Box::new(Statement::Return(Some(IndexedJackNode {
+                                            else_statements: Some(vec![ASTNode {
+                                                node: Box::new(Statement::Return(Some(ASTNode {
                                                     node: Box::new(Expression::PrimitiveTerm(IntegerConstant("123".to_string(),))),
                                                     node_idx: 29,
                                                     token_range: 135..136
@@ -1287,7 +1272,7 @@ mod tests {
     fn test_simple_expression() {
         assert_eq!(
             parse_expression("1"),
-            IndexedJackNode {
+            ASTNode {
                 node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                 node_idx: 0,
                 token_range: 0..1,
@@ -1299,15 +1284,15 @@ mod tests {
     fn test_simple_binary_expression() {
         assert_eq!(
             parse_expression("1 + 2"),
-            IndexedJackNode {
+            ASTNode {
                 node: Box::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
-                    lhs: IndexedJackNode {
+                    lhs: ASTNode {
                         node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                         node_idx: 0,
                         token_range: 0..5,
                     },
-                    rhs: IndexedJackNode {
+                    rhs: ASTNode {
                         node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                         node_idx: 1,
                         token_range: 4..5,
@@ -1335,31 +1320,31 @@ mod tests {
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![],
-                subroutine_declarations: vec![IndexedJackNode {
+                subroutine_declarations: vec![ASTNode {
                     node: Box::new(SubroutineDeclaration {
                         subroutine_kind: SubroutineKind::Method,
                         return_type: None,
                         parameters: vec![],
                         name: "bar".to_string(),
-                        body: IndexedJackNode {
+                        body: ASTNode {
                             node: Box::new(SubroutineBody {
                                 var_declarations: vec![],
-                                statements: vec![IndexedJackNode {
+                                statements: vec![ASTNode {
                                     node: Box::new(Statement::Let {
                                         var_name: "a".to_string(),
                                         array_index: None,
-                                        value: IndexedJackNode {
+                                        value: ASTNode {
                                             node: Box::new(Expression::Binary {
                                                 operator: BinaryOperator::Plus,
-                                                lhs: IndexedJackNode {
+                                                lhs: ASTNode {
                                                     node: Box::new(Expression::Binary {
                                                         operator: BinaryOperator::Plus,
-                                                        lhs: IndexedJackNode {
+                                                        lhs: ASTNode {
                                                             node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                                             node_idx: 0,
                                                             token_range: 24..29,
                                                         },
-                                                        rhs: IndexedJackNode {
+                                                        rhs: ASTNode {
                                                             node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                                                             node_idx: 1,
                                                             token_range: 28..29,
@@ -1368,7 +1353,7 @@ mod tests {
                                                     node_idx: 2,
                                                     token_range: 24..33,
                                                 },
-                                                rhs: IndexedJackNode {
+                                                rhs: ASTNode {
                                                     node: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
                                                     node_idx: 3,
                                                     token_range: 32..33,
@@ -1397,21 +1382,21 @@ mod tests {
     fn test_simple_left_associating_expression() {
         assert_eq!(
             parse_expression("1 + 2 + 3 + 4"),
-            IndexedJackNode {
+            ASTNode {
                 node: Box::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
-                    lhs: IndexedJackNode {
+                    lhs: ASTNode {
                         node: Box::new(Expression::Binary {
                             operator: BinaryOperator::Plus,
-                            lhs: IndexedJackNode {
+                            lhs: ASTNode {
                                 node: Box::new(Expression::Binary {
                                     operator: BinaryOperator::Plus,
-                                    lhs: IndexedJackNode {
+                                    lhs: ASTNode {
                                         node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                         node_idx: 0,
                                         token_range: 0..5,
                                     },
-                                    rhs: IndexedJackNode {
+                                    rhs: ASTNode {
                                         node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                                         node_idx: 1,
                                         token_range: 4..5,
@@ -1420,7 +1405,7 @@ mod tests {
                                 node_idx: 2,
                                 token_range: 0..9,
                             },
-                            rhs: IndexedJackNode {
+                            rhs: ASTNode {
                                 node: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
                                 node_idx: 3,
                                 token_range: 8..9,
@@ -1429,7 +1414,7 @@ mod tests {
                         node_idx: 4,
                         token_range: 0..13,
                     },
-                    rhs: IndexedJackNode {
+                    rhs: ASTNode {
                         node: Box::new(Expression::PrimitiveTerm(IntegerConstant("4".to_string()))),
                         node_idx: 5,
                         token_range: 12..13,
@@ -1445,26 +1430,26 @@ mod tests {
     fn test_binary_precedence() {
         assert_eq!(
             parse_expression("1 + 2 * 3 + 4"),
-            IndexedJackNode {
+            ASTNode {
                 node: Box::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
-                    lhs: IndexedJackNode {
+                    lhs: ASTNode {
                         node: Box::new(Expression::Binary {
                             operator: BinaryOperator::Plus,
-                            lhs: IndexedJackNode {
+                            lhs: ASTNode {
                                 node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                 node_idx: 0,
                                 token_range: 0..9
                             },
-                            rhs: IndexedJackNode {
+                            rhs: ASTNode {
                                 node: Box::new(Expression::Binary {
                                     operator: BinaryOperator::Multiply,
-                                    lhs: IndexedJackNode {
+                                    lhs: ASTNode {
                                         node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                                         node_idx: 1,
                                         token_range: 4..9
                                     },
-                                    rhs: IndexedJackNode {
+                                    rhs: ASTNode {
                                         node: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
                                         node_idx: 2,
                                         token_range: 8..9
@@ -1477,7 +1462,7 @@ mod tests {
                         node_idx: 4,
                         token_range: 0..13
                     },
-                    rhs: IndexedJackNode {
+                    rhs: ASTNode {
                         node: Box::new(Expression::PrimitiveTerm(IntegerConstant("4".to_string()))),
                         node_idx: 5,
                         token_range: 12..13
@@ -1493,10 +1478,10 @@ mod tests {
     fn test_simple_unary_expression() {
         assert_eq!(
             parse_expression("~1"),
-            IndexedJackNode {
+            ASTNode {
                 node: Box::new(Expression::Unary {
                     operator: UnaryOperator::Not,
-                    operand: IndexedJackNode {
+                    operand: ASTNode {
                         node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                         node_idx: 0,
                         token_range: 1..2
@@ -1512,13 +1497,13 @@ mod tests {
     fn test_simple_combined_unary_and_binary_expression() {
         assert_eq!(
             parse_expression("~1 + ~2"),
-            IndexedJackNode {
+            ASTNode {
                 node: Box::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
-                    lhs: IndexedJackNode {
+                    lhs: ASTNode {
                         node: Box::new(Expression::Unary {
                             operator: UnaryOperator::Not,
-                            operand: IndexedJackNode {
+                            operand: ASTNode {
                                 node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                 node_idx: 0,
                                 token_range: 1..2
@@ -1527,10 +1512,10 @@ mod tests {
                         node_idx: 1,
                         token_range: 0..7
                     },
-                    rhs: IndexedJackNode {
+                    rhs: ASTNode {
                         node: Box::new(Expression::Unary {
                             operator: UnaryOperator::Not,
-                            operand: IndexedJackNode {
+                            operand: ASTNode {
                                 node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                                 node_idx: 2,
                                 token_range: 6..7
@@ -1550,39 +1535,39 @@ mod tests {
     fn test_expression_with_subroutine_calls() {
         assert_eq!(
             parse_expression("1 + foo(1, baz.bar(1, 2), 3) + 2"),
-            IndexedJackNode {
+            ASTNode {
                 node: Box::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
-                    lhs: IndexedJackNode {
+                    lhs: ASTNode {
                         node: Box::new(Expression::Binary {
                             operator: BinaryOperator::Plus,
-                            lhs: IndexedJackNode {
+                            lhs: ASTNode {
                                 node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                 node_idx: 0,
                                 token_range: 0..22
                             },
-                            rhs: IndexedJackNode {
-                                node: Box::new(Expression::SubroutineCall(IndexedJackNode {
+                            rhs: ASTNode {
+                                node: Box::new(Expression::SubroutineCall(ASTNode {
                                     node: Box::new(SubroutineCall::Direct {
                                         subroutine_name: "foo".to_string(),
                                         arguments: vec![
-                                            IndexedJackNode {
+                                            ASTNode {
                                                 node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                                 node_idx: 1,
                                                 token_range: 6..7
                                             },
-                                            IndexedJackNode {
-                                                node: Box::new(Expression::SubroutineCall(IndexedJackNode {
+                                            ASTNode {
+                                                node: Box::new(Expression::SubroutineCall(ASTNode {
                                                     node: Box::new(SubroutineCall::Method {
                                                         this_name: "baz".to_string(),
                                                         method_name: "bar".to_string(),
                                                         arguments: vec![
-                                                            IndexedJackNode {
+                                                            ASTNode {
                                                                 node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                                                 node_idx: 2,
                                                                 token_range: 13..14
                                                             },
-                                                            IndexedJackNode {
+                                                            ASTNode {
                                                                 node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                                                                 node_idx: 3,
                                                                 token_range: 16..17
@@ -1595,7 +1580,7 @@ mod tests {
                                                 node_idx: 5,
                                                 token_range: 11..18
                                             },
-                                            IndexedJackNode {
+                                            ASTNode {
                                                 node: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
                                                 node_idx: 6,
                                                 token_range: 20..21
@@ -1612,7 +1597,7 @@ mod tests {
                         node_idx: 9,
                         token_range: 0..26
                     },
-                    rhs: IndexedJackNode {
+                    rhs: ASTNode {
                         node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                         node_idx: 10,
                         token_range: 25..26
@@ -1628,39 +1613,39 @@ mod tests {
     fn test_expression_with_subroutine_call_and_array_access() {
         assert_eq!(
             parse_expression("1 + foo(1, bar[1 + 2], 3) + 2"),
-            IndexedJackNode {
+            ASTNode {
                 node: Box::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
-                    lhs: IndexedJackNode {
+                    lhs: ASTNode {
                         node: Box::new(Expression::Binary {
                             operator: BinaryOperator::Plus,
-                            lhs: IndexedJackNode {
+                            lhs: ASTNode {
                                 node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                 node_idx: 0,
                                 token_range: 0..21
                             },
-                            rhs: IndexedJackNode {
-                                node: Box::new(Expression::SubroutineCall(IndexedJackNode {
+                            rhs: ASTNode {
+                                node: Box::new(Expression::SubroutineCall(ASTNode {
                                     node: Box::new(SubroutineCall::Direct {
                                         subroutine_name: "foo".to_string(),
                                         arguments: vec![
-                                            IndexedJackNode {
+                                            ASTNode {
                                                 node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                                 node_idx: 1,
                                                 token_range: 6..7
                                             },
-                                            IndexedJackNode {
+                                            ASTNode {
                                                 node: Box::new(Expression::ArrayAccess {
                                                     var_name: "bar".to_string(),
-                                                    index: IndexedJackNode {
+                                                    index: ASTNode {
                                                         node: Box::new(Expression::Binary {
                                                             operator: BinaryOperator::Plus,
-                                                            lhs: IndexedJackNode {
+                                                            lhs: ASTNode {
                                                                 node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                                                 node_idx: 2,
                                                                 token_range: 11..16
                                                             },
-                                                            rhs: IndexedJackNode {
+                                                            rhs: ASTNode {
                                                                 node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                                                                 node_idx: 3,
                                                                 token_range: 15..16
@@ -1673,7 +1658,7 @@ mod tests {
                                                 node_idx: 5,
                                                 token_range: 10..17
                                             },
-                                            IndexedJackNode {
+                                            ASTNode {
                                                 node: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
                                                 node_idx: 6,
                                                 token_range: 19..20
@@ -1690,7 +1675,7 @@ mod tests {
                         node_idx: 9,
                         token_range: 0..25
                     },
-                    rhs: IndexedJackNode {
+                    rhs: ASTNode {
                         node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                         node_idx: 10,
                         token_range: 24..25
@@ -1706,43 +1691,43 @@ mod tests {
     fn test_expression_with_variables_subroutine_calls_and_array_access() {
         assert_eq!(
             parse_expression("foo + bar[baz + buz.boz(qux, wox[123]) / bing]"),
-            (IndexedJackNode {
+            (ASTNode {
                 node: Box::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
-                    lhs: IndexedJackNode {
+                    lhs: ASTNode {
                         node: Box::new(Expression::Variable("foo".to_string())),
                         node_idx: 0,
                         token_range: 0..27
                     },
-                    rhs: IndexedJackNode {
+                    rhs: ASTNode {
                         node: Box::new(Expression::ArrayAccess {
                             var_name: "bar".to_string(),
-                            index: IndexedJackNode {
+                            index: ASTNode {
                                 node: Box::new(Expression::Binary {
                                     operator: BinaryOperator::Plus,
-                                    lhs: IndexedJackNode {
+                                    lhs: ASTNode {
                                         node: Box::new(Expression::Variable("baz".to_string())),
                                         node_idx: 1,
                                         token_range: 6..26
                                     },
-                                    rhs: IndexedJackNode {
+                                    rhs: ASTNode {
                                         node: Box::new(Expression::Binary {
                                             operator: BinaryOperator::Divide,
-                                            lhs: IndexedJackNode {
-                                                node: Box::new(Expression::SubroutineCall(IndexedJackNode {
+                                            lhs: ASTNode {
+                                                node: Box::new(Expression::SubroutineCall(ASTNode {
                                                     node: Box::new(SubroutineCall::Method {
                                                         this_name: "buz".to_string(),
                                                         method_name: "boz".to_string(),
                                                         arguments: vec![
-                                                            IndexedJackNode {
+                                                            ASTNode {
                                                                 node: Box::new(Expression::Variable("qux".to_string())),
                                                                 node_idx: 2,
                                                                 token_range: 14..15
                                                             },
-                                                            IndexedJackNode {
+                                                            ASTNode {
                                                                 node: Box::new(Expression::ArrayAccess {
                                                                     var_name: "wox".to_string(),
-                                                                    index: IndexedJackNode {
+                                                                    index: ASTNode {
                                                                         node: Box::new(Expression::PrimitiveTerm(IntegerConstant("123".to_string()))),
                                                                         node_idx: 3,
                                                                         token_range: 19..20
@@ -1759,7 +1744,7 @@ mod tests {
                                                 node_idx: 6,
                                                 token_range: 12..26
                                             },
-                                            rhs: IndexedJackNode {
+                                            rhs: ASTNode {
                                                 node: Box::new(Expression::Variable("bing".to_string())),
                                                 node_idx: 7,
                                                 token_range: 25..26
@@ -1787,27 +1772,27 @@ mod tests {
     fn test_primitive_terms() {
         assert_eq!(
             parse_expression("1 + \"hello\" + true + false + null + this"),
-            IndexedJackNode {
+            ASTNode {
                 node: Box::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
-                    lhs: IndexedJackNode {
+                    lhs: ASTNode {
                         node: Box::new(Expression::Binary {
                             operator: BinaryOperator::Plus,
-                            lhs: IndexedJackNode {
+                            lhs: ASTNode {
                                 node: Box::new(Expression::Binary {
                                     operator: BinaryOperator::Plus,
-                                    lhs: IndexedJackNode {
+                                    lhs: ASTNode {
                                         node: Box::new(Expression::Binary {
                                             operator: BinaryOperator::Plus,
-                                            lhs: IndexedJackNode {
+                                            lhs: ASTNode {
                                                 node: Box::new(Expression::Binary {
                                                     operator: BinaryOperator::Plus,
-                                                    lhs: IndexedJackNode {
+                                                    lhs: ASTNode {
                                                         node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                                         node_idx: 0,
                                                         token_range: 0..5
                                                     },
-                                                    rhs: IndexedJackNode {
+                                                    rhs: ASTNode {
                                                         node: Box::new(Expression::PrimitiveTerm(StringConstant("hello".to_string()))),
                                                         node_idx: 1,
                                                         token_range: 4..5
@@ -1816,7 +1801,7 @@ mod tests {
                                                 node_idx: 2,
                                                 token_range: 0..9
                                             },
-                                            rhs: IndexedJackNode {
+                                            rhs: ASTNode {
                                                 node: Box::new(Expression::PrimitiveTerm(PrimitiveTermVariant::True)),
                                                 node_idx: 3,
                                                 token_range: 8..9
@@ -1825,7 +1810,7 @@ mod tests {
                                         node_idx: 4,
                                         token_range: 0..13
                                     },
-                                    rhs: IndexedJackNode {
+                                    rhs: ASTNode {
                                         node: Box::new(Expression::PrimitiveTerm(PrimitiveTermVariant::False)),
                                         node_idx: 5,
                                         token_range: 12..13
@@ -1834,7 +1819,7 @@ mod tests {
                                 node_idx: 6,
                                 token_range: 0..17
                             },
-                            rhs: IndexedJackNode {
+                            rhs: ASTNode {
                                 node: Box::new(Expression::PrimitiveTerm(PrimitiveTermVariant::Null)),
                                 node_idx: 7,
                                 token_range: 16..17
@@ -1843,7 +1828,7 @@ mod tests {
                         node_idx: 8,
                         token_range: 0..21
                     },
-                    rhs: IndexedJackNode {
+                    rhs: ASTNode {
                         node: Box::new(Expression::PrimitiveTerm(PrimitiveTermVariant::This)),
                         node_idx: 9,
                         token_range: 20..21
@@ -1859,19 +1844,19 @@ mod tests {
     fn test_parenthesized_expression() {
         assert_eq!(
             parse_expression("(1 + 2) * 3"),
-            IndexedJackNode {
+            ASTNode {
                 node: Box::new(Expression::Binary {
                     operator: BinaryOperator::Multiply,
-                    lhs: IndexedJackNode {
-                        node: Box::new(Expression::Parenthesized(IndexedJackNode {
+                    lhs: ASTNode {
+                        node: Box::new(Expression::Parenthesized(ASTNode {
                             node: Box::new(Expression::Binary {
                                 operator: BinaryOperator::Plus,
-                                lhs: IndexedJackNode {
+                                lhs: ASTNode {
                                     node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                                     node_idx: 0,
                                     token_range: 1..6
                                 },
-                                rhs: IndexedJackNode {
+                                rhs: ASTNode {
                                     node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
                                     node_idx: 1,
                                     token_range: 5..6
@@ -1883,7 +1868,7 @@ mod tests {
                         node_idx: 3,
                         token_range: 0..11
                     },
-                    rhs: IndexedJackNode {
+                    rhs: ASTNode {
                         node: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
                         node_idx: 4,
                         token_range: 10..11

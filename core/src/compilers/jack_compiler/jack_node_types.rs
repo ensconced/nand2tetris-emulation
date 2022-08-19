@@ -1,4 +1,4 @@
-use std::{ops::Range, rc::Rc};
+use std::ops::Range;
 
 use serde::Serialize;
 use ts_rs::TS;
@@ -7,7 +7,7 @@ use ts_rs::TS;
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub struct IndexedJackNode<T> {
-    pub node: Rc<T>,
+    pub node: Box<T>,
     pub node_idx: usize,
     pub token_range: Range<usize>,
 }

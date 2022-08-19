@@ -10,7 +10,7 @@ use super::{
     },
     sourcemap::VMCodegenSourceMap,
 };
-use std::{collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 
 #[derive(Clone, PartialEq)]
 enum SymbolKind {
@@ -570,7 +570,7 @@ impl CodeGenerator {
     }
 }
 
-pub fn generate_vm_code(class: Rc<Class>) -> Vec<Command> {
+pub fn generate_vm_code(class: Class) -> Vec<Command> {
     let mut code_generator = CodeGenerator::new();
     code_generator.class_name = Some(class.name.clone());
     let class_instance_size = code_generator.compile_var_declarations(&class.var_declarations);

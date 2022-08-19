@@ -11,7 +11,7 @@ use compilers::{
 use emulator::run::run;
 use fonts::glyphs_class;
 use serde::Serialize;
-use std::{fs, path::Path, rc::Rc};
+use std::{fs, path::Path};
 use ts_rs::TS;
 
 use crate::compilers::jack_compiler::compile;
@@ -21,7 +21,7 @@ use crate::compilers::jack_compiler::compile;
 #[ts(export_to = "../bindings/")]
 struct ParserVizData {
     source: String,
-    parsed_class: Rc<Class>,
+    parsed_class: Class,
 }
 
 #[derive(Parser, Debug)]

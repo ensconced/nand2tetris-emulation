@@ -94,6 +94,7 @@ struct Parser<'a> {
 
 impl<'a> Parser<'a> {
     // TODO - can we abolish JackNodeType and instead just get some description of the node directly off the ast nodes?
+    // TODO - can we also now get rid of the Rc's?
     fn record_jack_node<T>(&mut self, ast_node: Rc<T>, node_type: JackNodeType, token_range: Range<usize>) -> IndexedJackNode<T> {
         let idx = self.jack_nodes.len();
         self.jack_nodes.push(JackNode {

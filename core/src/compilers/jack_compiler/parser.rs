@@ -248,19 +248,13 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn maybe_append_rhs_to_lhs(
-        &mut self,
-        lhs_node: Box<Expression>,
-        lhs_node_idx: usize,
-        mut lhs_token_range: Range<usize>,
-        binding_power: u8,
-    ) -> Option<IndexedJackNode<Expression>> {
+    fn maybe_append_rhs_to_lhs(&mut self, lhs_node: IndexedJackNode<Expression>, binding_power: u8) -> (IndexedJackNode<Expression>, bool) {
         use TokenKind::*;
         if let Some(Token { kind: Operator(op), .. }) = self.token_iter.peek() {
             let (lbp, rbp) = infix_precedence(op.clone()).expect("invalid infix operator");
             if lbp < binding_power {
                 // There is no rhs to append - the next term will instead associate towards the right.
-                return None;
+                return (lhs_node, true);
             }
             self.token_iter.next();
             let rhs = self
@@ -281,50 +275,41 @@ impl<'a> Parser<'a> {
                 _ => panic!("invalid binary operator"),
             };
 
-            lhs_token_range = lhs_token_range.start..rhs.token_range.end;
+            let new_token_range = lhs_node.token_range.start..rhs.token_range.end;
             let new_lhs_node = Expression::Binary {
                 operator,
                 lhs: IndexedJackNode {
-                    node: lhs_node,
-                    node_idx: lhs_node_idx,
-                    token_range: lhs_token_range.clone(),
+                    node: lhs_node.node,
+                    node_idx: lhs_node.node_idx,
+                    token_range: new_token_range.clone(),
                 },
                 rhs,
             };
-            Some(self.record_jack_node(new_lhs_node, JackNodeType::ExpressionNode(ExpressionType::Binary), lhs_token_range))
+            (
+                self.record_jack_node(new_lhs_node, JackNodeType::ExpressionNode(ExpressionType::Binary), new_token_range),
+                false,
+            )
         } else {
-            None
+            (lhs_node, true)
         }
     }
 
     fn maybe_take_expression_with_binding_power(&mut self, binding_power: u8) -> Option<IndexedJackNode<Expression>> {
-        let IndexedJackNode {
-            node: mut lhs,
-            node_idx: mut lhs_node_idx,
-            token_range: mut lhs_token_range,
-            ..
-        } = self
+        let mut lhs = self
             .maybe_take_unary_expression()
             .or_else(|| self.maybe_take_primitive_expression())
             .or_else(|| self.maybe_take_expression_starting_with_identifier())
             .or_else(|| self.maybe_take_parenthesized_expression())?;
 
-        while let Some(IndexedJackNode {
-            node: new_lhs,
-            token_range: new_lhs_token_range,
-            node_idx: new_lhs_node_idx,
-        }) = self.maybe_append_rhs_to_lhs(lhs, lhs_node_idx, lhs_token_range.clone(), binding_power)
-        {
+        loop {
+            let (new_lhs, done) = self.maybe_append_rhs_to_lhs(lhs, binding_power);
             lhs = new_lhs;
-            lhs_token_range = new_lhs_token_range;
-            lhs_node_idx = new_lhs_node_idx;
+            if done {
+                break;
+            }
         }
 
-        Some(IndexedJackNode {
-            node: lhs,
-            node_idx: lhs_node_idx,
-            token_range: lhs_token_range,
-        })
+        Some(lhs)
     }
 
     fn take_class_keyword(&mut self) -> &'a Token<TokenKind> {

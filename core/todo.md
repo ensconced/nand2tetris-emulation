@@ -1,13 +1,8 @@
 ### I want to be able to hover a token and get the jack node, and all the corresponding vm commands
 
-- for each emitted vm command, we only record the immediate parent jack node
-- so when looking up all the vm commands for a given jack node, we also want to consider that node's children and their vm commands
-- so we need to add a concept of children to nodes in the vec maintained by sourcemap
-
-1. add concept of children
-2. write codegen sourcemap
-3. combine codegen sourcemap within parser sourcemap
-4. visualize vm commands generated for e.g. memory std lib module
+1. write codegen sourcemap. for vm commands, just record immediate jack_node - don't worry about recording all parents.
+2. combine codegen sourcemap within parser sourcemap
+3. visualize vm commands generated for e.g. memory std lib module
 
 - complete process of skipping textual stages (or rather, making them optional)
   in the compiler data structure

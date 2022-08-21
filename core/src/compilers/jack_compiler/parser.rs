@@ -1,5 +1,5 @@
 use serde::Serialize;
-use std::ops::Range;
+use std::{iter, ops::Range};
 
 use super::{
     jack_node_types::{PrimitiveTermVariant::*, *},
@@ -87,8 +87,8 @@ struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    fn make_ast_node<T>(&mut self, node: T, token_range: Range<usize>) -> ASTNode<T> {
-        let node_idx = self.sourcemap.record_node(token_range.clone());
+    fn make_ast_node<T>(&mut self, node: T, token_range: Range<usize>, child_node_idxs: Vec<usize>) -> ASTNode<T> {
+        let node_idx = self.sourcemap.record_node(token_range.clone(), child_node_idxs);
         ASTNode {
             node: Box::new(node),
             node_idx,
@@ -130,7 +130,7 @@ impl<'a> Parser<'a> {
             maybe_exp.map(|exp| (exp, token.idx))
         })?;
         let token_range = exp_token_idx..exp_token_idx + 1;
-        Some(self.make_ast_node(expression, token_range))
+        Some(self.make_ast_node(expression, token_range, vec![]))
     }
 
     fn take_array_access(&mut self, var_name: String) -> ASTNode<Expression> {
@@ -139,7 +139,8 @@ impl<'a> Parser<'a> {
         let index_expr = self.take_expression();
         let r_bracket = self.take_token(RSquareBracket);
         let token_range = l_bracket.idx..r_bracket.idx + 1;
-        self.make_ast_node(Expression::ArrayAccess { var_name, index: index_expr }, token_range)
+        let child_node_idxs = vec![index_expr.node_idx];
+        self.make_ast_node(Expression::ArrayAccess { var_name, index: index_expr }, token_range, child_node_idxs)
     }
 
     fn maybe_take_parenthesized_expression(&mut self) -> Option<ASTNode<Expression>> {
@@ -156,7 +157,8 @@ impl<'a> Parser<'a> {
             // let jack_node = JackNode::ExpressionNode(rc.clone());
             let r_paren = self.take_token(RParen);
             let token_range = token_range_start..r_paren.idx + 1;
-            Some(self.make_ast_node(Expression::Parenthesized(expr), token_range))
+            let child_node_idxs = vec![expr.node_idx];
+            Some(self.make_ast_node(Expression::Parenthesized(expr), token_range, child_node_idxs))
         } else {
             None
         }
@@ -178,12 +180,12 @@ impl<'a> Parser<'a> {
                 Some(Token { kind: Dot | LParen, .. }) => {
                     let subroutine_call = self.take_subroutine_call(identifier, identifier_token_idx);
                     let subroutine_call_token_range = subroutine_call.token_range.clone();
-                    let expr = Expression::SubroutineCall(subroutine_call);
-                    Some(self.make_ast_node(expr, subroutine_call_token_range))
+                    let child_node_idxs = vec![subroutine_call.node_idx];
+                    Some(self.make_ast_node(Expression::SubroutineCall(subroutine_call), subroutine_call_token_range, child_node_idxs))
                 }
                 _ => {
                     let token_range = identifier_token_idx..identifier_token_idx + 1;
-                    Some(self.make_ast_node(Expression::Variable(string), token_range))
+                    Some(self.make_ast_node(Expression::Variable(string), token_range, vec![]))
                 }
             }
         } else {
@@ -207,7 +209,8 @@ impl<'a> Parser<'a> {
                 _ => panic!("invalid unary operator"),
             };
             let token_range = op_token_idx..operand.token_range.end;
-            Some(self.make_ast_node(Expression::Unary { operator, operand }, token_range))
+            let child_node_idxs = vec![operand.node_idx];
+            Some(self.make_ast_node(Expression::Unary { operator, operand }, token_range, child_node_idxs))
         } else {
             None
         }
@@ -241,16 +244,14 @@ impl<'a> Parser<'a> {
             };
 
             let new_token_range = lhs_node.token_range.start..rhs.token_range.end;
-            let new_lhs_node = Expression::Binary {
-                operator,
-                lhs: ASTNode {
-                    node: lhs_node.node,
-                    node_idx: lhs_node.node_idx,
-                    token_range: new_token_range.clone(),
-                },
-                rhs,
+            let lhs = ASTNode {
+                node: lhs_node.node,
+                node_idx: lhs_node.node_idx,
+                token_range: new_token_range.clone(),
             };
-            (self.make_ast_node(new_lhs_node, new_token_range), false)
+            let child_node_idxs = vec![lhs.node_idx, rhs.node_idx];
+            let new_lhs_node = Expression::Binary { operator, lhs, rhs };
+            (self.make_ast_node(new_lhs_node, new_token_range, child_node_idxs), false)
         } else {
             (lhs_node, true)
         }
@@ -332,12 +333,13 @@ impl<'a> Parser<'a> {
                 self.token_iter.next(); // LParen
                 let arguments = self.take_expression_list();
                 let r_paren = self.take_token(RParen);
+                let child_node_idxs = arguments.iter().map(|arg| arg.node_idx).collect();
                 let subroutine_call = SubroutineCall::Direct {
                     subroutine_name: name,
                     arguments,
                 };
                 let token_range = identifier_token_idx..r_paren.idx + 1;
-                self.make_ast_node(subroutine_call, token_range)
+                self.make_ast_node(subroutine_call, token_range, child_node_idxs)
             }
             Some(Token { kind: Dot, .. }) => {
                 // Method call
@@ -346,13 +348,14 @@ impl<'a> Parser<'a> {
                 self.take_token(LParen);
                 let arguments = self.take_expression_list();
                 let r_paren = self.take_token(RParen);
+                let child_node_idxs = arguments.iter().map(|arg| arg.node_idx).collect();
                 let method = SubroutineCall::Method {
                     this_name: name,
                     method_name,
                     arguments,
                 };
                 let token_range = method_name_token_idx..r_paren.idx + 1;
-                self.make_ast_node(method, token_range)
+                self.make_ast_node(method, token_range, child_node_idxs)
             }
             _ => panic!("expected subroutine call"),
         }
@@ -376,7 +379,7 @@ impl<'a> Parser<'a> {
             let (var_name, identifier_token_idx) = self.take_identifier();
             let parameter = Parameter { type_name, var_name };
             let token_range = identifier_token_idx..identifier_token_idx + 1;
-            self.make_ast_node(parameter, token_range)
+            self.make_ast_node(parameter, token_range, vec![])
         })
     }
 
@@ -418,13 +421,17 @@ impl<'a> Parser<'a> {
         self.take_token(TokenKind::Operator(Equals));
         let value = self.take_expression();
         let semicolon = self.take_token(TokenKind::Semicolon);
+        let mut child_node_idxs = vec![value.node_idx];
+        if let Some(arr_idx) = &array_index {
+            child_node_idxs.push(arr_idx.node_idx);
+        }
         let statement = Statement::Let {
             var_name,
             array_index,
             value,
         };
         let token_range = let_keyword_token_idx..semicolon.idx + 1;
-        self.make_ast_node(statement, token_range)
+        self.make_ast_node(statement, token_range, child_node_idxs)
     }
 
     fn take_statement_block(&mut self) -> (Vec<ASTNode<Statement>>, Range<usize>) {
@@ -455,6 +462,11 @@ impl<'a> Parser<'a> {
         self.take_token(TokenKind::RParen);
         let (if_statements, if_statements_token_range) = self.take_statement_block();
         let (else_statements, else_block_token_range) = unzip(self.maybe_take_else_block());
+        let mut child_node_idxs = vec![condition.node_idx];
+        child_node_idxs.extend(if_statements.iter().map(|stmt| stmt.node_idx));
+        if let Some(else_stmts) = &else_statements {
+            child_node_idxs.extend(else_stmts.iter().map(|stmt| stmt.node_idx));
+        }
         let statement = Statement::If {
             condition,
             if_statements,
@@ -462,7 +474,8 @@ impl<'a> Parser<'a> {
         };
         let last_part_of_token_range = else_block_token_range.unwrap_or(if_statements_token_range);
         let token_range = if_keyword_token_idx..last_part_of_token_range.end;
-        self.make_ast_node(statement, token_range)
+
+        self.make_ast_node(statement, token_range, child_node_idxs)
     }
 
     fn take_while_statement(&mut self, while_keyword_token_idx: usize) -> ASTNode<Statement> {
@@ -471,28 +484,32 @@ impl<'a> Parser<'a> {
         let condition = self.take_expression();
         self.take_token(TokenKind::RParen);
         let (statements, statements_token_range) = self.take_statement_block();
+        let mut child_node_idxs = vec![condition.node_idx];
+        child_node_idxs.extend(statements.iter().map(|stmt| stmt.node_idx));
         let statement = Statement::While { condition, statements };
         let token_range = while_keyword_token_idx..statements_token_range.end;
-        self.make_ast_node(statement, token_range)
+        self.make_ast_node(statement, token_range, child_node_idxs)
     }
 
     fn take_do_statement(&mut self, do_keyword_token_idx: usize) -> ASTNode<Statement> {
         self.token_iter.next(); // "do" keyword
         let (identifier, identifier_token_idx) = self.take_identifier();
         let subroutine_call = self.take_subroutine_call(identifier, identifier_token_idx);
+        let child_node_idxs = vec![subroutine_call.node_idx];
         let semicolon = self.take_token(TokenKind::Semicolon);
         let statement = Statement::Do(subroutine_call);
         let token_range = do_keyword_token_idx..semicolon.idx + 1;
-        self.make_ast_node(statement, token_range)
+        self.make_ast_node(statement, token_range, child_node_idxs)
     }
 
     fn take_return_statement(&mut self, return_keyword_token_idx: usize) -> ASTNode<Statement> {
         self.token_iter.next(); // "return" keyword
         let expression = self.maybe_take_expression_with_binding_power(0);
+        let child_node_idxs = expression.as_ref().map(|expr| expr.node_idx).into_iter().collect();
         let semicolon = self.take_token(TokenKind::Semicolon);
         let statement = Statement::Return(expression);
         let token_range = return_keyword_token_idx..semicolon.idx + 1;
-        self.make_ast_node(statement, token_range)
+        self.make_ast_node(statement, token_range, child_node_idxs)
     }
 
     fn maybe_take_statement(&mut self) -> Option<ASTNode<Statement>> {
@@ -537,7 +554,7 @@ impl<'a> Parser<'a> {
             let semicolon = self.take_token(TokenKind::Semicolon);
             let var_declaration = VarDeclaration { type_name, var_names };
             let token_range = *var_keyword_token_idx..semicolon.idx + 1;
-            self.make_ast_node(var_declaration, token_range)
+            self.make_ast_node(var_declaration, token_range, vec![])
         } else {
             panic!("expected var keyword");
         }
@@ -559,13 +576,18 @@ impl<'a> Parser<'a> {
         let l_curly = self.take_token(TokenKind::LCurly);
         let var_declarations = self.take_var_declarations();
         let statements = self.take_statements();
+        let child_node_idxs = var_declarations
+            .iter()
+            .map(|var_dec| var_dec.node_idx)
+            .chain(statements.iter().map(|stmt| stmt.node_idx))
+            .collect();
         let r_curly = self.take_token(TokenKind::RCurly);
         let subroutine_body = SubroutineBody {
             var_declarations,
             statements,
         };
         let token_range = l_curly.idx..r_curly.idx + 1;
-        self.make_ast_node(subroutine_body, token_range)
+        self.make_ast_node(subroutine_body, token_range, child_node_idxs)
     }
 
     fn take_subroutine_declaration(&mut self) -> ASTNode<SubroutineDeclaration> {
@@ -589,6 +611,7 @@ impl<'a> Parser<'a> {
             let parameters = self.take_parameters();
             self.take_token(TokenKind::RParen);
             let body = self.take_subroutine_body();
+            let child_node_idxs = parameters.iter().map(|param| param.node_idx).chain(iter::once(body.node_idx)).collect();
             let token_range = *subroutine_kind_token_idx..body.token_range.end;
             let subroutine_declaration = SubroutineDeclaration {
                 subroutine_kind,
@@ -597,7 +620,7 @@ impl<'a> Parser<'a> {
                 parameters,
                 body,
             };
-            self.make_ast_node(subroutine_declaration, token_range)
+            self.make_ast_node(subroutine_declaration, token_range, child_node_idxs)
         } else {
             panic!("expected subroutine kind");
         }
@@ -638,7 +661,7 @@ impl<'a> Parser<'a> {
                     _ => panic!("expected var declaration qualifier",),
                 };
                 let token_range = *token_idx..token_idx + 1;
-                self.make_ast_node(qualifier, token_range)
+                self.make_ast_node(qualifier, token_range, vec![])
             }
             _ => panic!("expected var declaration qualifier",),
         }
@@ -704,12 +727,13 @@ impl<'a> Parser<'a> {
         let var_names = self.take_var_names();
         let semicolon = self.take_token(TokenKind::Semicolon);
         let token_range = qualifier.token_range.start..semicolon.idx + 1;
+        let child_node_idxs = vec![qualifier.node_idx];
         let class_var_declaration = ClassVarDeclaration {
             qualifier,
             type_name,
             var_names,
         };
-        self.make_ast_node(class_var_declaration, token_range)
+        self.make_ast_node(class_var_declaration, token_range, child_node_idxs)
     }
 
     fn maybe_take_class_var_declaration(&mut self) -> Option<ASTNode<ClassVarDeclaration>> {
@@ -741,13 +765,18 @@ impl<'a> Parser<'a> {
         let var_declarations = self.take_class_var_declarations();
         let subroutine_declarations = self.take_class_subroutine_declarations();
         let r_curly = self.take_token(TokenKind::RCurly);
+        let child_node_idxs = var_declarations
+            .iter()
+            .map(|var_dec| var_dec.node_idx)
+            .chain(subroutine_declarations.iter().map(|subroutine| subroutine.node_idx))
+            .collect();
         let class = Class {
             name,
             var_declarations,
             subroutine_declarations,
         };
         let token_range = class_keyword.idx..r_curly.idx + 1;
-        let res = self.make_ast_node(class, token_range);
+        let res = self.make_ast_node(class, token_range, child_node_idxs);
         *res.node
     }
 }

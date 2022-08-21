@@ -1,15 +1,16 @@
-- this in turn will allow me to turn the compilation process into less of a series
-  of translations from one language to another, and more like a series of transformations
-  of one data structure - i.e. it should be easier to keep information around so you know
-  which bit of jack code each bit of vm code corresponds to, and which bit of vm code
-  each bit of asm corresponds to etc. this should help a lot both with debugging and
-  with possible later visualisation stuff AND with my attempts to reduce the emitted code size.
+### I want to be able to hover a token and get the jack node, and all the corresponding vm commands
 
-## STEPS
+- for each emitted vm command, we only record the immediate parent jack node
+- so when looking up all the vm commands for a given jack node, we also want to consider that node's children and their vm commands
+- so we need to add a concept of children to nodes in the vec maintained by sourcemap
 
-### groundwork for code size analysis
+1. add concept of children
+2. write codegen sourcemap
+3. combine codegen sourcemap within parser sourcemap
+4. visualize vm commands generated for e.g. memory std lib module
 
-- add references from vm instructions to their owning node from the jack AST (via the ref-counted JackNode intermediary enum)
+- complete process of skipping textual stages (or rather, making them optional)
+  in the compiler data structure
 - generation of reports on generated code size vs type of origin jack nodes.
 - abolish textual ASM - instead go directly from "parsed" vm instructions to "parsed" asm instructions
 - add references from asm instructions to their owning vm instruction node
@@ -23,9 +24,6 @@
 
 - improve emitted code size
 - in order to do this, need to better be able to analyze where bloat is
-- first step for this is to keep info during compilation on where code is coming from
-- keep this info in some kind of data structure
-- later can serialize this (using serde?) to JSON
 
 ### debugging
 
@@ -40,16 +38,6 @@
 - maybe get rid of clap and parse cli args myself
 
 ### Debug planning
-
-### Phase 1 - output JSON file explaining compiler output
-
-compiler outputs something like this:
-
-{
-"jack": [jack modules]
-"vm_code": [vm modules] // each vm code line points back to a line of jack code
-"asm": [asm lines] // each asm line points back to a line of vm code
-}
 
 ### Phase 2 - visualise compiler output
 

@@ -3,7 +3,7 @@ use std::{iter, ops::Range};
 
 use super::{
     jack_node_types::{PrimitiveTermVariant::*, *},
-    sourcemap::JackParserSourceMap,
+    sourcemap::SourceMap,
     tokenizer::{
         token_defs, KeywordTokenVariant,
         OperatorVariant::{self, *},
@@ -48,11 +48,10 @@ fn infix_precedence(operator: OperatorVariant) -> Option<(u8, u8)> {
 #[derive(Serialize)]
 pub struct ParserOutput {
     pub class: Class,
-    pub sourcemap: JackParserSourceMap,
     pub tokens: Vec<Token<TokenKind>>,
 }
 
-pub fn parse(source: &str) -> ParserOutput {
+pub fn parse(source: &str, sourcemap: &mut SourceMap) -> ParserOutput {
     let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(source);
     let tokens_without_whitespace: Vec<_> = tokens
         .iter()
@@ -67,28 +66,24 @@ pub fn parse(source: &str) -> ParserOutput {
         })
         .collect();
 
-    let cloned_tokens_without_whitespace: Vec<_> = tokens_without_whitespace.into_iter().map(|x| x.clone()).collect();
+    let cloned_tokens_without_whitespace: Vec<_> = tokens_without_whitespace.into_iter().cloned().collect();
 
     let mut parser = Parser {
         token_iter: cloned_tokens_without_whitespace.iter().peekable(),
-        sourcemap: JackParserSourceMap::new(),
+        sourcemap,
     };
     let class = parser.take_class();
-    ParserOutput {
-        class,
-        sourcemap: parser.sourcemap,
-        tokens,
-    }
+    ParserOutput { class, tokens }
 }
 
 struct Parser<'a> {
     token_iter: PeekableTokens<'a, TokenKind>,
-    sourcemap: JackParserSourceMap,
+    sourcemap: &'a mut SourceMap,
 }
 
 impl<'a> Parser<'a> {
     fn make_ast_node<T>(&mut self, node: T, token_range: Range<usize>, child_node_idxs: Vec<usize>) -> ASTNode<T> {
-        let node_idx = self.sourcemap.record_node(token_range.clone(), child_node_idxs);
+        let node_idx = self.sourcemap.record_jack_node(token_range.clone(), child_node_idxs);
         ASTNode {
             node: Box::new(node),
             node_idx,
@@ -801,33 +796,37 @@ mod tests {
                 )
             })
             .collect();
+        let mut sourcemap = SourceMap::new();
         let mut parser = Parser {
             token_iter: tokens.iter().peekable(),
-            sourcemap: JackParserSourceMap::new(),
+            sourcemap: &mut sourcemap,
         };
         parser.take_expression()
     }
 
     #[test]
     fn test_simple_class() {
+        let mut sourcemap = SourceMap::new();
         assert_eq!(
-            parse("class foo {}").class,
+            parse("class foo {}", &mut sourcemap).class,
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![],
                 subroutine_declarations: vec![],
-            }
+            },
         );
     }
 
     #[test]
     fn test_class_with_var_declaration() {
+        let mut sourcemap = SourceMap::new();
         assert_eq!(
             parse(
                 "
             class foo {
               static int bar;
-            }"
+            }",
+                &mut sourcemap
             )
             .class,
             Class {
@@ -852,6 +851,7 @@ mod tests {
 
     #[test]
     fn test_class_with_multiple_var_declarations() {
+        let mut sourcemap = SourceMap::new();
         assert_eq!(
             parse(
                 "
@@ -859,7 +859,8 @@ mod tests {
               static int bar;
               field char baz, buz, boz;
               field boolean a, b, c;
-            }"
+            }",
+                &mut sourcemap
             )
             .class,
             Class {
@@ -912,6 +913,7 @@ mod tests {
 
     #[test]
     fn test_class_with_subroutine_declarations() {
+        let mut sourcemap = SourceMap::new();
         assert_eq!(
             parse(
                 "
@@ -922,7 +924,8 @@ mod tests {
                 }
                 method void qux() {
                 }
-            }"
+            }",
+                &mut sourcemap
             )
             .class,
             Class {
@@ -1022,6 +1025,7 @@ mod tests {
 
     #[test]
     fn test_all_statement_types() {
+        let mut sourcemap = SourceMap::new();
         assert_eq!(
             parse(
                 "
@@ -1043,7 +1047,8 @@ mod tests {
                         return 123;
                     }
                 }
-            }"
+            }",
+                &mut sourcemap
             )
             .class,
             Class {
@@ -1311,6 +1316,7 @@ mod tests {
 
     #[test]
     fn test_simple_binary_expression_within_class() {
+        let mut sourcemap = SourceMap::new();
         assert_eq!(
             parse(
                 "
@@ -1319,7 +1325,8 @@ mod tests {
                     let a = 1 + 2 + 3;
                 }
             }
-            "
+            ",
+                &mut sourcemap
             )
             .class,
             Class {

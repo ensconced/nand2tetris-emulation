@@ -19,7 +19,7 @@ pub fn parse(source_module: &SourceModule) -> ParsedModule {
     }
 }
 
-pub fn compile(src_path: &Path, dest_path: &Path) -> Result<(), io::Error> {
+pub fn compile_files(src_path: &Path, dest_path: &Path) -> Result<(), io::Error> {
     let source_modules = get_source_modules(src_path)?;
     let asm = codegen::generate_asm(source_modules.iter().map(parse).collect());
     fs::write(dest_path, asm)

@@ -8,14 +8,9 @@ use super::{
         ASTNode, BinaryOperator, Class, ClassVarDeclaration, ClassVarDeclarationKind, Expression, Parameter, PrimitiveTermVariant, Statement,
         SubroutineCall, SubroutineDeclaration, SubroutineKind, Type, UnaryOperator, VarDeclaration,
     },
-    sourcemap::VMCodegenSourceMap,
+    sourcemap::SourceMap,
 };
 use std::collections::HashMap;
-
-pub struct CodegenOutput {
-    pub commands: Vec<Command>,
-    pub sourcemap: VMCodegenSourceMap,
-}
 
 #[derive(Clone, PartialEq)]
 enum SymbolKind {
@@ -31,11 +26,11 @@ struct Symbol {
     kind: SymbolKind,
 }
 
-pub struct CodeGenerator {
+pub struct CodeGenerator<'a> {
     pub class_name: Option<String>,
     class_fields: HashMap<String, Symbol>,
     class_statics: HashMap<String, Symbol>,
-    sourcemap: VMCodegenSourceMap,
+    sourcemap: &'a mut SourceMap,
     subroutine_while_count: usize,
     subroutine_if_count: usize,
     subroutine_parameters: HashMap<String, Symbol>,
@@ -44,13 +39,13 @@ pub struct CodeGenerator {
     vm_commands: Vec<Command>,
 }
 
-impl CodeGenerator {
-    pub fn new() -> Self {
+impl<'a> CodeGenerator<'a> {
+    pub fn new(sourcemap: &'a mut SourceMap) -> Self {
         CodeGenerator {
             class_name: None,
             class_fields: HashMap::new(),
             class_statics: HashMap::new(),
-            sourcemap: VMCodegenSourceMap::new(),
+            sourcemap,
             subroutine_while_count: 0,
             subroutine_if_count: 0,
             subroutine_parameters: HashMap::new(),
@@ -639,13 +634,10 @@ impl CodeGenerator {
     }
 }
 
-pub fn generate_vm_code(class: Class) -> CodegenOutput {
-    let mut code_generator = CodeGenerator::new();
+pub fn generate_vm_code(class: Class, sourcemap: &mut SourceMap) -> Vec<Command> {
+    let mut code_generator = CodeGenerator::new(sourcemap);
     code_generator.class_name = Some(class.name.clone());
     let class_instance_size = code_generator.compile_var_declarations(&class.var_declarations);
     code_generator.compile_subroutines(&class.subroutine_declarations, class_instance_size);
-    CodegenOutput {
-        commands: code_generator.vm_commands,
-        sourcemap: code_generator.sourcemap,
-    }
+    code_generator.vm_commands
 }

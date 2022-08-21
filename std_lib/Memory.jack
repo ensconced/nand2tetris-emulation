@@ -35,7 +35,7 @@
   memory to use for its own overheads, and copy the overheads over from screen memory
   into this block. Hence I kind of bootstrap the allocator then use it to allocate some memory
   for itself which is kind of cool. Then I zero out the screen memory again.
-  I guess this the the screen might briefly flicker on startup but I don't really care about that.
+  I guess this means the screen might briefly flicker on startup but I don't really care about that.
 */
 
 

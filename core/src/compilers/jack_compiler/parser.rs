@@ -48,8 +48,8 @@ fn infix_precedence(operator: OperatorVariant) -> Option<(u8, u8)> {
 #[derive(Serialize)]
 pub struct ParserOutput {
     pub class: Class,
-    sourcemap: JackParserSourceMap,
-    tokens: Vec<Token<TokenKind>>,
+    pub sourcemap: JackParserSourceMap,
+    pub tokens: Vec<Token<TokenKind>>,
 }
 
 pub fn parse(source: &str) -> ParserOutput {

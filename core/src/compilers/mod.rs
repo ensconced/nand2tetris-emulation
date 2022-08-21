@@ -2,7 +2,10 @@ use std::ops::Deref;
 
 use self::{
     assembler::assemble,
-    jack_compiler::{codegen::generate_vm_code, parser::parse},
+    jack_compiler::{
+        codegen::{generate_vm_code, CodegenOutput},
+        parser::{parse, ParserOutput},
+    },
     utils::source_modules::get_source_modules,
     vm_compiler::ParsedModule,
 };
@@ -25,21 +28,29 @@ pub fn compile_to_machine_code(jack_code: Vec<&str>) -> String {
         .map(|stdlib_module| stdlib_module.source)
         .collect();
 
-    let jack_classes: Vec<_> = std_lib_source
+    let parsed_vm_modules: Vec<_> = std_lib_source
         .iter()
         .map(|source| source.deref())
         .chain(jack_code.into_iter())
-        .map(|src| parse(src).class)
-        .collect();
-
-    let parsed_vm_modules: Vec<_> = jack_classes
-        .into_iter()
-        .map(generate_vm_code)
+        .map(|src| {
+            let ParserOutput {
+                class,
+                sourcemap: _parser_sourcemap,
+                tokens: _,
+            } = parse(src);
+            let CodegenOutput {
+                commands,
+                sourcemap: _codegen_sourcemap,
+            } = generate_vm_code(class);
+            commands
+        })
         .enumerate()
-        .map(|(idx, commands)| ParsedModule {
-            // TODO - use actual filenames here
-            filename: format!("some_filename_{idx}").into(),
-            commands: Box::new(commands.into_iter()),
+        .map(|(idx, commands)| {
+            ParsedModule {
+                // TODO - use actual filenames here
+                filename: format!("some_filename_{idx}").into(),
+                commands: Box::new(commands.into_iter()),
+            }
         })
         .collect();
 

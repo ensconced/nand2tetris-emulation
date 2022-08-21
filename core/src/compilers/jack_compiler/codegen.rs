@@ -12,6 +12,11 @@ use super::{
 };
 use std::collections::HashMap;
 
+pub struct CodegenOutput {
+    pub commands: Vec<Command>,
+    pub sourcemap: VMCodegenSourceMap,
+}
+
 #[derive(Clone, PartialEq)]
 enum SymbolKind {
     Local,
@@ -634,10 +639,13 @@ impl CodeGenerator {
     }
 }
 
-pub fn generate_vm_code(class: Class) -> Vec<Command> {
+pub fn generate_vm_code(class: Class) -> CodegenOutput {
     let mut code_generator = CodeGenerator::new();
     code_generator.class_name = Some(class.name.clone());
     let class_instance_size = code_generator.compile_var_declarations(&class.var_declarations);
     code_generator.compile_subroutines(&class.subroutine_declarations, class_instance_size);
-    code_generator.vm_commands
+    CodegenOutput {
+        commands: code_generator.vm_commands,
+        sourcemap: code_generator.sourcemap,
+    }
 }

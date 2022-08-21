@@ -37,8 +37,8 @@ impl JackParserSourceMap {
 
 #[derive(Serialize)]
 pub struct VMCodegenSourceMap {
-    pub jack_node_idx_to_vm_command_idx: HashMap<usize, Range<usize>>,
-    vm_command_idx_to_jack_node_idx: HashMap<usize, usize>,
+    pub jack_node_idx_to_vm_command_idx: HashMap<usize, Vec<usize>>,
+    pub vm_command_idx_to_jack_node_idx: HashMap<usize, usize>,
 }
 
 impl VMCodegenSourceMap {
@@ -47,5 +47,12 @@ impl VMCodegenSourceMap {
             jack_node_idx_to_vm_command_idx: HashMap::new(),
             vm_command_idx_to_jack_node_idx: HashMap::new(),
         }
+    }
+
+    pub fn record_vm_command(&mut self, vm_command_idx: usize, jack_node_idx: usize) {
+        let jack_node_vm_command_idxs = self.jack_node_idx_to_vm_command_idx.entry(jack_node_idx).or_default();
+        jack_node_vm_command_idxs.push(vm_command_idx);
+
+        self.vm_command_idx_to_jack_node_idx.insert(vm_command_idx, jack_node_idx);
     }
 }

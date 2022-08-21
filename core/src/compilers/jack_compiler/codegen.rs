@@ -55,6 +55,14 @@ impl CodeGenerator {
         }
     }
 
+    fn record_vm_commands(&mut self, vm_commands: Vec<Command>, jack_node_idx: usize) {
+        for vm_command in vm_commands {
+            let vm_command_idx = self.vm_commands.len();
+            self.sourcemap.record_vm_command(vm_command_idx, jack_node_idx);
+            self.vm_commands.push(vm_command);
+        }
+    }
+
     fn get_class_name(&self) -> &str {
         self.class_name.as_ref().unwrap_or_else(|| panic!("missing class_name"))
     }
@@ -87,16 +95,24 @@ impl CodeGenerator {
     fn compile_do_statement(&mut self, subroutine_call: &ASTNode<SubroutineCall>) {
         let pop_return_val = Command::Memory(MemoryCommandVariant::Pop(MemorySegmentVariant::Constant, 0));
         self.compile_subroutine_call_expression(subroutine_call);
-        self.vm_commands.push(pop_return_val);
+        self.record_vm_commands(vec![pop_return_val], subroutine_call.node_idx)
     }
 
-    fn compile_let_statement(&mut self, var_name: &str, array_index: &Option<ASTNode<Expression>>, value: &ASTNode<Expression>) {
+    fn compile_let_statement(
+        &mut self,
+        var_name: &str,
+        array_index: &Option<ASTNode<Expression>>,
+        value: &ASTNode<Expression>,
+        let_statement_node_idx: usize,
+    ) {
         self.compile_expression(value);
         let (var_mem_segment, var_seg_idx) = self.compile_variable(var_name);
 
         if let Some(idx) = array_index {
-            self.vm_commands
-                .push(Command::Memory(MemoryCommandVariant::Push(var_mem_segment, var_seg_idx as u16)));
+            self.record_vm_commands(
+                vec![Command::Memory(MemoryCommandVariant::Push(var_mem_segment, var_seg_idx as u16))],
+                let_statement_node_idx,
+            );
 
             self.compile_expression(idx);
 
@@ -111,10 +127,12 @@ impl CodeGenerator {
                     0,
                 )),
             ];
-            self.vm_commands.extend(commands.into_iter());
+            self.record_vm_commands(commands, let_statement_node_idx);
         } else {
-            self.vm_commands
-                .push(Command::Memory(MemoryCommandVariant::Pop(var_mem_segment, var_seg_idx as u16)));
+            self.record_vm_commands(
+                vec![Command::Memory(MemoryCommandVariant::Pop(var_mem_segment, var_seg_idx as u16))],
+                let_statement_node_idx,
+            );
         }
     }
 
@@ -123,69 +141,84 @@ impl CodeGenerator {
         condition: &ASTNode<Expression>,
         if_statements: &[ASTNode<Statement>],
         else_statements: &Option<Vec<ASTNode<Statement>>>,
+        if_statement_node_idx: usize,
     ) {
         let if_count = self.subroutine_if_count;
         self.subroutine_if_count += 1;
 
         self.compile_expression(condition);
 
-        self.vm_commands
-            .push(Command::Flow(FlowCommandVariant::IfGoTo(format!("if_statements_{}", if_count))));
+        self.record_vm_commands(
+            vec![Command::Flow(FlowCommandVariant::IfGoTo(format!("if_statements_{}", if_count)))],
+            if_statement_node_idx,
+        );
 
         if let Some(statements) = else_statements {
             self.compile_statements(statements)
         }
 
-        let cmds = vec![
-            Command::Flow(FlowCommandVariant::GoTo(format!("end_if_{}", if_count))),
-            Command::Flow(FlowCommandVariant::Label(format!("if_statements_{}", if_count))),
-        ];
-
-        self.vm_commands.extend(cmds.into_iter());
+        self.record_vm_commands(
+            vec![
+                Command::Flow(FlowCommandVariant::GoTo(format!("end_if_{}", if_count))),
+                Command::Flow(FlowCommandVariant::Label(format!("if_statements_{}", if_count))),
+            ],
+            if_statement_node_idx,
+        );
 
         self.compile_statements(if_statements);
 
-        self.vm_commands
-            .push(Command::Flow(FlowCommandVariant::Label(format!("end_if_{}", if_count))));
+        self.record_vm_commands(
+            vec![Command::Flow(FlowCommandVariant::Label(format!("end_if_{}", if_count)))],
+            if_statement_node_idx,
+        );
     }
 
-    fn compile_return_statement(&mut self, return_value: &Option<ASTNode<Expression>>) {
+    fn compile_return_statement(&mut self, return_value: &Option<ASTNode<Expression>>, return_statement_node_idx: usize) {
         if let Some(expression) = return_value {
             self.compile_expression(expression);
         } else {
-            self.vm_commands
-                .push(Command::Memory(MemoryCommandVariant::Push(MemorySegmentVariant::Constant, 0)));
+            self.record_vm_commands(
+                vec![Command::Memory(MemoryCommandVariant::Push(MemorySegmentVariant::Constant, 0))],
+                return_statement_node_idx,
+            )
         };
 
-        self.vm_commands.push(Command::Function(FunctionCommandVariant::ReturnFrom))
+        self.record_vm_commands(vec![Command::Function(FunctionCommandVariant::ReturnFrom)], return_statement_node_idx)
     }
 
-    fn compile_array_access_expression(&mut self, var_name: &str, index: &ASTNode<Expression>) {
+    fn compile_array_access_expression(&mut self, var_name: &str, index: &ASTNode<Expression>, array_access_expression_node_idx: usize) {
         let (arr_mem_seg, arr_seg_idx) = self.compile_variable(var_name);
 
-        self.vm_commands
-            .push(Command::Memory(MemoryCommandVariant::Push(arr_mem_seg, arr_seg_idx as u16)));
+        self.record_vm_commands(
+            vec![Command::Memory(MemoryCommandVariant::Push(arr_mem_seg, arr_seg_idx as u16))],
+            array_access_expression_node_idx,
+        );
 
         self.compile_expression(index);
 
-        self.vm_commands
-            .push(Command::Arithmetic(ArithmeticCommandVariant::Binary(BinaryArithmeticCommandVariant::Add)));
-
-        let cmds = vec![
-            Command::Memory(MemoryCommandVariant::Pop(
-                MemorySegmentVariant::OffsetSegment(OffsetSegmentVariant::Pointer),
-                1,
-            )),
-            Command::Memory(MemoryCommandVariant::Push(
-                MemorySegmentVariant::PointerSegment(PointerSegmentVariant::That),
-                0,
-            )),
-        ];
-
-        self.vm_commands.extend(cmds.into_iter());
+        self.record_vm_commands(
+            vec![
+                Command::Arithmetic(ArithmeticCommandVariant::Binary(BinaryArithmeticCommandVariant::Add)),
+                Command::Memory(MemoryCommandVariant::Pop(
+                    MemorySegmentVariant::OffsetSegment(OffsetSegmentVariant::Pointer),
+                    1,
+                )),
+                Command::Memory(MemoryCommandVariant::Push(
+                    MemorySegmentVariant::PointerSegment(PointerSegmentVariant::That),
+                    0,
+                )),
+            ],
+            array_access_expression_node_idx,
+        );
     }
 
-    fn compile_binary_expression(&mut self, operator: &BinaryOperator, lhs: &ASTNode<Expression>, rhs: &ASTNode<Expression>) {
+    fn compile_binary_expression(
+        &mut self,
+        operator: &BinaryOperator,
+        lhs: &ASTNode<Expression>,
+        rhs: &ASTNode<Expression>,
+        binary_expression_node_idx: usize,
+    ) {
         self.compile_expression(lhs);
         self.compile_expression(rhs);
 
@@ -211,10 +244,10 @@ impl CodeGenerator {
             BinaryOperator::Plus => vec![Command::Arithmetic(ArithmeticCommandVariant::Binary(BinaryArithmeticCommandVariant::Add))],
         };
 
-        self.vm_commands.extend(perform_op.into_iter());
+        self.record_vm_commands(perform_op, binary_expression_node_idx);
     }
 
-    fn compile_primitive_term_expression(&mut self, primitive_term: &PrimitiveTermVariant) {
+    fn compile_primitive_term_expression(&mut self, primitive_term: &PrimitiveTermVariant, expression_node_idx: usize) {
         let cmds = match primitive_term {
             PrimitiveTermVariant::False | PrimitiveTermVariant::Null => {
                 vec![Command::Memory(MemoryCommandVariant::Push(MemorySegmentVariant::Constant, 0))]
@@ -289,7 +322,7 @@ impl CodeGenerator {
                 .collect()
             }
         };
-        self.vm_commands.extend(cmds.into_iter());
+        self.record_vm_commands(cmds, expression_node_idx);
     }
 
     fn compile_push_arguments(&mut self, arguments: &[ASTNode<Expression>]) {
@@ -298,7 +331,13 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_method_subroutine_call_expression(&mut self, this_name: &str, method_name: &str, arguments: &[ASTNode<Expression>]) {
+    fn compile_method_subroutine_call_expression(
+        &mut self,
+        this_name: &str,
+        method_name: &str,
+        arguments: &[ASTNode<Expression>],
+        subroutine_call_node_idx: usize,
+    ) {
         let arg_count = arguments.len();
 
         if let Some(symbol) = self.maybe_resolve_symbol(this_name) {
@@ -307,13 +346,18 @@ impl CodeGenerator {
                 Type::ClassName(this_class) => {
                     let arg_count_with_this = arg_count + 1;
                     let (this_memory_segment, this_idx) = self.compile_variable(this_name);
-                    self.vm_commands
-                        .push(Command::Memory(MemoryCommandVariant::Push(this_memory_segment, this_idx as u16)));
+                    self.record_vm_commands(
+                        vec![Command::Memory(MemoryCommandVariant::Push(this_memory_segment, this_idx as u16))],
+                        subroutine_call_node_idx,
+                    );
                     self.compile_push_arguments(arguments);
-                    self.vm_commands.push(Command::Function(FunctionCommandVariant::Call(
-                        format!("{}.{}", this_class, method_name),
-                        arg_count_with_this as u16,
-                    )));
+                    self.record_vm_commands(
+                        vec![Command::Function(FunctionCommandVariant::Call(
+                            format!("{}.{}", this_class, method_name),
+                            arg_count_with_this as u16,
+                        ))],
+                        subroutine_call_node_idx,
+                    );
                 }
                 other_type => panic!("cannot call method on {:?}", other_type),
             }
@@ -322,41 +366,54 @@ impl CodeGenerator {
             // a different class. These are not resolved by the jack compiler -
             // resolution happens later, in the vm compiler.
             self.compile_push_arguments(arguments);
-            self.vm_commands.push(Command::Function(FunctionCommandVariant::Call(
-                format!("{}.{}", this_name, method_name),
-                arg_count as u16,
-            )));
+            self.record_vm_commands(
+                vec![Command::Function(FunctionCommandVariant::Call(
+                    format!("{}.{}", this_name, method_name),
+                    arg_count as u16,
+                ))],
+                subroutine_call_node_idx,
+            );
         }
     }
 
-    fn compile_direct_subroutine_call_expression(&mut self, subroutine_name: &str, arguments: &Vec<ASTNode<Expression>>) {
+    fn compile_direct_subroutine_call_expression(
+        &mut self,
+        subroutine_name: &str,
+        arguments: &Vec<ASTNode<Expression>>,
+        subroutine_call_node_idx: usize,
+    ) {
         let arg_count = arguments.len();
         let class_name = self.get_class_name().to_owned();
         self.compile_push_arguments(arguments);
-        self.vm_commands.push(Command::Function(FunctionCommandVariant::Call(
-            format!("{}.{}", class_name, subroutine_name),
-            arg_count as u16,
-        )));
+        self.record_vm_commands(
+            vec![Command::Function(FunctionCommandVariant::Call(
+                format!("{}.{}", class_name, subroutine_name),
+                arg_count as u16,
+            ))],
+            subroutine_call_node_idx,
+        )
     }
 
     fn compile_subroutine_call_expression(&mut self, subroutine_call: &ASTNode<SubroutineCall>) {
         match &*subroutine_call.node {
-            SubroutineCall::Direct { subroutine_name, arguments } => self.compile_direct_subroutine_call_expression(subroutine_name, arguments),
+            SubroutineCall::Direct { subroutine_name, arguments } => {
+                self.compile_direct_subroutine_call_expression(subroutine_name, arguments, subroutine_call.node_idx)
+            }
             SubroutineCall::Method {
                 this_name,
                 method_name,
                 arguments,
-            } => self.compile_method_subroutine_call_expression(this_name, method_name, arguments),
+            } => self.compile_method_subroutine_call_expression(this_name, method_name, arguments, subroutine_call.node_idx),
         }
     }
 
-    fn compile_unary_expression(&mut self, operator: &UnaryOperator, operand: &ASTNode<Expression>) {
+    fn compile_unary_expression(&mut self, operator: &UnaryOperator, operand: &ASTNode<Expression>, unary_expression_node_idx: usize) {
         let perform_op = match operator {
             UnaryOperator::Minus => Command::Arithmetic(ArithmeticCommandVariant::Unary(UnaryArithmeticCommandVariant::Neg)),
             UnaryOperator::Not => Command::Arithmetic(ArithmeticCommandVariant::Unary(UnaryArithmeticCommandVariant::Not)),
         };
         self.compile_expression(operand);
-        self.vm_commands.push(perform_op);
+        self.record_vm_commands(vec![perform_op], unary_expression_node_idx);
     }
 
     fn maybe_resolve_symbol(&mut self, var_name: &str) -> Option<&Symbol> {
@@ -394,15 +451,17 @@ impl CodeGenerator {
     fn compile_expression(&mut self, expression: &ASTNode<Expression>) {
         match &*expression.node {
             Expression::Parenthesized(expr) => self.compile_expression(expr),
-            Expression::ArrayAccess { var_name, index } => self.compile_array_access_expression(var_name, index),
-            Expression::Binary { operator, lhs, rhs } => self.compile_binary_expression(operator, lhs, rhs),
-            Expression::PrimitiveTerm(primitive_term) => self.compile_primitive_term_expression(primitive_term),
+            Expression::ArrayAccess { var_name, index } => self.compile_array_access_expression(var_name, index, expression.node_idx),
+            Expression::Binary { operator, lhs, rhs } => self.compile_binary_expression(operator, lhs, rhs, expression.node_idx),
+            Expression::PrimitiveTerm(primitive_term) => self.compile_primitive_term_expression(primitive_term, expression.node_idx),
             Expression::SubroutineCall(subroutine_call) => self.compile_subroutine_call_expression(subroutine_call),
-            Expression::Unary { operator, operand } => self.compile_unary_expression(operator, operand),
+            Expression::Unary { operator, operand } => self.compile_unary_expression(operator, operand, expression.node_idx),
             Expression::Variable(var_name) => {
                 let (memory_segment, idx) = self.compile_variable(var_name);
-                self.vm_commands
-                    .push(Command::Memory(MemoryCommandVariant::Push(memory_segment, idx as u16)))
+                self.record_vm_commands(
+                    vec![Command::Memory(MemoryCommandVariant::Push(memory_segment, idx as u16))],
+                    expression.node_idx,
+                )
             }
         }
     }
@@ -413,29 +472,34 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_while_statement(&mut self, condition: &ASTNode<Expression>, statements: &[ASTNode<Statement>]) {
+    fn compile_while_statement(&mut self, condition: &ASTNode<Expression>, statements: &[ASTNode<Statement>], while_statement_node_idx: usize) {
         let while_idx = self.subroutine_while_count;
         self.subroutine_while_count += 1;
 
-        self.vm_commands
-            .push(Command::Flow(FlowCommandVariant::Label(format!("start_while_{}", while_idx))));
+        self.record_vm_commands(
+            vec![Command::Flow(FlowCommandVariant::Label(format!("start_while_{}", while_idx)))],
+            while_statement_node_idx,
+        );
 
         self.compile_expression(condition);
 
-        let cmds = vec![
-            Command::Arithmetic(ArithmeticCommandVariant::Unary(UnaryArithmeticCommandVariant::Not)),
-            Command::Flow(FlowCommandVariant::IfGoTo(format!("end_while_{}", while_idx))),
-        ];
-
-        self.vm_commands.extend(cmds.into_iter());
+        self.record_vm_commands(
+            vec![
+                Command::Arithmetic(ArithmeticCommandVariant::Unary(UnaryArithmeticCommandVariant::Not)),
+                Command::Flow(FlowCommandVariant::IfGoTo(format!("end_while_{}", while_idx))),
+            ],
+            while_statement_node_idx,
+        );
 
         self.compile_statements(statements);
 
-        let cmds = vec![
-            Command::Flow(FlowCommandVariant::GoTo(format!("start_while_{}", while_idx))),
-            Command::Flow(FlowCommandVariant::Label(format!("end_while_{}", while_idx))),
-        ];
-        self.vm_commands.extend(cmds.into_iter());
+        self.record_vm_commands(
+            vec![
+                Command::Flow(FlowCommandVariant::GoTo(format!("start_while_{}", while_idx))),
+                Command::Flow(FlowCommandVariant::Label(format!("end_while_{}", while_idx))),
+            ],
+            while_statement_node_idx,
+        );
     }
 
     fn compile_statement(&mut self, statement: &ASTNode<Statement>) {
@@ -445,14 +509,14 @@ impl CodeGenerator {
                 var_name,
                 array_index,
                 value,
-            } => self.compile_let_statement(var_name, array_index, value),
+            } => self.compile_let_statement(var_name, array_index, value, statement.node_idx),
             Statement::If {
                 condition,
                 if_statements,
                 else_statements,
-            } => self.compile_if_statement(condition, if_statements, else_statements),
-            Statement::Return(expression) => self.compile_return_statement(expression),
-            Statement::While { condition, statements } => self.compile_while_statement(condition, statements),
+            } => self.compile_if_statement(condition, if_statements, else_statements, statement.node_idx),
+            Statement::Return(expression) => self.compile_return_statement(expression, statement.node_idx),
+            Statement::While { condition, statements } => self.compile_while_statement(condition, statements, statement.node_idx),
         }
     }
 
@@ -475,7 +539,7 @@ impl CodeGenerator {
         }
     }
 
-    fn implicit_return(&mut self, return_type: &Option<Type>) {
+    fn implicit_return(&mut self, return_type: &Option<Type>, subroutine_declaration_node_idx: usize) {
         let commands = if return_type.is_none() {
             vec![
                 Command::Memory(MemoryCommandVariant::Push(MemorySegmentVariant::Constant, 0)),
@@ -485,11 +549,11 @@ impl CodeGenerator {
             vec![Command::Function(FunctionCommandVariant::ReturnFrom)]
         };
 
-        self.vm_commands.extend(commands.into_iter());
+        self.record_vm_commands(commands, subroutine_declaration_node_idx);
     }
 
-    fn compile_subroutine(&mut self, indexed_subroutine: &ASTNode<SubroutineDeclaration>, instance_size: usize) {
-        let subroutine = &indexed_subroutine.node;
+    fn compile_subroutine(&mut self, subroutine_declaration: &ASTNode<SubroutineDeclaration>, instance_size: usize) {
+        let subroutine = &subroutine_declaration.node;
         self.clear_subroutine();
         self.subroutine_kind = Some(subroutine.subroutine_kind);
 
@@ -532,9 +596,9 @@ impl CodeGenerator {
             ],
         };
 
-        self.vm_commands.extend(commands.into_iter());
+        self.record_vm_commands(commands, subroutine_declaration.node_idx);
         self.compile_statements(&subroutine.body.node.statements);
-        self.implicit_return(&subroutine.return_type);
+        self.implicit_return(&subroutine.return_type, subroutine_declaration.node_idx);
     }
 
     pub fn compile_subroutines(&mut self, subroutine_declarations: &[ASTNode<SubroutineDeclaration>], instance_size: usize) {

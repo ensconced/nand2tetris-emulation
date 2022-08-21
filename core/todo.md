@@ -1,7 +1,6 @@
 ### I want to be able to hover a token and get the jack node, and all the corresponding vm commands
 
-1. write codegen sourcemap. for vm commands, just record immediate jack_node - don't worry about recording all parents.
-2. combine codegen sourcemap within parser sourcemap
+2. combine codegen sourcemap with parser sourcemap
 3. visualize vm commands generated for e.g. memory std lib module
 
 - complete process of skipping textual stages (or rather, making them optional)

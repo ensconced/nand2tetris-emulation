@@ -3,7 +3,7 @@ use std::ops::Range;
 
 use super::{
     jack_node_types::{PrimitiveTermVariant::*, *},
-    sourcemap::{ExpressionType, JackNodeType, JackParserSourceMap, StatementType},
+    sourcemap::JackParserSourceMap,
     tokenizer::{
         token_defs, KeywordTokenVariant,
         OperatorVariant::{self, *},
@@ -87,11 +87,10 @@ struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    // TODO - can we abolish JackNodeType and instead just get some description of the node directly off the ast nodes?
-    fn make_ast_node<T>(&mut self, ast_node: T, node_type: JackNodeType, token_range: Range<usize>) -> ASTNode<T> {
-        let node_idx = self.sourcemap.record_node(token_range.clone(), node_type);
+    fn make_ast_node<T>(&mut self, node: T, token_range: Range<usize>) -> ASTNode<T> {
+        let node_idx = self.sourcemap.record_node(token_range.clone());
         ASTNode {
-            node: Box::new(ast_node),
+            node: Box::new(node),
             node_idx,
             token_range,
         }
@@ -131,7 +130,7 @@ impl<'a> Parser<'a> {
             maybe_exp.map(|exp| (exp, token.idx))
         })?;
         let token_range = exp_token_idx..exp_token_idx + 1;
-        Some(self.make_ast_node(expression, JackNodeType::ExpressionNode(ExpressionType::PrimitiveTerm), token_range))
+        Some(self.make_ast_node(expression, token_range))
     }
 
     fn take_array_access(&mut self, var_name: String) -> ASTNode<Expression> {
@@ -140,11 +139,7 @@ impl<'a> Parser<'a> {
         let index_expr = self.take_expression();
         let r_bracket = self.take_token(RSquareBracket);
         let token_range = l_bracket.idx..r_bracket.idx + 1;
-        self.make_ast_node(
-            Expression::ArrayAccess { var_name, index: index_expr },
-            JackNodeType::ExpressionNode(ExpressionType::ArrayAccess),
-            token_range,
-        )
+        self.make_ast_node(Expression::ArrayAccess { var_name, index: index_expr }, token_range)
     }
 
     fn maybe_take_parenthesized_expression(&mut self) -> Option<ASTNode<Expression>> {
@@ -161,11 +156,7 @@ impl<'a> Parser<'a> {
             // let jack_node = JackNode::ExpressionNode(rc.clone());
             let r_paren = self.take_token(RParen);
             let token_range = token_range_start..r_paren.idx + 1;
-            Some(self.make_ast_node(
-                Expression::Parenthesized(expr),
-                JackNodeType::ExpressionNode(ExpressionType::Parenthesized),
-                token_range,
-            ))
+            Some(self.make_ast_node(Expression::Parenthesized(expr), token_range))
         } else {
             None
         }
@@ -188,19 +179,11 @@ impl<'a> Parser<'a> {
                     let subroutine_call = self.take_subroutine_call(identifier, identifier_token_idx);
                     let subroutine_call_token_range = subroutine_call.token_range.clone();
                     let expr = Expression::SubroutineCall(subroutine_call);
-                    Some(self.make_ast_node(
-                        expr,
-                        JackNodeType::ExpressionNode(ExpressionType::SubroutineCall),
-                        subroutine_call_token_range,
-                    ))
+                    Some(self.make_ast_node(expr, subroutine_call_token_range))
                 }
                 _ => {
                     let token_range = identifier_token_idx..identifier_token_idx + 1;
-                    Some(self.make_ast_node(
-                        Expression::Variable(string),
-                        JackNodeType::ExpressionNode(ExpressionType::Variable),
-                        token_range,
-                    ))
+                    Some(self.make_ast_node(Expression::Variable(string), token_range))
                 }
             }
         } else {
@@ -224,11 +207,7 @@ impl<'a> Parser<'a> {
                 _ => panic!("invalid unary operator"),
             };
             let token_range = op_token_idx..operand.token_range.end;
-            Some(self.make_ast_node(
-                Expression::Unary { operator, operand },
-                JackNodeType::ExpressionNode(ExpressionType::Unary),
-                token_range,
-            ))
+            Some(self.make_ast_node(Expression::Unary { operator, operand }, token_range))
         } else {
             None
         }
@@ -271,10 +250,7 @@ impl<'a> Parser<'a> {
                 },
                 rhs,
             };
-            (
-                self.make_ast_node(new_lhs_node, JackNodeType::ExpressionNode(ExpressionType::Binary), new_token_range),
-                false,
-            )
+            (self.make_ast_node(new_lhs_node, new_token_range), false)
         } else {
             (lhs_node, true)
         }
@@ -361,7 +337,7 @@ impl<'a> Parser<'a> {
                     arguments,
                 };
                 let token_range = identifier_token_idx..r_paren.idx + 1;
-                self.make_ast_node(subroutine_call, JackNodeType::SubroutineCallNode, token_range)
+                self.make_ast_node(subroutine_call, token_range)
             }
             Some(Token { kind: Dot, .. }) => {
                 // Method call
@@ -376,7 +352,7 @@ impl<'a> Parser<'a> {
                     arguments,
                 };
                 let token_range = method_name_token_idx..r_paren.idx + 1;
-                self.make_ast_node(method, JackNodeType::SubroutineCallNode, token_range)
+                self.make_ast_node(method, token_range)
             }
             _ => panic!("expected subroutine call"),
         }
@@ -400,7 +376,7 @@ impl<'a> Parser<'a> {
             let (var_name, identifier_token_idx) = self.take_identifier();
             let parameter = Parameter { type_name, var_name };
             let token_range = identifier_token_idx..identifier_token_idx + 1;
-            self.make_ast_node(parameter, JackNodeType::ParameterNode, token_range)
+            self.make_ast_node(parameter, token_range)
         })
     }
 
@@ -448,7 +424,7 @@ impl<'a> Parser<'a> {
             value,
         };
         let token_range = let_keyword_token_idx..semicolon.idx + 1;
-        self.make_ast_node(statement, JackNodeType::StatementNode(StatementType::Let), token_range)
+        self.make_ast_node(statement, token_range)
     }
 
     fn take_statement_block(&mut self) -> (Vec<ASTNode<Statement>>, Range<usize>) {
@@ -486,7 +462,7 @@ impl<'a> Parser<'a> {
         };
         let last_part_of_token_range = else_block_token_range.unwrap_or(if_statements_token_range);
         let token_range = if_keyword_token_idx..last_part_of_token_range.end;
-        self.make_ast_node(statement, JackNodeType::StatementNode(StatementType::If), token_range)
+        self.make_ast_node(statement, token_range)
     }
 
     fn take_while_statement(&mut self, while_keyword_token_idx: usize) -> ASTNode<Statement> {
@@ -497,7 +473,7 @@ impl<'a> Parser<'a> {
         let (statements, statements_token_range) = self.take_statement_block();
         let statement = Statement::While { condition, statements };
         let token_range = while_keyword_token_idx..statements_token_range.end;
-        self.make_ast_node(statement, JackNodeType::StatementNode(StatementType::While), token_range)
+        self.make_ast_node(statement, token_range)
     }
 
     fn take_do_statement(&mut self, do_keyword_token_idx: usize) -> ASTNode<Statement> {
@@ -507,7 +483,7 @@ impl<'a> Parser<'a> {
         let semicolon = self.take_token(TokenKind::Semicolon);
         let statement = Statement::Do(subroutine_call);
         let token_range = do_keyword_token_idx..semicolon.idx + 1;
-        self.make_ast_node(statement, JackNodeType::StatementNode(StatementType::Do), token_range)
+        self.make_ast_node(statement, token_range)
     }
 
     fn take_return_statement(&mut self, return_keyword_token_idx: usize) -> ASTNode<Statement> {
@@ -516,7 +492,7 @@ impl<'a> Parser<'a> {
         let semicolon = self.take_token(TokenKind::Semicolon);
         let statement = Statement::Return(expression);
         let token_range = return_keyword_token_idx..semicolon.idx + 1;
-        self.make_ast_node(statement, JackNodeType::StatementNode(StatementType::Return), token_range)
+        self.make_ast_node(statement, token_range)
     }
 
     fn maybe_take_statement(&mut self) -> Option<ASTNode<Statement>> {
@@ -561,7 +537,7 @@ impl<'a> Parser<'a> {
             let semicolon = self.take_token(TokenKind::Semicolon);
             let var_declaration = VarDeclaration { type_name, var_names };
             let token_range = *var_keyword_token_idx..semicolon.idx + 1;
-            self.make_ast_node(var_declaration, JackNodeType::VarDeclarationNode, token_range)
+            self.make_ast_node(var_declaration, token_range)
         } else {
             panic!("expected var keyword");
         }
@@ -589,7 +565,7 @@ impl<'a> Parser<'a> {
             statements,
         };
         let token_range = l_curly.idx..r_curly.idx + 1;
-        self.make_ast_node(subroutine_body, JackNodeType::SubroutineBodyNode, token_range)
+        self.make_ast_node(subroutine_body, token_range)
     }
 
     fn take_subroutine_declaration(&mut self) -> ASTNode<SubroutineDeclaration> {
@@ -621,7 +597,7 @@ impl<'a> Parser<'a> {
                 parameters,
                 body,
             };
-            self.make_ast_node(subroutine_declaration, JackNodeType::SubroutineDeclarationNode, token_range)
+            self.make_ast_node(subroutine_declaration, token_range)
         } else {
             panic!("expected subroutine kind");
         }
@@ -662,7 +638,7 @@ impl<'a> Parser<'a> {
                     _ => panic!("expected var declaration qualifier",),
                 };
                 let token_range = *token_idx..token_idx + 1;
-                self.make_ast_node(qualifier, JackNodeType::ClassVarDeclarationKindNode, token_range)
+                self.make_ast_node(qualifier, token_range)
             }
             _ => panic!("expected var declaration qualifier",),
         }
@@ -733,7 +709,7 @@ impl<'a> Parser<'a> {
             type_name,
             var_names,
         };
-        self.make_ast_node(class_var_declaration, JackNodeType::VarDeclarationNode, token_range)
+        self.make_ast_node(class_var_declaration, token_range)
     }
 
     fn maybe_take_class_var_declaration(&mut self) -> Option<ASTNode<ClassVarDeclaration>> {
@@ -771,7 +747,7 @@ impl<'a> Parser<'a> {
             subroutine_declarations,
         };
         let token_range = class_keyword.idx..r_curly.idx + 1;
-        let res = self.make_ast_node(class, JackNodeType::ClassNode, token_range);
+        let res = self.make_ast_node(class, token_range);
         *res.node
     }
 }

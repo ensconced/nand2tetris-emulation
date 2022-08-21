@@ -2,65 +2,22 @@ use serde::Serialize;
 use std::{collections::HashMap, ops::Range};
 
 #[derive(Serialize)]
-pub struct JackNodeInfo {
-    pub token_range: Range<usize>,
-    pub node_type: JackNodeType,
-}
-
-#[derive(Serialize)]
-pub enum ExpressionType {
-    Parenthesized,
-    PrimitiveTerm,
-    Binary,
-    Unary,
-    Variable,
-    SubroutineCall,
-    ArrayAccess,
-}
-
-#[derive(Serialize)]
-pub enum StatementType {
-    Let,
-    If,
-    While,
-    Do,
-    Return,
-}
-
-#[derive(Serialize)]
-pub enum JackNodeType {
-    ClassNode,
-    ClassVarDeclarationKindNode,
-    ClassVarDeclarationNode,
-    ExpressionNode(ExpressionType),
-    ParameterNode,
-    SubroutineCallNode,
-    StatementNode(StatementType),
-    SubroutineBodyNode,
-    SubroutineDeclarationNode,
-    VarDeclarationNode,
-}
-
-#[derive(Serialize)]
 pub struct JackParserSourceMap {
     pub token_idx_to_jack_node_idxs: HashMap<usize, Vec<usize>>,
-    pub jack_node_infos: Vec<JackNodeInfo>,
+    pub jack_node_token_ranges: Vec<Range<usize>>,
 }
 
 impl JackParserSourceMap {
     pub fn new() -> Self {
         Self {
             token_idx_to_jack_node_idxs: HashMap::new(),
-            jack_node_infos: Vec::new(),
+            jack_node_token_ranges: Vec::new(),
         }
     }
 
-    pub fn record_node(&mut self, token_range: Range<usize>, node_type: JackNodeType) -> usize {
-        let node_idx = self.jack_node_infos.len();
-        self.jack_node_infos.push(JackNodeInfo {
-            token_range: token_range.clone(),
-            node_type,
-        });
+    pub fn record_node(&mut self, token_range: Range<usize>) -> usize {
+        let node_idx = self.jack_node_token_ranges.len();
+        self.jack_node_token_ranges.push(token_range.clone());
         for token_idx in token_range {
             let token_jack_node_idxs = self.token_idx_to_jack_node_idxs.entry(token_idx).or_default();
             token_jack_node_idxs.push(node_idx);

@@ -5,7 +5,8 @@ mod fonts;
 use clap::{Parser, Subcommand};
 use compilers::{
     assembler::assemble_file,
-    jack_compiler::{self, jack_node_types::Class, parser::parse, sourcemap::SourceMap},
+    jack_compiler::{self, codegen::generate_vm_code, jack_node_types::Class, parser::parse, sourcemap::SourceMap, tokenizer::token_defs},
+    utils::tokenizer::Tokenizer,
     vm_compiler,
 };
 use emulator::run::run;
@@ -81,8 +82,10 @@ fn main() {
             let dest_path = dest_path_maybe.as_ref().expect("dest path is required");
             let source = fs::read_to_string(source_path).expect("failed to read source file");
             let mut sourcemap = SourceMap::new();
-            let debug_output = parse(&source, &mut sourcemap);
-            let json = serde_json::to_string_pretty(&debug_output).unwrap();
+            let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(&source);
+            let class = parse(&tokens, &mut sourcemap);
+            let vm_commands = generate_vm_code(class, &mut sourcemap);
+            let json = serde_json::to_string_pretty(&sourcemap).unwrap();
             fs::write(dest_path, json).unwrap();
         }
         Commands::Assemble {
@@ -117,9 +120,10 @@ fn main() {
             let source_path = source_path_maybe.as_ref().unwrap_or_else(|| panic!("source path is required"));
             let source = fs::read_to_string(source_path).unwrap();
             let mut sourcemap = SourceMap::new();
-            let parser_output = jack_compiler::parser::parse(&source, &mut sourcemap);
+            let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(&source);
+            let parser_output = jack_compiler::parser::parse(&tokens, &mut sourcemap);
             let parser_viz_data = ParserVizData {
-                parsed_class: parser_output.class,
+                parsed_class: parser_output,
                 source,
             };
             let json = serde_json::to_string_pretty(&parser_viz_data).unwrap();

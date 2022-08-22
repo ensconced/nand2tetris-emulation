@@ -4,7 +4,7 @@ pub mod codegen;
 pub mod jack_node_types;
 pub mod parser;
 pub mod sourcemap;
-mod tokenizer;
+pub mod tokenizer;
 
 use std::{fs, io};
 

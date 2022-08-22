@@ -1,3 +1,5 @@
+use std::fmt::{Display, Formatter};
+
 use super::tokenizer::{
     token_defs, ArithmeticCmdTokenVariant, FunctionCmdTokenVariant, MemoryCmdTokenVariant, MemorySegmentTokenVariant, ProgramFlowCmdTokenVariant,
     TokenKind,
@@ -78,6 +80,12 @@ pub enum Command {
     Flow(FlowCommandVariant),
     Arithmetic(ArithmeticCommandVariant),
     Memory(MemoryCommandVariant),
+}
+
+impl Display for Command {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), std::fmt::Error> {
+        todo!()
+    }
 }
 
 use ArithmeticCommandVariant::*;

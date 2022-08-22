@@ -2,12 +2,8 @@ use std::ops::Deref;
 
 use self::{
     assembler::assemble,
-    jack_compiler::{
-        codegen::generate_vm_code,
-        parser::{parse, ParserOutput},
-        sourcemap::SourceMap,
-    },
-    utils::source_modules::get_source_modules,
+    jack_compiler::{codegen::generate_vm_code, parser::parse, sourcemap::SourceMap, tokenizer::token_defs},
+    utils::{source_modules::get_source_modules, tokenizer::Tokenizer},
     vm_compiler::ParsedModule,
 };
 
@@ -35,7 +31,8 @@ pub fn compile_to_machine_code(jack_code: Vec<&str>) -> String {
         .chain(jack_code.into_iter())
         .map(|src| {
             let mut sourcemap = SourceMap::new();
-            let ParserOutput { class, tokens: _ } = parse(src, &mut sourcemap);
+            let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(src);
+            let class = parse(&tokens, &mut sourcemap);
             generate_vm_code(class, &mut sourcemap)
         })
         .enumerate()

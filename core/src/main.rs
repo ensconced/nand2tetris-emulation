@@ -5,8 +5,15 @@ mod fonts;
 use clap::{Parser, Subcommand};
 use compilers::{
     assembler::assemble_file,
-    jack_compiler::{self, codegen::generate_vm_code, jack_node_types::Class, parser::parse, sourcemap::SourceMap, tokenizer::token_defs},
-    utils::tokenizer::Tokenizer,
+    jack_compiler::{
+        self,
+        codegen::generate_vm_code,
+        jack_node_types::Class,
+        parser::parse,
+        sourcemap::SourceMap,
+        tokenizer::{token_defs, TokenKind},
+    },
+    utils::tokenizer::{Token, Tokenizer},
     vm_compiler,
 };
 use emulator::run::run;
@@ -62,6 +69,15 @@ enum Commands {
     JackParserViz { source_path: Option<String> },
 }
 
+#[derive(Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "../bindings/")]
+struct DebugOutput {
+    tokens: Vec<Token<TokenKind>>,
+    sourcemap: SourceMap,
+    vm_commands: Vec<String>,
+}
+
 fn main() {
     let args = Args::parse();
 
@@ -84,8 +100,13 @@ fn main() {
             let mut sourcemap = SourceMap::new();
             let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(&source);
             let class = parse(&tokens, &mut sourcemap);
-            let vm_commands = generate_vm_code(class, &mut sourcemap);
-            let json = serde_json::to_string_pretty(&sourcemap).unwrap();
+            let vm_commands: Vec<_> = generate_vm_code(class, &mut sourcemap).into_iter().map(|cmd| cmd.to_string()).collect();
+            let debug_output = DebugOutput {
+                tokens,
+                sourcemap,
+                vm_commands,
+            };
+            let json = serde_json::to_string_pretty(&debug_output).unwrap();
             fs::write(dest_path, json).unwrap();
         }
         Commands::Assemble {

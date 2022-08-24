@@ -1,6 +1,7 @@
 use regex::{Match, Regex};
 use serde::Serialize;
 use std::fmt::Debug;
+use ts_rs::TS;
 
 pub struct Tokenizer<LangTokenKind> {
     token_defs: Vec<TokenDef<LangTokenKind>>,
@@ -25,7 +26,9 @@ impl<LangTokenKind: Debug> Tokenizer<LangTokenKind> {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "../bindings/")]
 pub struct Token<LangTokenKind>
 where
     LangTokenKind: 'static,

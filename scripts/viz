@@ -3,10 +3,11 @@
 set -eu
 
 cd core
-# test and build TS bindings as side effect
-cargo test || true
-# get data for viz
-cargo run -- jack-parser-viz ../std_lib/Math.jack
+cargo run -- debug-compile ../std_lib/Memory.jack ../web/debug-output.json
 
-cd ../web
-npm start
+# cargo test || true
+# # get data for viz
+# cargo run -- jack-parser-viz ../std_lib/Math.jack
+
+# cd ../web
+# npm start

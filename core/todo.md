@@ -1,5 +1,4 @@
-1. implement Display for vm commands, for visualisation
-2. visualize vm commands generated for e.g. memory std lib module
+1. visualize vm commands generated for e.g. memory std lib module
 
 - complete process of skipping textual stages (or rather, making them optional)
   in the compiler data structure

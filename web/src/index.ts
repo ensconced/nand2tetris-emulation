@@ -1,7 +1,7 @@
 import "./styles/reset.css";
 import data from "../debug-output.json";
 import { DebugOutput } from "../../bindings/DebugOutput";
-import { BLACK, WHITE } from "./colors";
+import { BLACK, DARKISH, WHITE } from "./colors";
 import _ from "lodash";
 import { NodeInfo } from "../../bindings/NodeInfo";
 import { TokenKind } from "../../bindings/TokenKind";
@@ -13,6 +13,8 @@ const codeBlock = document.querySelector("#main>code");
 if (codeBlock === null) {
   throw new Error("code block is missing");
 }
+
+const highlightedTokens: Array<Token<TokenKind>> = [];
 
 codeBlock.addEventListener("mouseover", (evt) => {
   if (
@@ -37,12 +39,24 @@ function highlightToken(token: Token<TokenKind>) {
   tokenSpan.style.color = BLACK;
 }
 
+function unhighlightToken(token: Token<TokenKind>) {
+  const tokenSpan = codeBlock?.children[token.idx];
+  if (!(tokenSpan instanceof HTMLSpanElement)) {
+    throw new Error("failed to find token to unhighlight");
+  }
+  tokenSpan.style.backgroundColor = DARKISH;
+  tokenSpan.style.color = WHITE;
+}
+
 function highlightNode(jackNode: NodeInfo) {
+  highlightedTokens.forEach(unhighlightToken);
+  highlightedTokens.length = 0;
   for (let i = jackNode.token_range.start; i < jackNode.token_range.end; i++) {
     const token = debugOutput.tokens[i];
     if (token === undefined) {
       throw new Error("failed to get token");
     }
+    highlightedTokens.push(token);
     highlightToken(token);
   }
 }

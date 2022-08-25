@@ -8,6 +8,7 @@ use ts_rs::TS;
 pub struct NodeInfo {
     token_range: Range<usize>,
     child_node_idxs: Vec<usize>,
+    index: usize,
 }
 
 #[derive(Serialize, TS)]
@@ -35,6 +36,7 @@ impl SourceMap {
         self.jack_nodes.push(NodeInfo {
             token_range: token_range.clone(),
             child_node_idxs,
+            index: node_idx,
         });
         for token_idx in token_range {
             let token_jack_node_idxs = self.token_idx_to_jack_node_idxs.entry(token_idx).or_default();

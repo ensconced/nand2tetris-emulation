@@ -1,4 +1,10 @@
-1. visualize vm commands generated for e.g. memory std lib module
+- use react for viz
+- add info bar at bottom of viz, including number/range of vm commands for given jack node, jack node idx, etc
+- auto-scroll to top of vm commands when hovering jack node
+- include type tag on jack nodes to show in info bar
+- allow hovering on vm command to highlight corresponding jack node
+
+### extend sourcemap into vm compiler
 
 - complete process of skipping textual stages (or rather, making them optional)
   in the compiler data structure

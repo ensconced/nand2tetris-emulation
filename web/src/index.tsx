@@ -3,7 +3,7 @@ import data from "../debug-output.json";
 import { DebugOutput } from "../../bindings/DebugOutput";
 import _ from "lodash";
 import { NodeInfo } from "../../bindings/NodeInfo";
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { createRoot } from "react-dom/client";
 import CodePanel from "./code-panel";
 
@@ -53,18 +53,25 @@ function findInnermostJackNode(tokenIdx: number): NodeInfo | undefined {
 }
 
 function App() {
-  const [mouseHoveredTokens, setMouseHoveredTokens] = useState<Set<number>>(
+  const [hoveredTokens, setHoveredTokens] = useState<Set<number>>(new Set());
+  const [hoveredVMCommands, setHoveredVMCommands] = useState<Set<number>>(
     new Set()
   );
-  const [mouseHoveredVMCommands, setMouseHoveredVMCommands] = useState<
+  const [mouseSelectedTokens, setMouseSelectedTokens] = useState<Set<number>>(
+    new Set()
+  );
+  const [mouseSelectedVMCommands, setMouseSelectedVMCommands] = useState<
     Set<number>
   >(new Set());
-  const [autoHoveredVMCommands, setAutoHoveredVMCommands] = useState<
+  const [autoSelectedTokens, setAutoSelectedTokens] = useState<Set<number>>(
+    new Set()
+  );
+  const [autoSelectedVMCommands, setAutoSelectedVMCommands] = useState<
     Set<number>
   >(new Set());
 
-  function hoverNode(jackNode: NodeInfo) {
-    const newHoveredTokens: Set<number> = new Set();
+  function jackNodeTokens(jackNode: NodeInfo): Set<number> {
+    const tokens: Set<number> = new Set();
     for (
       let i = jackNode.token_range.start;
       i < jackNode.token_range.end;
@@ -74,40 +81,75 @@ function App() {
       if (token === undefined) {
         throw new Error("failed to get token");
       }
-      newHoveredTokens.add(token.idx);
+      tokens.add(token.idx);
     }
-    setMouseHoveredTokens(newHoveredTokens);
+    return tokens;
   }
 
   function clearHoverState() {
-    setAutoHoveredVMCommands(new Set());
-    setMouseHoveredTokens(new Set());
-    setMouseHoveredVMCommands(new Set());
+    setHoveredTokens(new Set());
+    setHoveredVMCommands(new Set());
   }
+
+  const handleVMCommandMouseOver = useCallback((idx: number) => {
+    const jackNodeIdx =
+      debugOutput.sourcemap.vm_command_idx_to_jack_node_idx[idx];
+    if (jackNodeIdx) {
+      const jackNode = getJackNodeByIndex(jackNodeIdx);
+      setHoveredTokens(jackNodeTokens(jackNode));
+      setHoveredVMCommands(new Set(allVMCommandIdxs(jackNodeIdx)));
+    }
+  }, []);
+
+  const handleTokenMouseOver = useCallback((idx: number) => {
+    const jackNode = findInnermostJackNode(idx);
+    if (jackNode) {
+      setHoveredTokens(jackNodeTokens(jackNode));
+      setHoveredVMCommands(new Set(allVMCommandIdxs(jackNode.index)));
+    }
+  }, []);
+
+  const handleTokenClick = useCallback((idx: number) => {
+    const jackNode = findInnermostJackNode(idx);
+    if (jackNode) {
+      setMouseSelectedVMCommands(new Set());
+      setAutoSelectedTokens(new Set());
+      setMouseSelectedTokens(jackNodeTokens(jackNode));
+      setAutoSelectedVMCommands(new Set(allVMCommandIdxs(jackNode.index)));
+    }
+  }, []);
+
+  const handleVMCommandClick = useCallback((idx: number) => {
+    const jackNodeIdx =
+      debugOutput.sourcemap.vm_command_idx_to_jack_node_idx[idx];
+    if (jackNodeIdx) {
+      const jackNode = getJackNodeByIndex(jackNodeIdx);
+      setMouseSelectedTokens(new Set());
+      setAutoSelectedVMCommands(new Set());
+      setAutoSelectedTokens(jackNodeTokens(jackNode));
+      setMouseSelectedVMCommands(new Set(allVMCommandIdxs(jackNodeIdx)));
+    }
+  }, []);
 
   return (
     <>
       <CodePanel
         items={debugOutput.tokens.map((token) => token.source)}
-        mouseHoveredItemIdxs={mouseHoveredTokens}
-        autoHoveredItemIdxs={new Set()}
-        onSpanMouseOver={(idx) => {
-          const jackNode = findInnermostJackNode(idx);
-          if (jackNode) {
-            hoverNode(jackNode);
-            setAutoHoveredVMCommands(new Set(allVMCommandIdxs(jackNode.index)));
-          }
-        }}
+        hoveredItemIdxs={hoveredTokens}
+        mouseSelectedItemIdxs={mouseSelectedTokens}
+        autoSelectedItemIdxs={autoSelectedTokens}
+        onSpanMouseOver={handleTokenMouseOver}
         onSpanMouseLeave={clearHoverState}
+        onSpanClick={handleTokenClick}
       />
       <CodePanel
         items={debugOutput.vm_commands.map((command) => `${command}\n`)}
-        mouseHoveredItemIdxs={mouseHoveredVMCommands}
-        autoHoveredItemIdxs={autoHoveredVMCommands}
-        onSpanMouseOver={(idx) => {
-          setMouseHoveredVMCommands(new Set([idx]));
-        }}
+        hoveredItemIdxs={hoveredVMCommands}
+        mouseSelectedItemIdxs={mouseSelectedVMCommands}
+        autoSelectedItemIdxs={autoSelectedVMCommands}
+        onSpanMouseOver={handleVMCommandMouseOver}
         onSpanMouseLeave={clearHoverState}
+        onSpanClick={handleVMCommandClick}
       />
     </>
   );

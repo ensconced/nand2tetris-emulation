@@ -1,29 +1,33 @@
+import classnames from "classnames";
 import React, { useEffect, useRef } from "react";
 
 interface Props {
   items: Array<string>;
-  mouseHoveredItemIdxs: Set<number>;
-  autoHoveredItemIdxs: Set<number>;
+  hoveredItemIdxs: Set<number>;
+  mouseSelectedItemIdxs: Set<number>;
+  autoSelectedItemIdxs: Set<number>;
   onSpanMouseOver(itemIdx: number): void;
+  onSpanClick(itemIdx: number): void;
   onSpanMouseLeave(): void;
 }
 
 export default function CodePanel({
   items,
-  mouseHoveredItemIdxs,
-  autoHoveredItemIdxs,
+  hoveredItemIdxs,
+  mouseSelectedItemIdxs,
+  autoSelectedItemIdxs,
   onSpanMouseOver,
+  onSpanClick,
   onSpanMouseLeave,
 }: Props) {
   const codeRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const firstHighlighedIdx = Math.min(...autoHoveredItemIdxs);
+    const firstHighlighedIdx = Math.min(...autoSelectedItemIdxs);
     codeRef.current?.children[firstHighlighedIdx]?.scrollIntoView({
       behavior: "smooth",
-      block: "center",
     });
-  }, [autoHoveredItemIdxs]);
+  }, [autoSelectedItemIdxs]);
 
   return (
     <code ref={codeRef} id="jack-code">
@@ -31,13 +35,14 @@ export default function CodePanel({
         return (
           <span
             key={idx}
-            className={
-              mouseHoveredItemIdxs.has(idx) || autoHoveredItemIdxs.has(idx)
-                ? "highlighted"
-                : ""
-            }
+            className={classnames({
+              highlighted: hoveredItemIdxs.has(idx),
+              selected:
+                autoSelectedItemIdxs.has(idx) || mouseSelectedItemIdxs.has(idx),
+            })}
             onMouseOver={() => onSpanMouseOver(idx)}
-            onMouseLeave={() => onSpanMouseLeave()}
+            onMouseLeave={onSpanMouseLeave}
+            onClick={() => onSpanClick(idx)}
           >
             {item}
           </span>

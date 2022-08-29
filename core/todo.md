@@ -1,7 +1,6 @@
-- auto-scroll to top of vm commands when hovering jack node
+- selection
 - add info bar at bottom of viz, including number/range of vm commands for given jack node, jack node idx, etc
 - include type tag on jack nodes to show in info bar
-- allow hovering on vm command to highlight corresponding jack node
 
 ### extend sourcemap into vm compiler
 
@@ -11,10 +10,7 @@
 - abolish textual ASM - instead go directly from "parsed" vm instructions to "parsed" asm instructions
 - add references from asm instructions to their owning vm instruction node
 - same again for asm -> machine code stage
-
 - restore Glyphs.jack.todo!!
-
-- the goal for the visualisation thing would include something like this https://twitter.com/dgryski/status/1547952259828330498/photo/1
 
 ### optimizations
 

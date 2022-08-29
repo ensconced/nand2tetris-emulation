@@ -24,7 +24,11 @@ code > span {
   cursor: pointer;
 }
 
-code > span.highlighted {
+code > span.selected {
   color: #282a36;
-  background-color: #50fa7b;
+  background-color: #f8f8f2;
+}
+
+code > span.highlighted {
+  outline: 1px solid #ff79c6;
 }

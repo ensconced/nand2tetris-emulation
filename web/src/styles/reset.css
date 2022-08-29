@@ -19,3 +19,12 @@ div#main {
   display: flex;
   flex-direction: row;
 }
+
+code > span {
+  cursor: pointer;
+}
+
+code > span.highlighted {
+  color: #282a36;
+  background-color: #50fa7b;
+}

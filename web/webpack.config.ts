@@ -1,9 +1,9 @@
-import HtmlWebpackPlugin = require("html-webpack-plugin");
-import path = require("path");
+import HtmlWebpackPlugin from "html-webpack-plugin";
+import path from "path";
 
 module.exports = {
   mode: "development",
-  entry: "./src/index.ts",
+  entry: "./src/index.tsx",
   output: {
     path: path.resolve(__dirname, "./dist"),
     filename: "index_bundle.js",
@@ -11,11 +11,11 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.ts$/,
+        test: /\.tsx?$/,
         use: {
           loader: "babel-loader",
           options: {
-            presets: ["@babel/preset-typescript"],
+            presets: ["@babel/preset-typescript", "@babel/preset-react"],
           },
         },
       },
@@ -26,7 +26,7 @@ module.exports = {
     ],
   },
   resolve: {
-    extensions: [".js", ".json", ".ts"],
+    extensions: [".js", ".json", ".ts", ".tsx"],
   },
   plugins: [new HtmlWebpackPlugin({ title: "template project" })],
 };

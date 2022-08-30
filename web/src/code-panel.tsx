@@ -6,7 +6,7 @@ interface Props {
   hoveredItemIdxs: Set<number>;
   mouseSelectedItemIdxs: Set<number>;
   autoSelectedItemIdxs: Set<number>;
-  onSpanMouseOver(itemIdx: number): void;
+  onSpanMouseEnter(itemIdx: number): void;
   onSpanClick(itemIdx: number): void;
   onSpanMouseLeave(): void;
 }
@@ -16,7 +16,7 @@ export default function CodePanel({
   hoveredItemIdxs,
   mouseSelectedItemIdxs,
   autoSelectedItemIdxs,
-  onSpanMouseOver,
+  onSpanMouseEnter,
   onSpanClick,
   onSpanMouseLeave,
 }: Props) {
@@ -40,7 +40,7 @@ export default function CodePanel({
               selected:
                 autoSelectedItemIdxs.has(idx) || mouseSelectedItemIdxs.has(idx),
             })}
-            onMouseOver={() => onSpanMouseOver(idx)}
+            onMouseEnter={() => onSpanMouseEnter(idx)}
             onMouseLeave={onSpanMouseLeave}
             onClick={() => onSpanClick(idx)}
           >

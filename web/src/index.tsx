@@ -133,27 +133,30 @@ function App() {
 
   return (
     <>
-      <CodePanel
-        items={debugOutput.tokens.map((token) => token.source)}
-        hoveredItemIdxs={hoveredTokens}
-        mouseSelectedItemIdxs={mouseSelectedTokens}
-        autoSelectedItemIdxs={autoSelectedTokens}
-        onSpanMouseOver={handleTokenMouseOver}
-        onSpanMouseLeave={clearHoverState}
-        onSpanClick={handleTokenClick}
-      />
-      <CodePanel
-        items={debugOutput.vm_commands.map((command) => `${command}\n`)}
-        hoveredItemIdxs={hoveredVMCommands}
-        mouseSelectedItemIdxs={mouseSelectedVMCommands}
-        autoSelectedItemIdxs={autoSelectedVMCommands}
-        onSpanMouseOver={handleVMCommandMouseOver}
-        onSpanMouseLeave={clearHoverState}
-        onSpanClick={handleVMCommandClick}
-      />
+      <div id="main">
+        <CodePanel
+          items={debugOutput.tokens.map((token) => token.source)}
+          hoveredItemIdxs={hoveredTokens}
+          mouseSelectedItemIdxs={mouseSelectedTokens}
+          autoSelectedItemIdxs={autoSelectedTokens}
+          onSpanMouseOver={handleTokenMouseOver}
+          onSpanMouseLeave={clearHoverState}
+          onSpanClick={handleTokenClick}
+        />
+        <CodePanel
+          items={debugOutput.vm_commands.map((command) => `${command}\n`)}
+          hoveredItemIdxs={hoveredVMCommands}
+          mouseSelectedItemIdxs={mouseSelectedVMCommands}
+          autoSelectedItemIdxs={autoSelectedVMCommands}
+          onSpanMouseOver={handleVMCommandMouseOver}
+          onSpanMouseLeave={clearHoverState}
+          onSpanClick={handleVMCommandClick}
+        />
+      </div>
+      <code id="footer">hello there</code>
     </>
   );
 }
 
-const root = createRoot(getElementById("main"));
+const root = createRoot(getElementById("root"));
 root.render(<App />);

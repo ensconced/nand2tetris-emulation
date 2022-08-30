@@ -11,13 +11,28 @@ code {
   flex-basis: content;
   border: 1px solid #6272a4;
   padding: 10px;
-  height: 100vh;
+  height: 100%;
   overflow-y: auto;
+}
+
+#root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 div#main {
   display: flex;
   flex-direction: row;
+  flex: 1;
+  min-height: 0;
+}
+
+code#footer {
+  padding: 3px 10px;
+  height: 22px;
+  color: #50fa7b;
+  flex: 0 0 auto;
 }
 
 code > span {

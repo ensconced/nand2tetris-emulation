@@ -1,4 +1,3 @@
-- selection
 - add info bar at bottom of viz, including number/range of vm commands for given jack node, jack node idx, etc
 - include type tag on jack nodes to show in info bar
 

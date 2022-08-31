@@ -9,6 +9,7 @@ interface Props {
   onSpanMouseEnter(itemIdx: number): void;
   onSpanClick(itemIdx: number): void;
   onSpanMouseLeave(): void;
+  footerItems: Array<string | undefined>;
 }
 
 export default function CodePanel({
@@ -19,6 +20,7 @@ export default function CodePanel({
   onSpanMouseEnter,
   onSpanClick,
   onSpanMouseLeave,
+  footerItems,
 }: Props) {
   const codeRef = useRef<HTMLElement>(null);
 
@@ -30,24 +32,32 @@ export default function CodePanel({
   }, [autoSelectedItemIdxs]);
 
   return (
-    <code ref={codeRef} id="jack-code">
-      {items.map((item, idx) => {
-        return (
-          <span
-            key={idx}
-            className={classnames({
-              highlighted: hoveredItemIdxs.has(idx),
-              selected:
-                autoSelectedItemIdxs.has(idx) || mouseSelectedItemIdxs.has(idx),
-            })}
-            onMouseEnter={() => onSpanMouseEnter(idx)}
-            onMouseLeave={onSpanMouseLeave}
-            onClick={() => onSpanClick(idx)}
-          >
-            {item}
-          </span>
-        );
-      })}
-    </code>
+    <div className="code-wrapper">
+      <code className="code-panel" ref={codeRef}>
+        {items.map((item, idx) => {
+          return (
+            <span
+              key={idx}
+              className={classnames({
+                highlighted: hoveredItemIdxs.has(idx),
+                selected:
+                  autoSelectedItemIdxs.has(idx) ||
+                  mouseSelectedItemIdxs.has(idx),
+              })}
+              onMouseEnter={() => onSpanMouseEnter(idx)}
+              onMouseLeave={onSpanMouseLeave}
+              onClick={() => onSpanClick(idx)}
+            >
+              {item}
+            </span>
+          );
+        })}
+      </code>
+      <code className="footer">
+        {footerItems.map((footerItem) => (
+          <span className="footer-item">{footerItem ?? ""}</span>
+        ))}
+      </code>
+    </div>
   );
 }

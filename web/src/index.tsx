@@ -6,6 +6,7 @@ import { NodeInfo } from "../../bindings/NodeInfo";
 import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 import CodePanel from "./code-panel";
+import Footer from "./footer";
 
 const debugOutput = data as DebugOutput;
 
@@ -121,6 +122,14 @@ function App() {
     );
   }
 
+  const vmCommands = [...hoveredVMCommands].sort((a, b) => a - b);
+  const firstVMCommand = vmCommands[0];
+  const lastVMCommand = vmCommands[vmCommands.length - 1];
+  const vmCommandRange =
+    firstVMCommand !== undefined && lastVMCommand !== undefined
+      ? `${firstVMCommand} - ${lastVMCommand}`
+      : "";
+
   return (
     <>
       <div id="main">
@@ -135,6 +144,14 @@ function App() {
             setMouseSelectedVMCommandIdx(undefined);
             setMouseSelectedJackNode(findInnermostJackNode(idx));
           }}
+          footerItems={[
+            `node idx: ${hoveredJackNode?.index ?? ""}`,
+            `token range: ${
+              hoveredJackNode
+                ? `${hoveredJackNode.token_range.start} - ${hoveredJackNode.token_range.end}`
+                : ""
+            }`,
+          ]}
         />
         <CodePanel
           items={debugOutput.vm_commands.map((command) => `${command}\n`)}
@@ -151,9 +168,9 @@ function App() {
             setMouseSelectedJackNode(undefined);
             setMouseSelectedVMCommandIdx(idx);
           }}
+          footerItems={[vmCommandRange]}
         />
       </div>
-      <code id="footer">hello there</code>
     </>
   );
 }

@@ -3,12 +3,15 @@ import data from "../debug-output.json";
 import { DebugOutput } from "../../bindings/DebugOutput";
 import _ from "lodash";
 import { NodeInfo } from "../../bindings/NodeInfo";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import CodePanel from "./code-panel";
-import Footer from "./footer";
 
 const debugOutput = data as DebugOutput;
+const tokens = debugOutput.tokens.map((token) => token.source);
+const vmCommandStrings = debugOutput.vm_commands.map(
+  (command) => `${command}\n`
+);
 
 function getElementById(id: string): HTMLElement {
   const element = document.getElementById(id);
@@ -79,48 +82,67 @@ function App() {
     setHoveredVMCommandIdx(undefined);
   }
 
-  let hoveredJackNode: NodeInfo | undefined;
-  if (hoveredTokenIdx !== undefined) {
-    hoveredJackNode = findInnermostJackNode(hoveredTokenIdx);
-  } else if (hoveredVMCommandIdx !== undefined) {
-    const jackNodeIdx =
-      debugOutput.sourcemap.vm_command_idx_to_jack_node_idx[
-        hoveredVMCommandIdx
-      ];
-    if (jackNodeIdx !== undefined) {
-      hoveredJackNode = getJackNodeByIndex(jackNodeIdx);
+  const hoveredJackNode = useMemo<NodeInfo | undefined>(() => {
+    if (hoveredTokenIdx !== undefined) {
+      return findInnermostJackNode(hoveredTokenIdx);
+    } else if (hoveredVMCommandIdx !== undefined) {
+      const jackNodeIdx =
+        debugOutput.sourcemap.vm_command_idx_to_jack_node_idx[
+          hoveredVMCommandIdx
+        ];
+      if (jackNodeIdx !== undefined) {
+        return getJackNodeByIndex(jackNodeIdx);
+      }
     }
-  }
+  }, [hoveredTokenIdx, hoveredVMCommandIdx]);
 
-  const hoveredTokens = jackNodeTokens(hoveredJackNode);
-  const hoveredVMCommands = hoveredJackNode
-    ? new Set(allVMCommandIdxs(hoveredJackNode.index))
-    : new Set<number>();
+  const hoveredTokens = useMemo(
+    () => jackNodeTokens(hoveredJackNode),
+    [hoveredJackNode]
+  );
 
-  let autoSelectedJackNodeIdx;
-  if (mouseSelectedVMCommandIdx !== undefined) {
-    autoSelectedJackNodeIdx =
-      debugOutput.sourcemap.vm_command_idx_to_jack_node_idx[
-        mouseSelectedVMCommandIdx
-      ];
-  }
+  const hoveredVMCommands = useMemo(() => {
+    return hoveredJackNode
+      ? new Set(allVMCommandIdxs(hoveredJackNode.index))
+      : new Set<number>();
+  }, [hoveredJackNode]);
 
-  let autoSelectedJackNode;
-  if (autoSelectedJackNodeIdx !== undefined) {
-    autoSelectedJackNode = getJackNodeByIndex(autoSelectedJackNodeIdx);
-  }
+  const autoSelectedJackNodeIdx = useMemo(() => {
+    return mouseSelectedVMCommandIdx === undefined
+      ? undefined
+      : debugOutput.sourcemap.vm_command_idx_to_jack_node_idx[
+          mouseSelectedVMCommandIdx
+        ];
+  }, [mouseSelectedVMCommandIdx]);
 
-  let autoSelectedTokens = new Set<number>();
-  if (autoSelectedJackNode !== undefined) {
-    autoSelectedTokens = jackNodeTokens(autoSelectedJackNode);
-  }
+  const autoSelectedJackNode = useMemo(() => {
+    return autoSelectedJackNodeIdx === undefined
+      ? undefined
+      : getJackNodeByIndex(autoSelectedJackNodeIdx);
+  }, [autoSelectedJackNodeIdx]);
 
-  let autoSelectedVMCommands = new Set<number>();
-  if (mouseSelectedJackNode !== undefined) {
-    autoSelectedVMCommands = new Set(
-      allVMCommandIdxs(mouseSelectedJackNode.index)
-    );
-  }
+  const autoSelectedTokens = useMemo<Set<number>>(() => {
+    return autoSelectedJackNode
+      ? jackNodeTokens(autoSelectedJackNode)
+      : new Set();
+  }, [autoSelectedJackNode]);
+
+  const autoSelectedVMCommands = useMemo<Set<number>>(() => {
+    return mouseSelectedJackNode === undefined
+      ? new Set()
+      : new Set(allVMCommandIdxs(mouseSelectedJackNode.index));
+  }, [mouseSelectedJackNode]);
+
+  const mouseSelectedTokenIdxs = useMemo(
+    () => jackNodeTokens(mouseSelectedJackNode),
+    [mouseSelectedJackNode]
+  );
+
+  const mouseSelectedVMCommandIdxs = useMemo<Set<number>>(() => {
+    return autoSelectedJackNodeIdx === undefined
+      ? new Set()
+      : new Set(allVMCommandIdxs(autoSelectedJackNodeIdx));
+  }, [autoSelectedJackNodeIdx]);
 
   const vmCommands = [...hoveredVMCommands].sort((a, b) => a - b);
   const firstVMCommand = vmCommands[0];
@@ -134,9 +156,9 @@ function App() {
     <>
       <div id="main">
         <CodePanel
-          items={debugOutput.tokens.map((token) => token.source)}
+          items={tokens}
           hoveredItemIdxs={hoveredTokens}
-          mouseSelectedItemIdxs={jackNodeTokens(mouseSelectedJackNode)}
+          mouseSelectedItemIdxs={mouseSelectedTokenIdxs}
           autoSelectedItemIdxs={autoSelectedTokens}
           onSpanMouseEnter={setHoveredTokenIdx}
           onSpanMouseLeave={clearHoverState}
@@ -154,13 +176,9 @@ function App() {
           ]}
         />
         <CodePanel
-          items={debugOutput.vm_commands.map((command) => `${command}\n`)}
+          items={vmCommandStrings}
           hoveredItemIdxs={hoveredVMCommands}
-          mouseSelectedItemIdxs={
-            autoSelectedJackNodeIdx === undefined
-              ? new Set()
-              : new Set(allVMCommandIdxs(autoSelectedJackNodeIdx))
-          }
+          mouseSelectedItemIdxs={mouseSelectedVMCommandIdxs}
           autoSelectedItemIdxs={autoSelectedVMCommands}
           onSpanMouseEnter={setHoveredVMCommandIdx}
           onSpanMouseLeave={clearHoverState}

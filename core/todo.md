@@ -1,5 +1,7 @@
 ### extend sourcemap into vm compiler
 
+- extend sourcemap to allow for debugging of multiple files
+- include stdlib in compiler explorer app
 - complete process of skipping textual stages (or rather, making them optional)
   in the compiler data structure
 - generation of reports on generated code size vs type of origin jack nodes.

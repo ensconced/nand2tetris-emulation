@@ -1,5 +1,5 @@
 import classnames from "classnames";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 
 interface Props {
   items: Array<string>;
@@ -9,7 +9,6 @@ interface Props {
   onSpanMouseEnter(itemIdx: number): void;
   onSpanClick(itemIdx: number): void;
   onSpanMouseLeave(): void;
-  footerItems: Array<string | undefined>;
 }
 
 export default function CodePanel({
@@ -20,7 +19,6 @@ export default function CodePanel({
   onSpanMouseEnter,
   onSpanClick,
   onSpanMouseLeave,
-  footerItems,
 }: Props) {
   const codeRef = useRef<HTMLElement>(null);
 
@@ -31,6 +29,11 @@ export default function CodePanel({
     });
   }, [autoSelectedItemIdxs]);
 
+  const selectedItemIdxs = useMemo(
+    () => new Set([...autoSelectedItemIdxs, ...mouseSelectedItemIdxs]),
+    [autoSelectedItemIdxs, mouseSelectedItemIdxs]
+  );
+
   return (
     <div className="code-wrapper">
       <code className="code-panel" ref={codeRef}>
@@ -40,9 +43,7 @@ export default function CodePanel({
               key={idx}
               className={classnames({
                 highlighted: hoveredItemIdxs.has(idx),
-                selected:
-                  autoSelectedItemIdxs.has(idx) ||
-                  mouseSelectedItemIdxs.has(idx),
+                selected: selectedItemIdxs.has(idx),
               })}
               onMouseEnter={() => onSpanMouseEnter(idx)}
               onMouseLeave={onSpanMouseLeave}
@@ -54,9 +55,12 @@ export default function CodePanel({
         })}
       </code>
       <code className="footer">
-        {footerItems.map((footerItem) => (
-          <span className="footer-item">{footerItem ?? ""}</span>
-        ))}
+        <span style={{ color: "#ff79c6" }} className="footer-item">
+          hovered: {hoveredItemIdxs.size}
+        </span>
+        <span style={{ color: "#f8f8f2" }} className="footer-item">
+          selected: {selectedItemIdxs.size}
+        </span>
       </code>
     </div>
   );

@@ -101,11 +101,17 @@ function App() {
     [hoveredJackNode]
   );
 
-  const hoveredVMCommands = useMemo(() => {
+  const hoveredVMCommands = useMemo<Set<number>>(() => {
     return hoveredJackNode
       ? new Set(allVMCommandIdxs(hoveredJackNode.index))
-      : new Set<number>();
+      : new Set();
   }, [hoveredJackNode]);
+
+  const autoSelectedVMCommands = useMemo<Set<number>>(() => {
+    return mouseSelectedJackNode
+      ? new Set(allVMCommandIdxs(mouseSelectedJackNode.index))
+      : new Set();
+  }, [mouseSelectedJackNode]);
 
   const autoSelectedJackNodeIdx = useMemo(() => {
     return mouseSelectedVMCommandIdx === undefined
@@ -127,12 +133,6 @@ function App() {
       : new Set();
   }, [autoSelectedJackNode]);
 
-  const autoSelectedVMCommands = useMemo<Set<number>>(() => {
-    return mouseSelectedJackNode === undefined
-      ? new Set()
-      : new Set(allVMCommandIdxs(mouseSelectedJackNode.index));
-  }, [mouseSelectedJackNode]);
-
   const mouseSelectedTokenIdxs = useMemo(
     () => jackNodeTokens(mouseSelectedJackNode),
     [mouseSelectedJackNode]
@@ -143,14 +143,6 @@ function App() {
       ? new Set()
       : new Set(allVMCommandIdxs(autoSelectedJackNodeIdx));
   }, [autoSelectedJackNodeIdx]);
-
-  const vmCommands = [...hoveredVMCommands].sort((a, b) => a - b);
-  const firstVMCommand = vmCommands[0];
-  const lastVMCommand = vmCommands[vmCommands.length - 1];
-  const vmCommandRange =
-    firstVMCommand !== undefined && lastVMCommand !== undefined
-      ? `${firstVMCommand} - ${lastVMCommand}`
-      : "";
 
   return (
     <>
@@ -166,14 +158,6 @@ function App() {
             setMouseSelectedVMCommandIdx(undefined);
             setMouseSelectedJackNode(findInnermostJackNode(idx));
           }}
-          footerItems={[
-            `node idx: ${hoveredJackNode?.index ?? ""}`,
-            `token range: ${
-              hoveredJackNode
-                ? `${hoveredJackNode.token_range.start} - ${hoveredJackNode.token_range.end}`
-                : ""
-            }`,
-          ]}
         />
         <CodePanel
           items={vmCommandStrings}
@@ -186,7 +170,6 @@ function App() {
             setMouseSelectedJackNode(undefined);
             setMouseSelectedVMCommandIdx(idx);
           }}
-          footerItems={[vmCommandRange]}
         />
       </div>
     </>

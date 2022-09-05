@@ -1,4 +1,4 @@
-use std::{ffi::OsStr, iter};
+use std::{iter, path::Path};
 
 use super::{
     parser::{
@@ -229,7 +229,7 @@ impl CodeGenerator {
         }
     }
 
-    fn pop_into_static_memory_segment(&self, index: u16, filename: &OsStr) -> Vec<String> {
+    fn pop_into_static_memory_segment(&self, index: u16, filename: &Path) -> Vec<String> {
         pop_into_d_register("SP")
             .chain(string_lines(&format!(
                 "
@@ -242,7 +242,7 @@ impl CodeGenerator {
             .collect()
     }
 
-    fn push_from_static(&self, index: u16, filename: &OsStr) -> Vec<String> {
+    fn push_from_static(&self, index: u16, filename: &Path) -> Vec<String> {
         string_lines(&format!(
             "
             @{}.{}
@@ -255,7 +255,7 @@ impl CodeGenerator {
         .collect()
     }
 
-    fn push(&self, segment: MemorySegmentVariant, index: u16, filename: &OsStr) -> Vec<String> {
+    fn push(&self, segment: MemorySegmentVariant, index: u16, filename: &Path) -> Vec<String> {
         match segment {
             OffsetSegment(offset_segment) => push_from_offset_memory_segment(offset_segment, index),
             PointerSegment(pointer_segment) => push_from_pointer_memory_segment(pointer_segment, index),
@@ -264,7 +264,7 @@ impl CodeGenerator {
         }
     }
 
-    fn pop(&self, segment: MemorySegmentVariant, index: u16, filename: &OsStr) -> Vec<String> {
+    fn pop(&self, segment: MemorySegmentVariant, index: u16, filename: &Path) -> Vec<String> {
         match segment {
             OffsetSegment(offset_segment) => pop_into_offset_memory_segment(offset_segment, index),
             PointerSegment(pointer_segment) => pop_into_pointer_memory_segment(pointer_segment, index),
@@ -284,7 +284,7 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_memory_command(&self, command: MemoryCommandVariant, filename: &OsStr) -> Vec<String> {
+    fn compile_memory_command(&self, command: MemoryCommandVariant, filename: &Path) -> Vec<String> {
         match command {
             Push(segment, index) => self.push(segment, index, filename),
             Pop(segment, index) => self.pop(segment, index, filename),
@@ -642,7 +642,7 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_vm_command(&mut self, command: Command, filename: &OsStr) -> Vec<String> {
+    fn compile_vm_command(&mut self, command: Command, filename: &Path) -> Vec<String> {
         match command {
             Arithmetic(arithmetic_command) => self.compile_arithmetic_command(arithmetic_command),
             Memory(memory_command) => self.compile_memory_command(memory_command, filename),

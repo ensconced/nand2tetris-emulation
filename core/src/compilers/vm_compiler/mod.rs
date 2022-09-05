@@ -2,19 +2,22 @@ pub mod codegen;
 pub mod parser;
 mod tokenizer;
 
-use std::{ffi::OsString, fs, io, path::Path};
+use std::{
+    fs, io,
+    path::{Path, PathBuf},
+};
 
 use super::utils::source_modules::{get_source_modules, SourceModule};
 use parser::{parse_into_vm_commands, Command};
 
 pub struct ParsedModule<'a> {
-    pub filename: OsString,
+    pub filename: PathBuf,
     pub commands: Box<dyn Iterator<Item = Command> + 'a>,
 }
 
 pub fn parse(source_module: &SourceModule) -> ParsedModule {
     ParsedModule {
-        filename: source_module.filename.to_owned(),
+        filename: source_module.filename.to_owned().into(),
         commands: Box::new(parse_into_vm_commands(&source_module.source)),
     }
 }

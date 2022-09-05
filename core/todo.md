@@ -2,9 +2,9 @@
 
 - extend sourcemap to allow for debugging of multiple files
 - include stdlib in compiler explorer app
+- optimize popping into pointer segments when offset is zero?
 - complete process of skipping textual stages (or rather, making them optional)
   in the compiler data structure
-- generation of reports on generated code size vs type of origin jack nodes.
 - abolish textual ASM - instead go directly from "parsed" vm instructions to "parsed" asm instructions
 - add references from asm instructions to their owning vm instruction node
 - same again for asm -> machine code stage

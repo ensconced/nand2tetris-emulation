@@ -16,7 +16,7 @@
    - the forward pointer to the next block
    - the backward pointer to the previous block
 
-  Allocated blocks have a 2-work header consisting of:
+  Allocated blocks have a 2-word header consisting of:
    - a boolean field set to false, indicating that the block is not free
    - a field indicating the order of the block
 
@@ -29,7 +29,7 @@
   just use 13 static variables but this would make a significant impact on the space remaining
   in the static segment for usage in user programs. It would also make the code here annoyingly
   verbose. Another alternative would be to have a dedicated section of system memory for these
-  overheads, but it would feel wrong to modify the architecure just to accomodate this algorithm.
+  overheads, but it would feel wrong to modify the architecture just to accomodate this algorithm.
   So here I have taken another approach. To start with, I use the screen memory for the overheads.
   Then I initialize the allocator. Then I use the initialized allocator to allocate a block of
   memory to use for its own overheads, and copy the overheads over from screen memory

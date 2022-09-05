@@ -37,6 +37,9 @@ pub fn compile_to_machine_code(jack_code: Vec<&str>) -> String {
         })
         .enumerate()
         .map(|(idx, commands)| {
+            let v: Vec<_> = commands.iter().map(|cmd| cmd.to_string()).collect();
+            dbg!(v);
+
             ParsedModule {
                 // TODO - use actual filenames here
                 filename: format!("some_filename_{idx}").into(),

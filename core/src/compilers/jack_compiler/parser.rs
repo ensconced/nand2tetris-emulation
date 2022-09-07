@@ -1,4 +1,4 @@
-use std::{iter, ops::Range};
+use std::{iter, ops::Range, path::Path};
 
 use super::{
     jack_node_types::{PrimitiveTermVariant::*, *},
@@ -41,7 +41,7 @@ fn infix_precedence(operator: OperatorVariant) -> Option<(u8, u8)> {
     }
 }
 
-pub fn parse(tokens: &[Token<TokenKind>], sourcemap: &mut SourceMap) -> Class {
+pub fn parse(filename: &'static Path, tokens: &[Token<TokenKind>], sourcemap: &mut SourceMap) -> Class {
     let tokens_without_whitespace: Vec<_> = tokens
         .iter()
         .filter(|token| {
@@ -58,6 +58,7 @@ pub fn parse(tokens: &[Token<TokenKind>], sourcemap: &mut SourceMap) -> Class {
     let cloned_tokens_without_whitespace: Vec<_> = tokens_without_whitespace.into_iter().cloned().collect();
 
     let mut parser = Parser {
+        filename,
         token_iter: cloned_tokens_without_whitespace.iter().peekable(),
         sourcemap,
     };
@@ -65,13 +66,14 @@ pub fn parse(tokens: &[Token<TokenKind>], sourcemap: &mut SourceMap) -> Class {
 }
 
 struct Parser<'a> {
+    filename: &'static Path,
     token_iter: PeekableTokens<'a, TokenKind>,
     sourcemap: &'a mut SourceMap,
 }
 
 impl<'a> Parser<'a> {
     fn make_ast_node<T>(&mut self, node: T, token_range: Range<usize>, child_node_idxs: Vec<usize>) -> ASTNode<T> {
-        let node_idx = self.sourcemap.record_jack_node(token_range.clone(), child_node_idxs);
+        let node_idx = self.sourcemap.record_jack_node(self.filename, token_range.clone(), child_node_idxs);
         ASTNode {
             node: Box::new(node),
             node_idx,
@@ -772,7 +774,7 @@ mod tests {
 
     use pretty_assertions::assert_eq;
 
-    fn parse_expression(source: &str) -> ASTNode<Expression> {
+    fn parse_expression(filename: &'static Path, source: &str) -> ASTNode<Expression> {
         let mut sourcemap = SourceMap::new();
         let tokens: Vec<_> = Tokenizer::new(token_defs())
             .tokenize(source)
@@ -788,6 +790,7 @@ mod tests {
             })
             .collect();
         let mut parser = Parser {
+            filename,
             token_iter: tokens.iter().peekable(),
             sourcemap: &mut sourcemap,
         };
@@ -800,7 +803,7 @@ mod tests {
         let mut sourcemap = SourceMap::new();
         let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(source);
         assert_eq!(
-            parse(&tokens, &mut sourcemap),
+            parse(&Path::new("test"), &tokens, &mut sourcemap),
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![],
@@ -818,7 +821,7 @@ mod tests {
             }";
         let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(source);
         assert_eq!(
-            parse(&tokens, &mut sourcemap),
+            parse(&Path::new("test"), &tokens, &mut sourcemap),
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![ASTNode {
@@ -850,7 +853,7 @@ mod tests {
             }";
         let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(source);
         assert_eq!(
-            parse(&tokens, &mut sourcemap),
+            parse(&Path::new("test"), &tokens, &mut sourcemap),
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![
@@ -913,7 +916,7 @@ mod tests {
             }";
         let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(source);
         assert_eq!(
-            parse(&tokens, &mut sourcemap),
+            parse(&Path::new("test"), &tokens, &mut sourcemap),
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![],
@@ -1034,7 +1037,7 @@ mod tests {
             }";
         let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(source);
         assert_eq!(
-            parse(&tokens, &mut sourcemap),
+            parse(&Path::new("test"), &tokens, &mut sourcemap),
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![],
@@ -1265,7 +1268,7 @@ mod tests {
     #[test]
     fn test_simple_expression() {
         assert_eq!(
-            parse_expression("1"),
+            parse_expression(&Path::new("test"), "1"),
             ASTNode {
                 node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
                 node_idx: 0,
@@ -1277,7 +1280,7 @@ mod tests {
     #[test]
     fn test_simple_binary_expression() {
         assert_eq!(
-            parse_expression("1 + 2"),
+            parse_expression(&Path::new("test"), "1 + 2"),
             ASTNode {
                 node: Box::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
@@ -1310,7 +1313,7 @@ mod tests {
             ";
         let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(source);
         assert_eq!(
-            parse(&tokens, &mut sourcemap),
+            parse(&Path::new("test"), &tokens, &mut sourcemap),
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![],
@@ -1375,7 +1378,7 @@ mod tests {
     #[test]
     fn test_simple_left_associating_expression() {
         assert_eq!(
-            parse_expression("1 + 2 + 3 + 4"),
+            parse_expression(&Path::new("test"), "1 + 2 + 3 + 4"),
             ASTNode {
                 node: Box::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
@@ -1423,7 +1426,7 @@ mod tests {
     #[test]
     fn test_binary_precedence() {
         assert_eq!(
-            parse_expression("1 + 2 * 3 + 4"),
+            parse_expression(&Path::new("test"), "1 + 2 * 3 + 4"),
             ASTNode {
                 node: Box::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
@@ -1471,7 +1474,7 @@ mod tests {
     #[test]
     fn test_simple_unary_expression() {
         assert_eq!(
-            parse_expression("~1"),
+            parse_expression(&Path::new("test"), "~1"),
             ASTNode {
                 node: Box::new(Expression::Unary {
                     operator: UnaryOperator::Not,
@@ -1490,7 +1493,7 @@ mod tests {
     #[test]
     fn test_simple_combined_unary_and_binary_expression() {
         assert_eq!(
-            parse_expression("~1 + ~2"),
+            parse_expression(&Path::new("test"), "~1 + ~2"),
             ASTNode {
                 node: Box::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
@@ -1528,7 +1531,7 @@ mod tests {
     #[test]
     fn test_expression_with_subroutine_calls() {
         assert_eq!(
-            parse_expression("1 + foo(1, baz.bar(1, 2), 3) + 2"),
+            parse_expression(&Path::new("test"), "1 + foo(1, baz.bar(1, 2), 3) + 2"),
             ASTNode {
                 node: Box::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
@@ -1606,7 +1609,7 @@ mod tests {
     #[test]
     fn test_expression_with_subroutine_call_and_array_access() {
         assert_eq!(
-            parse_expression("1 + foo(1, bar[1 + 2], 3) + 2"),
+            parse_expression(&Path::new("test"), "1 + foo(1, bar[1 + 2], 3) + 2"),
             ASTNode {
                 node: Box::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
@@ -1684,7 +1687,7 @@ mod tests {
     #[test]
     fn test_expression_with_variables_subroutine_calls_and_array_access() {
         assert_eq!(
-            parse_expression("foo + bar[baz + buz.boz(qux, wox[123]) / bing]"),
+            parse_expression(&Path::new("test"), "foo + bar[baz + buz.boz(qux, wox[123]) / bing]"),
             (ASTNode {
                 node: Box::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
@@ -1765,7 +1768,7 @@ mod tests {
     #[test]
     fn test_primitive_terms() {
         assert_eq!(
-            parse_expression("1 + \"hello\" + true + false + null + this"),
+            parse_expression(&Path::new("test"), "1 + \"hello\" + true + false + null + this"),
             ASTNode {
                 node: Box::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
@@ -1837,7 +1840,7 @@ mod tests {
     #[test]
     fn test_parenthesized_expression() {
         assert_eq!(
-            parse_expression("(1 + 2) * 3"),
+            parse_expression(&Path::new("test"), "(1 + 2) * 3"),
             ASTNode {
                 node: Box::new(Expression::Binary {
                     operator: BinaryOperator::Multiply,

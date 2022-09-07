@@ -3,4 +3,4 @@ import type { SourceMap } from "./SourceMap";
 import type { Token } from "./Token";
 import type { TokenKind } from "./TokenKind";
 
-export interface DebugOutput { tokens: Array<Token<TokenKind>>, sourcemap: SourceMap, vm_commands: Array<string>, }
+export interface DebugOutput { tokens: Record<string, Array<Token<TokenKind>>>, sourcemap: SourceMap, vm_commands: Array<string>, }

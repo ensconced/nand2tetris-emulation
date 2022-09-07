@@ -19,7 +19,7 @@ use compilers::{
 use emulator::run::run;
 use fonts::glyphs_class;
 use serde::Serialize;
-use std::{fs, path::Path};
+use std::{collections::HashMap, fs, path::Path};
 use ts_rs::TS;
 
 use crate::compilers::jack_compiler::compile_file;
@@ -105,8 +105,11 @@ fn main() {
                 .into_iter()
                 .map(|cmd| cmd.to_string())
                 .collect();
+
+            let mut tokens_hashmap = HashMap::new();
+            tokens_hashmap.insert(source_path.to_owned(), tokens);
             let debug_output = DebugOutput {
-                tokens,
+                tokens: tokens_hashmap,
                 sourcemap,
                 vm_commands,
             };

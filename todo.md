@@ -1,6 +1,7 @@
 ### extend sourcemap into vm compiler
 
-- extend sourcemap to allow for debugging of multiple files
+- refactor sourcemapping - instead of passing sourcemap around, include partial sourcemap info in return value from each compile stage (not including assembler for now), then combine at end into FullSourcemap
+- return value for each compile stage will include filename for jack compiler output
 - include stdlib in compiler explorer app
 - optimize popping into pointer segments when offset is zero?
 - complete process of skipping textual stages (or rather, making them optional)

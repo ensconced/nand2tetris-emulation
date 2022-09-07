@@ -99,7 +99,7 @@ fn main() {
             let source = fs::read_to_string(source_path).expect("failed to read source file");
             let mut sourcemap = SourceMap::new();
             let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(&source);
-            let class = parse(&tokens, &mut sourcemap);
+            let class = parse(&Path::new("test"), &tokens, &mut sourcemap);
             let vm_commands: Vec<_> = generate_vm_code(class, &mut sourcemap).into_iter().map(|cmd| cmd.to_string()).collect();
             let debug_output = DebugOutput {
                 tokens,
@@ -138,11 +138,11 @@ fn main() {
         Commands::JackParserViz {
             source_path: source_path_maybe,
         } => {
-            let source_path = source_path_maybe.as_ref().unwrap_or_else(|| panic!("source path is required"));
+            let source_path = Path::new(source_path_maybe.as_ref().unwrap_or_else(|| panic!("source path is required")));
             let source = fs::read_to_string(source_path).unwrap();
             let mut sourcemap = SourceMap::new();
             let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(&source);
-            let parser_output = jack_compiler::parser::parse(&tokens, &mut sourcemap);
+            let parser_output = jack_compiler::parser::parse(source_path, &tokens, &mut sourcemap);
             let parser_viz_data = ParserVizData {
                 parsed_class: parser_output,
                 source,

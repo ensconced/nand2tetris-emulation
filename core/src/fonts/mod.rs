@@ -240,13 +240,13 @@ pub fn glyphs_class() -> String {
 mod tests {
     use std::num::Wrapping;
 
-    use crate::compilers::compile_to_machine_code;
+    use crate::compilers::{compile_to_machine_code, utils::source_modules::mock_from_sources};
 
     use super::*;
     #[test]
     fn test_glyph_module_compiles() {
         // just check that the output compiles
-        compile_to_machine_code(vec![&glyphs_class()]);
+        compile_to_machine_code(mock_from_sources(vec![&glyphs_class()]).iter().collect());
     }
 
     #[test]

@@ -13,23 +13,19 @@ use super::utils::source_modules::get_source_modules;
 
 pub fn compile_file(src_path: &Path, dest_path: &Path) -> Result<(), io::Error> {
     let source_modules = get_source_modules(src_path)?;
-    let jack_sources: Vec<_> = source_modules
-        .into_iter()
-        .map(|source_module| fs::read_to_string(source_module.filename).unwrap())
-        .collect();
-
-    fs::write(dest_path, compile_to_machine_code(jack_sources.iter().map(|s| s.as_str()).collect()))
+    fs::write(dest_path, compile_to_machine_code(source_modules.iter().collect()))
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::compilers::utils::testing::test_utils::*;
+    use crate::compilers::utils::{source_modules::mock_from_sources, testing::test_utils::*};
     use itertools::repeat_n;
 
     #[test]
     fn test_addition() {
-        let mut computer = computer_from_jack_code(vec![
-            "
+        let mut computer = computer_from_jack_code(
+            mock_from_sources(vec![
+                "
             class Sys {
                 function void init () {
                     var int a;
@@ -37,15 +33,19 @@ mod tests {
                 }
             }
         ",
-        ]);
+            ])
+            .iter()
+            .collect(),
+        );
         tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         tick_until(&mut computer, &|computer| peek_stack(computer) == 3000);
     }
 
     #[test]
     fn test_function_calling() {
-        let mut computer = computer_from_jack_code(vec![
-            "
+        let mut computer = computer_from_jack_code(
+            mock_from_sources(vec![
+                "
             class Sys {
                 function void init () {
                     return add(1000, 1000) + 3;
@@ -56,7 +56,10 @@ mod tests {
                 }
             }
         ",
-        ]);
+            ])
+            .iter()
+            .collect(),
+        );
         tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         tick_until(&mut computer, &|computer| peek_stack(computer) == 2000);
         tick_until(&mut computer, &|computer| peek_stack(computer) == 2003);
@@ -64,8 +67,9 @@ mod tests {
 
     #[test]
     fn test_fibonacci() {
-        let mut computer = computer_from_jack_code(vec![
-            "
+        let mut computer = computer_from_jack_code(
+            mock_from_sources(vec![
+                "
             class Sys {
                 function void init () {
                     return fibonacci(30);
@@ -82,15 +86,19 @@ mod tests {
                 }
             }
         ",
-        ]);
+            ])
+            .iter()
+            .collect(),
+        );
         tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         tick_until(&mut computer, &|computer| peek_stack(computer) == 28657);
     }
 
     #[test]
     fn test_sum_even_fibonaccis() {
-        let mut computer = computer_from_jack_code(vec![
-            "
+        let mut computer = computer_from_jack_code(
+            mock_from_sources(vec![
+                "
             class Sys {
                 function void init () {
                     do sum_even_fibonacci_numbers();
@@ -127,15 +135,19 @@ mod tests {
                 }
             }
         ",
-        ]);
+            ])
+            .iter()
+            .collect(),
+        );
         tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         tick_until(&mut computer, &|computer| peek_stack(computer) == 3382);
     }
 
     #[test]
     fn test_class_methods() {
-        let mut computer = computer_from_jack_code(vec![
-            "
+        let mut computer = computer_from_jack_code(
+            mock_from_sources(vec![
+                "
             class Sys {
                 function void init () {
                     var Rectangle rect;
@@ -148,7 +160,7 @@ mod tests {
                 }
             }
         ",
-            "
+                "
             class Rectangle {
                 field int width, height;
 
@@ -163,15 +175,19 @@ mod tests {
                 }
             }
         ",
-        ]);
+            ])
+            .iter()
+            .collect(),
+        );
         tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         tick_until(&mut computer, &|computer| peek_stack(computer) == 18);
     }
 
     #[test]
     fn test_multiplication() {
-        let mut computer = computer_from_jack_code(vec![
-            "
+        let mut computer = computer_from_jack_code(
+            mock_from_sources(vec![
+                "
             class Sys {
                 function void init () {
                     var int a, b, c, d;
@@ -182,7 +198,10 @@ mod tests {
                 }
             }
         ",
-        ]);
+            ])
+            .iter()
+            .collect(),
+        );
         tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         tick_until(&mut computer, &|computer| peek_stack(computer) == 333 * 83);
         tick_until(&mut computer, &|computer| peek_stack(computer) == 10 * -2);
@@ -191,8 +210,9 @@ mod tests {
 
     #[test]
     fn test_abs() {
-        let mut computer = computer_from_jack_code(vec![
-            "
+        let mut computer = computer_from_jack_code(
+            mock_from_sources(vec![
+                "
             class Sys {
                 function void init () {
                     var int a, b, c, d;
@@ -201,7 +221,10 @@ mod tests {
                 }
             }
         ",
-        ]);
+            ])
+            .iter()
+            .collect(),
+        );
         tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         tick_until(&mut computer, &|computer| peek_stack(computer) == 1234 + 1234);
         tick_until(&mut computer, &|computer| peek_stack(computer) == 999 + 999);
@@ -209,8 +232,9 @@ mod tests {
 
     #[test]
     fn test_division() {
-        let mut computer = computer_from_jack_code(vec![
-            "
+        let mut computer = computer_from_jack_code(
+            mock_from_sources(vec![
+                "
             class Sys {
                 function void init () {
                     var int a;
@@ -222,7 +246,10 @@ mod tests {
                 }
             }
         ",
-        ]);
+            ])
+            .iter()
+            .collect(),
+        );
         tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         tick_until(&mut computer, &|computer| peek_stack(computer) == 4191 / -3);
         tick_until(&mut computer, &|computer| peek_stack(computer) == 1234 / 123);
@@ -232,8 +259,9 @@ mod tests {
 
     #[test]
     fn test_sqrt() {
-        let mut computer = computer_from_jack_code(vec![
-            "
+        let mut computer = computer_from_jack_code(
+            mock_from_sources(vec![
+                "
             class Sys {
                 function void init () {
                     var int a, b, c, d;
@@ -244,7 +272,10 @@ mod tests {
                 }
             }
         ",
-        ]);
+            ])
+            .iter()
+            .collect(),
+        );
         tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         tick_until(&mut computer, &|computer| peek_stack(computer) == 12);
         tick_until(&mut computer, &|computer| peek_stack(computer) == 10);
@@ -254,8 +285,9 @@ mod tests {
 
     #[test]
     fn test_string_alloc() {
-        let mut computer = computer_from_jack_code(vec![
-            "
+        let mut computer = computer_from_jack_code(
+            mock_from_sources(vec![
+                "
             class Sys {
                 function void init () {
                     var String a;
@@ -266,7 +298,10 @@ mod tests {
                 }
             }
             ",
-        ]);
+            ])
+            .iter()
+            .collect(),
+        );
         tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         let chars: Vec<_> = "hello".encode_utf16().map(|ch| ch as i16).collect();
         for char in chars.iter() {
@@ -277,8 +312,9 @@ mod tests {
 
     #[test]
     fn test_alloc_many_small_arrays() {
-        let mut computer = computer_from_jack_code(vec![
-            "
+        let mut computer = computer_from_jack_code(
+            mock_from_sources(vec![
+                "
             class Sys {
                 function void init () {
                     var String a;
@@ -305,7 +341,10 @@ mod tests {
                 }
             }
             ",
-        ]);
+            ])
+            .iter()
+            .collect(),
+        );
         tick_until(&mut computer, &program_completed);
         for outer_idx in 0..14 {
             let start = outer_idx * 1000;
@@ -316,15 +355,19 @@ mod tests {
 
     #[test]
     fn test_memory_init() {
-        let mut computer = computer_from_jack_code(vec![
-            "
+        let mut computer = computer_from_jack_code(
+            mock_from_sources(vec![
+                "
             class Sys {
                 function void init () {
                     do Memory.init();
                 }
             }
             ",
-        ]);
+            ])
+            .iter()
+            .collect(),
+        );
         tick_until(&mut computer, &program_completed);
 
         assert_eq!(
@@ -351,8 +394,9 @@ mod tests {
 
     #[test]
     fn test_memory_alloc_4_word_block() {
-        let mut computer = computer_from_jack_code(vec![
-            "
+        let mut computer = computer_from_jack_code(
+            mock_from_sources(vec![
+                "
             class Sys {
                 function void init () {
                     var int ptr;
@@ -364,7 +408,10 @@ mod tests {
                 }
             }
             ",
-        ]);
+            ])
+            .iter()
+            .collect(),
+        );
         tick_until(&mut computer, &program_completed);
 
         // To generate a 4-word block, we have to split a 16-word block into 2
@@ -394,8 +441,9 @@ mod tests {
 
     #[test]
     fn test_memory_alloc_dealloc_without_merge() {
-        let mut computer = computer_from_jack_code(vec![
-            "
+        let mut computer = computer_from_jack_code(
+            mock_from_sources(vec![
+                "
             class Sys {
                 function void init () {
                     var int ptr;
@@ -408,7 +456,10 @@ mod tests {
                 }
             }
             ",
-        ]);
+            ])
+            .iter()
+            .collect(),
+        );
         tick_until(&mut computer, &program_completed);
 
         assert_eq!(
@@ -435,8 +486,9 @@ mod tests {
 
     #[test]
     fn test_memory_alloc_dealloc_with_single_merge() {
-        let mut computer = computer_from_jack_code(vec![
-            "
+        let mut computer = computer_from_jack_code(
+            mock_from_sources(vec![
+                "
             class Sys {
                 function void init () {
                     var int ptr;
@@ -449,7 +501,10 @@ mod tests {
                 }
             }
             ",
-        ]);
+            ])
+            .iter()
+            .collect(),
+        );
         tick_until(&mut computer, &program_completed);
 
         assert_eq!(
@@ -476,8 +531,9 @@ mod tests {
 
     #[test]
     fn test_memory_alloc_dealloc_with_multiple_merges() {
-        let mut computer = computer_from_jack_code(vec![
-            "
+        let mut computer = computer_from_jack_code(
+            mock_from_sources(vec![
+                "
             class Sys {
                 function void init () {
                     var int ptr;
@@ -495,7 +551,10 @@ mod tests {
                 }
             }
             ",
-        ]);
+            ])
+            .iter()
+            .collect(),
+        );
         tick_until(&mut computer, &program_completed);
 
         assert_eq!(
@@ -522,8 +581,9 @@ mod tests {
 
     #[test]
     fn test_memory_alloc_small_array_stress_test() {
-        let mut computer = computer_from_jack_code(vec![
-            "
+        let mut computer = computer_from_jack_code(
+            mock_from_sources(vec![
+                "
             class Sys {
                 function void init () {
                     var int i, j, ptr;
@@ -546,7 +606,10 @@ mod tests {
                 }
             }
             ",
-        ]);
+            ])
+            .iter()
+            .collect(),
+        );
         // We should be able to allocate 511 arrays. This means the variable i should reach 511.
         tick_until(&mut computer, &|computer| {
             frame_stack_depth(computer) == 1 && top_frame_local(computer, 0) == 511
@@ -556,8 +619,9 @@ mod tests {
 
     #[test]
     fn test_memory_alloc_dealloc_small_array_stress_test() {
-        let mut computer = computer_from_jack_code(vec![
-            "
+        let mut computer = computer_from_jack_code(
+            mock_from_sources(vec![
+                "
             class Sys {
                 static int ptrs, ptr_count;
 
@@ -608,7 +672,10 @@ mod tests {
                 }
             }
             ",
-        ]);
+            ])
+            .iter()
+            .collect(),
+        );
 
         // init stuff
         tick_until(&mut computer, &|computer| frame_stack_depth(computer) == 1);
@@ -683,8 +750,9 @@ mod tests {
 
     #[test]
     fn test_string_erase_last_char() {
-        let mut computer = computer_from_jack_code(vec![
-            "
+        let mut computer = computer_from_jack_code(
+            mock_from_sources(vec![
+                "
             class Sys {
                 static String str;
 
@@ -705,7 +773,10 @@ mod tests {
                 }
             }
             ",
-        ]);
+            ])
+            .iter()
+            .collect(),
+        );
 
         tick_until(&mut computer, &|computer| frame_stack_depth(computer) == 1);
 
@@ -721,8 +792,9 @@ mod tests {
 
     #[test]
     fn test_string_int_value() {
-        let mut computer = computer_from_jack_code(vec![
-            "
+        let mut computer = computer_from_jack_code(
+            mock_from_sources(vec![
+                "
             class Sys {
                 static String str;
 
@@ -739,7 +811,10 @@ mod tests {
                 }
             }
             ",
-        ]);
+            ])
+            .iter()
+            .collect(),
+        );
 
         tick_until(&mut computer, &|computer| frame_stack_depth(computer) == 1);
 
@@ -751,23 +826,27 @@ mod tests {
 
     #[test]
     fn test_string_set_int() {
-        let mut computer = computer_from_jack_code(vec![
-            "
-            class Sys {
-                static String str;
+        let mut computer = computer_from_jack_code(
+            mock_from_sources(vec![
+                "
+                    class Sys {
+                        static String str;
 
-                function String setupString() {
-                    let str = \"1234\";
-                }
+                        function String setupString() {
+                            let str = \"1234\";
+                        }
 
-                function void init () {
-                    do Memory.init();
-                    do setupString();
-                    do str.setInt(5678);
-                }
-            }
-            ",
-        ]);
+                        function void init () {
+                            do Memory.init();
+                            do setupString();
+                            do str.setInt(5678);
+                        }
+                    }
+                    ",
+            ])
+            .iter()
+            .collect(),
+        );
 
         tick_until(&mut computer, &|computer| frame_stack_depth(computer) == 1);
 

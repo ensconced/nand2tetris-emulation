@@ -16,7 +16,6 @@ pub mod test_utils {
                 // TODO - just use the original filenames where they exist...
                 filename: format!("some_filename_{idx}").into(),
                 source: vm_code.to_owned(),
-                entrypoint_is_dir: false,
             })
             .collect();
 
@@ -27,7 +26,7 @@ pub mod test_utils {
         Computer::new(generate_rom::from_string(machine_code))
     }
 
-    pub fn computer_from_jack_code(jack_code: Vec<&str>) -> Computer {
+    pub fn computer_from_jack_code(jack_code: Vec<&SourceModule>) -> Computer {
         let machine_code = compile_to_machine_code(jack_code);
         Computer::new(generate_rom::from_string(machine_code))
     }

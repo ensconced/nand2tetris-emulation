@@ -41,7 +41,7 @@ fn infix_precedence(operator: OperatorVariant) -> Option<(u8, u8)> {
     }
 }
 
-pub fn parse(filename: &'static Path, tokens: &[Token<TokenKind>], sourcemap: &mut SourceMap) -> Class {
+pub fn parse(filename: &Path, tokens: &[Token<TokenKind>], sourcemap: &mut SourceMap) -> Class {
     let tokens_without_whitespace: Vec<_> = tokens
         .iter()
         .filter(|token| {
@@ -66,7 +66,7 @@ pub fn parse(filename: &'static Path, tokens: &[Token<TokenKind>], sourcemap: &m
 }
 
 struct Parser<'a> {
-    filename: &'static Path,
+    filename: &'a Path,
     token_iter: PeekableTokens<'a, TokenKind>,
     sourcemap: &'a mut SourceMap,
 }

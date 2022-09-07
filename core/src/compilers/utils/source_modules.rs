@@ -7,29 +7,35 @@ use std::{
 pub struct SourceModule {
     pub filename: OsString,
     pub source: String,
-    pub entrypoint_is_dir: bool,
 }
 
 impl SourceModule {
-    pub fn new(path: PathBuf, entrypoint_is_dir: bool) -> Self {
+    pub fn new(path: PathBuf) -> Self {
         let source = fs::read_to_string(&path).expect("failed to read file to string");
         Self {
             source,
             filename: path.file_name().expect("file name should not terminate in \"..\"").to_owned(),
-            entrypoint_is_dir,
         }
     }
+}
+
+pub fn mock_from_sources(sources: Vec<&str>) -> Vec<SourceModule> {
+    sources
+        .into_iter()
+        .enumerate()
+        .map(|(idx, source)| SourceModule {
+            filename: format!("mock_file_{}", idx).into(),
+            source: source.to_owned(),
+        })
+        .collect()
 }
 
 pub fn get_source_modules(src_path: &Path) -> Result<Vec<SourceModule>, io::Error> {
     let metadata = fs::metadata(src_path)?;
     let source_modules = if metadata.is_dir() {
-        fs::read_dir(src_path)?
-            .flatten()
-            .map(|entry| SourceModule::new(entry.path(), true))
-            .collect()
+        fs::read_dir(src_path)?.flatten().map(|entry| SourceModule::new(entry.path())).collect()
     } else {
-        vec![SourceModule::new(src_path.to_owned(), false)]
+        vec![SourceModule::new(src_path.to_owned())]
     };
     Ok(source_modules)
 }

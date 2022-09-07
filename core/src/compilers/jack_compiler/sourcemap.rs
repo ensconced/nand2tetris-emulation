@@ -15,7 +15,7 @@ pub struct NodeInfo {
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub struct SourceMap {
-    pub token_idx_to_jack_node_idxs: HashMap<&'static Path, HashMap<usize, Vec<usize>>>,
+    pub token_idx_to_jack_node_idxs: HashMap<String, HashMap<usize, Vec<usize>>>,
     pub jack_nodes: Vec<NodeInfo>,
     pub jack_node_idx_to_vm_command_idx: HashMap<usize, Vec<usize>>,
     pub vm_command_idx_to_jack_node_idx: HashMap<usize, usize>,
@@ -31,7 +31,7 @@ impl SourceMap {
         }
     }
 
-    pub fn record_jack_node(&mut self, filename: &'static Path, token_range: Range<usize>, child_node_idxs: Vec<usize>) -> usize {
+    pub fn record_jack_node(&mut self, filename: &Path, token_range: Range<usize>, child_node_idxs: Vec<usize>) -> usize {
         let node_idx = self.jack_nodes.len();
         self.jack_nodes.push(NodeInfo {
             token_range: token_range.clone(),
@@ -39,7 +39,10 @@ impl SourceMap {
             index: node_idx,
         });
 
-        let token_lookup = self.token_idx_to_jack_node_idxs.entry(filename).or_default();
+        let token_lookup = self
+            .token_idx_to_jack_node_idxs
+            .entry(filename.to_str().expect("filename is not valid utf8").to_owned())
+            .or_default();
         for token_idx in token_range {
             let token_jack_node_idxs = token_lookup.entry(token_idx).or_default();
             token_jack_node_idxs.push(node_idx);

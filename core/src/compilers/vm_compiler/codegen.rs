@@ -164,8 +164,18 @@ fn pop_into_pointer_memory_segment(segment: PointerSegmentVariant, index: u16) -
         This => "THIS",
         That => "THAT",
     };
-    pop_into_d_register("SP")
-        .chain(string_lines(&format!(
+
+    let instructions = if index == 0 {
+        string_lines(&format!(
+            "
+    @{}
+    A=M
+    M=D
+    ",
+            pointer_address,
+        ))
+    } else {
+        string_lines(&format!(
             "
         // stash value from D into R13
         @R13
@@ -177,24 +187,26 @@ fn pop_into_pointer_memory_segment(segment: PointerSegmentVariant, index: u16) -
 
         // add index
         @{}
-            D=D+A
+        D=D+A
 
-            // stash memory address in R14
-            @R14
-            M=D
+        // stash memory address in R14
+        @R14
+        M=D
 
-            // get value back into D
-            @R13
-            D=M
+        // get value back into D
+        @R13
+        D=M
 
-            // load value into memory
-            @R14
-            A=M
-            M=D
+        // load value into memory
+        @R14
+        A=M
+        M=D
             ",
             pointer_address, index,
-        )))
-        .collect()
+        ))
+    };
+
+    pop_into_d_register("SP").chain(instructions).collect()
 }
 
 fn push_from_constant(index: u16) -> Vec<String> {

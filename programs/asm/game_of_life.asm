@@ -88,28 +88,7 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
 @THIS
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
 A=M
 M=D
 
@@ -619,28 +598,7 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
 @LCL
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
 A=M
 M=D
 
@@ -1267,28 +1225,7 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
 @THAT
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
 A=M
 M=D
 
@@ -1382,28 +1319,7 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
 @LCL
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
 A=M
 M=D
 
@@ -1692,28 +1608,7 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
 @LCL
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
 A=M
 M=D
 
@@ -1877,28 +1772,7 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
 @LCL
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
 A=M
 M=D
 
@@ -2316,28 +2190,7 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
 @LCL
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
 A=M
 M=D
 
@@ -5091,28 +4944,7 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
 @LCL
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
 A=M
 M=D
 
@@ -5345,28 +5177,7 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
 @LCL
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
 A=M
 M=D
 
@@ -5673,28 +5484,7 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
 @THIS
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
 A=M
 M=D
 
@@ -7318,28 +7108,7 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
 @THIS
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
 A=M
 M=D
 
@@ -7775,28 +7544,7 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
 @LCL
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
 A=M
 M=D
 
@@ -8051,28 +7799,7 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
 @LCL
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
 A=M
 M=D
 
@@ -8206,28 +7933,7 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
 @LCL
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
 A=M
 M=D
 
@@ -8719,28 +8425,7 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
 @LCL
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
 A=M
 M=D
 
@@ -9066,28 +8751,7 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
 @LCL
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
 A=M
 M=D
 
@@ -9268,28 +8932,7 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
 @LCL
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
 A=M
 M=D
 
@@ -9380,28 +9023,7 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
 @THIS
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
 A=M
 M=D
 
@@ -9495,28 +9117,7 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
 @LCL
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
 A=M
 M=D
 
@@ -10129,28 +9730,7 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
 @THIS
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
 A=M
 M=D
 
@@ -10446,28 +10026,7 @@ MA=M-1
 D=M
 
 
-// stash value from D into R13
-@R13
-M=D
-
-// put value of pointer in D
 @LCL
-D=M
-
-// add index
-@0
-D=D+A
-
-// stash memory address in R14
-@R14
-M=D
-
-// get value back into D
-@R13
-D=M
-
-// load value into memory
-@R14
 A=M
 M=D
 

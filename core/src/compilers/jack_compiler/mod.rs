@@ -13,7 +13,8 @@ use super::utils::source_modules::get_source_modules;
 
 pub fn compile_file(src_path: &Path, dest_path: &Path) -> Result<(), io::Error> {
     let source_modules = get_source_modules(src_path)?;
-    fs::write(dest_path, compile_to_machine_code(source_modules.iter().collect()))
+    let machine_code = compile_to_machine_code(source_modules.iter().collect());
+    fs::write(dest_path, machine_code.join("\n"))
 }
 
 #[cfg(test)]

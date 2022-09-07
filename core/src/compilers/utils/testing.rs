@@ -23,12 +23,12 @@ pub mod test_utils {
 
         let asm = vm_compiler::codegen::generate_asm(parsed_vm_modules);
         let machine_code = assemble(asm, config::ROM_DEPTH);
-        Computer::new(generate_rom::from_string(machine_code))
+        Computer::new(generate_rom::from_string(machine_code.join("\n")))
     }
 
     pub fn computer_from_jack_code(jack_code: Vec<&SourceModule>) -> Computer {
         let machine_code = compile_to_machine_code(jack_code);
-        Computer::new(generate_rom::from_string(machine_code))
+        Computer::new(generate_rom::from_string(machine_code.join("\n")))
     }
 
     pub fn stack_pointer(computer: &Computer) -> i16 {

@@ -13,7 +13,7 @@ use super::{
         PointerSegmentVariant::{self, *},
         UnaryArithmeticCommandVariant::*,
     },
-    ParsedModule,
+    CompiledJackFile,
 };
 
 fn string_lines(source: &str) -> impl Iterator<Item = String> {
@@ -664,7 +664,7 @@ impl CodeGenerator {
     }
 }
 
-pub fn generate_asm(vm_modules: Vec<ParsedModule>) -> String {
+pub fn generate_asm(vm_modules: Vec<CompiledJackFile>) -> String {
     let mut code_generator = CodeGenerator::new();
     let mut result = Vec::new();
     for vm_module in vm_modules {

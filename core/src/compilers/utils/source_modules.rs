@@ -1,11 +1,10 @@
 use std::{
-    ffi::OsString,
     fs, io,
     path::{Path, PathBuf},
 };
 
 pub struct SourceModule {
-    pub filename: OsString,
+    pub filename: PathBuf,
     pub source: String,
 }
 
@@ -14,7 +13,7 @@ impl SourceModule {
         let source = fs::read_to_string(&path).expect("failed to read file to string");
         Self {
             source,
-            filename: path.file_name().expect("file name should not terminate in \"..\"").to_owned(),
+            filename: path.file_name().expect("file name should not terminate in \"..\"").to_owned().into(),
         }
     }
 }

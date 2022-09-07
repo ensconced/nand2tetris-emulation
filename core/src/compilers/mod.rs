@@ -29,8 +29,9 @@ pub fn compile_to_machine_code(jack_code: Vec<&SourceModule>) -> String {
             let mut sourcemap = SourceMap::new();
             let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(&source_module.source);
             // TODO - should we just use a Path for SourceModule from the start to avoid having to do this conversion?
-            let class = parse(Path::new(&source_module.filename), &tokens, &mut sourcemap);
-            generate_vm_code(class, &mut sourcemap)
+            let filename = Path::new(&source_module.filename);
+            let class = parse(filename, &tokens, &mut sourcemap);
+            generate_vm_code(filename, class, &mut sourcemap)
         })
         .enumerate()
         .map(|(idx, commands)| {

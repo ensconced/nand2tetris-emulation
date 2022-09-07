@@ -10,7 +10,7 @@ use super::{
     },
     sourcemap::SourceMap,
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
 
 #[derive(Clone, PartialEq)]
 enum SymbolKind {
@@ -28,6 +28,7 @@ struct Symbol {
 
 pub struct CodeGenerator<'a> {
     pub class_name: Option<String>,
+    filename: &'a Path,
     class_fields: HashMap<String, Symbol>,
     class_statics: HashMap<String, Symbol>,
     sourcemap: &'a mut SourceMap,
@@ -40,11 +41,12 @@ pub struct CodeGenerator<'a> {
 }
 
 impl<'a> CodeGenerator<'a> {
-    pub fn new(sourcemap: &'a mut SourceMap) -> Self {
+    pub fn new(filename: &'a Path, sourcemap: &'a mut SourceMap) -> Self {
         CodeGenerator {
             class_name: None,
             class_fields: HashMap::new(),
             class_statics: HashMap::new(),
+            filename,
             sourcemap,
             subroutine_while_count: 0,
             subroutine_if_count: 0,
@@ -58,7 +60,7 @@ impl<'a> CodeGenerator<'a> {
     fn record_vm_commands(&mut self, vm_commands: Vec<Command>, jack_node_idx: usize) {
         for vm_command in vm_commands {
             let vm_command_idx = self.vm_commands.len();
-            self.sourcemap.record_vm_command(vm_command_idx, jack_node_idx);
+            self.sourcemap.record_vm_command(self.filename, vm_command_idx, jack_node_idx);
             self.vm_commands.push(vm_command);
         }
     }
@@ -634,8 +636,8 @@ impl<'a> CodeGenerator<'a> {
     }
 }
 
-pub fn generate_vm_code(class: Class, sourcemap: &mut SourceMap) -> Vec<Command> {
-    let mut code_generator = CodeGenerator::new(sourcemap);
+pub fn generate_vm_code(filename: &Path, class: Class, sourcemap: &mut SourceMap) -> Vec<Command> {
+    let mut code_generator = CodeGenerator::new(filename, sourcemap);
     code_generator.class_name = Some(class.name.clone());
     let class_instance_size = code_generator.compile_var_declarations(&class.var_declarations);
     code_generator.compile_subroutines(&class.subroutine_declarations, class_instance_size);

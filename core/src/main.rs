@@ -99,8 +99,12 @@ fn main() {
             let source = fs::read_to_string(source_path).expect("failed to read source file");
             let mut sourcemap = SourceMap::new();
             let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(&source);
-            let class = parse(&Path::new("test"), &tokens, &mut sourcemap);
-            let vm_commands: Vec<_> = generate_vm_code(class, &mut sourcemap).into_iter().map(|cmd| cmd.to_string()).collect();
+            let filename = Path::new("test");
+            let class = parse(filename, &tokens, &mut sourcemap);
+            let vm_commands: Vec<_> = generate_vm_code(filename, class, &mut sourcemap)
+                .into_iter()
+                .map(|cmd| cmd.to_string())
+                .collect();
             let debug_output = DebugOutput {
                 tokens,
                 sourcemap,

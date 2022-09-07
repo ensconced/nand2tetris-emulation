@@ -21,31 +21,43 @@ function getElementById(id: string): HTMLElement {
   return element;
 }
 
-function immediateVMCommandIdxs(jackNodeIdx: number): number[] {
+function immediateVMCommandIdxs(
+  filename: string,
+  jackNodeIdx: number
+): number[] {
   return (
-    debugOutput.sourcemap.jack_node_idx_to_vm_command_idx[jackNodeIdx] ?? []
+    debugOutput.sourcemap.jack_node_idx_to_vm_command_idx[filename]?.[
+      jackNodeIdx
+    ] ?? []
   );
 }
 
-function allVMCommandIdxs(jackNodeIdx: number): number[] {
-  return immediateVMCommandIdxs(jackNodeIdx).concat(
-    getJackNodeByIndex(jackNodeIdx).child_node_idxs.flatMap(allVMCommandIdxs)
+function allVMCommandIdxs(filename: string, jackNodeIdx: number): number[] {
+  return immediateVMCommandIdxs(filename, jackNodeIdx).concat(
+    getJackNodeByIndex(filename, jackNodeIdx).child_node_idxs.flatMap(
+      (childNodeIdx) => allVMCommandIdxs(filename, childNodeIdx)
+    )
   );
 }
 
-function getJackNodeByIndex(index: number): NodeInfo {
-  const node = debugOutput.sourcemap.jack_nodes[index];
+function getJackNodeByIndex(filename: string, index: number): NodeInfo {
+  const node = debugOutput.sourcemap.jack_nodes[filename]?.[index];
   if (node === undefined) {
     throw new Error(`failed to get jack node at index ${index}`);
   }
   return node;
 }
 
-function findInnermostJackNode(tokenIdx: number): NodeInfo | undefined {
+function findInnermostJackNode(
+  filename: string,
+  tokenIdx: number
+): NodeInfo | undefined {
   const tokenJackNodesIdxs =
-    debugOutput.sourcemap.token_idx_to_jack_node_idxs[tokenIdx];
+    debugOutput.sourcemap.token_idx_to_jack_node_idxs[filename]?.[tokenIdx];
   if (!tokenJackNodesIdxs) return undefined;
-  const tokenJackNodes = tokenJackNodesIdxs.map(getJackNodeByIndex);
+  const tokenJackNodes = tokenJackNodesIdxs.map((jackNodeIdx) =>
+    getJackNodeByIndex(filename, jackNodeIdx)
+  );
   const smallestJackNode = _.minBy(
     tokenJackNodes,
     (jackNode) => jackNode.token_range.end - jackNode.token_range.start
@@ -69,6 +81,8 @@ function jackNodeTokens(jackNode: NodeInfo | undefined): Set<number> {
   return tokens;
 }
 
+const filename = "test";
+
 function App() {
   const [hoveredVMCommandIdx, setHoveredVMCommandIdx] = useState<number>();
   const [hoveredTokenIdx, setHoveredTokenIdx] = useState<number>();
@@ -84,14 +98,14 @@ function App() {
 
   const hoveredJackNode = useMemo<NodeInfo | undefined>(() => {
     if (hoveredTokenIdx !== undefined) {
-      return findInnermostJackNode(hoveredTokenIdx);
+      return findInnermostJackNode(filename, hoveredTokenIdx);
     } else if (hoveredVMCommandIdx !== undefined) {
       const jackNodeIdx =
-        debugOutput.sourcemap.vm_command_idx_to_jack_node_idx[
+        debugOutput.sourcemap.vm_command_idx_to_jack_node_idx[filename]?.[
           hoveredVMCommandIdx
         ];
       if (jackNodeIdx !== undefined) {
-        return getJackNodeByIndex(jackNodeIdx);
+        return getJackNodeByIndex(filename, jackNodeIdx);
       }
     }
   }, [hoveredTokenIdx, hoveredVMCommandIdx]);
@@ -103,20 +117,20 @@ function App() {
 
   const hoveredVMCommands = useMemo<Set<number>>(() => {
     return hoveredJackNode
-      ? new Set(allVMCommandIdxs(hoveredJackNode.index))
+      ? new Set(allVMCommandIdxs(filename, hoveredJackNode.index))
       : new Set();
   }, [hoveredJackNode]);
 
   const autoSelectedVMCommands = useMemo<Set<number>>(() => {
     return mouseSelectedJackNode
-      ? new Set(allVMCommandIdxs(mouseSelectedJackNode.index))
+      ? new Set(allVMCommandIdxs(filename, mouseSelectedJackNode.index))
       : new Set();
   }, [mouseSelectedJackNode]);
 
   const autoSelectedJackNodeIdx = useMemo(() => {
     return mouseSelectedVMCommandIdx === undefined
       ? undefined
-      : debugOutput.sourcemap.vm_command_idx_to_jack_node_idx[
+      : debugOutput.sourcemap.vm_command_idx_to_jack_node_idx[filename]?.[
           mouseSelectedVMCommandIdx
         ];
   }, [mouseSelectedVMCommandIdx]);
@@ -124,7 +138,7 @@ function App() {
   const autoSelectedJackNode = useMemo(() => {
     return autoSelectedJackNodeIdx === undefined
       ? undefined
-      : getJackNodeByIndex(autoSelectedJackNodeIdx);
+      : getJackNodeByIndex(filename, autoSelectedJackNodeIdx);
   }, [autoSelectedJackNodeIdx]);
 
   const autoSelectedTokens = useMemo<Set<number>>(() => {
@@ -141,7 +155,7 @@ function App() {
   const mouseSelectedVMCommandIdxs = useMemo<Set<number>>(() => {
     return autoSelectedJackNodeIdx === undefined
       ? new Set()
-      : new Set(allVMCommandIdxs(autoSelectedJackNodeIdx));
+      : new Set(allVMCommandIdxs(filename, autoSelectedJackNodeIdx));
   }, [autoSelectedJackNodeIdx]);
 
   return (
@@ -156,7 +170,7 @@ function App() {
           onSpanMouseLeave={clearHoverState}
           onSpanClick={(idx) => {
             setMouseSelectedVMCommandIdx(undefined);
-            setMouseSelectedJackNode(findInnermostJackNode(idx));
+            setMouseSelectedJackNode(findInnermostJackNode(filename, idx));
           }}
         />
         <CodePanel

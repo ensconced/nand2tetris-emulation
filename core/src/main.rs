@@ -73,7 +73,7 @@ enum Commands {
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 struct DebugOutput {
-    tokens: Vec<Token<TokenKind>>,
+    tokens: HashMap<String, Vec<Token<TokenKind>>>,
     sourcemap: SourceMap,
     vm_commands: Vec<String>,
 }

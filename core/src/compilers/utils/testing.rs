@@ -1,7 +1,6 @@
 #[cfg(test)]
 pub mod test_utils {
     use crate::compilers::compile_to_machine_code;
-    use crate::compilers::jack_compiler::sourcemap::SourceMap;
     use crate::compilers::{assembler::assemble, utils::source_modules::SourceModule, vm_compiler};
     use crate::{emulator::computer::Computer, emulator::config, emulator::generate_rom};
     use std::collections::HashMap;
@@ -28,8 +27,7 @@ pub mod test_utils {
     }
 
     pub fn computer_from_jack_code(jack_code: Vec<&SourceModule>) -> Computer {
-        let mut sourcemap = SourceMap::new();
-        let machine_code = compile_to_machine_code(&mut sourcemap, jack_code);
+        let machine_code = compile_to_machine_code(jack_code);
         Computer::new(generate_rom::from_string(machine_code.join("\n")))
     }
 

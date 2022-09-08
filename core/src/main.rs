@@ -6,11 +6,10 @@ use clap::{Parser, Subcommand};
 use compilers::{
     assembler::assemble_file,
     jack_compiler::{
-        self,
-        codegen::generate_vm_code,
+        codegen::{generate_vm_code, JackCodegenResult},
         jack_node_types::Class,
         parser::parse,
-        sourcemap::SourceMap,
+        sourcemap::JackCodegenSourceMap,
         tokenizer::{token_defs, TokenKind},
     },
     utils::tokenizer::{Token, Tokenizer},
@@ -21,8 +20,6 @@ use fonts::glyphs_class;
 use serde::Serialize;
 use std::{collections::HashMap, fs, path::Path};
 use ts_rs::TS;
-
-use crate::compilers::jack_compiler::compile_file;
 
 #[derive(Serialize, TS)]
 #[ts(export)]
@@ -41,11 +38,6 @@ struct Args {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    /// Compile jack code to machine code
-    CompileJack {
-        source_path: Option<String>,
-        dest_path: Option<String>,
-    },
     /// Compile jack code, generating JSON output including a sourcemap
     DebugCompile {
         source_path: Option<String>,
@@ -65,8 +57,6 @@ enum Commands {
     Run { file_path: Option<String> },
     /// Generate glyphs stdlib module from fonts file
     GenerateGlyphs,
-    /// Generate JSON for visualisation of jack parser output
-    JackParserViz { source_path: Option<String> },
 }
 
 #[derive(Serialize, TS)]
@@ -74,7 +64,7 @@ enum Commands {
 #[ts(export_to = "../bindings/")]
 struct DebugOutput {
     tokens: HashMap<String, Vec<Token<TokenKind>>>,
-    sourcemap: SourceMap,
+    sourcemap: JackCodegenSourceMap,
     vm_commands: Vec<String>,
 }
 
@@ -82,14 +72,6 @@ fn main() {
     let args = Args::parse();
 
     match &args.command {
-        Commands::CompileJack {
-            source_path: source_path_maybe,
-            dest_path: dest_path_maybe,
-        } => {
-            let source_path = source_path_maybe.as_ref().expect("source path is required");
-            let dest_path = dest_path_maybe.as_ref().expect("dest path is required");
-            compile_file(Path::new(source_path), Path::new(dest_path)).unwrap()
-        }
         Commands::DebugCompile {
             source_path: source_path_maybe,
             dest_path: dest_path_maybe,
@@ -97,20 +79,20 @@ fn main() {
             let source_path = source_path_maybe.as_ref().expect("source path is required");
             let dest_path = dest_path_maybe.as_ref().expect("dest path is required");
             let source = fs::read_to_string(source_path).expect("failed to read source file");
-            let mut sourcemap = SourceMap::new();
             let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(&source);
             let filename = Path::new("test");
-            let class = parse(filename, &tokens, &mut sourcemap);
-            let vm_commands: Vec<_> = generate_vm_code(filename, class, &mut sourcemap)
-                .into_iter()
-                .map(|cmd| cmd.to_string())
-                .collect();
+            let jack_compile_result = parse(filename, &tokens);
+            let JackCodegenResult {
+                commands,
+                sourcemap: codegen_sourcemap,
+            } = generate_vm_code(filename, jack_compile_result.class);
+            let vm_commands: Vec<_> = commands.into_iter().map(|cmd| cmd.to_string()).collect();
 
             let mut tokens_hashmap = HashMap::new();
             tokens_hashmap.insert(source_path.to_owned(), tokens);
             let debug_output = DebugOutput {
                 tokens: tokens_hashmap,
-                sourcemap,
+                sourcemap: codegen_sourcemap,
                 vm_commands,
             };
             let json = serde_json::to_string_pretty(&debug_output).unwrap();
@@ -141,22 +123,6 @@ fn main() {
         }
         Commands::GenerateGlyphs => {
             fs::write("./std_lib/Glyphs.jack", glyphs_class()).unwrap();
-        }
-        Commands::JackParserViz {
-            source_path: source_path_maybe,
-        } => {
-            let source_path = Path::new(source_path_maybe.as_ref().unwrap_or_else(|| panic!("source path is required")));
-            let source = fs::read_to_string(source_path).unwrap();
-            let mut sourcemap = SourceMap::new();
-            let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(&source);
-            let parser_output = jack_compiler::parser::parse(source_path, &tokens, &mut sourcemap);
-            let parser_viz_data = ParserVizData {
-                parsed_class: parser_output,
-                source,
-            };
-            let json = serde_json::to_string_pretty(&parser_viz_data).unwrap();
-            let out_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../parser_viz_data.json");
-            fs::write(out_path, json).unwrap()
         }
     }
 }

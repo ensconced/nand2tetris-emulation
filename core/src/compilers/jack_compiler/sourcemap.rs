@@ -5,33 +5,20 @@ use ts_rs::TS;
 #[derive(Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
-pub struct NodeInfo {
-    token_range: Range<usize>,
-    child_node_idxs: Vec<usize>,
-    index: usize,
-}
-
-#[derive(Serialize, TS)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
-pub struct SourceMap {
+pub struct JackParserSourceMap {
     pub token_idx_to_jack_node_idxs: HashMap<String, HashMap<usize, Vec<usize>>>,
     pub jack_nodes: HashMap<String, Vec<NodeInfo>>,
-    pub jack_node_idx_to_vm_command_idx: HashMap<String, HashMap<usize, Vec<usize>>>,
-    pub vm_command_idx_to_jack_node_idx: HashMap<String, HashMap<usize, usize>>,
 }
 
 fn stringify_filename(filename: &Path) -> String {
     filename.to_str().expect("filename is not valid utf8").to_owned()
 }
 
-impl SourceMap {
+impl JackParserSourceMap {
     pub fn new() -> Self {
         Self {
             token_idx_to_jack_node_idxs: HashMap::new(),
             jack_nodes: HashMap::new(),
-            jack_node_idx_to_vm_command_idx: HashMap::new(),
-            vm_command_idx_to_jack_node_idx: HashMap::new(),
         }
     }
 
@@ -51,6 +38,32 @@ impl SourceMap {
         }
         node_idx
     }
+}
+
+#[derive(Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "../bindings/")]
+pub struct NodeInfo {
+    token_range: Range<usize>,
+    child_node_idxs: Vec<usize>,
+    index: usize,
+}
+
+#[derive(Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "../bindings/")]
+pub struct JackCodegenSourceMap {
+    pub jack_node_idx_to_vm_command_idx: HashMap<String, HashMap<usize, Vec<usize>>>,
+    pub vm_command_idx_to_jack_node_idx: HashMap<String, HashMap<usize, usize>>,
+}
+
+impl JackCodegenSourceMap {
+    pub fn new() -> Self {
+        Self {
+            jack_node_idx_to_vm_command_idx: HashMap::new(),
+            vm_command_idx_to_jack_node_idx: HashMap::new(),
+        }
+    }
 
     pub fn record_vm_command(&mut self, filename: &Path, vm_command_idx: usize, jack_node_idx: usize) {
         let file_jack_node_idx_to_vm_command_idx = self.jack_node_idx_to_vm_command_idx.entry(stringify_filename(filename)).or_default();
@@ -60,4 +73,12 @@ impl SourceMap {
         let file_vm_command_idx_to_jack_node_idx = self.vm_command_idx_to_jack_node_idx.entry(stringify_filename(filename)).or_default();
         file_vm_command_idx_to_jack_node_idx.insert(vm_command_idx, jack_node_idx);
     }
+}
+
+#[derive(Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "../bindings/")]
+pub struct JackCompilerSourceMap {
+    parser_sourcemap: JackParserSourceMap,
+    codegen_sourcemap: JackCodegenSourceMap,
 }

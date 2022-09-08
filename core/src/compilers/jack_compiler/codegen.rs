@@ -8,7 +8,7 @@ use super::{
         ASTNode, BinaryOperator, Class, ClassVarDeclaration, ClassVarDeclarationKind, Expression, Parameter, PrimitiveTermVariant, Statement,
         SubroutineCall, SubroutineDeclaration, SubroutineKind, Type, UnaryOperator, VarDeclaration,
     },
-    sourcemap::SourceMap,
+    sourcemap::JackCodegenSourceMap,
 };
 use std::{collections::HashMap, path::Path};
 
@@ -31,7 +31,7 @@ pub struct CodeGenerator<'a> {
     filename: &'a Path,
     class_fields: HashMap<String, Symbol>,
     class_statics: HashMap<String, Symbol>,
-    sourcemap: &'a mut SourceMap,
+    sourcemap: JackCodegenSourceMap,
     subroutine_while_count: usize,
     subroutine_if_count: usize,
     subroutine_parameters: HashMap<String, Symbol>,
@@ -41,13 +41,13 @@ pub struct CodeGenerator<'a> {
 }
 
 impl<'a> CodeGenerator<'a> {
-    pub fn new(filename: &'a Path, sourcemap: &'a mut SourceMap) -> Self {
+    pub fn new(filename: &'a Path) -> Self {
         CodeGenerator {
             class_name: None,
             class_fields: HashMap::new(),
             class_statics: HashMap::new(),
             filename,
-            sourcemap,
+            sourcemap: JackCodegenSourceMap::new(),
             subroutine_while_count: 0,
             subroutine_if_count: 0,
             subroutine_parameters: HashMap::new(),
@@ -636,10 +636,18 @@ impl<'a> CodeGenerator<'a> {
     }
 }
 
-pub fn generate_vm_code(filename: &Path, class: Class, sourcemap: &mut SourceMap) -> Vec<Command> {
-    let mut code_generator = CodeGenerator::new(filename, sourcemap);
+pub struct JackCodegenResult {
+    pub commands: Vec<Command>,
+    pub sourcemap: JackCodegenSourceMap,
+}
+
+pub fn generate_vm_code(filename: &Path, class: Class) -> JackCodegenResult {
+    let mut code_generator = CodeGenerator::new(filename);
     code_generator.class_name = Some(class.name.clone());
     let class_instance_size = code_generator.compile_var_declarations(&class.var_declarations);
     code_generator.compile_subroutines(&class.subroutine_declarations, class_instance_size);
-    code_generator.vm_commands
+    JackCodegenResult {
+        commands: code_generator.vm_commands,
+        sourcemap: code_generator.sourcemap,
+    }
 }

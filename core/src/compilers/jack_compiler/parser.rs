@@ -2,7 +2,7 @@ use std::{iter, ops::Range, path::Path};
 
 use super::{
     jack_node_types::{PrimitiveTermVariant::*, *},
-    sourcemap::SourceMap,
+    sourcemap::JackParserSourceMap,
     tokenizer::{
         KeywordTokenVariant,
         OperatorVariant::{self, *},
@@ -41,7 +41,12 @@ fn infix_precedence(operator: OperatorVariant) -> Option<(u8, u8)> {
     }
 }
 
-pub fn parse(filename: &Path, tokens: &[Token<TokenKind>], sourcemap: &mut SourceMap) -> Class {
+pub struct JackParserResult {
+    pub class: Class,
+    sourcemap: JackParserSourceMap,
+}
+
+pub fn parse(filename: &Path, tokens: &[Token<TokenKind>]) -> JackParserResult {
     let tokens_without_whitespace: Vec<_> = tokens
         .iter()
         .filter(|token| {
@@ -57,18 +62,23 @@ pub fn parse(filename: &Path, tokens: &[Token<TokenKind>], sourcemap: &mut Sourc
 
     let cloned_tokens_without_whitespace: Vec<_> = tokens_without_whitespace.into_iter().cloned().collect();
 
+    let mut sourcemap = JackParserSourceMap::new();
+
     let mut parser = Parser {
         filename,
         token_iter: cloned_tokens_without_whitespace.iter().peekable(),
-        sourcemap,
+        sourcemap: &mut sourcemap,
     };
-    parser.take_class()
+
+    let class = parser.take_class();
+
+    JackParserResult { class, sourcemap }
 }
 
 struct Parser<'a> {
     filename: &'a Path,
     token_iter: PeekableTokens<'a, TokenKind>,
-    sourcemap: &'a mut SourceMap,
+    sourcemap: &'a mut JackParserSourceMap,
 }
 
 impl<'a> Parser<'a> {
@@ -775,7 +785,6 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     fn parse_expression(filename: &'static Path, source: &str) -> ASTNode<Expression> {
-        let mut sourcemap = SourceMap::new();
         let tokens: Vec<_> = Tokenizer::new(token_defs())
             .tokenize(source)
             .into_iter()
@@ -789,6 +798,7 @@ mod tests {
                 )
             })
             .collect();
+        let mut sourcemap = JackParserSourceMap::new();
         let mut parser = Parser {
             filename,
             token_iter: tokens.iter().peekable(),
@@ -800,10 +810,9 @@ mod tests {
     #[test]
     fn test_simple_class() {
         let source = "class foo {}";
-        let mut sourcemap = SourceMap::new();
         let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(source);
         assert_eq!(
-            parse(Path::new("test"), &tokens, &mut sourcemap),
+            parse(Path::new("test"), &tokens).class,
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![],
@@ -814,14 +823,13 @@ mod tests {
 
     #[test]
     fn test_class_with_var_declaration() {
-        let mut sourcemap = SourceMap::new();
         let source = "
             class foo {
               static int bar;
             }";
         let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(source);
         assert_eq!(
-            parse(Path::new("test"), &tokens, &mut sourcemap),
+            parse(Path::new("test"), &tokens).class,
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![ASTNode {
@@ -844,7 +852,6 @@ mod tests {
 
     #[test]
     fn test_class_with_multiple_var_declarations() {
-        let mut sourcemap = SourceMap::new();
         let source = "
             class foo {
               static int bar;
@@ -853,7 +860,7 @@ mod tests {
             }";
         let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(source);
         assert_eq!(
-            parse(Path::new("test"), &tokens, &mut sourcemap),
+            parse(Path::new("test"), &tokens).class,
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![
@@ -904,7 +911,6 @@ mod tests {
 
     #[test]
     fn test_class_with_subroutine_declarations() {
-        let mut sourcemap = SourceMap::new();
         let source = "
             class foo {
                 constructor boolean bar(int abc, char def, foo ghi) {
@@ -916,7 +922,7 @@ mod tests {
             }";
         let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(source);
         assert_eq!(
-            parse(Path::new("test"), &tokens, &mut sourcemap),
+            parse(Path::new("test"), &tokens).class,
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![],
@@ -1014,7 +1020,6 @@ mod tests {
 
     #[test]
     fn test_all_statement_types() {
-        let mut sourcemap = SourceMap::new();
         let source = "
             class foo {
                 constructor int blah() {
@@ -1037,7 +1042,7 @@ mod tests {
             }";
         let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(source);
         assert_eq!(
-            parse(Path::new("test"), &tokens, &mut sourcemap),
+            parse(Path::new("test"), &tokens).class,
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![],
@@ -1303,7 +1308,6 @@ mod tests {
 
     #[test]
     fn test_simple_binary_expression_within_class() {
-        let mut sourcemap = SourceMap::new();
         let source = "
             class foo {
                 method void bar () {
@@ -1313,7 +1317,7 @@ mod tests {
             ";
         let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(source);
         assert_eq!(
-            parse(Path::new("test"), &tokens, &mut sourcemap),
+            parse(Path::new("test"), &tokens).class,
             Class {
                 name: "foo".to_string(),
                 var_declarations: vec![],

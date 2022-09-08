@@ -1,4 +1,18 @@
-// use std::path::Path;
+use std::path::Path;
+
+use serde::Serialize;
+use ts_rs::TS;
+
+use self::{
+    codegen::generate_vm_code,
+    parser::parse,
+    sourcemap::JackCompilerSourceMap,
+    tokenizer::{token_defs, TokenKind},
+};
+use super::{
+    utils::tokenizer::{Token, Tokenizer},
+    vm_compiler::parser::Command,
+};
 
 pub mod codegen;
 pub mod jack_node_types;
@@ -6,16 +20,25 @@ pub mod parser;
 pub mod sourcemap;
 pub mod tokenizer;
 
-// use std::{fs, io};
+pub struct JackCompilerResult {
+    pub tokens: Vec<Token<TokenKind>>,
+    pub sourcemap: JackCompilerSourceMap,
+    pub commands: Vec<Command>,
+}
 
-// use super::compile_to_machine_code;
-// use super::utils::source_modules::get_source_modules;
-
-// pub fn compile_file(src_path: &Path, dest_path: &Path) -> Result<(), io::Error> {
-//     let source_modules = get_source_modules(src_path)?;
-//     let machine_code = compile_to_machine_code(source_modules.iter().collect());
-//     fs::write(dest_path, machine_code.join("\n"))
-// }
+pub fn compile_jack(filename: &Path, source: String) -> JackCompilerResult {
+    let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(&source);
+    let parse_result = parse(filename, &tokens);
+    let codegen_result = generate_vm_code(filename, parse_result.class);
+    JackCompilerResult {
+        tokens,
+        commands: codegen_result.commands,
+        sourcemap: JackCompilerSourceMap {
+            parser_sourcemap: parse_result.sourcemap,
+            codegen_sourcemap: codegen_result.sourcemap,
+        },
+    }
+}
 
 #[cfg(test)]
 mod tests {

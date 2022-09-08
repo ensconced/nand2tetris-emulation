@@ -79,6 +79,6 @@ impl JackCodegenSourceMap {
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub struct JackCompilerSourceMap {
-    parser_sourcemap: JackParserSourceMap,
-    codegen_sourcemap: JackCodegenSourceMap,
+    pub parser_sourcemap: JackParserSourceMap,
+    pub codegen_sourcemap: JackCodegenSourceMap,
 }

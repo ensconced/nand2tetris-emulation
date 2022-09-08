@@ -6,10 +6,9 @@ use clap::{Parser, Subcommand};
 use compilers::{
     assembler::assemble_file,
     jack_compiler::{
-        codegen::{generate_vm_code, JackCodegenResult},
+        compile_jack,
         jack_node_types::Class,
-        parser::parse,
-        sourcemap::JackCodegenSourceMap,
+        sourcemap::JackCompilerSourceMap,
         tokenizer::{token_defs, TokenKind},
     },
     utils::tokenizer::{Token, Tokenizer},
@@ -59,15 +58,6 @@ enum Commands {
     GenerateGlyphs,
 }
 
-#[derive(Serialize, TS)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
-struct DebugOutput {
-    tokens: HashMap<String, Vec<Token<TokenKind>>>,
-    sourcemap: JackCodegenSourceMap,
-    vm_commands: Vec<String>,
-}
-
 fn main() {
     let args = Args::parse();
 
@@ -81,21 +71,8 @@ fn main() {
             let source = fs::read_to_string(source_path).expect("failed to read source file");
             let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(&source);
             let filename = Path::new("test");
-            let jack_compile_result = parse(filename, &tokens);
-            let JackCodegenResult {
-                commands,
-                sourcemap: codegen_sourcemap,
-            } = generate_vm_code(filename, jack_compile_result.class);
-            let vm_commands: Vec<_> = commands.into_iter().map(|cmd| cmd.to_string()).collect();
-
-            let mut tokens_hashmap = HashMap::new();
-            tokens_hashmap.insert(source_path.to_owned(), tokens);
-            let debug_output = DebugOutput {
-                tokens: tokens_hashmap,
-                sourcemap: codegen_sourcemap,
-                vm_commands,
-            };
-            let json = serde_json::to_string_pretty(&debug_output).unwrap();
+            let jack_compiler_result = compile_jack(filename, source);
+            let json = serde_json::to_string_pretty(&jack_compiler_result).unwrap();
             fs::write(dest_path, json).unwrap();
         }
         Commands::Assemble {

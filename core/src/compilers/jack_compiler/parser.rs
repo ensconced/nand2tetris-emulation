@@ -43,7 +43,7 @@ fn infix_precedence(operator: OperatorVariant) -> Option<(u8, u8)> {
 
 pub struct JackParserResult {
     pub class: Class,
-    sourcemap: JackParserSourceMap,
+    pub sourcemap: JackParserSourceMap,
 }
 
 pub fn parse(filename: &Path, tokens: &[Token<TokenKind>]) -> JackParserResult {

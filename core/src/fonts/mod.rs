@@ -246,7 +246,7 @@ mod tests {
     #[test]
     fn test_glyph_module_compiles() {
         // just check that the output compiles
-        compile_to_machine_code(mock_from_sources(vec![&glyphs_class()]).iter().collect());
+        compile_to_machine_code(mock_from_sources(vec![&glyphs_class()]));
     }
 
     #[test]

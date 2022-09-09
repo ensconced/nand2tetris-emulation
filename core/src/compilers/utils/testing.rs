@@ -26,7 +26,7 @@ pub mod test_utils {
         Computer::new(generate_rom::from_string(machine_code.join("\n")))
     }
 
-    pub fn computer_from_jack_code(jack_code: Vec<&SourceModule>) -> Computer {
+    pub fn computer_from_jack_code(jack_code: Vec<SourceModule>) -> Computer {
         let machine_code = compile_to_machine_code(jack_code);
         Computer::new(generate_rom::from_string(machine_code.join("\n")))
     }

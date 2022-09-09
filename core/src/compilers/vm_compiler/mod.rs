@@ -2,19 +2,22 @@ pub mod codegen;
 pub mod parser;
 mod tokenizer;
 
-use std::{fs, io, path::Path};
+use std::{
+    fs, io,
+    path::{Path, PathBuf},
+};
 
 use super::utils::source_modules::{get_source_modules, SourceModule};
 use parser::{parse_into_vm_commands, Command};
 
 pub struct CompiledJackFile<'a> {
-    pub filename: &'a Path,
+    pub filename: PathBuf,
     pub commands: Box<dyn Iterator<Item = Command> + 'a>,
 }
 
 pub fn parse(source_module: &SourceModule) -> CompiledJackFile {
     CompiledJackFile {
-        filename: &source_module.filename,
+        filename: source_module.filename.to_owned(),
         commands: Box::new(parse_into_vm_commands(&source_module.source)),
     }
 }

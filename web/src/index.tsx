@@ -1,13 +1,20 @@
+import _ from "lodash";
 import "./styles/reset.css";
 import data from "../debug-output.json";
 import { JackCompilerResult } from "../../bindings/JackCompilerResult";
-import _ from "lodash";
 import { NodeInfo } from "../../bindings/NodeInfo";
 import React, { useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import CodePanel from "./code-panel";
 
+const compilerResults = data as Array<JackCompilerResult>;
+const firstCompilerResult = compilerResults[0];
+if (firstCompilerResult === undefined) {
+  throw new Error("compilerResults is empty");
+}
+
 const {
+  filename,
   sourcemap: {
     codegen_sourcemap: {
       vm_command_idx_to_jack_node_idx,
@@ -17,7 +24,7 @@ const {
   },
   tokens,
   commands,
-} = data as JackCompilerResult;
+} = firstCompilerResult;
 
 const tokensWithNewlines = tokens.map((token) => token.source);
 const vmCommandStrings = commands.map((command) => `${command}\n`);
@@ -84,8 +91,6 @@ function jackNodeTokens(jackNode: NodeInfo | undefined): Set<number> {
   }
   return tokenSet;
 }
-
-const filename = "test";
 
 function App() {
   const [hoveredVMCommandIdx, setHoveredVMCommandIdx] = useState<number>();

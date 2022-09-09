@@ -6,6 +6,7 @@ use clap::{Parser, Subcommand};
 use compilers::{
     assembler::assemble_file,
     jack_compiler::{compile_jack, jack_node_types::Class},
+    utils::source_modules::get_source_modules,
     vm_compiler,
 };
 use emulator::run::run;
@@ -62,10 +63,9 @@ fn main() {
         } => {
             let source_path = source_path_maybe.as_ref().expect("source path is required");
             let dest_path = dest_path_maybe.as_ref().expect("dest path is required");
-            let source = fs::read_to_string(source_path).expect("failed to read source file");
-            let filename = Path::new("test");
-            let jack_compiler_result = compile_jack(filename, source);
-            let json = serde_json::to_string_pretty(&jack_compiler_result).expect("failed to serialize jack compiler result");
+            let source_modules = get_source_modules(Path::new(source_path)).expect("failed to get source modules");
+            let jack_compiler_results = compile_jack(source_modules);
+            let json = serde_json::to_string_pretty(&jack_compiler_results).expect("failed to serialize jack compiler result");
             fs::write(dest_path, json).expect("failed to write result to dest path");
         }
         Commands::Assemble {

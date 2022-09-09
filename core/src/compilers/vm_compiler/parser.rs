@@ -9,7 +9,7 @@ use crate::compilers::utils::{
     tokenizer::{Token, Tokenizer},
 };
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum UnaryArithmeticCommandVariant {
     Neg,
     Not,
@@ -24,7 +24,7 @@ impl Display for UnaryArithmeticCommandVariant {
     }
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum BinaryArithmeticCommandVariant {
     Add,
     Sub,
@@ -49,7 +49,7 @@ impl Display for BinaryArithmeticCommandVariant {
     }
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum ArithmeticCommandVariant {
     Unary(UnaryArithmeticCommandVariant),
     Binary(BinaryArithmeticCommandVariant),
@@ -64,7 +64,7 @@ impl Display for ArithmeticCommandVariant {
     }
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum MemoryCommandVariant {
     Push(MemorySegmentVariant, u16),
     Pop(MemorySegmentVariant, u16),
@@ -79,7 +79,7 @@ impl Display for MemoryCommandVariant {
     }
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum PointerSegmentVariant {
     Argument,
     Local,
@@ -98,7 +98,7 @@ impl Display for PointerSegmentVariant {
     }
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum OffsetSegmentVariant {
     Pointer,
     Temp,
@@ -113,7 +113,7 @@ impl Display for OffsetSegmentVariant {
     }
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum MemorySegmentVariant {
     PointerSegment(PointerSegmentVariant),
     OffsetSegment(OffsetSegmentVariant),
@@ -132,7 +132,7 @@ impl Display for MemorySegmentVariant {
     }
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum FlowCommandVariant {
     GoTo(String),
     Label(String),
@@ -149,7 +149,7 @@ impl Display for FlowCommandVariant {
     }
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum FunctionCommandVariant {
     Define(String, u16),
     Call(String, u16),
@@ -166,7 +166,8 @@ impl Display for FunctionCommandVariant {
     }
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(Clone, Serialize, PartialEq, Eq, Debug)]
+#[serde(into = "String")]
 pub enum Command {
     Function(FunctionCommandVariant),
     Flow(FlowCommandVariant),
@@ -185,6 +186,13 @@ impl Display for Command {
     }
 }
 
+impl From<Command> for String {
+    fn from(command: Command) -> Self {
+        command.to_string()
+    }
+}
+
+use serde::Serialize;
 use ArithmeticCommandVariant::*;
 use BinaryArithmeticCommandVariant::*;
 use Command::*;

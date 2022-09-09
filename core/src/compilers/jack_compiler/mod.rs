@@ -1,6 +1,5 @@
-use std::path::Path;
-
 use serde::Serialize;
+use std::path::{Path, PathBuf};
 use ts_rs::TS;
 
 use self::{
@@ -20,9 +19,14 @@ pub mod parser;
 pub mod sourcemap;
 pub mod tokenizer;
 
+#[derive(Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "../bindings/")]
 pub struct JackCompilerResult {
+    pub filename: PathBuf,
     pub tokens: Vec<Token<TokenKind>>,
     pub sourcemap: JackCompilerSourceMap,
+    #[ts(type = "Array<string>")]
     pub commands: Vec<Command>,
 }
 
@@ -31,6 +35,7 @@ pub fn compile_jack(filename: &Path, source: String) -> JackCompilerResult {
     let parse_result = parse(filename, &tokens);
     let codegen_result = generate_vm_code(filename, parse_result.class);
     JackCompilerResult {
+        filename: filename.to_owned(),
         tokens,
         commands: codegen_result.commands,
         sourcemap: JackCompilerSourceMap {

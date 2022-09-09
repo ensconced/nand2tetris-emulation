@@ -1,14 +1,7 @@
 use self::{
     assembler::assemble,
-    jack_compiler::{
-        codegen::{generate_vm_code, JackCodegenResult},
-        parser::parse,
-        tokenizer::token_defs,
-    },
-    utils::{
-        source_modules::{get_source_modules, SourceModule},
-        tokenizer::Tokenizer,
-    },
+    jack_compiler::compile_jack,
+    utils::source_modules::{get_source_modules, SourceModule},
     vm_compiler::CompiledJackFile,
 };
 
@@ -28,12 +21,10 @@ pub fn compile_to_machine_code(jack_code: Vec<&SourceModule>) -> Vec<String> {
         .iter()
         .chain(jack_code.into_iter())
         .map(|source_module| {
-            let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(&source_module.source);
-            let jack_compile_result = parse(&source_module.filename, &tokens);
-            let JackCodegenResult { commands, .. } = generate_vm_code(&source_module.filename, jack_compile_result.class);
+            let jack_compiler_result = compile_jack(&source_module.filename, source_module.source.to_owned());
             CompiledJackFile {
                 filename: &source_module.filename,
-                commands: Box::new(commands.into_iter()),
+                commands: Box::new(jack_compiler_result.commands.into_iter()),
             }
         })
         .collect();

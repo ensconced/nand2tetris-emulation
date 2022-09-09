@@ -1,17 +1,26 @@
 import "./styles/reset.css";
 import data from "../debug-output.json";
-import { DebugOutput } from "../../bindings/DebugOutput";
+import { JackCompilerResult } from "../../bindings/JackCompilerResult";
 import _ from "lodash";
 import { NodeInfo } from "../../bindings/NodeInfo";
 import React, { useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import CodePanel from "./code-panel";
 
-const debugOutput = data as DebugOutput;
-const tokens = debugOutput.tokens.map((token) => token.source);
-const vmCommandStrings = debugOutput.vm_commands.map(
-  (command) => `${command}\n`
-);
+const {
+  sourcemap: {
+    codegen_sourcemap: {
+      vm_command_idx_to_jack_node_idx,
+      jack_node_idx_to_vm_command_idx,
+    },
+    parser_sourcemap: { jack_nodes, token_idx_to_jack_node_idxs },
+  },
+  tokens,
+  commands,
+} = data as JackCompilerResult;
+
+const tokensWithNewlines = tokens.map((token) => token.source);
+const vmCommandStrings = commands.map((command) => `${command}\n`);
 
 function getElementById(id: string): HTMLElement {
   const element = document.getElementById(id);
@@ -25,11 +34,7 @@ function immediateVMCommandIdxs(
   filename: string,
   jackNodeIdx: number
 ): number[] {
-  return (
-    debugOutput.sourcemap.jack_node_idx_to_vm_command_idx[filename]?.[
-      jackNodeIdx
-    ] ?? []
-  );
+  return jack_node_idx_to_vm_command_idx[filename]?.[jackNodeIdx] ?? [];
 }
 
 function allVMCommandIdxs(filename: string, jackNodeIdx: number): number[] {
@@ -41,7 +46,7 @@ function allVMCommandIdxs(filename: string, jackNodeIdx: number): number[] {
 }
 
 function getJackNodeByIndex(filename: string, index: number): NodeInfo {
-  const node = debugOutput.sourcemap.jack_nodes[filename]?.[index];
+  const node = jack_nodes[filename]?.[index];
   if (node === undefined) {
     throw new Error(`failed to get jack node at index ${index}`);
   }
@@ -52,8 +57,7 @@ function findInnermostJackNode(
   filename: string,
   tokenIdx: number
 ): NodeInfo | undefined {
-  const tokenJackNodesIdxs =
-    debugOutput.sourcemap.token_idx_to_jack_node_idxs[filename]?.[tokenIdx];
+  const tokenJackNodesIdxs = token_idx_to_jack_node_idxs[filename]?.[tokenIdx];
   if (!tokenJackNodesIdxs) return undefined;
   const tokenJackNodes = tokenJackNodesIdxs.map((jackNodeIdx) =>
     getJackNodeByIndex(filename, jackNodeIdx)
@@ -70,15 +74,15 @@ function findInnermostJackNode(
 
 function jackNodeTokens(jackNode: NodeInfo | undefined): Set<number> {
   if (jackNode === undefined) return new Set();
-  const tokens: Set<number> = new Set();
+  const tokenSet: Set<number> = new Set();
   for (let i = jackNode.token_range.start; i < jackNode.token_range.end; i++) {
-    const token = debugOutput.tokens[i];
+    const token = tokens[i];
     if (token === undefined) {
       throw new Error("failed to get token");
     }
-    tokens.add(token.idx);
+    tokenSet.add(token.idx);
   }
-  return tokens;
+  return tokenSet;
 }
 
 const filename = "test";
@@ -101,9 +105,7 @@ function App() {
       return findInnermostJackNode(filename, hoveredTokenIdx);
     } else if (hoveredVMCommandIdx !== undefined) {
       const jackNodeIdx =
-        debugOutput.sourcemap.vm_command_idx_to_jack_node_idx[filename]?.[
-          hoveredVMCommandIdx
-        ];
+        vm_command_idx_to_jack_node_idx[filename]?.[hoveredVMCommandIdx];
       if (jackNodeIdx !== undefined) {
         return getJackNodeByIndex(filename, jackNodeIdx);
       }
@@ -130,9 +132,7 @@ function App() {
   const autoSelectedJackNodeIdx = useMemo(() => {
     return mouseSelectedVMCommandIdx === undefined
       ? undefined
-      : debugOutput.sourcemap.vm_command_idx_to_jack_node_idx[filename]?.[
-          mouseSelectedVMCommandIdx
-        ];
+      : vm_command_idx_to_jack_node_idx[filename]?.[mouseSelectedVMCommandIdx];
   }, [mouseSelectedVMCommandIdx]);
 
   const autoSelectedJackNode = useMemo(() => {
@@ -162,7 +162,7 @@ function App() {
     <>
       <div id="main">
         <CodePanel
-          items={tokens}
+          items={tokensWithNewlines}
           hoveredItemIdxs={hoveredTokens}
           mouseSelectedItemIdxs={mouseSelectedTokenIdxs}
           autoSelectedItemIdxs={autoSelectedTokens}

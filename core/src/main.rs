@@ -5,19 +5,13 @@ mod fonts;
 use clap::{Parser, Subcommand};
 use compilers::{
     assembler::assemble_file,
-    jack_compiler::{
-        compile_jack,
-        jack_node_types::Class,
-        sourcemap::JackCompilerSourceMap,
-        tokenizer::{token_defs, TokenKind},
-    },
-    utils::tokenizer::{Token, Tokenizer},
+    jack_compiler::{compile_jack, jack_node_types::Class},
     vm_compiler,
 };
 use emulator::run::run;
 use fonts::glyphs_class;
 use serde::Serialize;
-use std::{collections::HashMap, fs, path::Path};
+use std::{fs, path::Path};
 use ts_rs::TS;
 
 #[derive(Serialize, TS)]
@@ -69,11 +63,10 @@ fn main() {
             let source_path = source_path_maybe.as_ref().expect("source path is required");
             let dest_path = dest_path_maybe.as_ref().expect("dest path is required");
             let source = fs::read_to_string(source_path).expect("failed to read source file");
-            let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(&source);
             let filename = Path::new("test");
             let jack_compiler_result = compile_jack(filename, source);
-            let json = serde_json::to_string_pretty(&jack_compiler_result).unwrap();
-            fs::write(dest_path, json).unwrap();
+            let json = serde_json::to_string_pretty(&jack_compiler_result).expect("failed to serialize jack compiler result");
+            fs::write(dest_path, json).expect("failed to write result to dest path");
         }
         Commands::Assemble {
             source_path: source_path_maybe,

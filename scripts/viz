@@ -2,6 +2,7 @@
 
 set -eu
 
+rm bindings/*
 cd core
 cargo run -- debug-compile ../std_lib/Memory.jack ../web/debug-output.json
 cargo test || true

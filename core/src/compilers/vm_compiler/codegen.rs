@@ -1,19 +1,18 @@
 use std::{iter, path::Path};
 
-use super::{
-    parser::{
-        ArithmeticCommandVariant::{self, *},
-        BinaryArithmeticCommandVariant::*,
-        Command::{self, *},
-        FlowCommandVariant,
-        FunctionCommandVariant::{self, *},
-        MemoryCommandVariant::{self, *},
-        MemorySegmentVariant::{self, *},
-        OffsetSegmentVariant,
-        PointerSegmentVariant::{self, *},
-        UnaryArithmeticCommandVariant::*,
-    },
-    CompiledJackFile,
+use crate::compilers::jack_compiler::JackCompilerResult;
+
+use super::parser::{
+    ArithmeticCommandVariant::{self, *},
+    BinaryArithmeticCommandVariant::*,
+    Command::{self, *},
+    FlowCommandVariant,
+    FunctionCommandVariant::{self, *},
+    MemoryCommandVariant::{self, *},
+    MemorySegmentVariant::{self, *},
+    OffsetSegmentVariant,
+    PointerSegmentVariant::{self, *},
+    UnaryArithmeticCommandVariant::*,
 };
 
 fn string_lines(source: &str) -> impl Iterator<Item = String> {
@@ -664,7 +663,7 @@ impl CodeGenerator {
     }
 }
 
-pub fn generate_asm(vm_modules: Vec<CompiledJackFile>) -> String {
+pub fn generate_asm(vm_modules: Vec<JackCompilerResult>) -> String {
     let mut code_generator = CodeGenerator::new();
     let mut result = Vec::new();
     for vm_module in vm_modules {

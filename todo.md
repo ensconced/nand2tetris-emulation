@@ -1,9 +1,6 @@
 ### extend sourcemap into vm compiler
 
-- refactor sourcemapping - instead of passing sourcemap around, include partial sourcemap info in return value from each compile stage (not including assembler for now), then combine at end into FullSourcemap
-- return value for each compile stage will include filename for jack compiler output
-- include stdlib in compiler explorer app
-- optimize popping into pointer segments when offset is zero?
+- add file tabs to compiler viz
 - complete process of skipping textual stages (or rather, making them optional)
   in the compiler data structure
 - abolish textual ASM - instead go directly from "parsed" vm instructions to "parsed" asm instructions

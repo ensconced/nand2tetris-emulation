@@ -1,5 +1,5 @@
 use serde::Serialize;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use ts_rs::TS;
 
 use self::{
@@ -10,7 +10,7 @@ use self::{
 };
 use super::{
     utils::{
-        source_modules::SourceModule,
+        source_modules::{get_source_modules, SourceModule},
         tokenizer::{Token, Tokenizer},
     },
     vm_compiler::parser::Command,
@@ -33,9 +33,12 @@ pub struct JackCompilerResult {
     pub commands: Vec<Command>,
 }
 
-pub fn compile_jack(jack_source_modules: Vec<SourceModule>) -> Vec<JackCompilerResult> {
-    jack_source_modules
+pub fn compile_jack(jack_code: Vec<SourceModule>) -> Vec<JackCompilerResult> {
+    let std_lib_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../std_lib");
+    let std_lib_source: Vec<_> = get_source_modules(&std_lib_dir).expect("failed to get stdlib modules");
+    std_lib_source
         .into_iter()
+        .chain(jack_code.into_iter())
         .map(|jack_source_module| {
             let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(&jack_source_module.source);
             let parse_result = parse(&jack_source_module.filename, &tokens);

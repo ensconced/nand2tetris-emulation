@@ -2,23 +2,32 @@ pub mod codegen;
 pub mod parser;
 mod tokenizer;
 
-use std::{
-    fs, io,
-    path::{Path, PathBuf},
+use std::{collections::HashMap, fs, io, path::Path};
+
+use super::{
+    jack_compiler::{
+        sourcemap::{JackCodegenSourceMap, JackCompilerSourceMap, JackParserSourceMap},
+        JackCompilerResult,
+    },
+    utils::source_modules::{get_source_modules, SourceModule},
 };
+use parser::parse_into_vm_commands;
 
-use super::utils::source_modules::{get_source_modules, SourceModule};
-use parser::{parse_into_vm_commands, Command};
-
-pub struct CompiledJackFile<'a> {
-    pub filename: PathBuf,
-    pub commands: Box<dyn Iterator<Item = Command> + 'a>,
-}
-
-pub fn parse(source_module: &SourceModule) -> CompiledJackFile {
-    CompiledJackFile {
+pub fn parse(source_module: &SourceModule) -> JackCompilerResult {
+    JackCompilerResult {
         filename: source_module.filename.to_owned(),
-        commands: Box::new(parse_into_vm_commands(&source_module.source)),
+        tokens: Vec::new(),
+        sourcemap: JackCompilerSourceMap {
+            parser_sourcemap: JackParserSourceMap {
+                token_idx_to_jack_node_idxs: HashMap::new(),
+                jack_nodes: HashMap::new(),
+            },
+            codegen_sourcemap: JackCodegenSourceMap {
+                jack_node_idx_to_vm_command_idx: HashMap::new(),
+                vm_command_idx_to_jack_node_idx: HashMap::new(),
+            },
+        },
+        commands: parse_into_vm_commands(&source_module.source).collect(),
     }
 }
 

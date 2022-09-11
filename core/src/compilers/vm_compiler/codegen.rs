@@ -87,31 +87,44 @@ fn offset_address(segment: OffsetSegmentVariant, index: u16) -> u16 {
     segment_base_address + index
 }
 
-fn push_from_d_register() -> impl Iterator<Item = String> {
-    string_lines(
-        "
-    // Push from d register
-    @SP
-    A=M
-    M=D
-    @SP
-    M=M+1
-    ",
-    )
+fn push_from_d_register() -> Vec<ASMInstruction> {
+    vec![
+        ASMInstruction::A(AValue::Symbolic("SP".to_string())),
+        ASMInstruction::C {
+            expr: "M".to_string(),
+            dest: Some("A".to_string()),
+            jump: None,
+        },
+        ASMInstruction::C {
+            expr: "D".to_string(),
+            dest: Some("M".to_string()),
+            jump: None,
+        },
+        ASMInstruction::A(AValue::Symbolic("SP".to_string())),
+        ASMInstruction::C {
+            expr: "M+1".to_string(),
+            dest: Some("M".to_string()),
+            jump: None,
+        },
+    ]
 }
 
-fn pop_into_d_register(pointer: &str) -> impl Iterator<Item = String> {
+fn pop_into_d_register(pointer: &str) -> Vec<ASMInstruction> {
     // pointer is usually going to be SP but occasionally we want to use a
     // different pointer to perform a pop-like operation
-    string_lines(&format!(
-        "
-    // Pop into d register
-    @{}
-    MA=M-1
-    D=M
-    ",
-        pointer
-    ))
+    vec![
+        ASMInstruction::A(AValue::Symbolic(pointer.to_string())),
+        ASMInstruction::C {
+            expr: "M-1".to_string(),
+            dest: Some("MA".to_string()),
+            jump: None,
+        },
+        ASMInstruction::C {
+            expr: "M".to_string(),
+            dest: Some("D".to_string()),
+            jump: None,
+        },
+    ]
 }
 
 fn push_from_offset_memory_segment(segment: OffsetSegmentVariant, index: u16) -> Vec<String> {
@@ -443,116 +456,161 @@ impl CodeGenerator {
         ]
     }
 
-    fn compile_function_call(&mut self, function_name: String, arg_count: u16) -> Vec<String> {
-        fn load_return_address_into_d(return_address_label: &str) -> impl Iterator<Item = String> {
-            string_lines(&format!(
-                "
-                // Load return address into D
-                @{}
-                D=A
-                ",
-                return_address_label
-            ))
+    fn compile_function_call(&mut self, function_name: String, arg_count: u16) -> Vec<ASMInstruction> {
+        fn load_return_address_into_d(return_address_label: &str) -> Vec<ASMInstruction> {
+            vec![
+                ASMInstruction::A(AValue::Symbolic(return_address_label.to_string())),
+                ASMInstruction::C {
+                    expr: "A".to_string(),
+                    dest: Some("D".to_string()),
+                    jump: None,
+                },
+            ]
         }
 
-        fn save_caller_pointers() -> impl Iterator<Item = String> {
-            vec!["LCL", "ARG", "THIS", "THAT"].into_iter().flat_map(|pointer| {
-                iter::once(format!("@{}", pointer))
-                    .chain(iter::once("D=M".to_string()))
+        fn save_caller_pointers() -> Vec<ASMInstruction> {
+            vec!["LCL", "ARG", "THIS", "THAT"]
+                .into_iter()
+                .flat_map(|pointer| {
+                    vec![
+                        ASMInstruction::A(AValue::Symbolic(pointer.to_string())),
+                        ASMInstruction::C {
+                            expr: "M".to_string(),
+                            dest: Some("D".to_string()),
+                            jump: None,
+                        },
+                    ]
+                    .into_iter()
                     .chain(push_from_d_register())
-            })
+                })
+                .collect()
         }
 
-        fn set_arg_pointer(arg_count: u16) -> impl Iterator<Item = String> {
+        fn set_arg_pointer(arg_count: u16) -> Vec<ASMInstruction> {
             // At this point, all the arguments have been pushed to the stack,
             // plus the return address, plus the four saved caller pointers.
             // So to find the correct position for ARG, we can count 5 +
             // arg_count steps back from the stack pointer.
             let steps_back = 5 + arg_count;
 
-            string_lines(&format!(
-                "
-                // Set arg pointer
-                @SP
-                D=M
-                @{}
-                D=D-A
-                @ARG
-                M=D
-                ",
-                steps_back
-            ))
+            vec![
+                ASMInstruction::A(AValue::Symbolic("SP".to_string())),
+                ASMInstruction::C {
+                    expr: "M".to_string(),
+                    dest: Some("D".to_string()),
+                    jump: None,
+                },
+                ASMInstruction::A(AValue::Symbolic(steps_back.to_string())),
+                ASMInstruction::C {
+                    expr: "D-A".to_string(),
+                    dest: Some("D".to_string()),
+                    jump: None,
+                },
+                ASMInstruction::A(AValue::Symbolic("ARG".to_string())),
+                ASMInstruction::C {
+                    expr: "D".to_string(),
+                    dest: Some("M".to_string()),
+                    jump: None,
+                },
+            ]
         }
 
-        fn set_lcl_pointer() -> impl Iterator<Item = String> {
-            string_lines(
-                "
-                // Set lcl pointer
-                @SP
-                D=M
-                @LCL
-                M=D
-                ",
-            )
+        fn set_lcl_pointer() -> Vec<ASMInstruction> {
+            vec![
+                ASMInstruction::A(AValue::Symbolic("SP".to_string())),
+                ASMInstruction::C {
+                    expr: "M".to_string(),
+                    dest: Some("D".to_string()),
+                    jump: None,
+                },
+                ASMInstruction::A(AValue::Symbolic("LCL".to_string())),
+                ASMInstruction::C {
+                    expr: "D".to_string(),
+                    dest: Some("M".to_string()),
+                    jump: None,
+                },
+            ]
         }
 
-        fn jump(function_name: &str, return_address_label: &str) -> impl Iterator<Item = String> {
-            string_lines(&format!(
-                "
+        fn jump(function_name: &str, return_address_label: &str) -> Vec<ASMInstruction> {
+            vec![
                 // Jump to the callee
-                @$entry_{}
-                0;JMP
-
+                ASMInstruction::A(AValue::Symbolic(format!("$entry_{}", function_name))),
+                ASMInstruction::C {
+                    expr: "0".to_string(),
+                    dest: None,
+                    jump: Some("JMP".to_string()),
+                },
                 // Label for return to caller
-                ({})
-                ",
-                function_name, return_address_label
-            ))
+                ASMInstruction::L {
+                    identifier: return_address_label.to_string(),
+                },
+            ]
         }
 
         let return_address_label = format!("$return_point_{}", self.return_address_count);
         self.return_address_count += 1;
 
-        load_return_address_into_d(&return_address_label)
-            .chain(push_from_d_register())
-            .chain(save_caller_pointers())
-            .chain(set_arg_pointer(arg_count))
-            .chain(set_lcl_pointer())
-            .chain(jump(&function_name, &return_address_label))
-            .collect()
+        vec![
+            load_return_address_into_d(&return_address_label),
+            push_from_d_register(),
+            save_caller_pointers(),
+            set_arg_pointer(arg_count),
+            set_lcl_pointer(),
+            jump(&function_name, &return_address_label),
+        ]
+        .into_iter()
+        .flatten()
+        .collect()
     }
 
-    fn compile_function_definition(&mut self, function_name: String, local_var_count: u16) -> Vec<String> {
-        fn initialize_locals(local_var_count: usize) -> impl Iterator<Item = String> {
-            iter::repeat_with(|| iter::once("D=0".to_string()).chain(push_from_d_register()))
-                .take(local_var_count)
-                .flatten()
+    fn compile_function_definition(&mut self, function_name: String, local_var_count: u16) -> Vec<ASMInstruction> {
+        fn initialize_locals(local_var_count: usize) -> Vec<ASMInstruction> {
+            iter::repeat_with(|| {
+                iter::once(ASMInstruction::C {
+                    expr: "0".to_string(),
+                    dest: Some("D".to_string()),
+                    jump: None,
+                })
+                .chain(push_from_d_register().into_iter())
+            })
+            .take(local_var_count)
+            .flatten()
+            .collect()
         }
-        let result = iter::once(format!("($entry_{})", &function_name))
-            .chain(initialize_locals(local_var_count as usize))
-            .collect();
+        let result = iter::once(ASMInstruction::L {
+            identifier: format!("$entry_{}", &function_name),
+        })
+        .chain(initialize_locals(local_var_count as usize).into_iter())
+        .collect();
 
         self.current_function = Some(function_name);
 
         result
     }
 
-    fn compile_function_return(&mut self) -> Vec<String> {
+    fn compile_function_return(&mut self) -> Vec<ASMInstruction> {
         // This is carefully designed to not require tracking of the number of
         // arguments or locals for the callee.
 
         // Use R13 as a copy of ARG. We'll use this when placing the return
         // value and restoring the stack pointer. We can't use ARG directly
         // because it's going to be overwritten when restoring the caller state.
-        fn copy_arg_to_r13() -> impl Iterator<Item = String> {
-            string_lines(
-                "
-                @ARG
-                D=M
-                @R13
-                M=D
-                ",
-            )
+        fn copy_arg_to_r13() -> Vec<ASMInstruction> {
+            vec![
+                ASMInstruction::A(AValue::Symbolic("ARG".to_string())),
+                ASMInstruction::C {
+                    expr: "M".to_string(),
+                    dest: Some("D".to_string()),
+                    jump: None,
+                },
+                ASMInstruction::A(AValue::Symbolic("R13".to_string())),
+                ASMInstruction::C {
+                    expr: "D".to_string(),
+                    dest: Some("M".to_string()),
+                    jump: None,
+                },
+            ]
         }
 
         // Use R14 as copy of LCL. We'll use this to pop all the caller state.
@@ -561,46 +619,65 @@ impl CodeGenerator {
         // through the process. (If LCL was the last thing to be restored we
         // would be able to get away with this, but since we want to carry on to
         // also pop the return address, it doesn't work.)
-        fn copy_lcl_to_r14() -> impl Iterator<Item = String> {
-            string_lines(
-                "
-                @LCL
-                D=M
-                @R14
-                M=D
-                ",
-            )
+        fn copy_lcl_to_r14() -> Vec<ASMInstruction> {
+            vec![
+                ASMInstruction::A(AValue::Symbolic("LCL".to_string())),
+                ASMInstruction::C {
+                    expr: "M".to_string(),
+                    dest: Some("D".to_string()),
+                    jump: None,
+                },
+                ASMInstruction::A(AValue::Symbolic("R14".to_string())),
+                ASMInstruction::C {
+                    expr: "D".to_string(),
+                    dest: Some("M".to_string()),
+                    jump: None,
+                },
+            ]
         }
 
-        fn restore_caller_state() -> impl Iterator<Item = String> {
-            pop_into_d_register("R14")
-                .chain(string_lines(
-                    "
-            @THAT
-            M=D
-            ",
-                ))
-                .chain(pop_into_d_register("R14"))
-                .chain(string_lines(
-                    "
-            @THIS
-            M=D
-            ",
-                ))
-                .chain(pop_into_d_register("R14"))
-                .chain(string_lines(
-                    "
-            @ARG
-            M=D
-            ",
-                ))
-                .chain(pop_into_d_register("R14"))
-                .chain(string_lines(
-                    "
-            @LCL
-            M=D
-            ",
-                ))
+        fn restore_caller_state() -> Vec<ASMInstruction> {
+            vec![
+                pop_into_d_register("R14"),
+                vec![
+                    ASMInstruction::A(AValue::Symbolic("THAT".to_string())),
+                    ASMInstruction::C {
+                        expr: "D".to_string(),
+                        dest: Some("M".to_string()),
+                        jump: None,
+                    },
+                ],
+                pop_into_d_register("R14"),
+                vec![
+                    ASMInstruction::A(AValue::Symbolic("THIS".to_string())),
+                    ASMInstruction::C {
+                        expr: "D".to_string(),
+                        dest: Some("M".to_string()),
+                        jump: None,
+                    },
+                ],
+                pop_into_d_register("R14"),
+                vec![
+                    ASMInstruction::A(AValue::Symbolic("ARG".to_string())),
+                    ASMInstruction::C {
+                        expr: "D".to_string(),
+                        dest: Some("M".to_string()),
+                        jump: None,
+                    },
+                ],
+                pop_into_d_register("R14"),
+                vec![
+                    ASMInstruction::A(AValue::Symbolic("LCL".to_string())),
+                    ASMInstruction::C {
+                        expr: "D".to_string(),
+                        dest: Some("M".to_string()),
+                        jump: None,
+                    },
+                ],
+            ]
+            .into_iter()
+            .flatten()
+            .collect()
         }
 
         fn stash_return_address_in_r14() -> impl Iterator<Item = String> {

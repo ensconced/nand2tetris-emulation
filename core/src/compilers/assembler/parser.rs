@@ -14,7 +14,7 @@ pub enum AValue {
 }
 
 #[derive(PartialEq, Eq, Debug)]
-pub enum Command {
+pub enum ASMInstruction {
     A(AValue),
     C {
         expr: String,
@@ -37,12 +37,12 @@ fn take_a_value(tokens: &mut PeekableTokens<TokenKind>) -> AValue {
     }
 }
 
-fn take_a_command(tokens: &mut PeekableTokens<TokenKind>) -> Command {
+fn take_a_command(tokens: &mut PeekableTokens<TokenKind>) -> ASMInstruction {
     tokens.next(); // pop @
-    Command::A(take_a_value(tokens))
+    ASMInstruction::A(take_a_value(tokens))
 }
 
-fn take_l_command(tokens: &mut PeekableTokens<TokenKind>) -> Command {
+fn take_l_command(tokens: &mut PeekableTokens<TokenKind>) -> ASMInstruction {
     tokens.next(); // pop (
     let token = tokens.next();
     let identifier_string = if let Some(Token {
@@ -55,7 +55,7 @@ fn take_l_command(tokens: &mut PeekableTokens<TokenKind>) -> Command {
         panic!("failed to parse l-command - expected identifier.",)
     };
     match tokens.next() {
-        Some(Token { kind: RParen, .. }) => Command::L {
+        Some(Token { kind: RParen, .. }) => ASMInstruction::L {
             identifier: identifier_string.to_string(),
         },
         Some(_) => panic!("failed to parse l-command. missing \")\".",),
@@ -146,18 +146,18 @@ fn take_expression(tokens: &mut PeekableTokens<TokenKind>) -> String {
     }
 }
 
-fn take_c_command(tokens: &mut PeekableTokens<TokenKind>) -> Command {
+fn take_c_command(tokens: &mut PeekableTokens<TokenKind>) -> ASMInstruction {
     let dest = maybe_take_destination(tokens);
     let expr = take_expression(tokens);
     maybe_take(tokens, &InlineWhitespace);
-    Command::C {
+    ASMInstruction::C {
         expr,
         dest,
         jump: maybe_take_jump(tokens),
     }
 }
 
-fn take_command(tokens: &mut PeekableTokens<TokenKind>) -> Command {
+fn take_command(tokens: &mut PeekableTokens<TokenKind>) -> ASMInstruction {
     match tokens.peek() {
         Some(Token { kind, .. }) => match kind {
             TokenKind::At => take_a_command(tokens),
@@ -168,14 +168,14 @@ fn take_command(tokens: &mut PeekableTokens<TokenKind>) -> Command {
     }
 }
 
-fn take_command_line(tokens: &mut PeekableTokens<TokenKind>) -> Command {
+fn take_command_line(tokens: &mut PeekableTokens<TokenKind>) -> ASMInstruction {
     let command = take_command(tokens);
     maybe_take(tokens, &TokenKind::InlineWhitespace);
     maybe_take(tokens, &Comment);
     command
 }
 
-pub fn parse(source: &str) -> impl Iterator<Item = Command> + '_ {
+pub fn parse(source: &str) -> impl Iterator<Item = ASMInstruction> + '_ {
     let tokenizer = Tokenizer::new(token_defs());
     let token_vec = tokenizer.tokenize(source);
     let mut tokens = token_vec.iter().peekable();
@@ -215,7 +215,7 @@ mod tests {
         let c_command = take_c_command(&mut tokens);
         assert_eq!(
             c_command,
-            Command::C {
+            ASMInstruction::C {
                 expr: "M+1".to_string(),
                 dest: Some("M".to_string()),
                 jump: Some("JGT".to_string())
@@ -227,7 +227,7 @@ mod tests {
         let c_command = take_c_command(&mut tokens);
         assert_eq!(
             c_command,
-            Command::C {
+            ASMInstruction::C {
                 expr: "A|D".to_string(),
                 dest: Some("AMD".to_string()),
                 jump: Some("JLT".to_string())
@@ -239,7 +239,7 @@ mod tests {
         let c_command = take_c_command(&mut tokens);
         assert_eq!(
             c_command,
-            Command::C {
+            ASMInstruction::C {
                 expr: "M+1".to_string(),
                 dest: None,
                 jump: None
@@ -251,7 +251,7 @@ mod tests {
         let c_command = take_c_command(&mut tokens);
         assert_eq!(
             c_command,
-            Command::C {
+            ASMInstruction::C {
                 expr: "D&M".to_string(),
                 dest: None,
                 jump: Some("JGT".to_string()),
@@ -263,7 +263,7 @@ mod tests {
         let c_command = take_c_command(&mut tokens);
         assert_eq!(
             c_command,
-            Command::C {
+            ASMInstruction::C {
                 expr: "!M".to_string(),
                 dest: None,
                 jump: Some("JGT".to_string()),
@@ -275,7 +275,7 @@ mod tests {
         let c_command = take_c_command(&mut chars);
         assert_eq!(
             c_command,
-            Command::C {
+            ASMInstruction::C {
                 expr: "-A".to_string(),
                 dest: Some("MD".to_string()),
                 jump: None,
@@ -326,12 +326,12 @@ mod tests {
         let token_vec = tokenizer.tokenize("@1234");
         let mut tokens = token_vec.iter().peekable();
         let a_command = take_a_command(&mut tokens);
-        assert_eq!(a_command, Command::A(AValue::Numeric("1234".to_string())));
+        assert_eq!(a_command, ASMInstruction::A(AValue::Numeric("1234".to_string())));
 
         let token_vec = tokenizer.tokenize("@FOOBAR");
         let mut tokens = token_vec.iter().peekable();
         let a_command = take_a_command(&mut tokens);
-        assert_eq!(a_command, Command::A(AValue::Symbolic("FOOBAR".to_string())));
+        assert_eq!(a_command, ASMInstruction::A(AValue::Symbolic("FOOBAR".to_string())));
     }
 
     #[test]
@@ -342,7 +342,7 @@ mod tests {
         let a_command = take_l_command(&mut tokens);
         assert_eq!(
             a_command,
-            Command::L {
+            ASMInstruction::L {
                 identifier: "TEST".to_string()
             }
         );
@@ -352,7 +352,7 @@ mod tests {
         let a_command = take_l_command(&mut tokens);
         assert_eq!(
             a_command,
-            Command::L {
+            ASMInstruction::L {
                 identifier: "_TEST".to_string()
             }
         );
@@ -362,7 +362,7 @@ mod tests {
         let a_command = take_l_command(&mut tokens);
         assert_eq!(
             a_command,
-            Command::L {
+            ASMInstruction::L {
                 identifier: "T:E$S.T".to_string()
             }
         );
@@ -388,11 +388,11 @@ mod tests {
 
         let line = "@1234";
         let mut result = parse(line);
-        assert_eq!(result.next(), Some(Command::A(AValue::Numeric("1234".to_string()))));
+        assert_eq!(result.next(), Some(ASMInstruction::A(AValue::Numeric("1234".to_string()))));
 
         let line = "   @1234  // here is a comment  ";
         let mut result = parse(line);
-        assert_eq!(result.next(), Some(Command::A(AValue::Numeric("1234".to_string()))));
+        assert_eq!(result.next(), Some(ASMInstruction::A(AValue::Numeric("1234".to_string()))));
     }
 
     #[test]
@@ -400,7 +400,7 @@ mod tests {
     fn test_parse_panic() {
         let line = "   @1234 blah blah blah";
         let mut result = parse(line);
-        assert_eq!(result.next(), Some(Command::A(AValue::Numeric("1234".to_string()))));
+        assert_eq!(result.next(), Some(ASMInstruction::A(AValue::Numeric("1234".to_string()))));
     }
 
     #[test]
@@ -411,20 +411,20 @@ mod tests {
             (FOOBAR)
             @FOOBAR
             ";
-        let result: Vec<Command> = parse(source).collect();
+        let result: Vec<ASMInstruction> = parse(source).collect();
         assert_eq!(
             result,
             vec![
-                Command::A(AValue::Numeric("1234".to_string())),
-                Command::C {
+                ASMInstruction::A(AValue::Numeric("1234".to_string())),
+                ASMInstruction::C {
                     expr: "M+1".to_string(),
                     dest: Some("AMD".to_string()),
                     jump: Some("JGT".to_string())
                 },
-                Command::L {
+                ASMInstruction::L {
                     identifier: "FOOBAR".to_string()
                 },
-                Command::A(AValue::Symbolic("FOOBAR".to_string())),
+                ASMInstruction::A(AValue::Symbolic("FOOBAR".to_string())),
             ]
         );
     }

@@ -1,7 +1,7 @@
 use super::first_pass::FirstPassResult;
 use super::parser::{
+    ASMInstruction::{self, *},
     AValue::*,
-    Command::{self, *},
 };
 use std::collections::HashMap;
 
@@ -130,7 +130,7 @@ fn numeric_a_command_code(num_string: &str) -> String {
 
 pub struct CodeGenerator {
     resolved_symbols: HashMap<String, i16>,
-    commands_without_labels: Vec<Command>,
+    commands_without_labels: Vec<ASMInstruction>,
     address_next_static_variable: i16,
 }
 

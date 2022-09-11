@@ -1,9 +1,8 @@
 ### extend sourcemap into vm compiler
 
+- skip textual asm stage
 - create asm sourcemap
 - viz: only allow one selected/hovered jack node - not one per file
-- complete process of skipping textual stages (or rather, making them optional)
-  in the compiler data structure
 - abolish textual ASM - instead go directly from "parsed" vm instructions to "parsed" asm instructions
 - add references from asm instructions to their owning vm instruction node
 - same again for asm -> machine code stage

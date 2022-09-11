@@ -1,6 +1,9 @@
 use std::{iter, path::Path};
 
-use crate::compilers::jack_compiler::JackCompilerResult;
+use crate::compilers::{
+    assembler::parser::{ASMInstruction, AValue},
+    jack_compiler::JackCompilerResult,
+};
 
 use super::parser::{
     ArithmeticCommandVariant::{self, *},
@@ -302,7 +305,7 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_arithmetic_command(&mut self, command: ArithmeticCommandVariant) -> Vec<String> {
+    fn compile_arithmetic_command(&mut self, command: ArithmeticCommandVariant) -> Vec<ASMInstruction> {
         match command {
             Binary(variant) => match variant {
                 Add => self.binary_operation("+"),
@@ -320,72 +323,124 @@ impl CodeGenerator {
         }
     }
 
-    fn binary_operation(&self, operation: &str) -> Vec<String> {
-        string_lines(&format!(
-            "
-            // decrement stack pointer, so it's pointing to y
-            @SP
-            M=M-1
-            // load y into D
-            A=M
-            D=M
-            // point A to x
-            A=A-1
-            M=M{}D
-            ",
-            operation
-        ))
-        .collect()
+    fn binary_operation(&self, operation: &str) -> Vec<ASMInstruction> {
+        vec![
+            ASMInstruction::A(AValue::Symbolic("SP".to_string())),
+            ASMInstruction::C {
+                expr: "M-1".to_string(),
+                dest: Some("M".to_string()),
+                jump: None,
+            },
+            ASMInstruction::C {
+                expr: "M".to_string(),
+                dest: Some("A".to_string()),
+                jump: None,
+            },
+            ASMInstruction::C {
+                expr: "M".to_string(),
+                dest: Some("D".to_string()),
+                jump: None,
+            },
+            ASMInstruction::C {
+                expr: "A-1".to_string(),
+                dest: Some("A".to_string()),
+                jump: None,
+            },
+            ASMInstruction::C {
+                expr: format!("M{}D", operation),
+                dest: Some("M".to_string()),
+                jump: None,
+            },
+        ]
     }
 
-    fn unary_operation(&self, operation: &str) -> Vec<String> {
-        string_lines(&format!(
-            "
-            @SP
-            A=M-1
-            M={}M
-            ",
-            operation
-        ))
-        .collect()
+    fn unary_operation(&self, operation: &str) -> Vec<ASMInstruction> {
+        vec![
+            ASMInstruction::A(AValue::Symbolic("SP".to_string())),
+            ASMInstruction::C {
+                expr: "M-1".to_string(),
+                dest: Some("A".to_string()),
+                jump: None,
+            },
+            ASMInstruction::C {
+                expr: format!("{}M", operation),
+                dest: Some("M".to_string()),
+                jump: None,
+            },
+        ]
     }
 
-    fn comparative_operation(&mut self, operation: &str) -> Vec<String> {
+    fn comparative_operation(&mut self, operation: &str) -> Vec<ASMInstruction> {
         let jump_label = format!("$after_set_to_false_{}", self.after_set_to_false_count);
         self.after_set_to_false_count += 1;
-
-        string_lines(&format!(
-            "
-            // decrement stack pointer, so it's pointing to y
-            @SP
-            M=M-1
-            // set A to point to x
-            A=M-1
-            // use R13 as another pointer to x
-            D=A
-            @R13
-            M=D
-            // load y into D
-            @SP
-            A=M
-            D=M
-            // load x - y into D
-            A=A-1
-            D=M-D
-            // initially set result to true (i.e. 0xffff i.e. -1)
-            M=-1
-            // then flip to false unless condition holds
-            @{jump_label}
-            D;J{operation}
-            @R13
-            A=M
-            M=0
-            ({jump_label})
-            ",
-            jump_label = jump_label,
-            operation = operation,
-        ))
-        .collect()
+        vec![
+            ASMInstruction::A(AValue::Symbolic("SP".to_string())),
+            ASMInstruction::C {
+                expr: "M-1".to_string(),
+                dest: Some("M".to_string()),
+                jump: None,
+            },
+            ASMInstruction::C {
+                expr: "M-1".to_string(),
+                dest: Some("A".to_string()),
+                jump: None,
+            },
+            ASMInstruction::C {
+                expr: "A".to_string(),
+                dest: Some("D".to_string()),
+                jump: None,
+            },
+            ASMInstruction::A(AValue::Symbolic("R13".to_string())),
+            ASMInstruction::C {
+                expr: "D".to_string(),
+                dest: Some("M".to_string()),
+                jump: None,
+            },
+            ASMInstruction::A(AValue::Symbolic("SP".to_string())),
+            ASMInstruction::C {
+                expr: "M".to_string(),
+                dest: Some("A".to_string()),
+                jump: None,
+            },
+            ASMInstruction::C {
+                expr: "M".to_string(),
+                dest: Some("D".to_string()),
+                jump: None,
+            },
+            ASMInstruction::C {
+                expr: "A-1".to_string(),
+                dest: Some("A".to_string()),
+                jump: None,
+            },
+            ASMInstruction::C {
+                expr: "M-D".to_string(),
+                dest: Some("D".to_string()),
+                jump: None,
+            },
+            ASMInstruction::C {
+                expr: "-1".to_string(),
+                dest: Some("M".to_string()),
+                jump: None,
+            },
+            ASMInstruction::A(AValue::Symbolic(jump_label)),
+            ASMInstruction::C {
+                expr: "D".to_string(),
+                dest: None,
+                jump: Some(format!("J{}", operation)),
+            },
+            ASMInstruction::A(AValue::Symbolic("R13".to_string())),
+            ASMInstruction::C {
+                expr: "M".to_string(),
+                dest: Some("A".to_string()),
+                jump: None,
+            },
+            ASMInstruction::C {
+                expr: "0".to_string(),
+                dest: Some("M".to_string()),
+                jump: None,
+            },
+            ASMInstruction::L { identifier: jump_label },
+        ]
     }
 
     fn compile_function_call(&mut self, function_name: String, arg_count: u16) -> Vec<String> {
@@ -653,7 +708,7 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_vm_command(&mut self, command: Command, filename: &Path) -> Vec<String> {
+    fn compile_vm_command(&mut self, command: Command, filename: &Path) -> Vec<ASMInstruction> {
         match command {
             Arithmetic(arithmetic_command) => self.compile_arithmetic_command(arithmetic_command),
             Memory(memory_command) => self.compile_memory_command(memory_command, filename),
@@ -663,7 +718,7 @@ impl CodeGenerator {
     }
 }
 
-pub fn generate_asm(vm_modules: Vec<JackCompilerResult>) -> String {
+pub fn generate_asm(vm_modules: Vec<JackCompilerResult>) -> Vec<ASMInstruction> {
     let mut code_generator = CodeGenerator::new();
     let mut result = Vec::new();
     for vm_module in vm_modules {
@@ -673,6 +728,5 @@ pub fn generate_asm(vm_modules: Vec<JackCompilerResult>) -> String {
             }
         }
     }
-    let v: Vec<_> = prelude().chain(result.into_iter()).collect();
-    v.join("\n")
+    prelude().chain(result.into_iter()).collect()
 }

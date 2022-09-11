@@ -7,8 +7,6 @@
 
 .code-wrapper {
   flex-basis: content;
-  height: 100%;
-  height: 100vh;
   display: flex;
   flex-direction: column;
 }
@@ -25,12 +23,10 @@ code {
   border: 1px solid #6272a4;
 }
 
-div#main {
+#root {
   display: flex;
-  flex-direction: row;
-  flex: 1;
+  flex-direction: column;
   height: 100vh;
-  min-height: 0;
 }
 
 .footer {
@@ -56,4 +52,24 @@ code > span.selected {
 
 code > span.highlighted {
   outline: 1px solid #ff79c6;
+}
+
+fieldset {
+  flex: 1;
+  border: 1px solid #6272a4;
+  font-family: monospace;
+  color: #f8f8f2;
+}
+
+fieldset label {
+  padding: 0 10px;
+}
+
+fieldset input {
+  display: none;
+}
+
+input:checked + label {
+  background-color: #f8f8f2;
+  color: #282a36;
 }

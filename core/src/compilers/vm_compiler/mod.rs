@@ -2,7 +2,7 @@ pub mod codegen;
 pub mod parser;
 mod tokenizer;
 
-use std::{collections::HashMap, fs, io, path::Path};
+use std::{fs, io, path::Path};
 
 use super::{
     jack_compiler::{
@@ -18,14 +18,8 @@ pub fn parse(source_module: &SourceModule) -> JackCompilerResult {
         filename: source_module.filename.to_owned(),
         tokens: Vec::new(),
         sourcemap: JackCompilerSourceMap {
-            parser_sourcemap: JackParserSourceMap {
-                token_idx_to_jack_node_idxs: HashMap::new(),
-                jack_nodes: HashMap::new(),
-            },
-            codegen_sourcemap: JackCodegenSourceMap {
-                jack_node_idx_to_vm_command_idx: HashMap::new(),
-                vm_command_idx_to_jack_node_idx: HashMap::new(),
-            },
+            parser_sourcemap: JackParserSourceMap::new(),
+            codegen_sourcemap: JackCodegenSourceMap::new(),
         },
         commands: parse_into_vm_commands(&source_module.source).collect(),
     }

@@ -41,8 +41,8 @@ pub fn compile_jack(jack_code: Vec<SourceModule>) -> Vec<JackCompilerResult> {
         .chain(jack_code.into_iter())
         .map(|jack_source_module| {
             let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(&jack_source_module.source);
-            let parse_result = parse(&jack_source_module.filename, &tokens);
-            let codegen_result = generate_vm_code(&jack_source_module.filename, parse_result.class);
+            let parse_result = parse(&tokens);
+            let codegen_result = generate_vm_code(parse_result.class);
             JackCompilerResult {
                 filename: jack_source_module.filename,
                 tokens,

@@ -10,7 +10,7 @@ use super::{
     },
     sourcemap::JackCodegenSourceMap,
 };
-use std::{collections::HashMap, path::Path};
+use std::collections::HashMap;
 
 #[derive(Clone, PartialEq)]
 enum SymbolKind {
@@ -26,9 +26,8 @@ struct Symbol {
     kind: SymbolKind,
 }
 
-pub struct CodeGenerator<'a> {
+pub struct CodeGenerator {
     pub class_name: Option<String>,
-    filename: &'a Path,
     class_fields: HashMap<String, Symbol>,
     class_statics: HashMap<String, Symbol>,
     sourcemap: JackCodegenSourceMap,
@@ -40,13 +39,12 @@ pub struct CodeGenerator<'a> {
     vm_commands: Vec<Command>,
 }
 
-impl<'a> CodeGenerator<'a> {
-    pub fn new(filename: &'a Path) -> Self {
+impl CodeGenerator {
+    pub fn new() -> Self {
         CodeGenerator {
             class_name: None,
             class_fields: HashMap::new(),
             class_statics: HashMap::new(),
-            filename,
             sourcemap: JackCodegenSourceMap::new(),
             subroutine_while_count: 0,
             subroutine_if_count: 0,
@@ -60,7 +58,7 @@ impl<'a> CodeGenerator<'a> {
     fn record_vm_commands(&mut self, vm_commands: Vec<Command>, jack_node_idx: usize) {
         for vm_command in vm_commands {
             let vm_command_idx = self.vm_commands.len();
-            self.sourcemap.record_vm_command(self.filename, vm_command_idx, jack_node_idx);
+            self.sourcemap.record_vm_command(vm_command_idx, jack_node_idx);
             self.vm_commands.push(vm_command);
         }
     }
@@ -506,7 +504,7 @@ impl<'a> CodeGenerator<'a> {
 
     fn compile_statement(&mut self, statement: &ASTNode<Statement>) {
         match &*statement.node {
-            Statement::Do(subroutine_call) => self.compile_do_statement(&subroutine_call),
+            Statement::Do(subroutine_call) => self.compile_do_statement(subroutine_call),
             Statement::Let {
                 var_name,
                 array_index,
@@ -641,8 +639,8 @@ pub struct JackCodegenResult {
     pub sourcemap: JackCodegenSourceMap,
 }
 
-pub fn generate_vm_code(filename: &Path, class: Class) -> JackCodegenResult {
-    let mut code_generator = CodeGenerator::new(filename);
+pub fn generate_vm_code(class: Class) -> JackCodegenResult {
+    let mut code_generator = CodeGenerator::new();
     code_generator.class_name = Some(class.name.clone());
     let class_instance_size = code_generator.compile_var_declarations(&class.var_declarations);
     code_generator.compile_subroutines(&class.subroutine_declarations, class_instance_size);

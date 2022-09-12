@@ -21,7 +21,7 @@ pub mod test_utils {
 
         let parsed_vm_modules: Vec<_> = source_modules.iter().map(vm_compiler::parse).collect();
 
-        let asm = vm_compiler::codegen::generate_asm(parsed_vm_modules);
+        let asm = vm_compiler::codegen::generate_asm(parsed_vm_modules).instructions;
         let machine_code = assemble(asm, config::ROM_DEPTH);
         Computer::new(generate_rom::from_string(machine_code.join("\n")))
     }

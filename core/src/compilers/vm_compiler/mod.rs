@@ -1,8 +1,9 @@
 pub mod codegen;
 pub mod parser;
+mod sourcemap;
 mod tokenizer;
 
-use std::{fs, io, path::Path};
+use std::{io, path::Path};
 
 use super::{
     jack_compiler::{

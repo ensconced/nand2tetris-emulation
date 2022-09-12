@@ -1,21 +1,27 @@
-use std::{iter, path::Path};
+use std::{
+    iter,
+    path::{Path, PathBuf},
+};
 
 use crate::compilers::{
     assembler::parser::{ASMInstruction, AValue},
     jack_compiler::JackCompilerResult,
 };
 
-use super::parser::{
-    ArithmeticCommandVariant::{self, *},
-    BinaryArithmeticCommandVariant::*,
-    Command::{self, *},
-    FlowCommandVariant,
-    FunctionCommandVariant::{self, *},
-    MemoryCommandVariant::{self, *},
-    MemorySegmentVariant::{self, *},
-    OffsetSegmentVariant,
-    PointerSegmentVariant::{self, *},
-    UnaryArithmeticCommandVariant::*,
+use super::{
+    parser::{
+        ArithmeticCommandVariant::{self, *},
+        BinaryArithmeticCommandVariant::*,
+        Command::{self, *},
+        FlowCommandVariant,
+        FunctionCommandVariant::{self, *},
+        MemoryCommandVariant::{self, *},
+        MemorySegmentVariant::{self, *},
+        OffsetSegmentVariant,
+        PointerSegmentVariant::{self, *},
+        UnaryArithmeticCommandVariant::*,
+    },
+    sourcemap::SourceMap,
 };
 
 fn prelude() -> Vec<ASMInstruction> {
@@ -942,15 +948,28 @@ impl CodeGenerator {
     }
 }
 
-pub fn generate_asm(vm_modules: Vec<JackCompilerResult>) -> Vec<ASMInstruction> {
+pub struct VMCompilerResult {
+    pub sourcemap: SourceMap,
+    pub instructions: Vec<ASMInstruction>,
+}
+
+pub struct VMCompilerInput {
+    pub commands: Vec<Command>,
+    pub filename: PathBuf,
+}
+
+pub fn generate_asm(inputs: Vec<VMCompilerInput>) -> VMCompilerResult {
+    let mut sourcemap = SourceMap::new();
     let mut code_generator = CodeGenerator::new();
     let mut result = Vec::new();
-    for vm_module in vm_modules {
-        for command in vm_module.commands {
-            for asm_instruction in code_generator.compile_vm_command(command, &vm_module.filename) {
+    for input in inputs {
+        for (vm_command_idx, command) in input.commands.into_iter().enumerate() {
+            for asm_instruction in code_generator.compile_vm_command(command, &input.filename) {
                 result.push(asm_instruction);
+                sourcemap.record_asm_instruction(&input.filename, vm_command_idx, result.len());
             }
         }
     }
-    vec![prelude(), result].into_iter().flatten().collect()
+    let instructions = vec![prelude(), result].into_iter().flatten().collect();
+    VMCompilerResult { sourcemap, instructions }
 }

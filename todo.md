@@ -1,7 +1,6 @@
 ### extend sourcemap into vm compiler
 
-- skip textual asm stage
-- create asm sourcemap
+- combine asm compile result with jack compile result into single big overall compileresult struct
 - viz: only allow one selected/hovered jack node - not one per file
 - abolish textual ASM - instead go directly from "parsed" vm instructions to "parsed" asm instructions
 - add references from asm instructions to their owning vm instruction node

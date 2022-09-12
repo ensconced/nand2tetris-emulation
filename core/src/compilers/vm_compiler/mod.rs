@@ -28,7 +28,8 @@ pub fn parse(source_module: &SourceModule) -> JackCompilerResult {
 pub fn compile_files(src_path: &Path, dest_path: &Path) -> Result<(), io::Error> {
     let source_modules = get_source_modules(src_path)?;
     let asm = codegen::generate_asm(source_modules.iter().map(parse).collect());
-    fs::write(dest_path, asm.join("\n"))
+    todo!() // need to implement Display for ASMInstruction
+            // fs::write(dest_path, asm.join("\n"))
 }
 
 #[cfg(test)]

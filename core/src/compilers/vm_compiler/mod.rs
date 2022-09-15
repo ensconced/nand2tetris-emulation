@@ -5,24 +5,15 @@ mod tokenizer;
 
 use std::{io, path::Path};
 
-use super::{
-    jack_compiler::{
-        sourcemap::{JackCodegenSourceMap, JackCompilerSourceMap, JackParserSourceMap},
-        JackCompilerResult,
-    },
-    utils::source_modules::{get_source_modules, SourceModule},
-};
+use self::codegen::VMCompilerInput;
+
+use super::utils::source_modules::{get_source_modules, SourceModule};
 use parser::parse_into_vm_commands;
 
-pub fn parse(source_module: &SourceModule) -> JackCompilerResult {
-    JackCompilerResult {
-        filename: source_module.filename.to_owned(),
-        tokens: Vec::new(),
-        sourcemap: JackCompilerSourceMap {
-            parser_sourcemap: JackParserSourceMap::new(),
-            codegen_sourcemap: JackCodegenSourceMap::new(),
-        },
+pub fn parse(source_module: &SourceModule) -> VMCompilerInput {
+    VMCompilerInput {
         commands: parse_into_vm_commands(&source_module.source).collect(),
+        filename: source_module.filename.to_owned(),
     }
 }
 

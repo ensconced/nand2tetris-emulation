@@ -79,10 +79,13 @@ fn main() {
                     } = jack_compiler_result;
 
                     (
-                        VMCompilerInput { commands, filename },
-                        JackCompilerResult {
-                            filename: filename.clone(),
+                        VMCompilerInput {
                             commands: commands.clone(),
+                            filename: filename.clone(),
+                        },
+                        JackCompilerResult {
+                            filename,
+                            commands,
                             tokens,
                             sourcemap,
                         },

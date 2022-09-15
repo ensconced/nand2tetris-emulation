@@ -43,7 +43,7 @@ pub struct NodeInfo {
     index: usize,
 }
 
-#[derive(Serialize, TS)]
+#[derive(Default, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub struct JackCodegenSourceMap {
@@ -52,13 +52,6 @@ pub struct JackCodegenSourceMap {
 }
 
 impl JackCodegenSourceMap {
-    pub fn new() -> Self {
-        Self {
-            jack_node_idx_to_vm_command_idx: HashMap::new(),
-            vm_command_idx_to_jack_node_idx: HashMap::new(),
-        }
-    }
-
     pub fn record_vm_command(&mut self, vm_command_idx: usize, jack_node_idx: usize) {
         let jack_node_vm_command_idxs = self.jack_node_idx_to_vm_command_idx.entry(jack_node_idx).or_default();
         jack_node_vm_command_idxs.push(vm_command_idx);

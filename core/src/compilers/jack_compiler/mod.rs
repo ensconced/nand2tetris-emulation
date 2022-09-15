@@ -1,5 +1,8 @@
 use serde::Serialize;
-use std::path::{Path, PathBuf};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
 use ts_rs::TS;
 
 use self::{
@@ -13,7 +16,7 @@ use super::{
         source_modules::{get_source_modules, SourceModule},
         tokenizer::{Token, Tokenizer},
     },
-    vm_compiler::parser::Command,
+    vm_compiler::codegen::VMCompilerInput,
 };
 
 pub mod codegen;
@@ -22,38 +25,39 @@ pub mod parser;
 pub mod sourcemap;
 pub mod tokenizer;
 
-#[derive(Serialize, TS)]
+#[derive(Default, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "../bindings/")]
 pub struct JackCompilerResult {
-    pub filename: PathBuf,
-    pub tokens: Vec<Token<TokenKind>>,
-    pub sourcemap: JackCompilerSourceMap,
-    #[ts(type = "Array<string>")]
-    pub commands: Vec<Command>,
+    pub sourcemaps: HashMap<PathBuf, JackCompilerSourceMap>,
+    pub tokens: HashMap<PathBuf, Vec<Token<TokenKind>>>,
+    pub vm_compiler_inputs: Vec<VMCompilerInput>,
 }
 
-pub fn compile_jack(jack_code: Vec<SourceModule>) -> Vec<JackCompilerResult> {
+pub fn compile_jack(jack_code: Vec<SourceModule>) -> JackCompilerResult {
     let std_lib_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../std_lib");
     let std_lib_source: Vec<_> = get_source_modules(&std_lib_dir).expect("failed to get stdlib modules");
-    std_lib_source
-        .into_iter()
-        .chain(jack_code.into_iter())
-        .map(|jack_source_module| {
-            let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(&jack_source_module.source);
-            let parse_result = parse(&tokens);
-            let codegen_result = generate_vm_code(parse_result.class);
-            JackCompilerResult {
-                filename: jack_source_module.filename,
-                tokens,
-                commands: codegen_result.commands,
-                sourcemap: JackCompilerSourceMap {
-                    parser_sourcemap: parse_result.sourcemap,
-                    codegen_sourcemap: codegen_result.sourcemap,
-                },
-            }
-        })
-        .collect()
+
+    let mut result = JackCompilerResult::default();
+
+    let all_source_modules = std_lib_source.into_iter().chain(jack_code.into_iter());
+    for jack_source_module in all_source_modules {
+        let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(&jack_source_module.source);
+        let parse_result = parse(&tokens);
+        let codegen_result = generate_vm_code(parse_result.class);
+        let sourcemap = JackCompilerSourceMap {
+            parser_sourcemap: parse_result.sourcemap,
+            codegen_sourcemap: codegen_result.sourcemap,
+        };
+
+        result.sourcemaps.insert(jack_source_module.filename.clone(), sourcemap);
+        result.tokens.insert(jack_source_module.filename.clone(), tokens);
+        result.vm_compiler_inputs.push(VMCompilerInput {
+            commands: codegen_result.commands,
+            filename: jack_source_module.filename,
+        });
+    }
+    result
 }
 
 #[cfg(test)]

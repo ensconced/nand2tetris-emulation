@@ -3,10 +3,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::compilers::{
-    assembler::parser::{ASMInstruction, AValue},
-    jack_compiler::JackCompilerResult,
-};
+use serde::Serialize;
+use ts_rs::TS;
+
+use crate::compilers::assembler::parser::{ASMInstruction, AValue};
 
 use super::{
     parser::{
@@ -116,7 +116,7 @@ fn prelude() -> Vec<ASMInstruction> {
     ]
 }
 
-fn offset_address(segment: OffsetSegmentVariant, index: u16) -> u16 {
+fn offset_address(segment: &OffsetSegmentVariant, index: u16) -> u16 {
     let (segment_base_address, segment_top_address): (u16, u16) = match segment {
         OffsetSegmentVariant::Pointer => (3, 4),
         OffsetSegmentVariant::Temp => (5, 12),
@@ -168,7 +168,7 @@ fn pop_into_d_register(pointer: &str) -> Vec<ASMInstruction> {
     ]
 }
 
-fn push_from_offset_memory_segment(segment: OffsetSegmentVariant, index: u16) -> Vec<ASMInstruction> {
+fn push_from_offset_memory_segment(segment: &OffsetSegmentVariant, index: u16) -> Vec<ASMInstruction> {
     vec![
         vec![
             ASMInstruction::A(AValue::Numeric(offset_address(segment, index).to_string())),
@@ -185,7 +185,7 @@ fn push_from_offset_memory_segment(segment: OffsetSegmentVariant, index: u16) ->
     .collect()
 }
 
-fn pop_into_offset_memory_segment(segment: OffsetSegmentVariant, index: u16) -> Vec<ASMInstruction> {
+fn pop_into_offset_memory_segment(segment: &OffsetSegmentVariant, index: u16) -> Vec<ASMInstruction> {
     vec![
         pop_into_d_register("SP"),
         vec![
@@ -202,7 +202,7 @@ fn pop_into_offset_memory_segment(segment: OffsetSegmentVariant, index: u16) -> 
     .collect()
 }
 
-fn push_from_pointer_memory_segment(segment: PointerSegmentVariant, index: u16) -> Vec<ASMInstruction> {
+fn push_from_pointer_memory_segment(segment: &PointerSegmentVariant, index: u16) -> Vec<ASMInstruction> {
     let pointer_address = match segment {
         Argument => "ARG",
         Local => "LCL",
@@ -236,7 +236,7 @@ fn push_from_pointer_memory_segment(segment: PointerSegmentVariant, index: u16) 
     .collect()
 }
 
-fn pop_into_pointer_memory_segment(segment: PointerSegmentVariant, index: u16) -> Vec<ASMInstruction> {
+fn pop_into_pointer_memory_segment(segment: &PointerSegmentVariant, index: u16) -> Vec<ASMInstruction> {
     let pointer_address = match segment {
         Argument => "ARG",
         Local => "LCL",
@@ -384,7 +384,7 @@ impl CodeGenerator {
         .collect()
     }
 
-    fn push(&self, segment: MemorySegmentVariant, index: u16, filename: &Path) -> Vec<ASMInstruction> {
+    fn push(&self, segment: &MemorySegmentVariant, index: u16, filename: &Path) -> Vec<ASMInstruction> {
         match segment {
             OffsetSegment(offset_segment) => push_from_offset_memory_segment(offset_segment, index),
             PointerSegment(pointer_segment) => push_from_pointer_memory_segment(pointer_segment, index),
@@ -393,7 +393,7 @@ impl CodeGenerator {
         }
     }
 
-    fn pop(&self, segment: MemorySegmentVariant, index: u16, filename: &Path) -> Vec<ASMInstruction> {
+    fn pop(&self, segment: &MemorySegmentVariant, index: u16, filename: &Path) -> Vec<ASMInstruction> {
         match segment {
             OffsetSegment(offset_segment) => pop_into_offset_memory_segment(offset_segment, index),
             PointerSegment(pointer_segment) => pop_into_pointer_memory_segment(pointer_segment, index),
@@ -414,14 +414,14 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_memory_command(&self, command: MemoryCommandVariant, filename: &Path) -> Vec<ASMInstruction> {
+    fn compile_memory_command(&self, command: &MemoryCommandVariant, filename: &Path) -> Vec<ASMInstruction> {
         match command {
-            Push(segment, index) => self.push(segment, index, filename),
-            Pop(segment, index) => self.pop(segment, index, filename),
+            Push(segment, index) => self.push(segment, *index, filename),
+            Pop(segment, index) => self.pop(segment, *index, filename),
         }
     }
 
-    fn compile_arithmetic_command(&mut self, command: ArithmeticCommandVariant) -> Vec<ASMInstruction> {
+    fn compile_arithmetic_command(&mut self, command: &ArithmeticCommandVariant) -> Vec<ASMInstruction> {
         match command {
             Binary(variant) => match variant {
                 Add => self.binary_operation("+"),
@@ -566,7 +566,7 @@ impl CodeGenerator {
         ]
     }
 
-    fn compile_function_call(&mut self, function_name: String, arg_count: u16) -> Vec<ASMInstruction> {
+    fn compile_function_call(&mut self, function_name: &str, arg_count: u16) -> Vec<ASMInstruction> {
         fn load_return_address_into_d(return_address_label: &str) -> Vec<ASMInstruction> {
             vec![
                 ASMInstruction::A(AValue::Symbolic(return_address_label.to_string())),
@@ -667,14 +667,14 @@ impl CodeGenerator {
             save_caller_pointers(),
             set_arg_pointer(arg_count),
             set_lcl_pointer(),
-            jump(&function_name, &return_address_label),
+            jump(function_name, &return_address_label),
         ]
         .into_iter()
         .flatten()
         .collect()
     }
 
-    fn compile_function_definition(&mut self, function_name: String, local_var_count: u16) -> Vec<ASMInstruction> {
+    fn compile_function_definition(&mut self, function_name: &str, local_var_count: u16) -> Vec<ASMInstruction> {
         fn initialize_locals(local_var_count: usize) -> Vec<ASMInstruction> {
             iter::repeat_with(|| {
                 iter::once(ASMInstruction::C {
@@ -694,7 +694,7 @@ impl CodeGenerator {
         .chain(initialize_locals(local_var_count as usize))
         .collect();
 
-        self.current_function = Some(function_name);
+        self.current_function = Some(function_name.to_string());
 
         result
     }
@@ -876,15 +876,15 @@ impl CodeGenerator {
         .collect()
     }
 
-    fn compile_function_command(&mut self, function_command: FunctionCommandVariant) -> Vec<ASMInstruction> {
+    fn compile_function_command(&mut self, function_command: &FunctionCommandVariant) -> Vec<ASMInstruction> {
         match function_command {
-            Call(function_name, arg_count) => self.compile_function_call(function_name, arg_count),
-            Define(function_name, local_var_count) => self.compile_function_definition(function_name, local_var_count),
+            Call(function_name, arg_count) => self.compile_function_call(function_name, *arg_count),
+            Define(function_name, local_var_count) => self.compile_function_definition(function_name, *local_var_count),
             ReturnFrom => self.compile_function_return(),
         }
     }
 
-    fn compile_goto(&self, label: String) -> Vec<ASMInstruction> {
+    fn compile_goto(&self, label: &str) -> Vec<ASMInstruction> {
         if let Some(current_function) = &self.current_function {
             vec![
                 ASMInstruction::A(AValue::Symbolic(format!("{}${}", current_function, label))),
@@ -899,7 +899,7 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_label(&self, label: String) -> Vec<ASMInstruction> {
+    fn compile_label(&self, label: &str) -> Vec<ASMInstruction> {
         if let Some(current_function) = &self.current_function {
             vec![ASMInstruction::L {
                 identifier: format!("{}${}", current_function, label),
@@ -909,7 +909,7 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_ifgoto(&self, label: String) -> Vec<ASMInstruction> {
+    fn compile_ifgoto(&self, label: &str) -> Vec<ASMInstruction> {
         if let Some(current_function) = &self.current_function {
             vec![
                 pop_into_d_register("SP"),
@@ -930,7 +930,7 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_flow_command(&mut self, flow_command: FlowCommandVariant) -> Vec<ASMInstruction> {
+    fn compile_flow_command(&mut self, flow_command: &FlowCommandVariant) -> Vec<ASMInstruction> {
         match flow_command {
             FlowCommandVariant::GoTo(label) => self.compile_goto(label),
             FlowCommandVariant::IfGoTo(label) => self.compile_ifgoto(label),
@@ -938,7 +938,7 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_vm_command(&mut self, command: Command, filename: &Path) -> Vec<ASMInstruction> {
+    fn compile_vm_command(&mut self, command: &Command, filename: &Path) -> Vec<ASMInstruction> {
         match command {
             Arithmetic(arithmetic_command) => self.compile_arithmetic_command(arithmetic_command),
             Memory(memory_command) => self.compile_memory_command(memory_command, filename),
@@ -948,22 +948,30 @@ impl CodeGenerator {
     }
 }
 
+#[derive(Default, Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "../bindings/")]
 pub struct VMCompilerResult {
     pub sourcemap: SourceMap,
+    #[ts(type = "Array<string>")]
     pub instructions: Vec<ASMInstruction>,
 }
 
+#[derive(Serialize, TS, Debug, PartialEq, Eq)]
+#[ts(export)]
+#[ts(export_to = "../bindings/")]
 pub struct VMCompilerInput {
-    pub commands: Vec<Command>,
     pub filename: PathBuf,
+    #[ts(type = "Array<string>")]
+    pub commands: Vec<Command>,
 }
 
-pub fn generate_asm(inputs: Vec<VMCompilerInput>) -> VMCompilerResult {
+pub fn generate_asm(inputs: &[VMCompilerInput]) -> VMCompilerResult {
     let mut sourcemap = SourceMap::new();
     let mut code_generator = CodeGenerator::new();
     let mut result = Vec::new();
     for input in inputs {
-        for (vm_command_idx, command) in input.commands.into_iter().enumerate() {
+        for (vm_command_idx, command) in input.commands.iter().enumerate() {
             for asm_instruction in code_generator.compile_vm_command(command, &input.filename) {
                 result.push(asm_instruction);
                 sourcemap.record_asm_instruction(&input.filename, vm_command_idx, result.len());

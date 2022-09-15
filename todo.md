@@ -1,9 +1,7 @@
 ### extend sourcemap into vm compiler
 
-- combine asm compile result with jack compile result into single big overall compileresult struct
+- get viz working again with new format, just for jack compiler stage
 - viz: only allow one selected/hovered jack node - not one per file
-- abolish textual ASM - instead go directly from "parsed" vm instructions to "parsed" asm instructions
-- add references from asm instructions to their owning vm instruction node
 - same again for asm -> machine code stage
 - restore Glyphs.jack.todo!!
 

@@ -19,7 +19,8 @@ pub fn parse(source_module: &SourceModule) -> VMCompilerInput {
 
 pub fn compile_files(src_path: &Path, dest_path: &Path) -> Result<(), io::Error> {
     let source_modules = get_source_modules(src_path)?;
-    let asm = codegen::generate_asm(source_modules.iter().map(parse).collect());
+    let vm_compiler_inputs: Vec<_> = source_modules.iter().map(parse).collect();
+    let asm = codegen::generate_asm(&vm_compiler_inputs);
     todo!() // need to implement Display for ASMInstruction
             // fs::write(dest_path, asm.join("\n"))
 }

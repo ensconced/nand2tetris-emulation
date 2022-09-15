@@ -18,6 +18,7 @@ impl SourceModule {
     }
 }
 
+// TODO - move this into test module
 pub fn mock_from_sources(sources: Vec<&str>) -> Vec<SourceModule> {
     sources
         .into_iter()

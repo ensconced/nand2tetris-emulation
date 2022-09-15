@@ -1,3 +1,5 @@
+use serde::Serialize;
+
 use super::tokenizer::{
     token_defs,
     TokenKind::{self, *},
@@ -7,13 +9,14 @@ use crate::compilers::utils::{
     tokenizer::{Token, Tokenizer},
 };
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum AValue {
     Numeric(String),
     Symbolic(String),
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(into = "String")]
 pub enum ASMInstruction {
     A(AValue),
     C {
@@ -24,6 +27,13 @@ pub enum ASMInstruction {
     L {
         identifier: String,
     },
+}
+
+impl From<ASMInstruction> for String {
+    fn from(command: ASMInstruction) -> Self {
+        todo!()
+        // command.to_string()
+    }
 }
 
 fn take_a_value(tokens: &mut PeekableTokens<TokenKind>) -> AValue {

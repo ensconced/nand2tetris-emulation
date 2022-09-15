@@ -5,12 +5,10 @@ mod fonts;
 use clap::{Parser, Subcommand};
 use compilers::{
     assembler::assemble_file,
-    jack_compiler::{compile_jack, jack_node_types::Class, JackCompilerResult},
+    jack_compiler::{compile_jack, jack_node_types::Class},
     utils::source_modules::get_source_modules,
-    vm_compiler::{
-        self,
-        codegen::{generate_asm, VMCompilerInput},
-    },
+    vm_compiler::{self, codegen::generate_asm},
+    CompilerResult,
 };
 use emulator::run::run;
 use fonts::glyphs_class;
@@ -67,33 +65,14 @@ fn main() {
             let source_path = source_path_maybe.as_ref().expect("source path is required");
             let dest_path = dest_path_maybe.as_ref().expect("dest path is required");
             let source_modules = get_source_modules(Path::new(source_path)).expect("failed to get source modules");
-            let jack_compiler_results = compile_jack(source_modules);
-            let (vm_compiler_inputs, jack_compiler_results): (Vec<_>, Vec<_>) = jack_compiler_results
-                .into_iter()
-                .map(|jack_compiler_result| {
-                    let JackCompilerResult {
-                        commands,
-                        filename,
-                        tokens,
-                        sourcemap,
-                    } = jack_compiler_result;
 
-                    (
-                        VMCompilerInput {
-                            commands: commands.clone(),
-                            filename: filename.clone(),
-                        },
-                        JackCompilerResult {
-                            filename,
-                            commands,
-                            tokens,
-                            sourcemap,
-                        },
-                    )
-                })
-                .unzip();
-            let vm_compiler_result = generate_asm(vm_compiler_inputs);
-            let json = serde_json::to_string_pretty(&jack_compiler_results).expect("failed to serialize jack compiler result");
+            let jack_compiler_result = compile_jack(source_modules);
+            let vm_compiler_result = generate_asm(&jack_compiler_result.vm_compiler_inputs);
+            let compiler_result = CompilerResult {
+                jack_compiler_result,
+                vm_compiler_result,
+            };
+            let json = serde_json::to_string_pretty(&compiler_result).expect("failed to serialize jack compiler result");
             fs::write(dest_path, json).expect("failed to write result to dest path");
         }
         Commands::Assemble {

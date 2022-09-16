@@ -1,6 +1,5 @@
 ### extend sourcemap into vm compiler
 
-- get viz working again with new format, just for jack compiler stage
 - viz: only allow one selected/hovered jack node - not one per file
 - same again for asm -> machine code stage
 - restore Glyphs.jack.todo!!

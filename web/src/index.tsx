@@ -1,13 +1,23 @@
 import _ from "lodash";
 import "./styles/reset.css";
 import data from "../debug-output.json";
-import { JackCompilerResult } from "../../bindings/JackCompilerResult";
 import { NodeInfo } from "../../bindings/NodeInfo";
+import { CompilerResult } from "../../bindings/CompilerResult";
 import React, { useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import CodePanel from "./code-panel";
 
-const compilerResults = data as unknown as JackCompilerResult[];
+const compilerResult = data as CompilerResult;
+const {
+  jack_compiler_result: {
+    sourcemaps: jackCompilerSourcemaps,
+    tokens: tokensByFilename,
+    vm_compiler_inputs: vmCompilerInputs,
+  },
+  vm_compiler_result: { sourcemap: vmCompilerSourcemap, instructions },
+} = compilerResult;
+
+const filenames = Object.keys(tokensByFilename);
 
 function getElementById(id: string): HTMLElement {
   const element = document.getElementById(id);
@@ -18,11 +28,11 @@ function getElementById(id: string): HTMLElement {
 }
 
 interface Props {
-  compilerResult: JackCompilerResult;
+  filename: string;
   hidden: boolean;
 }
 
-function JackModule({ compilerResult, hidden }: Props) {
+function JackModule({ filename, hidden }: Props) {
   const [hoveredVMCommandIdx, setHoveredVMCommandIdx] = useState<number>();
   const [hoveredTokenIdx, setHoveredTokenIdx] = useState<number>();
   const [mouseSelectedJackNode, setMouseSelectedJackNode] =
@@ -30,27 +40,51 @@ function JackModule({ compilerResult, hidden }: Props) {
   const [mouseSelectedVMCommandIdx, setMouseSelectedVMCommandIdx] =
     useState<number>();
 
+  const jackCompilerSourcemap = jackCompilerSourcemaps[filename];
+  if (jackCompilerSourcemap === undefined) {
+    throw new Error(
+      `failed to find jack compiler sourcemap for file ${filename}`
+    );
+  }
+
+  const tokens = tokensByFilename[filename]!;
+  if (tokens === undefined) {
+    throw new Error(`failed to find tokens for file ${filename}`);
+  }
+
+  const commands = vmCompilerInputs.find(
+    (x) => x.filename === filename
+  )?.commands;
+  if (commands === undefined) {
+    throw new Error(`failed to find commands for file ${filename}`);
+  }
+
+  const {
+    codegen_sourcemap: {
+      jack_node_idx_to_vm_command_idx,
+      vm_command_idx_to_jack_node_idx,
+    },
+    parser_sourcemap: { jack_nodes, token_idx_to_jack_node_idxs },
+  } = jackCompilerSourcemap;
+
   function clearHoverState() {
     setHoveredTokenIdx(undefined);
     setHoveredVMCommandIdx(undefined);
   }
 
-  function immediateVMCommandIdxs(
-    filename: string,
-    jackNodeIdx: number
-  ): number[] {
+  function immediateVMCommandIdxs(jackNodeIdx: number): number[] {
     return jack_node_idx_to_vm_command_idx[jackNodeIdx] ?? [];
   }
 
-  function allVMCommandIdxs(filename: string, jackNodeIdx: number): number[] {
-    return immediateVMCommandIdxs(filename, jackNodeIdx).concat(
-      getJackNodeByIndex(filename, jackNodeIdx).child_node_idxs.flatMap(
-        (childNodeIdx) => allVMCommandIdxs(filename, childNodeIdx)
+  function allVMCommandIdxs(jackNodeIdx: number): number[] {
+    return immediateVMCommandIdxs(jackNodeIdx).concat(
+      getJackNodeByIndex(jackNodeIdx).child_node_idxs.flatMap((childNodeIdx) =>
+        allVMCommandIdxs(childNodeIdx)
       )
     );
   }
 
-  function getJackNodeByIndex(filename: string, index: number): NodeInfo {
+  function getJackNodeByIndex(index: number): NodeInfo {
     const node = jack_nodes[index];
     if (node === undefined) {
       throw new Error(`failed to get jack node at index ${index}`);
@@ -58,14 +92,11 @@ function JackModule({ compilerResult, hidden }: Props) {
     return node;
   }
 
-  function findInnermostJackNode(
-    filename: string,
-    tokenIdx: number
-  ): NodeInfo | undefined {
+  function findInnermostJackNode(tokenIdx: number): NodeInfo | undefined {
     const tokenJackNodesIdxs = token_idx_to_jack_node_idxs[tokenIdx];
     if (!tokenJackNodesIdxs) return undefined;
     const tokenJackNodes = tokenJackNodesIdxs.map((jackNodeIdx) =>
-      getJackNodeByIndex(filename, jackNodeIdx)
+      getJackNodeByIndex(jackNodeIdx)
     );
     const smallestJackNode = _.minBy(
       tokenJackNodes,
@@ -94,26 +125,13 @@ function JackModule({ compilerResult, hidden }: Props) {
     return tokenSet;
   }
 
-  const {
-    filename,
-    sourcemap: {
-      codegen_sourcemap: {
-        vm_command_idx_to_jack_node_idx,
-        jack_node_idx_to_vm_command_idx,
-      },
-      parser_sourcemap: { jack_nodes, token_idx_to_jack_node_idxs },
-    },
-    tokens,
-    commands,
-  } = compilerResult;
-
   const hoveredJackNode = useMemo<NodeInfo | undefined>(() => {
     if (hoveredTokenIdx !== undefined) {
-      return findInnermostJackNode(filename, hoveredTokenIdx);
+      return findInnermostJackNode(hoveredTokenIdx);
     } else if (hoveredVMCommandIdx !== undefined) {
       const jackNodeIdx = vm_command_idx_to_jack_node_idx[hoveredVMCommandIdx];
       if (jackNodeIdx !== undefined) {
-        return getJackNodeByIndex(filename, jackNodeIdx);
+        return getJackNodeByIndex(jackNodeIdx);
       }
     }
   }, [hoveredTokenIdx, hoveredVMCommandIdx]);
@@ -125,13 +143,13 @@ function JackModule({ compilerResult, hidden }: Props) {
 
   const hoveredVMCommands = useMemo<Set<number>>(() => {
     return hoveredJackNode
-      ? new Set(allVMCommandIdxs(filename, hoveredJackNode.index))
+      ? new Set(allVMCommandIdxs(hoveredJackNode.index))
       : new Set();
   }, [hoveredJackNode]);
 
   const autoSelectedVMCommands = useMemo<Set<number>>(() => {
     return mouseSelectedJackNode
-      ? new Set(allVMCommandIdxs(filename, mouseSelectedJackNode.index))
+      ? new Set(allVMCommandIdxs(mouseSelectedJackNode.index))
       : new Set();
   }, [mouseSelectedJackNode]);
 
@@ -144,7 +162,7 @@ function JackModule({ compilerResult, hidden }: Props) {
   const autoSelectedJackNode = useMemo(() => {
     return autoSelectedJackNodeIdx === undefined
       ? undefined
-      : getJackNodeByIndex(filename, autoSelectedJackNodeIdx);
+      : getJackNodeByIndex(autoSelectedJackNodeIdx);
   }, [autoSelectedJackNodeIdx]);
 
   const autoSelectedTokens = useMemo<Set<number>>(() => {
@@ -161,7 +179,7 @@ function JackModule({ compilerResult, hidden }: Props) {
   const mouseSelectedVMCommandIdxs = useMemo<Set<number>>(() => {
     return autoSelectedJackNodeIdx === undefined
       ? new Set()
-      : new Set(allVMCommandIdxs(filename, autoSelectedJackNodeIdx));
+      : new Set(allVMCommandIdxs(autoSelectedJackNodeIdx));
   }, [autoSelectedJackNodeIdx]);
 
   const tokensWithNewlines = tokens.map((token) => token.source);
@@ -179,7 +197,7 @@ function JackModule({ compilerResult, hidden }: Props) {
           onSpanMouseLeave={clearHoverState}
           onSpanClick={(idx) => {
             setMouseSelectedVMCommandIdx(undefined);
-            setMouseSelectedJackNode(findInnermostJackNode(filename, idx));
+            setMouseSelectedJackNode(findInnermostJackNode(idx));
           }}
         />
         <CodePanel
@@ -205,7 +223,7 @@ function App() {
   return (
     <>
       <fieldset style={{ flex: "0 0 auto" }}>
-        {compilerResults.map(({ filename }, idx) => (
+        {filenames.map((filename, idx) => (
           <>
             <input
               id={`file-${idx}`}
@@ -218,11 +236,8 @@ function App() {
           </>
         ))}
       </fieldset>
-      {compilerResults.map((compilerResult, idx) => (
-        <JackModule
-          compilerResult={compilerResult}
-          hidden={idx !== currentFileIdx}
-        />
+      {filenames.map((filename, idx) => (
+        <JackModule filename={filename} hidden={idx !== currentFileIdx} />
       ))}
     </>
   );

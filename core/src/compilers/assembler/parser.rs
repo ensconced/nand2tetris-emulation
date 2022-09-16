@@ -1,3 +1,5 @@
+use std::fmt::{Display, Formatter, Write};
+
 use serde::Serialize;
 
 use super::tokenizer::{
@@ -15,7 +17,17 @@ pub enum AValue {
     Symbolic(String),
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize)]
+impl Display for AValue {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), std::fmt::Error> {
+        let s = match self {
+            AValue::Numeric(string) => string,
+            AValue::Symbolic(string) => string,
+        };
+        write!(f, "{}", s)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(into = "String")]
 pub enum ASMInstruction {
     A(AValue),
@@ -30,9 +42,22 @@ pub enum ASMInstruction {
 }
 
 impl From<ASMInstruction> for String {
-    fn from(command: ASMInstruction) -> Self {
-        todo!()
-        // command.to_string()
+    fn from(instruction: ASMInstruction) -> Self {
+        match instruction {
+            ASMInstruction::A(a_value) => format!("@{}", a_value),
+            ASMInstruction::C { expr, dest, jump } => {
+                let mut s = String::new();
+                if let Some(dest_string) = dest {
+                    write!(s, "{}=", dest_string).unwrap();
+                }
+                s.push_str(&expr);
+                if let Some(jump_string) = jump {
+                    write!(s, ";{}", jump_string).unwrap();
+                }
+                s
+            }
+            ASMInstruction::L { identifier } => format!("({})", identifier),
+        }
     }
 }
 

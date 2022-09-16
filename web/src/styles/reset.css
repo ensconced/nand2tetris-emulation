@@ -69,6 +69,11 @@ fieldset input {
   display: none;
 }
 
+fieldset label:hover {
+  cursor: pointer;
+  outline: 1px solid #f8f8f2;
+}
+
 input:checked + label {
   background-color: #f8f8f2;
   color: #282a36;

@@ -2,7 +2,7 @@
 
 set -eu
 
-rm bindings/*
+rm -f bindings/*
 cd core
 cargo run -- debug-compile Glyphs.jack.todo ../web/debug-output.json
 cargo test || true

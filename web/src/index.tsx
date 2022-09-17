@@ -5,7 +5,7 @@ import { NodeInfo } from "../../bindings/NodeInfo";
 import { CompilerResult } from "../../bindings/CompilerResult";
 import React, { useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import CodePanel from "./code-panel";
+import CodePanel, { FileIdxs } from "./code-panel";
 import { TokenKind } from "../../bindings/TokenKind";
 import { Token } from "../../bindings/Token";
 
@@ -34,8 +34,8 @@ function getElementById(id: string): HTMLElement {
   return element;
 }
 
-function jackNodeTokens(node: NodeInfoId | undefined): Set<number> {
-  if (node === undefined) return new Set();
+function jackNodeTokens(node: NodeInfoId | undefined): FileIdxs | undefined {
+  if (node === undefined) return undefined;
   const tokenSet: Set<number> = new Set();
   for (
     let i = node.node.token_range.start;
@@ -48,7 +48,7 @@ function jackNodeTokens(node: NodeInfoId | undefined): Set<number> {
     }
     tokenSet.add(token.idx);
   }
-  return tokenSet;
+  return { filename: node.filename, idxs: tokenSet };
 }
 
 function getJackNodeByIndex(index: FileIdx): NodeInfo {
@@ -100,17 +100,17 @@ interface Props {
   hidden: boolean;
   tokens: Array<Token<TokenKind>>;
   commands: Array<string>;
-  hoveredTokens: Set<number>;
-  mouseSelectedTokenIdxs: Set<number>;
-  autoSelectedTokens: Set<number>;
+  hoveredTokens: FileIdxs | undefined;
+  mouseSelectedTokenIdxs: FileIdxs | undefined;
+  autoSelectedTokens: FileIdxs | undefined;
   setHoveredTokenIdx: (tokenIdx: FileIdx) => void;
   clearHoverState: () => void;
   setMouseSelectedVMCommandIdx: (idx: FileIdx | undefined) => void;
   setHoveredVMCommandIdx: (idx: FileIdx | undefined) => void;
   setMouseSelectedJackNode: (node: NodeInfoId | undefined) => void;
-  hoveredVMCommands: Set<number>;
-  mouseSelectedVMCommandIdxs: Set<number>;
-  autoSelectedVMCommands: Set<number>;
+  hoveredVMCommands: FileIdxs | undefined;
+  mouseSelectedVMCommandIdxs: FileIdxs | undefined;
+  autoSelectedVMCommands: FileIdxs | undefined;
 }
 
 function JackModule({
@@ -137,6 +137,7 @@ function JackModule({
     <>
       <div style={{ minHeight: 0, display: hidden ? "none" : "flex" }}>
         <CodePanel
+          filename={filename}
           items={tokensWithNewlines}
           hoveredItemIdxs={hoveredTokens}
           mouseSelectedItemIdxs={mouseSelectedTokenIdxs}
@@ -151,6 +152,7 @@ function JackModule({
           }}
         />
         <CodePanel
+          filename={filename}
           items={vmCommandStrings}
           hoveredItemIdxs={hoveredVMCommands}
           mouseSelectedItemIdxs={mouseSelectedVMCommandIdxs}
@@ -167,7 +169,7 @@ function JackModule({
   );
 }
 
-interface FileIdx {
+export interface FileIdx {
   filename: string;
   idx: number;
 }
@@ -213,26 +215,32 @@ function App() {
     [hoveredJackNode]
   );
 
-  const hoveredVMCommands = useMemo<Set<number>>(() => {
-    return hoveredJackNode
-      ? new Set(
+  const hoveredVMCommands = useMemo<FileIdxs | undefined>(() => {
+    return (
+      hoveredJackNode && {
+        filename: hoveredJackNode.filename,
+        idxs: new Set(
           allVMCommandIdxs({
             filename: hoveredJackNode.filename,
             idx: hoveredJackNode.node.index,
           })
-        )
-      : new Set();
+        ),
+      }
+    );
   }, [hoveredJackNode]);
 
-  const autoSelectedVMCommands = useMemo<Set<number>>(() => {
-    return mouseSelectedJackNode
-      ? new Set(
+  const autoSelectedVMCommands = useMemo<FileIdxs | undefined>(() => {
+    return (
+      mouseSelectedJackNode && {
+        filename: mouseSelectedJackNode.filename,
+        idxs: new Set(
           allVMCommandIdxs({
             filename: mouseSelectedJackNode.filename,
             idx: mouseSelectedJackNode.node.index,
           })
-        )
-      : new Set();
+        ),
+      }
+    );
   }, [mouseSelectedJackNode]);
 
   const autoSelectedJackNodeIdx = useMemo<FileIdx | undefined>(() => {
@@ -258,21 +266,24 @@ function App() {
         };
   }, [autoSelectedJackNodeIdx]);
 
-  const autoSelectedTokens = useMemo<Set<number>>(() => {
+  const autoSelectedTokens = useMemo<FileIdxs | undefined>(() => {
     return autoSelectedJackNode
       ? jackNodeTokens(autoSelectedJackNode)
-      : new Set();
+      : undefined;
   }, [autoSelectedJackNode]);
 
-  const mouseSelectedTokenIdxs = useMemo(
+  const mouseSelectedTokenIdxs = useMemo<FileIdxs | undefined>(
     () => jackNodeTokens(mouseSelectedJackNode),
     [mouseSelectedJackNode]
   );
 
-  const mouseSelectedVMCommandIdxs = useMemo<Set<number>>(() => {
+  const mouseSelectedVMCommandIdxs = useMemo<FileIdxs | undefined>(() => {
     return autoSelectedJackNodeIdx === undefined
-      ? new Set()
-      : new Set(allVMCommandIdxs(autoSelectedJackNodeIdx));
+      ? undefined
+      : {
+          filename: autoSelectedJackNodeIdx.filename,
+          idxs: new Set(allVMCommandIdxs(autoSelectedJackNodeIdx)),
+        };
   }, [autoSelectedJackNodeIdx]);
 
   return (

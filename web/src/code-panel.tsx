@@ -1,17 +1,24 @@
 import classnames from "classnames";
 import React, { useEffect, useMemo, useRef } from "react";
 
+export interface FileIdxs {
+  filename: string;
+  idxs: Set<number>;
+}
+
 interface Props {
+  filename: string;
   items: Array<string>;
-  hoveredItemIdxs: Set<number>;
-  mouseSelectedItemIdxs: Set<number>;
-  autoSelectedItemIdxs: Set<number>;
+  hoveredItemIdxs: FileIdxs | undefined;
+  mouseSelectedItemIdxs: FileIdxs | undefined;
+  autoSelectedItemIdxs: FileIdxs | undefined;
   onSpanMouseEnter(itemIdx: number): void;
   onSpanClick(itemIdx: number): void;
   onSpanMouseLeave(): void;
 }
 
 export default function CodePanel({
+  filename,
   items,
   hoveredItemIdxs,
   mouseSelectedItemIdxs,
@@ -23,16 +30,25 @@ export default function CodePanel({
   const codeRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const firstHighlighedIdx = Math.min(...autoSelectedItemIdxs);
-    codeRef.current?.children[firstHighlighedIdx]?.scrollIntoView({
-      behavior: "smooth",
-    });
+    if (autoSelectedItemIdxs?.filename === filename) {
+      const firstHighlighedIdx = Math.min(...autoSelectedItemIdxs.idxs);
+      codeRef.current?.children[firstHighlighedIdx]?.scrollIntoView({
+        behavior: "smooth",
+      });
+    }
   }, [autoSelectedItemIdxs]);
 
-  const selectedItemIdxs = useMemo(
-    () => new Set([...autoSelectedItemIdxs, ...mouseSelectedItemIdxs]),
-    [autoSelectedItemIdxs, mouseSelectedItemIdxs]
-  );
+  const selectedItemIdxs = useMemo(() => {
+    const result = new Set<number>();
+    [autoSelectedItemIdxs, mouseSelectedItemIdxs].forEach((selection) => {
+      if (selection !== undefined && selection.filename === filename) {
+        for (const val of selection.idxs.values()) {
+          result.add(val);
+        }
+      }
+    });
+    return result;
+  }, [autoSelectedItemIdxs, mouseSelectedItemIdxs]);
 
   return (
     <div className="code-wrapper">
@@ -42,7 +58,9 @@ export default function CodePanel({
             <span
               key={idx}
               className={classnames({
-                highlighted: hoveredItemIdxs.has(idx),
+                highlighted:
+                  hoveredItemIdxs?.filename === filename &&
+                  hoveredItemIdxs.idxs.has(idx),
                 selected: selectedItemIdxs.has(idx),
               })}
               onMouseEnter={() => onSpanMouseEnter(idx)}
@@ -56,7 +74,7 @@ export default function CodePanel({
       </code>
       <code className="footer">
         <span style={{ color: "#ff79c6" }} className="footer-item">
-          hovered: {hoveredItemIdxs.size}
+          hovered: {hoveredItemIdxs?.idxs.size ?? 0}
         </span>
         <span style={{ color: "#f8f8f2" }} className="footer-item">
           selected: {selectedItemIdxs.size}

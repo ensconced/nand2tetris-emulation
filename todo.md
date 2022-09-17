@@ -1,6 +1,7 @@
 ### extend sourcemap into vm compiler
 
-- viz: only allow one selected/hovered jack node - not one per file
+- refactor viz
+- display ASM and map hover/select to VM code / jack code
 - same again for asm -> machine code stage
 - restore Glyphs.jack.todo!!
 

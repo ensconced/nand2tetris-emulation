@@ -19,7 +19,10 @@ pub mod test_utils {
             })
             .collect();
 
-        let parsed_vm_modules: Vec<_> = source_modules.iter().map(vm_compiler::parse).collect();
+        let parsed_vm_modules: HashMap<_, _> = source_modules
+            .iter()
+            .map(|source_module| (source_module.filename.clone(), vm_compiler::parse(source_module)))
+            .collect();
         let asm = vm_compiler::codegen::generate_asm(&parsed_vm_modules).instructions;
         let machine_code = assemble(asm, config::ROM_DEPTH);
         Computer::new(generate_rom::from_string(machine_code.join("\n")))

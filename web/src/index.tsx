@@ -8,8 +8,10 @@ import { createRoot } from "react-dom/client";
 import CodePanel, { FileIdxs } from "./code-panel";
 import { TokenKind } from "../../bindings/TokenKind";
 import { Token } from "../../bindings/Token";
+import Footer from "./Footer";
+import ASMPanel from "./ASMPanel";
 
-interface NodeInfoId {
+export interface NodeInfoId {
   filename: string;
   node: NodeInfo;
 }
@@ -19,9 +21,8 @@ const {
   jack_compiler_result: {
     sourcemaps: jackCompilerSourcemaps,
     tokens: tokensByFilename,
-    vm_compiler_inputs: vmCompilerInputs,
+    vm_commands: vmCommands,
   },
-  vm_compiler_result: { sourcemap: vmCompilerSourcemap, instructions },
 } = compilerResult;
 
 const filenames = Object.keys(tokensByFilename);
@@ -130,15 +131,15 @@ function JackModule({
   autoSelectedVMCommands,
   setHoveredVMCommandIdx,
 }: Props) {
-  const tokensWithNewlines = tokens.map((token) => token.source);
-  const vmCommandStrings = commands.map((command) => `${command}\n`);
+  const tokenContents = tokens.map((token) => token.source);
+  const vmCommandsWithNewLines = commands.map((command) => `${command}\n`);
 
   return (
     <>
       <div style={{ minHeight: 0, display: hidden ? "none" : "flex" }}>
         <CodePanel
           filename={filename}
-          items={tokensWithNewlines}
+          items={tokenContents}
           hoveredItemIdxs={hoveredTokens}
           mouseSelectedItemIdxs={mouseSelectedTokenIdxs}
           autoSelectedItemIdxs={autoSelectedTokens}
@@ -153,7 +154,7 @@ function JackModule({
         />
         <CodePanel
           filename={filename}
-          items={vmCommandStrings}
+          items={vmCommandsWithNewLines}
           hoveredItemIdxs={hoveredVMCommands}
           mouseSelectedItemIdxs={mouseSelectedVMCommandIdxs}
           autoSelectedItemIdxs={autoSelectedVMCommands}
@@ -174,7 +175,7 @@ export interface FileIdx {
   idx: number;
 }
 
-function App() {
+function JackAndVMFiles() {
   const [currentFileIdx, setCurrentFileIdx] = useState(0);
   const [hoveredVMCommandIdx, setHoveredVMCommandIdx] = useState<FileIdx>();
   const [hoveredTokenIdx, setHoveredTokenIdx] = useState<FileIdx>();
@@ -287,7 +288,14 @@ function App() {
   }, [autoSelectedJackNodeIdx]);
 
   return (
-    <>
+    <div
+      style={{
+        flex: 1,
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       <fieldset style={{ flex: "0 0 auto" }}>
         {filenames.map((filename, idx) => (
           <>
@@ -305,9 +313,7 @@ function App() {
       {filenames.map((filename, idx) => (
         <JackModule
           tokens={tokensByFilename[filename]!}
-          commands={
-            vmCompilerInputs.find((x) => x.filename === filename)!.commands
-          }
+          commands={vmCommands[filename]!}
           filename={filename}
           hidden={idx !== currentFileIdx}
           hoveredTokens={hoveredTokens}
@@ -323,7 +329,20 @@ function App() {
           clearHoverState={clearHoverState}
         />
       ))}
-    </>
+      <Footer
+        hoveredJackNode={hoveredJackNode}
+        selectedJackNode={autoSelectedJackNode || mouseSelectedJackNode}
+      />
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <div style={{ display: "flex" }}>
+      <JackAndVMFiles />
+      <ASMPanel />
+    </div>
   );
 }
 

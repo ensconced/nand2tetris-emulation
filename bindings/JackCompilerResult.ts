@@ -2,6 +2,5 @@
 import type { JackCompilerSourceMap } from "./JackCompilerSourceMap";
 import type { Token } from "./Token";
 import type { TokenKind } from "./TokenKind";
-import type { VMCompilerInput } from "./VMCompilerInput";
 
-export interface JackCompilerResult { sourcemaps: Record<string, JackCompilerSourceMap>, tokens: Record<string, Array<Token<TokenKind>>>, vm_compiler_inputs: Array<VMCompilerInput>, }
+export interface JackCompilerResult { sourcemaps: Record<string, JackCompilerSourceMap>, tokens: Record<string, Array<Token<TokenKind>>>, vm_commands: Record<string, Array<string>>, }

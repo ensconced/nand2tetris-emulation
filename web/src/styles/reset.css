@@ -5,16 +5,11 @@
   background-color: #282a36;
 }
 
-.code-wrapper {
-  flex-basis: content;
-  display: flex;
-  flex-direction: column;
-}
-
 .code-panel {
   min-height: 0;
   overflow-y: auto;
   padding: 10px;
+  flex: auto;
 }
 
 code {
@@ -47,11 +42,17 @@ code > span {
 
 code > span.selected {
   color: #282a36;
-  background-color: #f8f8f2;
+  background-color: #ff79c6;
 }
 
 code > span.highlighted {
-  outline: 1px solid #ff79c6;
+  color: #282a36;
+  background-color: #f8f8f2;
+}
+
+code > span.highlighted.selected {
+  color: #282a36;
+  background-color: #fcb9dc;
 }
 
 fieldset {

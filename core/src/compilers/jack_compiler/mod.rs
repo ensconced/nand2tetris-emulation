@@ -16,7 +16,7 @@ use super::{
         source_modules::{get_source_modules, SourceModule},
         tokenizer::{Token, Tokenizer},
     },
-    vm_compiler::codegen::VMCompilerInput,
+    vm_compiler::parser::Command,
 };
 
 pub mod codegen;
@@ -31,7 +31,8 @@ pub mod tokenizer;
 pub struct JackCompilerResult {
     pub sourcemaps: HashMap<PathBuf, JackCompilerSourceMap>,
     pub tokens: HashMap<PathBuf, Vec<Token<TokenKind>>>,
-    pub vm_compiler_inputs: Vec<VMCompilerInput>,
+    #[ts(type = "Record<string, Array<string>>")]
+    pub vm_commands: HashMap<PathBuf, Vec<Command>>,
 }
 
 pub fn compile_jack(jack_code: Vec<SourceModule>) -> JackCompilerResult {
@@ -52,10 +53,7 @@ pub fn compile_jack(jack_code: Vec<SourceModule>) -> JackCompilerResult {
 
         result.sourcemaps.insert(jack_source_module.filename.clone(), sourcemap);
         result.tokens.insert(jack_source_module.filename.clone(), tokens);
-        result.vm_compiler_inputs.push(VMCompilerInput {
-            commands: codegen_result.commands,
-            filename: jack_source_module.filename,
-        });
+        result.vm_commands.insert(jack_source_module.filename.clone(), codegen_result.commands);
     }
     result
 }

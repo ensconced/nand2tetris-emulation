@@ -67,7 +67,7 @@ fn main() {
             let source_modules = get_source_modules(Path::new(source_path)).expect("failed to get source modules");
 
             let jack_compiler_result = compile_jack(source_modules);
-            let vm_compiler_result = generate_asm(&jack_compiler_result.vm_compiler_inputs);
+            let vm_compiler_result = generate_asm(&jack_compiler_result.vm_commands);
             let compiler_result = CompilerResult {
                 jack_compiler_result,
                 vm_compiler_result,

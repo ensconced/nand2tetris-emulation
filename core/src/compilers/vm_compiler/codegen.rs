@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     iter,
     path::{Path, PathBuf},
 };
@@ -957,24 +958,15 @@ pub struct VMCompilerResult {
     pub instructions: Vec<ASMInstruction>,
 }
 
-#[derive(Serialize, TS, Debug, PartialEq, Eq)]
-#[ts(export)]
-#[ts(export_to = "../bindings/")]
-pub struct VMCompilerInput {
-    pub filename: PathBuf,
-    #[ts(type = "Array<string>")]
-    pub commands: Vec<Command>,
-}
-
-pub fn generate_asm(inputs: &[VMCompilerInput]) -> VMCompilerResult {
+pub fn generate_asm(inputs: &HashMap<PathBuf, Vec<Command>>) -> VMCompilerResult {
     let mut sourcemap = SourceMap::new();
     let mut code_generator = CodeGenerator::new();
     let mut result = Vec::new();
-    for input in inputs {
-        for (vm_command_idx, command) in input.commands.iter().enumerate() {
-            for asm_instruction in code_generator.compile_vm_command(command, &input.filename) {
+    for (filename, commands) in inputs {
+        for (vm_command_idx, command) in commands.iter().enumerate() {
+            for asm_instruction in code_generator.compile_vm_command(command, filename) {
                 result.push(asm_instruction);
-                sourcemap.record_asm_instruction(&input.filename, vm_command_idx, result.len());
+                sourcemap.record_asm_instruction(filename, vm_command_idx, result.len());
             }
         }
     }

@@ -51,35 +51,25 @@ export default function CodePanel({
   }, [autoSelectedItemIdxs, mouseSelectedItemIdxs]);
 
   return (
-    <div className="code-wrapper">
-      <code className="code-panel" ref={codeRef}>
-        {items.map((item, idx) => {
-          return (
-            <span
-              key={idx}
-              className={classnames({
-                highlighted:
-                  hoveredItemIdxs?.filename === filename &&
-                  hoveredItemIdxs.idxs.has(idx),
-                selected: selectedItemIdxs.has(idx),
-              })}
-              onMouseEnter={() => onSpanMouseEnter(idx)}
-              onMouseLeave={onSpanMouseLeave}
-              onClick={() => onSpanClick(idx)}
-            >
-              {item}
-            </span>
-          );
-        })}
-      </code>
-      <code className="footer">
-        <span style={{ color: "#ff79c6" }} className="footer-item">
-          hovered: {hoveredItemIdxs?.idxs.size ?? 0}
-        </span>
-        <span style={{ color: "#f8f8f2" }} className="footer-item">
-          selected: {selectedItemIdxs.size}
-        </span>
-      </code>
-    </div>
+    <code className="code-panel" ref={codeRef}>
+      {items.map((item, idx) => {
+        return (
+          <span
+            key={idx}
+            className={classnames({
+              highlighted:
+                hoveredItemIdxs?.filename === filename &&
+                hoveredItemIdxs.idxs.has(idx),
+              selected: selectedItemIdxs.has(idx),
+            })}
+            onMouseEnter={() => onSpanMouseEnter(idx)}
+            onMouseLeave={onSpanMouseLeave}
+            onClick={() => onSpanClick(idx)}
+          >
+            {item}
+          </span>
+        );
+      })}
+    </code>
   );
 }

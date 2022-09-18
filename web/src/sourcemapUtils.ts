@@ -86,6 +86,21 @@ export function vmCommandJackNodeIdx(vmCommand: FileIdx): FileIdx | undefined {
   }
 }
 
+export function vmCommandToJackNode(vmCmd: FileIdx): NodeInfoId | undefined {
+  const jackNodeIdx =
+    jackCompilerSourcemaps[vmCmd.filename]?.codegen_sourcemap
+      .vm_command_idx_to_jack_node_idx[vmCmd.idx];
+  if (jackNodeIdx !== undefined) {
+    return {
+      filename: vmCmd.filename,
+      node: getJackNodeByIndex({
+        filename: vmCmd.filename,
+        idx: jackNodeIdx,
+      }),
+    };
+  }
+}
+
 export function allVMCommandIdxs(jackNodeIdx: FileIdx): number[] {
   return immediateVMCommandIdxs(jackNodeIdx).concat(
     getJackNodeByIndex(jackNodeIdx).child_node_idxs.flatMap((childNodeIdx) =>

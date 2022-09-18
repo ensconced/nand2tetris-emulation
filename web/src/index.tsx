@@ -2,15 +2,12 @@ import "./styles/reset.css";
 import { NodeInfo } from "../../bindings/NodeInfo";
 import React, { useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import CodePanel, { FileIdxs } from "./code-panel";
-import { TokenKind } from "../../bindings/TokenKind";
-import { Token } from "../../bindings/Token";
+import { FileIdxs } from "./code-panel";
 import Footer from "./Footer";
 import ASMPanel from "./ASMPanel";
 import {
   allVMCommandIdxs,
   filenames,
-  findInnermostJackNode,
   getJackNodeByIndex,
   jackNodeTokens,
   tokensByFilename,
@@ -18,6 +15,7 @@ import {
   vmCommands,
 } from "./sourcemapUtils";
 import useCoordinatedInteractions from "./useCoordinatedInteractions";
+import JackModule from "./JackModule";
 
 function getElementById(id: string): HTMLElement {
   const element = document.getElementById(id);
@@ -30,80 +28,6 @@ function getElementById(id: string): HTMLElement {
 export interface NodeInfoId {
   filename: string;
   node: NodeInfo;
-}
-
-interface Props {
-  filename: string;
-  hidden: boolean;
-  tokens: Array<Token<TokenKind>>;
-  commands: Array<string>;
-  hoveredTokens: FileIdxs | undefined;
-  mouseSelectedTokenIdxs: FileIdxs | undefined;
-  autoSelectedTokens: FileIdxs | undefined;
-  setHoveredTokenIdx: (tokenIdx: FileIdx) => void;
-  clearHoverState: () => void;
-  setMouseSelectedVMCommandIdx: (idx: FileIdx | undefined) => void;
-  setHoveredVMCommandIdx: (idx: FileIdx | undefined) => void;
-  setMouseSelectedJackNode: (node: NodeInfoId | undefined) => void;
-  hoveredVMCommands: FileIdxs | undefined;
-  mouseSelectedVMCommandIdxs: FileIdxs | undefined;
-  autoSelectedVMCommands: FileIdxs | undefined;
-}
-
-function JackModule({
-  filename,
-  tokens,
-  commands,
-  hidden,
-  hoveredTokens,
-  mouseSelectedTokenIdxs,
-  autoSelectedTokens,
-  setHoveredTokenIdx,
-  clearHoverState,
-  setMouseSelectedVMCommandIdx,
-  setMouseSelectedJackNode,
-  hoveredVMCommands,
-  mouseSelectedVMCommandIdxs,
-  autoSelectedVMCommands,
-  setHoveredVMCommandIdx,
-}: Props) {
-  const tokenContents = tokens.map((token) => token.source);
-  const vmCommandsWithNewLines = commands.map((command) => `${command}\n`);
-
-  return (
-    <>
-      <div style={{ minHeight: 0, display: hidden ? "none" : "flex" }}>
-        <CodePanel
-          filename={filename}
-          items={tokenContents}
-          hoveredItemIdxs={hoveredTokens}
-          mouseSelectedItemIdxs={mouseSelectedTokenIdxs}
-          autoSelectedItemIdxs={autoSelectedTokens}
-          onSpanMouseEnter={(idx) => {
-            setHoveredTokenIdx({ filename, idx });
-          }}
-          onSpanMouseLeave={clearHoverState}
-          onSpanClick={(idx) => {
-            setMouseSelectedVMCommandIdx(undefined);
-            setMouseSelectedJackNode(findInnermostJackNode({ filename, idx }));
-          }}
-        />
-        <CodePanel
-          filename={filename}
-          items={vmCommandsWithNewLines}
-          hoveredItemIdxs={hoveredVMCommands}
-          mouseSelectedItemIdxs={mouseSelectedVMCommandIdxs}
-          autoSelectedItemIdxs={autoSelectedVMCommands}
-          onSpanMouseEnter={(idx) => setHoveredVMCommandIdx({ filename, idx })}
-          onSpanMouseLeave={clearHoverState}
-          onSpanClick={(idx) => {
-            setMouseSelectedJackNode(undefined);
-            setMouseSelectedVMCommandIdx({ filename, idx });
-          }}
-        />
-      </div>
-    </>
-  );
 }
 
 export interface FileIdx {

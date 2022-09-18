@@ -10,8 +10,7 @@ interface Props {
   filename: string;
   items: Array<string>;
   hoveredItemIdxs: FileIdxs | undefined;
-  mouseSelectedItemIdxs: FileIdxs | undefined;
-  autoSelectedItemIdxs: FileIdxs | undefined;
+  selectedItemIdxs: (FileIdxs & { autoSelected: boolean }) | undefined;
   onSpanMouseEnter(itemIdx: number): void;
   onSpanClick(itemIdx: number): void;
   onSpanMouseLeave(): void;
@@ -21,8 +20,7 @@ export default function CodePanel({
   filename,
   items,
   hoveredItemIdxs,
-  mouseSelectedItemIdxs,
-  autoSelectedItemIdxs,
+  selectedItemIdxs,
   onSpanMouseEnter,
   onSpanClick,
   onSpanMouseLeave,
@@ -30,25 +28,16 @@ export default function CodePanel({
   const codeRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    if (autoSelectedItemIdxs?.filename === filename) {
-      const firstHighlighedIdx = Math.min(...autoSelectedItemIdxs.idxs);
+    if (
+      selectedItemIdxs?.autoSelected &&
+      selectedItemIdxs.filename === filename
+    ) {
+      const firstHighlighedIdx = Math.min(...selectedItemIdxs.idxs);
       codeRef.current?.children[firstHighlighedIdx]?.scrollIntoView({
         behavior: "smooth",
       });
     }
-  }, [autoSelectedItemIdxs]);
-
-  const selectedItemIdxs = useMemo(() => {
-    const result = new Set<number>();
-    [autoSelectedItemIdxs, mouseSelectedItemIdxs].forEach((selection) => {
-      if (selection !== undefined && selection.filename === filename) {
-        for (const val of selection.idxs.values()) {
-          result.add(val);
-        }
-      }
-    });
-    return result;
-  }, [autoSelectedItemIdxs, mouseSelectedItemIdxs]);
+  }, [selectedItemIdxs]);
 
   return (
     <code className="code-panel" ref={codeRef}>
@@ -60,7 +49,9 @@ export default function CodePanel({
               highlighted:
                 hoveredItemIdxs?.filename === filename &&
                 hoveredItemIdxs.idxs.has(idx),
-              selected: selectedItemIdxs.has(idx),
+              selected:
+                selectedItemIdxs?.filename === filename &&
+                selectedItemIdxs.idxs.has(idx),
             })}
             onMouseEnter={() => onSpanMouseEnter(idx)}
             onMouseLeave={onSpanMouseLeave}

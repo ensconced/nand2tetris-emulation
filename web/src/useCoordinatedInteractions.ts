@@ -7,8 +7,8 @@ import { FileIdxs } from "./code-panel";
 import {
   allVMCommandIdxs,
   findInnermostJackNode,
-  getJackNodeByIndex,
   jackNodeTokens,
+  vmCommandToJackNode,
 } from "./sourcemapUtils";
 
 const compilerResult = data as CompilerResult;
@@ -22,21 +22,6 @@ export default function useCoordinatedInteractions(
   directlyInteractedToken: FileIdx | undefined,
   directlyInteractedInstructionIdx: number | undefined
 ) {
-  function vmCommandToJackNode(vmCmd: FileIdx): NodeInfoId | undefined {
-    const jackNodeIdx =
-      jackCompilerSourcemaps[vmCmd.filename]?.codegen_sourcemap
-        .vm_command_idx_to_jack_node_idx[vmCmd.idx];
-    if (jackNodeIdx !== undefined) {
-      return {
-        filename: vmCmd.filename,
-        node: getJackNodeByIndex({
-          filename: vmCmd.filename,
-          idx: jackNodeIdx,
-        }),
-      };
-    }
-  }
-
   const singleInteractedVMCmd = useMemo(() => {
     if (directlyInteractedInstructionIdx === undefined) return undefined;
     return vmCompilerSourcemap.asm_instruction_idx_to_vm_cmd[
@@ -55,7 +40,7 @@ export default function useCoordinatedInteractions(
     }
   }, [directlyInteractedToken, directlyInteractedVMCmd]);
 
-  const contextualHoveredJackNode = useMemo(() => {
+  const contextualInteractedJackNode = useMemo(() => {
     if (singleInteractedVMCmd === undefined) return undefined;
     return vmCommandToJackNode({
       filename: singleInteractedVMCmd.filename,

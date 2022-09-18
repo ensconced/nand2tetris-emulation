@@ -19,7 +19,7 @@ pub struct VMCommandIdentifier {
 #[ts(export_to = "../bindings/")]
 pub struct SourceMap {
     pub asm_instruction_idx_to_vm_cmd: HashMap<usize, VMCommandIdentifier>,
-    pub vm_filename_and_idx_to_asm_instruction_idx: HashMap<PathBuf, HashMap<usize, usize>>,
+    pub vm_filename_and_idx_to_asm_instruction_idx: HashMap<PathBuf, HashMap<usize, Vec<usize>>>,
 }
 
 impl SourceMap {
@@ -40,7 +40,7 @@ impl SourceMap {
         );
 
         let cmd_idx_to_asm_instruction_idx = self.vm_filename_and_idx_to_asm_instruction_idx.entry(vm_filename.to_owned()).or_default();
-
-        cmd_idx_to_asm_instruction_idx.insert(vm_command_idx, asm_idx);
+        let asm_instructions = cmd_idx_to_asm_instruction_idx.entry(vm_command_idx).or_default();
+        asm_instructions.push(asm_idx);
     }
 }

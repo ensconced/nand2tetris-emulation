@@ -961,15 +961,14 @@ pub struct VMCompilerResult {
 pub fn generate_asm(inputs: &HashMap<PathBuf, Vec<Command>>) -> VMCompilerResult {
     let mut sourcemap = SourceMap::new();
     let mut code_generator = CodeGenerator::new();
-    let mut result = Vec::new();
+    let mut instructions = prelude();
     for (filename, commands) in inputs {
         for (vm_command_idx, command) in commands.iter().enumerate() {
             for asm_instruction in code_generator.compile_vm_command(command, filename) {
-                result.push(asm_instruction);
-                sourcemap.record_asm_instruction(filename, vm_command_idx, result.len());
+                sourcemap.record_asm_instruction(filename, vm_command_idx, instructions.len());
+                instructions.push(asm_instruction);
             }
         }
     }
-    let instructions = vec![prelude(), result].into_iter().flatten().collect();
     VMCompilerResult { sourcemap, instructions }
 }

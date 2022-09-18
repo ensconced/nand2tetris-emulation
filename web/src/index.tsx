@@ -23,6 +23,7 @@ const {
     tokens: tokensByFilename,
     vm_commands: vmCommands,
   },
+  vm_compiler_result: { sourcemap: vmCompilerSourcemap },
 } = compilerResult;
 
 const filenames = Object.keys(tokensByFilename);
@@ -175,41 +176,65 @@ export interface FileIdx {
   idx: number;
 }
 
-function JackAndVMFiles() {
-  const [currentFileIdx, setCurrentFileIdx] = useState(0);
-  const [hoveredVMCommandIdx, setHoveredVMCommandIdx] = useState<FileIdx>();
-  const [hoveredTokenIdx, setHoveredTokenIdx] = useState<FileIdx>();
+function App() {
+  const [openFileIdx, setOpenFileIdx] = useState(0);
+
+  const [directlyHoveredVMCommand, setDirectlyHoveredVMCommand] =
+    useState<FileIdx>();
+  const [directlyHoveredToken, setDirectlyHoveredToken] = useState<FileIdx>();
+  const [directlyHoveredInstructionIdx, setDirectlyHoveredInstructionIdx] =
+    useState<number>();
+
   const [mouseSelectedJackNode, setMouseSelectedJackNode] =
     useState<NodeInfoId>();
   const [mouseSelectedVMCommandIdx, setMouseSelectedVMCommandIdx] =
     useState<FileIdx>();
 
   function clearHoverState() {
-    setHoveredTokenIdx(undefined);
-    setHoveredVMCommandIdx(undefined);
+    setDirectlyHoveredToken(undefined);
+    setDirectlyHoveredVMCommand(undefined);
+  }
+
+  const singleHoveredVMCmd = useMemo(() => {
+    if (directlyHoveredInstructionIdx === undefined) return undefined;
+    return vmCompilerSourcemap.asm_instruction_idx_to_vm_cmd[
+      directlyHoveredInstructionIdx
+    ];
+  }, [directlyHoveredInstructionIdx]);
+
+  function vmCommandToJackNode(vmCmd: FileIdx): NodeInfoId | undefined {
+    const jackNodeIdx =
+      jackCompilerSourcemaps[vmCmd.filename]?.codegen_sourcemap
+        .vm_command_idx_to_jack_node_idx[vmCmd.idx];
+    if (jackNodeIdx !== undefined) {
+      return {
+        filename: vmCmd.filename,
+        node: getJackNodeByIndex({
+          filename: vmCmd.filename,
+          idx: jackNodeIdx,
+        }),
+      };
+    }
   }
 
   const hoveredJackNode = useMemo<NodeInfoId | undefined>(() => {
-    if (hoveredTokenIdx !== undefined) {
-      const node = findInnermostJackNode(hoveredTokenIdx);
+    if (directlyHoveredToken !== undefined) {
+      const node = findInnermostJackNode(directlyHoveredToken);
       if (node !== undefined) {
         return node;
       }
-    } else if (hoveredVMCommandIdx !== undefined) {
-      const jackNodeIdx =
-        jackCompilerSourcemaps[hoveredVMCommandIdx.filename]?.codegen_sourcemap
-          .vm_command_idx_to_jack_node_idx[hoveredVMCommandIdx.idx];
-      if (jackNodeIdx !== undefined) {
-        return {
-          filename: hoveredVMCommandIdx.filename,
-          node: getJackNodeByIndex({
-            filename: hoveredVMCommandIdx.filename,
-            idx: jackNodeIdx,
-          }),
-        };
-      }
+    } else if (directlyHoveredVMCommand !== undefined) {
+      return vmCommandToJackNode(directlyHoveredVMCommand);
     }
-  }, [hoveredTokenIdx, hoveredVMCommandIdx]);
+  }, [directlyHoveredToken, directlyHoveredVMCommand]);
+
+  const contextualHoveredJackNode = useMemo(() => {
+    if (singleHoveredVMCmd === undefined) return undefined;
+    return vmCommandToJackNode({
+      filename: singleHoveredVMCmd.filename,
+      idx: singleHoveredVMCmd.vm_command_idx,
+    });
+  }, [singleHoveredVMCmd]);
 
   const hoveredTokens = useMemo(
     () => jackNodeTokens(hoveredJackNode),
@@ -217,8 +242,8 @@ function JackAndVMFiles() {
   );
 
   const hoveredVMCommands = useMemo<FileIdxs | undefined>(() => {
-    return (
-      hoveredJackNode && {
+    if (hoveredJackNode) {
+      return {
         filename: hoveredJackNode.filename,
         idxs: new Set(
           allVMCommandIdxs({
@@ -226,9 +251,47 @@ function JackAndVMFiles() {
             idx: hoveredJackNode.node.index,
           })
         ),
+      };
+    }
+
+    if (singleHoveredVMCmd) {
+      return {
+        filename: singleHoveredVMCmd.filename,
+        idxs: new Set([singleHoveredVMCmd.vm_command_idx]),
+      };
+    }
+  }, [hoveredJackNode, singleHoveredVMCmd]);
+
+  const hoveredInstructionIdxs = useMemo<Set<number>>(() => {
+    const result = new Set<number>();
+    if (hoveredVMCommands === undefined) {
+      return directlyHoveredInstructionIdx === undefined
+        ? new Set()
+        : new Set([directlyHoveredInstructionIdx]);
+    }
+    const vmCommandIdxToASMInstructionIdxs =
+      vmCompilerSourcemap.vm_filename_and_idx_to_asm_instruction_idx[
+        hoveredVMCommands.filename
+      ];
+
+    if (vmCommandIdxToASMInstructionIdxs === undefined) {
+      throw new Error(
+        `failed to find instruction idx lookup for ${hoveredVMCommands.filename}`
+      );
+    }
+
+    hoveredVMCommands.idxs.forEach((vmCmdIdx) => {
+      const asmInstructions = vmCommandIdxToASMInstructionIdxs[vmCmdIdx];
+      if (asmInstructions === undefined) {
+        throw new Error(
+          `failed to find asm instructions for vm command idx ${vmCmdIdx} in file ${hoveredVMCommands.filename}`
+        );
       }
-    );
-  }, [hoveredJackNode]);
+      asmInstructions.forEach((instruction) => result.add(instruction));
+    });
+
+    return result;
+  }, [directlyHoveredInstructionIdx, hoveredVMCommands]);
 
   const autoSelectedVMCommands = useMemo<FileIdxs | undefined>(() => {
     return (
@@ -288,60 +351,58 @@ function JackAndVMFiles() {
   }, [autoSelectedJackNodeIdx]);
 
   return (
-    <div
-      style={{
-        flex: 1,
-        height: "100vh",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <fieldset style={{ flex: "0 0 auto" }}>
-        {filenames.map((filename, idx) => (
-          <>
-            <input
-              id={`file-${idx}`}
-              type="radio"
-              name="file-tab"
-              checked={currentFileIdx === idx}
-              onChange={() => setCurrentFileIdx(idx)}
-            />
-            <label htmlFor={`file-${idx}`}>{filename}</label>
-          </>
-        ))}
-      </fieldset>
-      {filenames.map((filename, idx) => (
-        <JackModule
-          tokens={tokensByFilename[filename]!}
-          commands={vmCommands[filename]!}
-          filename={filename}
-          hidden={idx !== currentFileIdx}
-          hoveredTokens={hoveredTokens}
-          mouseSelectedTokenIdxs={mouseSelectedTokenIdxs}
-          hoveredVMCommands={hoveredVMCommands}
-          mouseSelectedVMCommandIdxs={mouseSelectedVMCommandIdxs}
-          autoSelectedTokens={autoSelectedTokens}
-          autoSelectedVMCommands={autoSelectedVMCommands}
-          setHoveredTokenIdx={setHoveredTokenIdx}
-          setHoveredVMCommandIdx={setHoveredVMCommandIdx}
-          setMouseSelectedJackNode={setMouseSelectedJackNode}
-          setMouseSelectedVMCommandIdx={setMouseSelectedVMCommandIdx}
-          clearHoverState={clearHoverState}
-        />
-      ))}
-      <Footer
-        hoveredJackNode={hoveredJackNode}
-        selectedJackNode={autoSelectedJackNode || mouseSelectedJackNode}
-      />
-    </div>
-  );
-}
-
-function App() {
-  return (
     <div style={{ display: "flex" }}>
-      <JackAndVMFiles />
-      <ASMPanel />
+      <div
+        style={{
+          flex: 1,
+          height: "100vh",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <fieldset style={{ flex: "0 0 auto" }}>
+          {filenames.map((filename, idx) => (
+            <>
+              <input
+                id={`file-${idx}`}
+                type="radio"
+                name="file-tab"
+                checked={openFileIdx === idx}
+                onChange={() => setOpenFileIdx(idx)}
+              />
+              <label htmlFor={`file-${idx}`}>{filename}</label>
+            </>
+          ))}
+        </fieldset>
+        {filenames.map((filename, idx) => (
+          <JackModule
+            tokens={tokensByFilename[filename]!}
+            commands={vmCommands[filename]!}
+            filename={filename}
+            hidden={idx !== openFileIdx}
+            hoveredTokens={hoveredTokens}
+            mouseSelectedTokenIdxs={mouseSelectedTokenIdxs}
+            hoveredVMCommands={hoveredVMCommands}
+            mouseSelectedVMCommandIdxs={mouseSelectedVMCommandIdxs}
+            autoSelectedTokens={autoSelectedTokens}
+            autoSelectedVMCommands={autoSelectedVMCommands}
+            setHoveredTokenIdx={setDirectlyHoveredToken}
+            setHoveredVMCommandIdx={setDirectlyHoveredVMCommand}
+            setMouseSelectedJackNode={setMouseSelectedJackNode}
+            setMouseSelectedVMCommandIdx={setMouseSelectedVMCommandIdx}
+            clearHoverState={clearHoverState}
+          />
+        ))}
+        <Footer
+          hoveredJackNode={hoveredJackNode}
+          selectedJackNode={autoSelectedJackNode || mouseSelectedJackNode}
+        />
+      </div>
+      <ASMPanel
+        directlyHoveredInstructionIdx={directlyHoveredInstructionIdx}
+        setDirectlyHoveredInstructionIdx={setDirectlyHoveredInstructionIdx}
+        hoveredInstructionIdxs={hoveredInstructionIdxs}
+      />
     </div>
   );
 }

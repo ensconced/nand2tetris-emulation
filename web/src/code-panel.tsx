@@ -1,10 +1,14 @@
 import classnames from "classnames";
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 
 export interface FileIdxs {
   filename: string;
   idxs: Set<number>;
 }
+
+export type SelectedItemIdxs =
+  | (FileIdxs & { autoSelected: boolean })
+  | undefined;
 
 interface Props {
   filename: string;

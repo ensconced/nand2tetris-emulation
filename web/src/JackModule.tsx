@@ -2,7 +2,7 @@ import React from "react";
 import { FileIdx, NodeInfoId } from ".";
 import { Token } from "../../bindings/Token";
 import { TokenKind } from "../../bindings/TokenKind";
-import CodePanel, { FileIdxs } from "./code-panel";
+import CodePanel, { FileIdxs, SelectedItemIdxs } from "./code-panel";
 import { findInnermostJackNode } from "./sourcemapUtils";
 
 interface Props {
@@ -11,16 +11,14 @@ interface Props {
   tokens: Array<Token<TokenKind>>;
   commands: Array<string>;
   hoveredTokens: FileIdxs | undefined;
-  mouseSelectedTokenIdxs: FileIdxs | undefined;
-  autoSelectedTokens: FileIdxs | undefined;
+  selectedTokenIdxs: SelectedItemIdxs;
   setHoveredTokenIdx: (tokenIdx: FileIdx) => void;
   clearHoverState: () => void;
   setMouseSelectedVMCommandIdx: (idx: FileIdx | undefined) => void;
   setHoveredVMCommandIdx: (idx: FileIdx | undefined) => void;
   setMouseSelectedJackNode: (node: NodeInfoId | undefined) => void;
   hoveredVMCommands: FileIdxs | undefined;
-  mouseSelectedVMCommandIdxs: FileIdxs | undefined;
-  autoSelectedVMCommands: FileIdxs | undefined;
+  selectedVMCommands: SelectedItemIdxs;
 }
 
 export default function JackModule({
@@ -29,15 +27,13 @@ export default function JackModule({
   commands,
   hidden,
   hoveredTokens,
-  mouseSelectedTokenIdxs,
-  autoSelectedTokens,
+  selectedTokenIdxs,
   setHoveredTokenIdx,
   clearHoverState,
   setMouseSelectedVMCommandIdx,
   setMouseSelectedJackNode,
   hoveredVMCommands,
-  mouseSelectedVMCommandIdxs,
-  autoSelectedVMCommands,
+  selectedVMCommands,
   setHoveredVMCommandIdx,
 }: Props) {
   const tokenContents = tokens.map((token) => token.source);
@@ -50,8 +46,7 @@ export default function JackModule({
           filename={filename}
           items={tokenContents}
           hoveredItemIdxs={hoveredTokens}
-          mouseSelectedItemIdxs={mouseSelectedTokenIdxs}
-          autoSelectedItemIdxs={autoSelectedTokens}
+          selectedItemIdxs={selectedTokenIdxs}
           onSpanMouseEnter={(idx) => {
             setHoveredTokenIdx({ filename, idx });
           }}
@@ -65,8 +60,7 @@ export default function JackModule({
           filename={filename}
           items={vmCommandsWithNewLines}
           hoveredItemIdxs={hoveredVMCommands}
-          mouseSelectedItemIdxs={mouseSelectedVMCommandIdxs}
-          autoSelectedItemIdxs={autoSelectedVMCommands}
+          selectedItemIdxs={selectedVMCommands}
           onSpanMouseEnter={(idx) => setHoveredVMCommandIdx({ filename, idx })}
           onSpanMouseLeave={clearHoverState}
           onSpanClick={(idx) => {

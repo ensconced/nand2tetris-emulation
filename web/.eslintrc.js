@@ -5,6 +5,7 @@ module.exports = {
   },
   rules: {
     "@typescript-eslint/no-unnecessary-condition": "error",
+    "@typescript-eslint/no-unused-vars": "error",
   },
   parser: "@typescript-eslint/parser",
   parserOptions: {

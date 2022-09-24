@@ -137,25 +137,37 @@ function App() {
             </>
           ))}
         </fieldset>
-        {filenames.map((filename, idx) => (
-          <JackModule
-            tokens={tokensByFilename[filename]!}
-            commands={vmCommands[filename]!}
-            filename={filename}
-            hidden={idx !== openFileIdx}
-            hoveredTokens={hoveredTokens}
-            mouseSelectedTokenIdxs={mouseSelectedTokenIdxs}
-            hoveredVMCommands={hoveredVMCommands}
-            mouseSelectedVMCommandIdxs={mouseSelectedVMCommandIdxs}
-            autoSelectedTokens={autoSelectedTokens}
-            autoSelectedVMCommands={autoSelectedVMCommands}
-            setHoveredTokenIdx={setDirectlyHoveredToken}
-            setHoveredVMCommandIdx={setDirectlyHoveredVMCommand}
-            setMouseSelectedJackNode={setMouseSelectedJackNode}
-            setMouseSelectedVMCommandIdx={setMouseSelectedVMCommandIdx}
-            clearHoverState={clearHoverState}
-          />
-        ))}
+        {filenames.map((filename, idx) => {
+          const selectedTokenIdxs = mouseSelectedTokenIdxs
+            ? { ...mouseSelectedTokenIdxs, autoSelected: false }
+            : autoSelectedTokens
+            ? { ...autoSelectedTokens, autoSelected: true }
+            : undefined;
+
+          const selectedVMCommands = mouseSelectedVMCommandIdxs
+            ? { ...mouseSelectedVMCommandIdxs, autoSelected: false }
+            : autoSelectedVMCommands
+            ? { ...autoSelectedVMCommands, autoSelected: true }
+            : undefined;
+
+          return (
+            <JackModule
+              tokens={tokensByFilename[filename]!}
+              commands={vmCommands[filename]!}
+              filename={filename}
+              hidden={idx !== openFileIdx}
+              hoveredTokens={hoveredTokens}
+              selectedTokenIdxs={selectedTokenIdxs}
+              hoveredVMCommands={hoveredVMCommands}
+              selectedVMCommands={selectedVMCommands}
+              setHoveredTokenIdx={setDirectlyHoveredToken}
+              setHoveredVMCommandIdx={setDirectlyHoveredVMCommand}
+              setMouseSelectedJackNode={setMouseSelectedJackNode}
+              setMouseSelectedVMCommandIdx={setMouseSelectedVMCommandIdx}
+              clearHoverState={clearHoverState}
+            />
+          );
+        })}
         <Footer
           hoveredJackNode={hoveredJackNode}
           selectedJackNode={autoSelectedJackNode || mouseSelectedJackNode}

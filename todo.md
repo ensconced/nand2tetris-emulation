@@ -1,14 +1,8 @@
-### extend sourcemap into vm compiler
-
-- refactor viz
+- refactoring - use useCoordinatedInteractions for selection as well as hover
+- include linting and tsc in test suite
 - display ASM and map hover/select to VM code / jack code
-- same again for asm -> machine code stage
-- restore Glyphs.jack.todo!!
-
-### optimizations
-
-- improve emitted code size
-- in order to do this, need to better be able to analyze where bloat is
+- use viz to improve emitted code size
+- restore Glyphs.jack.todo
 
 ### debugging
 
@@ -22,24 +16,12 @@
 - make error handling and reporting more consistent in parsers
 - maybe get rid of clap and parse cli args myself
 
-### Debug planning
+### realtime debugging
 
-### Phase 2 - visualise compiler output
-
-- add web frontend to visualize JSON data
-
-### Phase 3 - post hoc runtime debugging
-
-- initial MVP would be post hoc runtime debugging - run and record PC / other state on each tick, import this into debugger
 - add stepping ability
   - step line of jack code
   - step line of vm code
   - step asm instruction
-
-### Phase 4 - realtime runtime debugging
-
-- disadvantage of post hoc approach is that might need to collect huge amounts of data if program runs for a long time...
-- so instead just do it in realtime
 
 # TODO
 

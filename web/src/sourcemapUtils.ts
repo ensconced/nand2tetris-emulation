@@ -13,7 +13,6 @@ const {
     std_lib_commands: stdLibCommands,
     user_commands: userCommands,
   },
-  vm_compiler_result: { sourcemap: vmCompilerSourcemap },
 } = compilerResult;
 
 export const filenames = Object.keys(tokensByFilename);

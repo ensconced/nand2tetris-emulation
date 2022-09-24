@@ -20,7 +20,7 @@ pub fn compile_files(src_path: &Path, dest_path: &Path) -> Result<(), io::Error>
         .iter()
         .map(|source_module| (source_module.filename.clone(), parse(source_module)))
         .collect();
-    let asm = codegen::generate_asm(&vm_compiler_inputs);
+    let asm = codegen::generate_asm(&HashMap::new(), &vm_compiler_inputs);
     todo!() // need to implement Display for ASMInstruction
             // fs::write(dest_path, asm.join("\n"))
 }

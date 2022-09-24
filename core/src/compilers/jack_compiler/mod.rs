@@ -32,28 +32,40 @@ pub struct JackCompilerResult {
     pub sourcemaps: HashMap<PathBuf, JackCompilerSourceMap>,
     pub tokens: HashMap<PathBuf, Vec<Token<TokenKind>>>,
     #[ts(type = "Record<string, Array<string>>")]
-    pub vm_commands: HashMap<PathBuf, Vec<Command>>,
+    pub std_lib_commands: HashMap<PathBuf, Vec<Command>>,
+    #[ts(type = "Record<string, Array<string>>")]
+    pub user_commands: HashMap<PathBuf, Vec<Command>>,
 }
 
-pub fn compile_jack(jack_code: Vec<SourceModule>) -> JackCompilerResult {
+fn compile_jack_mod(jack_source_module: SourceModule, result: &mut JackCompilerResult, is_std_lib: bool) {
+    let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(&jack_source_module.source);
+    let parse_result = parse(&tokens);
+    let codegen_result = generate_vm_code(parse_result.class);
+    let sourcemap = JackCompilerSourceMap {
+        parser_sourcemap: parse_result.sourcemap,
+        codegen_sourcemap: codegen_result.sourcemap,
+    };
+
+    result.sourcemaps.insert(jack_source_module.filename.clone(), sourcemap);
+    result.tokens.insert(jack_source_module.filename.clone(), tokens);
+    if is_std_lib {
+        result.std_lib_commands.insert(jack_source_module.filename, codegen_result.commands);
+    } else {
+        result.user_commands.insert(jack_source_module.filename, codegen_result.commands);
+    }
+}
+
+pub fn compile_jack(user_code: Vec<SourceModule>) -> JackCompilerResult {
     let std_lib_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../std_lib");
     let std_lib_source: Vec<_> = get_source_modules(&std_lib_dir).expect("failed to get stdlib modules");
 
     let mut result = JackCompilerResult::default();
 
-    let all_source_modules = std_lib_source.into_iter().chain(jack_code.into_iter());
-    for jack_source_module in all_source_modules {
-        let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(&jack_source_module.source);
-        let parse_result = parse(&tokens);
-        let codegen_result = generate_vm_code(parse_result.class);
-        let sourcemap = JackCompilerSourceMap {
-            parser_sourcemap: parse_result.sourcemap,
-            codegen_sourcemap: codegen_result.sourcemap,
-        };
-
-        result.sourcemaps.insert(jack_source_module.filename.clone(), sourcemap);
-        result.tokens.insert(jack_source_module.filename.clone(), tokens);
-        result.vm_commands.insert(jack_source_module.filename.clone(), codegen_result.commands);
+    for std_lib_module in std_lib_source {
+        compile_jack_mod(std_lib_module, &mut result, true);
+    }
+    for user_code_module in user_code {
+        compile_jack_mod(user_code_module, &mut result, false);
     }
     result
 }

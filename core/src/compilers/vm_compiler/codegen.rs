@@ -958,17 +958,23 @@ pub struct VMCompilerResult {
     pub instructions: Vec<ASMInstruction>,
 }
 
-pub fn generate_asm(inputs: &HashMap<PathBuf, Vec<Command>>) -> VMCompilerResult {
+pub fn generate_asm(std_lib_commands: &HashMap<PathBuf, Vec<Command>>, user_commands: &HashMap<PathBuf, Vec<Command>>) -> VMCompilerResult {
     let mut sourcemap = SourceMap::new();
     let mut code_generator = CodeGenerator::new();
     let mut instructions = prelude();
-    for (filename, commands) in inputs {
-        for (vm_command_idx, command) in commands.iter().enumerate() {
-            for asm_instruction in code_generator.compile_vm_command(command, filename) {
-                sourcemap.record_asm_instruction(filename, vm_command_idx, instructions.len());
-                instructions.push(asm_instruction);
+    let mut generate_asm_for_commands = |commands: &HashMap<PathBuf, Vec<Command>>| {
+        for (filename, commands) in commands {
+            for (vm_command_idx, command) in commands.iter().enumerate() {
+                for asm_instruction in code_generator.compile_vm_command(command, filename) {
+                    sourcemap.record_asm_instruction(filename, vm_command_idx, instructions.len());
+                    instructions.push(asm_instruction);
+                }
             }
         }
-    }
+    };
+    // The stdlib modules are always compiled first. This makes it easier to predict where static
+    // variables in the user code will be placed, which is useful when writing tests.
+    generate_asm_for_commands(std_lib_commands);
+    generate_asm_for_commands(user_commands);
     VMCompilerResult { sourcemap, instructions }
 }

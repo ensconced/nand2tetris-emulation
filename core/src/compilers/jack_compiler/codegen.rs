@@ -647,8 +647,10 @@ pub struct JackCodegenResult {
 }
 
 pub fn generate_vm_code(class: Class) -> JackCodegenResult {
-    let mut code_generator = CodeGenerator::default();
-    code_generator.class_name = Some(class.name.clone());
+    let mut code_generator = CodeGenerator {
+        class_name: Some(class.name.clone()),
+        ..Default::default()
+    };
     let class_instance_size = code_generator.compile_var_declarations(&class.var_declarations);
     code_generator.compile_subroutines(&class.subroutine_declarations, class_instance_size);
     JackCodegenResult {

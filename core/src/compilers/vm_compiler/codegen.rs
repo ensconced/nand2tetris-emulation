@@ -593,12 +593,18 @@ impl CodeGenerator {
     }
 
     fn compile_function_call(&mut self, function_name: &str, arg_count: u16) -> Vec<ASMInstruction> {
-        fn load_return_address_into_d(return_address_label: &str) -> Vec<ASMInstruction> {
+        fn load_return_address_into_r_14(return_address_label: &str) -> Vec<ASMInstruction> {
             vec![
                 ASMInstruction::A(AValue::Symbolic(return_address_label.to_string())),
                 ASMInstruction::C {
                     expr: "A".to_string(),
                     dest: Some("D".to_string()),
+                    jump: None,
+                },
+                ASMInstruction::A(AValue::Symbolic("R14".to_string())),
+                ASMInstruction::C {
+                    expr: "D".to_string(),
+                    dest: Some("M".to_string()),
                     jump: None,
                 },
             ]
@@ -670,9 +676,8 @@ impl CodeGenerator {
         self.return_address_count += 1;
 
         vec![
-            load_return_address_into_d(&return_address_label),
-            push_from_d_register(),
-            self.call_subroutine("push_caller_pointers".to_string()),
+            load_return_address_into_r_14(&return_address_label),
+            self.call_subroutine("push_from_R14_then_push_caller_pointers".to_string()),
             set_arg_pointer(arg_count),
             set_lcl_pointer(),
             jump(function_name, &return_address_label),
@@ -967,22 +972,30 @@ pub struct VMCompilerResult {
 
 fn subroutine_block() -> Vec<ASMInstruction> {
     let subroutines: HashMap<&str, Vec<ASMInstruction>> = HashMap::from([(
-        "push_caller_pointers",
-        vec!["LCL", "ARG", "THIS", "THAT"]
+        "push_from_R14_then_push_caller_pointers",
+        vec![
+            ASMInstruction::A(AValue::Symbolic("R14".to_string())),
+            ASMInstruction::C {
+                expr: "M".to_string(),
+                dest: Some("D".to_string()),
+                jump: None,
+            },
+        ]
+        .into_iter()
+        .chain(push_from_d_register().into_iter())
+        .chain(vec!["LCL", "ARG", "THIS", "THAT"].into_iter().flat_map(|pointer| {
+            vec![
+                ASMInstruction::A(AValue::Symbolic(pointer.to_string())),
+                ASMInstruction::C {
+                    expr: "M".to_string(),
+                    dest: Some("D".to_string()),
+                    jump: None,
+                },
+            ]
             .into_iter()
-            .flat_map(|pointer| {
-                vec![
-                    ASMInstruction::A(AValue::Symbolic(pointer.to_string())),
-                    ASMInstruction::C {
-                        expr: "M".to_string(),
-                        dest: Some("D".to_string()),
-                        jump: None,
-                    },
-                ]
-                .into_iter()
-                .chain(push_from_d_register())
-            })
-            .collect(),
+            .chain(push_from_d_register())
+        }))
+        .collect(),
     )]);
 
     subroutines

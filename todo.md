@@ -1,8 +1,9 @@
-- show asm instruction count
+- write some comments about how asm subroutines work
+- further optimization of function calls
+- further optimization of Glyphs module more generally...can we avoid having so many distinct Memory.alloc's?
 - refactoring - tidy up selection clearing...
 - show contextual jack node
 - include linting and tsc in test suite
-- use viz to improve emitted code size
 - restore Glyphs.jack.todo
 
 ### debugging

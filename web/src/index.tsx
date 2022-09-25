@@ -1,19 +1,10 @@
 import "./styles/reset.css";
 import { NodeInfo } from "../../bindings/NodeInfo";
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
-import { FileIdxs } from "./code-panel";
 import Footer from "./Footer";
 import ASMPanel from "./ASMPanel";
-import {
-  allVMCommandIdxs,
-  filenames,
-  getJackNodeByIndex,
-  jackNodeTokens,
-  tokensByFilename,
-  vmCommandJackNodeIdx,
-  vmCommands,
-} from "./sourcemapUtils";
+import { filenames, tokensByFilename, vmCommands } from "./sourcemapUtils";
 import useCoordinatedInteractions from "./useCoordinatedInteractions";
 import JackModule from "./JackModule";
 
@@ -50,68 +41,34 @@ function App() {
     interactedInstructionIdxs: hoveredInstructionIdxs,
     interactedJackNode: hoveredJackNode,
   } = useCoordinatedInteractions(
+    "hover",
     directlyHoveredVMCommand,
     directlyHoveredToken,
     directlyHoveredInstructionIdx
   );
 
-  const [mouseSelectedJackNode, setMouseSelectedJackNode] =
-    useState<NodeInfoId>();
-  const [mouseSelectedVMCommandIdx, setMouseSelectedVMCommandIdx] =
+  const [directlySelectedToken, setDirectlySelectedToken] = useState<FileIdx>();
+  const [directlySelectedVMCommand, setMouseSelectedVMCommandIdx] =
     useState<FileIdx>();
+  const [directlySelectedInstructionIdx, setDirectlySelectedInstructionIdx] =
+    useState<number>();
+
+  const {
+    interactedTokens: selectedTokens,
+    interactedVMCommands: selectedVMCommands,
+    interactedInstructionIdxs: selectedInstructionIdxs,
+    interactedJackNode: selectedJackNode,
+  } = useCoordinatedInteractions(
+    "selection",
+    directlySelectedVMCommand,
+    directlySelectedToken,
+    directlySelectedInstructionIdx
+  );
 
   function clearHoverState() {
     setDirectlyHoveredToken(undefined);
     setDirectlyHoveredVMCommand(undefined);
   }
-
-  const autoSelectedVMCommands = useMemo<FileIdxs | undefined>(() => {
-    return (
-      mouseSelectedJackNode && {
-        filename: mouseSelectedJackNode.filename,
-        idxs: new Set(
-          allVMCommandIdxs({
-            filename: mouseSelectedJackNode.filename,
-            idx: mouseSelectedJackNode.node.index,
-          })
-        ),
-      }
-    );
-  }, [mouseSelectedJackNode]);
-
-  const autoSelectedJackNodeIdx = useMemo<FileIdx | undefined>(() => {
-    if (mouseSelectedVMCommandIdx === undefined) return undefined;
-    return vmCommandJackNodeIdx(mouseSelectedVMCommandIdx);
-  }, [mouseSelectedVMCommandIdx]);
-
-  const autoSelectedJackNode = useMemo<NodeInfoId | undefined>(() => {
-    return autoSelectedJackNodeIdx === undefined
-      ? undefined
-      : {
-          filename: autoSelectedJackNodeIdx.filename,
-          node: getJackNodeByIndex(autoSelectedJackNodeIdx),
-        };
-  }, [autoSelectedJackNodeIdx]);
-
-  const autoSelectedTokens = useMemo<FileIdxs | undefined>(() => {
-    return autoSelectedJackNode
-      ? jackNodeTokens(autoSelectedJackNode)
-      : undefined;
-  }, [autoSelectedJackNode]);
-
-  const mouseSelectedTokenIdxs = useMemo<FileIdxs | undefined>(
-    () => jackNodeTokens(mouseSelectedJackNode),
-    [mouseSelectedJackNode]
-  );
-
-  const mouseSelectedVMCommandIdxs = useMemo<FileIdxs | undefined>(() => {
-    return autoSelectedJackNodeIdx === undefined
-      ? undefined
-      : {
-          filename: autoSelectedJackNodeIdx.filename,
-          idxs: new Set(allVMCommandIdxs(autoSelectedJackNodeIdx)),
-        };
-  }, [autoSelectedJackNodeIdx]);
 
   return (
     <div style={{ display: "flex" }}>
@@ -125,7 +82,7 @@ function App() {
       >
         <fieldset style={{ flex: "0 0 auto" }}>
           {filenames.map((filename, idx) => (
-            <>
+            <React.Fragment key={filename}>
               <input
                 id={`file-${idx}`}
                 type="radio"
@@ -134,35 +91,24 @@ function App() {
                 onChange={() => setOpenFileIdx(idx)}
               />
               <label htmlFor={`file-${idx}`}>{filename}</label>
-            </>
+            </React.Fragment>
           ))}
         </fieldset>
         {filenames.map((filename, idx) => {
-          const selectedTokenIdxs = mouseSelectedTokenIdxs
-            ? { ...mouseSelectedTokenIdxs, autoSelected: false }
-            : autoSelectedTokens
-            ? { ...autoSelectedTokens, autoSelected: true }
-            : undefined;
-
-          const selectedVMCommands = mouseSelectedVMCommandIdxs
-            ? { ...mouseSelectedVMCommandIdxs, autoSelected: false }
-            : autoSelectedVMCommands
-            ? { ...autoSelectedVMCommands, autoSelected: true }
-            : undefined;
-
           return (
             <JackModule
+              key={filename}
               tokens={tokensByFilename[filename]!}
               commands={vmCommands[filename]!}
               filename={filename}
               hidden={idx !== openFileIdx}
               hoveredTokens={hoveredTokens}
-              selectedTokenIdxs={selectedTokenIdxs}
+              selectedTokenIdxs={selectedTokens}
               hoveredVMCommands={hoveredVMCommands}
               selectedVMCommands={selectedVMCommands}
               setHoveredTokenIdx={setDirectlyHoveredToken}
               setHoveredVMCommandIdx={setDirectlyHoveredVMCommand}
-              setMouseSelectedJackNode={setMouseSelectedJackNode}
+              setMouseSelectedTokenIdx={setDirectlySelectedToken}
               setMouseSelectedVMCommandIdx={setMouseSelectedVMCommandIdx}
               clearHoverState={clearHoverState}
             />
@@ -170,17 +116,25 @@ function App() {
         })}
         <Footer
           hoveredJackNode={hoveredJackNode}
-          selectedJackNode={autoSelectedJackNode || mouseSelectedJackNode}
+          selectedJackNode={selectedJackNode}
         />
       </div>
       <ASMPanel
         directlyHoveredInstructionIdx={directlyHoveredInstructionIdx}
         setDirectlyHoveredInstructionIdx={setDirectlyHoveredInstructionIdx}
-        hoveredInstructionIdxs={hoveredInstructionIdxs}
+        setDirectlySelectedInstructionIdx={setDirectlySelectedInstructionIdx}
+        setDirectlySelectedVMCommand={setMouseSelectedVMCommandIdx}
+        setDirectlySelectedToken={setDirectlySelectedToken}
+        hoveredInstructionIdxs={hoveredInstructionIdxs?.idxs ?? new Set()}
+        selectedInstructionIdxs={selectedInstructionIdxs}
       />
     </div>
   );
 }
 
 const root = createRoot(getElementById("root"));
-root.render(<App />);
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);

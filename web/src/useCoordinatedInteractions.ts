@@ -3,7 +3,7 @@ import { FileIdx, NodeInfoId } from ".";
 import { CompilerResult } from "../../bindings/CompilerResult";
 
 import data from "../debug-output.json";
-import { FileIdxs } from "./code-panel";
+import { InteractedInstructionIdxs, InteractedItemIdxs } from "./code-panel";
 import {
   allVMCommandIdxs,
   findInnermostJackNode,
@@ -13,15 +13,22 @@ import {
 
 const compilerResult = data as CompilerResult;
 const {
-  jack_compiler_result: { sourcemaps: jackCompilerSourcemaps },
   vm_compiler_result: { sourcemap: vmCompilerSourcemap },
 } = compilerResult;
 
+interface InteractedItems {
+  interactedTokens: InteractedItemIdxs;
+  interactedVMCommands: InteractedItemIdxs;
+  interactedInstructionIdxs: InteractedInstructionIdxs;
+  interactedJackNode: NodeInfoId | undefined;
+}
+
 export default function useCoordinatedInteractions(
+  id: string,
   directlyInteractedVMCmd: FileIdx | undefined,
   directlyInteractedToken: FileIdx | undefined,
   directlyInteractedInstructionIdx: number | undefined
-) {
+): InteractedItems {
   const singleInteractedVMCmd = useMemo(() => {
     if (directlyInteractedInstructionIdx === undefined) return undefined;
     return vmCompilerSourcemap.asm_instruction_idx_to_vm_cmd[
@@ -48,12 +55,16 @@ export default function useCoordinatedInteractions(
     });
   }, [singleInteractedVMCmd]);
 
-  const interactedTokens = useMemo(
-    () => jackNodeTokens(interactedJackNode),
-    [interactedJackNode]
-  );
+  const interactedTokens = useMemo<InteractedItemIdxs>(() => {
+    const tokens = jackNodeTokens(interactedJackNode);
+    if (tokens === undefined) return undefined;
+    return {
+      ...tokens,
+      auto: directlyInteractedToken === undefined,
+    };
+  }, [interactedJackNode, directlyInteractedToken]);
 
-  const interactedVMCommands = useMemo<FileIdxs | undefined>(() => {
+  const interactedVMCommands = useMemo<InteractedItemIdxs>(() => {
     if (interactedJackNode) {
       return {
         filename: interactedJackNode.filename,
@@ -63,6 +74,7 @@ export default function useCoordinatedInteractions(
             idx: interactedJackNode.node.index,
           })
         ),
+        auto: directlyInteractedVMCmd === undefined,
       };
     }
 
@@ -70,17 +82,18 @@ export default function useCoordinatedInteractions(
       return {
         filename: singleInteractedVMCmd.filename,
         idxs: new Set([singleInteractedVMCmd.vm_command_idx]),
+        auto: directlyInteractedVMCmd === undefined,
       };
     }
-  }, [interactedJackNode, singleInteractedVMCmd]);
+  }, [interactedJackNode, singleInteractedVMCmd, directlyInteractedVMCmd]);
 
-  const interactedInstructionIdxs = useMemo<Set<number>>(() => {
-    const result = new Set<number>();
+  const interactedInstructionIdxs = useMemo(() => {
     if (interactedVMCommands === undefined) {
       return directlyInteractedInstructionIdx === undefined
-        ? new Set()
-        : new Set([directlyInteractedInstructionIdx]);
+        ? undefined
+        : { idxs: new Set([directlyInteractedInstructionIdx]), auto: false };
     }
+
     const vmCommandIdxToASMInstructionIdxs =
       vmCompilerSourcemap.vm_filename_and_idx_to_asm_instruction_idx[
         interactedVMCommands.filename
@@ -92,6 +105,7 @@ export default function useCoordinatedInteractions(
       );
     }
 
+    const result = new Set<number>();
     interactedVMCommands.idxs.forEach((vmCmdIdx) => {
       const asmInstructions = vmCommandIdxToASMInstructionIdxs[vmCmdIdx];
       if (asmInstructions === undefined) {
@@ -102,7 +116,7 @@ export default function useCoordinatedInteractions(
       asmInstructions.forEach((instruction) => result.add(instruction));
     });
 
-    return result;
+    return { idxs: result, auto: true };
   }, [directlyInteractedInstructionIdx, interactedVMCommands]);
 
   return {

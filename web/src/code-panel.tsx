@@ -6,21 +6,24 @@ export interface FileIdxs {
   idxs: Set<number>;
 }
 
-export type SelectedItemIdxs =
-  | (FileIdxs & { autoSelected: boolean })
+export type InteractedItemIdxs = (FileIdxs & { auto: boolean }) | undefined;
+export type InteractedInstructionIdxs =
+  | Omit<NonNullable<InteractedItemIdxs>, "filename">
   | undefined;
 
 interface Props {
+  id: string;
   filename: string;
   items: Array<string>;
   hoveredItemIdxs: FileIdxs | undefined;
-  selectedItemIdxs: (FileIdxs & { autoSelected: boolean }) | undefined;
+  selectedItemIdxs: InteractedItemIdxs;
   onSpanMouseEnter(itemIdx: number): void;
   onSpanClick(itemIdx: number): void;
   onSpanMouseLeave(): void;
 }
 
 export default function CodePanel({
+  id,
   filename,
   items,
   hoveredItemIdxs,
@@ -32,14 +35,20 @@ export default function CodePanel({
   const codeRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    if (
-      selectedItemIdxs?.autoSelected &&
-      selectedItemIdxs.filename === filename
-    ) {
+    if (selectedItemIdxs?.auto && selectedItemIdxs.filename === filename) {
       const firstHighlighedIdx = Math.min(...selectedItemIdxs.idxs);
-      codeRef.current?.children[firstHighlighedIdx]?.scrollIntoView({
-        behavior: "smooth",
-      });
+      // scrollIntoView with `behavior: smooth` doesn't work for multiple elements simultaneously in chrome
+      // https://bugs.chromium.org/p/chromium/issues/detail?id=833617
+      if (codeRef.current) {
+        const child = codeRef.current.children[firstHighlighedIdx];
+        if (child instanceof HTMLElement) {
+          codeRef.current.scrollTo({
+            top: child.offsetTop,
+            left: 0,
+            behavior: "smooth",
+          });
+        }
+      }
     }
   }, [selectedItemIdxs]);
 

@@ -1,6 +1,6 @@
 import "./styles/reset.css";
 import { NodeInfo } from "../../bindings/NodeInfo";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import Footer from "./Footer";
 import ASMPanel from "./ASMPanel";
@@ -27,6 +27,7 @@ export interface FileIdx {
 }
 
 function App() {
+  const jackModuleContainer = useRef<HTMLElement>(null);
   const [openFileIdx, setOpenFileIdx] = useState(0);
 
   const [directlyHoveredVMCommand, setDirectlyHoveredVMCommand] =
@@ -58,12 +59,28 @@ function App() {
     interactedVMCommands: selectedVMCommands,
     interactedInstructionIdxs: selectedInstructionIdxs,
     interactedJackNode: selectedJackNode,
+    interactedFilename: selectedFilename,
   } = useCoordinatedInteractions(
     "selection",
     directlySelectedVMCommand,
     directlySelectedToken,
     directlySelectedInstructionIdx
   );
+
+  useEffect(() => {
+    const foundIndex = filenames.findIndex(
+      (filename) => filename === selectedFilename
+    );
+    const index = foundIndex === -1 ? 0 : foundIndex;
+    setOpenFileIdx(index);
+  }, [selectedFilename]);
+
+  useEffect(() => {
+    const container = jackModuleContainer.current;
+    if (container instanceof HTMLElement) {
+      container.scrollTop = openFileIdx * container.clientHeight;
+    }
+  }, [openFileIdx]);
 
   function clearHoverState() {
     setDirectlyHoveredToken(undefined);
@@ -94,26 +111,34 @@ function App() {
             </React.Fragment>
           ))}
         </fieldset>
-        {filenames.map((filename, idx) => {
-          return (
-            <JackModule
-              key={filename}
-              tokens={tokensByFilename[filename]!}
-              commands={vmCommands[filename]!}
-              filename={filename}
-              hidden={idx !== openFileIdx}
-              hoveredTokens={hoveredTokens}
-              selectedTokenIdxs={selectedTokens}
-              hoveredVMCommands={hoveredVMCommands}
-              selectedVMCommands={selectedVMCommands}
-              setHoveredTokenIdx={setDirectlyHoveredToken}
-              setHoveredVMCommandIdx={setDirectlyHoveredVMCommand}
-              setMouseSelectedTokenIdx={setDirectlySelectedToken}
-              setMouseSelectedVMCommandIdx={setMouseSelectedVMCommandIdx}
-              clearHoverState={clearHoverState}
-            />
-          );
-        })}
+        <div
+          ref={jackModuleContainer}
+          style={{ flex: "1", minHeight: 0, overflow: "hidden" }}
+        >
+          {filenames.map((filename, idx) => {
+            return (
+              <JackModule
+                key={filename}
+                tokens={tokensByFilename[filename]!}
+                commands={vmCommands[filename]!}
+                filename={filename}
+                hidden={idx !== openFileIdx}
+                hoveredTokens={hoveredTokens}
+                selectedTokenIdxs={selectedTokens}
+                hoveredVMCommands={hoveredVMCommands}
+                selectedVMCommands={selectedVMCommands}
+                setHoveredTokenIdx={setDirectlyHoveredToken}
+                setHoveredVMCommandIdx={setDirectlyHoveredVMCommand}
+                setMouseSelectedTokenIdx={setDirectlySelectedToken}
+                setMouseSelectedVMCommandIdx={setMouseSelectedVMCommandIdx}
+                setDirectlySelectedInstructionIdxs={
+                  setDirectlySelectedInstructionIdx
+                }
+                clearHoverState={clearHoverState}
+              />
+            );
+          })}
+        </div>
         <Footer
           hoveredJackNode={hoveredJackNode}
           selectedJackNode={selectedJackNode}

@@ -2,7 +2,7 @@ import HtmlWebpackPlugin from "html-webpack-plugin";
 import path from "path";
 
 module.exports = {
-  mode: "development",
+  mode: "production",
   entry: "./src/index.tsx",
   output: {
     path: path.resolve(__dirname, "./dist"),
@@ -24,6 +24,10 @@ module.exports = {
         use: ["style-loader", "css-loader"],
       },
     ],
+  },
+  performance: {
+    maxAssetSize: 10 * 1024 * 1024,
+    maxEntrypointSize: 10 * 1024 * 1024,
   },
   resolve: {
     extensions: [".js", ".json", ".ts", ".tsx"],

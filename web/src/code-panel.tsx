@@ -37,7 +37,8 @@ export default function CodePanel({
   useEffect(() => {
     if (selectedItemIdxs?.auto && selectedItemIdxs.filename === filename) {
       const firstHighlighedIdx = Math.min(...selectedItemIdxs.idxs);
-      // scrollIntoView with `behavior: smooth` doesn't work for multiple elements simultaneously in chrome
+      // scrollIntoView would make this slightly easier, but it doesn't work with `behavior: smooth`
+      // for multiple elements simultaneously in chrome
       // https://bugs.chromium.org/p/chromium/issues/detail?id=833617
       if (codeRef.current) {
         const child = codeRef.current.children[firstHighlighedIdx];

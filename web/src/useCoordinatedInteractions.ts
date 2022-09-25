@@ -21,6 +21,7 @@ interface InteractedItems {
   interactedVMCommands: InteractedItemIdxs;
   interactedInstructionIdxs: InteractedInstructionIdxs;
   interactedJackNode: NodeInfoId | undefined;
+  interactedFilename: string | undefined;
 }
 
 export default function useCoordinatedInteractions(
@@ -89,9 +90,10 @@ export default function useCoordinatedInteractions(
 
   const interactedInstructionIdxs = useMemo(() => {
     if (interactedVMCommands === undefined) {
-      return directlyInteractedInstructionIdx === undefined
-        ? undefined
-        : { idxs: new Set([directlyInteractedInstructionIdx]), auto: false };
+      return undefined;
+      // return directlyInteractedInstructionIdx === undefined
+      //   ? undefined
+      //   : { idxs: new Set([directlyInteractedInstructionIdx]), auto: false };
     }
 
     const vmCommandIdxToASMInstructionIdxs =
@@ -116,13 +118,21 @@ export default function useCoordinatedInteractions(
       asmInstructions.forEach((instruction) => result.add(instruction));
     });
 
-    return { idxs: result, auto: true };
+    return {
+      idxs: result,
+      auto: directlyInteractedInstructionIdx === undefined,
+    };
   }, [directlyInteractedInstructionIdx, interactedVMCommands]);
+
+  const interactedFilename = useMemo(() => {
+    return interactedVMCommands?.filename;
+  }, [interactedVMCommands]);
 
   return {
     interactedTokens,
     interactedVMCommands,
     interactedInstructionIdxs,
     interactedJackNode,
+    interactedFilename,
   };
 }

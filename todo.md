@@ -1,6 +1,5 @@
-- refactoring - use useCoordinatedInteractions for selection as well as hover
+- refactoring - tidy up selection clearing...
 - include linting and tsc in test suite
-- display ASM and map hover/select to VM code / jack code
 - use viz to improve emitted code size
 - restore Glyphs.jack.todo
 

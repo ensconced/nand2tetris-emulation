@@ -313,13 +313,8 @@ fn pop_into_pointer_memory_segment(segment: &PointerSegmentVariant, index: u16) 
     vec![pop_into_d_register("SP"), instructions].into_iter().flatten().collect()
 }
 
-fn push_from_constant(constant: u16) -> Vec<ASMInstruction> {
-    let max_constant = 32767;
-    if constant > max_constant {
-        panic!("constant {} is bigger than max of {}", constant, max_constant);
-    }
-
-    let load_constant_into_d = if constant == 0 || constant == 1 {
+fn load_constant_into_d(constant: u16) -> Vec<ASMInstruction> {
+    if constant == 0 || constant == 1 {
         vec![ASMInstruction::C {
             expr: constant.to_string(),
             dest: Some("D".to_string()),
@@ -334,9 +329,19 @@ fn push_from_constant(constant: u16) -> Vec<ASMInstruction> {
                 jump: None,
             },
         ]
-    };
+    }
+}
 
-    vec![load_constant_into_d, push_from_d_register()].into_iter().flatten().collect()
+fn push_from_constant(constant: u16) -> Vec<ASMInstruction> {
+    let max_constant = 32767;
+    if constant > max_constant {
+        panic!("constant {} is bigger than max of {}", constant, max_constant);
+    }
+
+    vec![load_constant_into_d(constant), push_from_d_register()]
+        .into_iter()
+        .flatten()
+        .collect()
 }
 
 #[derive(Default)]

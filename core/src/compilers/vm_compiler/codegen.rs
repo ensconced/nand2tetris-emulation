@@ -728,7 +728,7 @@ impl CodeGenerator {
 
         vec![
             load_constant_into_register(&return_address_label, "R8"),
-            self.call_subroutine("push_from_R8_then_push_caller_pointers".to_string()),
+            self.call_subroutine("push_return_address_and_caller_pointers".to_string()),
             set_arg_pointer(arg_count),
             set_lcl_pointer(),
             jump(function_name, &return_address_label),
@@ -1016,7 +1016,7 @@ pub struct VMCompilerResult {
 
 fn subroutine_block() -> Vec<ASMInstruction> {
     let subroutines: HashMap<&str, Vec<ASMInstruction>> = HashMap::from([(
-        "push_from_R8_then_push_caller_pointers",
+        "push_return_address_and_caller_pointers",
         vec![
             ASMInstruction::A(AValue::Symbolic("R8".to_string())),
             ASMInstruction::C {

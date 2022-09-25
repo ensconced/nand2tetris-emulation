@@ -1,6 +1,8 @@
 import HtmlWebpackPlugin from "html-webpack-plugin";
 import path from "path";
 
+const TEN_MEGABYTES = 10 * 1024 * 1024;
+
 module.exports = {
   mode: "production",
   entry: "./src/index.tsx",
@@ -26,8 +28,8 @@ module.exports = {
     ],
   },
   performance: {
-    maxAssetSize: 10 * 1024 * 1024,
-    maxEntrypointSize: 10 * 1024 * 1024,
+    maxAssetSize: TEN_MEGABYTES,
+    maxEntrypointSize: TEN_MEGABYTES,
   },
   resolve: {
     extensions: [".js", ".json", ".ts", ".tsx"],

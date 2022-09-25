@@ -39,7 +39,14 @@ export default function ASMPanel({
   }, [selectedInstructionIdxs]);
 
   return (
-    <div style={{ height: "100vh", overflow: "auto", display: "flex" }}>
+    <div
+      style={{
+        height: "100vh",
+        overflow: "auto",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       <CodePanel
         id={`${filename}`}
         filename={filename}
@@ -54,6 +61,9 @@ export default function ASMPanel({
           setDirectlySelectedInstructionIdx(idx);
         }}
       />
+      <code className="footer" style={{ color: "#ff79c6" }}>
+        selected instructions: {selectedItemIdxs?.idxs.size ?? 0}
+      </code>
     </div>
   );
 }

@@ -390,9 +390,9 @@ fn push_from_constant(constant: u16) -> Vec<ASMInstruction> {
     }
 }
 
-fn load_constant_into_register(return_address_label: &str, register: &str) -> Vec<ASMInstruction> {
+fn load_avalue_into_register(avalue: AValue, register: &str) -> Vec<ASMInstruction> {
     vec![
-        ASMInstruction::A(AValue::Symbolic(return_address_label.to_string())),
+        ASMInstruction::A(avalue),
         ASMInstruction::C {
             expr: "A".to_string(),
             dest: Some("D".to_string()),
@@ -661,52 +661,6 @@ impl CodeGenerator {
     }
 
     fn compile_function_call(&mut self, function_name: &str, arg_count: u16) -> Vec<ASMInstruction> {
-        fn set_arg_pointer(arg_count: u16) -> Vec<ASMInstruction> {
-            // At this point, all the arguments have been pushed to the stack,
-            // plus the return address, plus the four saved caller pointers.
-            // So to find the correct position for ARG, we can count 5 +
-            // arg_count steps back from the stack pointer.
-            let steps_back = 5 + arg_count;
-
-            vec![
-                ASMInstruction::A(AValue::Symbolic("SP".to_string())),
-                ASMInstruction::C {
-                    expr: "M".to_string(),
-                    dest: Some("D".to_string()),
-                    jump: None,
-                },
-                ASMInstruction::A(AValue::Numeric(steps_back.to_string())),
-                ASMInstruction::C {
-                    expr: "D-A".to_string(),
-                    dest: Some("D".to_string()),
-                    jump: None,
-                },
-                ASMInstruction::A(AValue::Symbolic("ARG".to_string())),
-                ASMInstruction::C {
-                    expr: "D".to_string(),
-                    dest: Some("M".to_string()),
-                    jump: None,
-                },
-            ]
-        }
-
-        fn set_lcl_pointer() -> Vec<ASMInstruction> {
-            vec![
-                ASMInstruction::A(AValue::Symbolic("SP".to_string())),
-                ASMInstruction::C {
-                    expr: "M".to_string(),
-                    dest: Some("D".to_string()),
-                    jump: None,
-                },
-                ASMInstruction::A(AValue::Symbolic("LCL".to_string())),
-                ASMInstruction::C {
-                    expr: "D".to_string(),
-                    dest: Some("M".to_string()),
-                    jump: None,
-                },
-            ]
-        }
-
         fn jump(function_name: &str, return_address_label: &str) -> Vec<ASMInstruction> {
             vec![
                 // Jump to the callee
@@ -727,10 +681,9 @@ impl CodeGenerator {
         self.return_address_count += 1;
 
         vec![
-            load_constant_into_register(&return_address_label, "R8"),
-            self.call_subroutine("push_return_address_and_caller_pointers".to_string()),
-            set_arg_pointer(arg_count),
-            set_lcl_pointer(),
+            load_avalue_into_register(AValue::Symbolic(return_address_label.to_string()), "R8"),
+            load_avalue_into_register(AValue::Numeric((5 + arg_count).to_string()), "R9"),
+            self.call_subroutine("call_function".to_string()),
             jump(function_name, &return_address_label),
         ]
         .into_iter()
@@ -1016,7 +969,7 @@ pub struct VMCompilerResult {
 
 fn subroutine_block() -> Vec<ASMInstruction> {
     let subroutines: HashMap<&str, Vec<ASMInstruction>> = HashMap::from([(
-        "push_return_address_and_caller_pointers",
+        "call_function",
         vec![
             ASMInstruction::A(AValue::Symbolic("R8".to_string())),
             ASMInstruction::C {
@@ -1026,7 +979,7 @@ fn subroutine_block() -> Vec<ASMInstruction> {
             },
         ]
         .into_iter()
-        .chain(push_from_d_register().into_iter())
+        .chain(push_from_d_register())
         .chain(vec!["LCL", "ARG", "THIS", "THAT"].into_iter().flat_map(|pointer| {
             vec![
                 ASMInstruction::A(AValue::Symbolic(pointer.to_string())),
@@ -1039,6 +992,54 @@ fn subroutine_block() -> Vec<ASMInstruction> {
             .into_iter()
             .chain(push_from_d_register())
         }))
+        .chain(
+            // Set arg pointer - at this point, all the arguments have been pushed to the stack,
+            // plus the return address, plus the four saved caller pointers.
+            // So to find the correct position for ARG, we can count 5 +
+            // arg_count steps back from the stack pointer.
+            vec![
+                ASMInstruction::A(AValue::Symbolic("SP".to_string())),
+                ASMInstruction::C {
+                    expr: "M".to_string(),
+                    dest: Some("D".to_string()),
+                    jump: None,
+                },
+                ASMInstruction::A(AValue::Symbolic("R9".to_string())),
+                ASMInstruction::C {
+                    expr: "M".to_string(),
+                    dest: Some("A".to_string()),
+                    jump: None,
+                },
+                ASMInstruction::C {
+                    expr: "D-A".to_string(),
+                    dest: Some("D".to_string()),
+                    jump: None,
+                },
+                ASMInstruction::A(AValue::Symbolic("ARG".to_string())),
+                ASMInstruction::C {
+                    expr: "D".to_string(),
+                    dest: Some("M".to_string()),
+                    jump: None,
+                },
+            ],
+        )
+        .chain(
+            // set lcl pointer
+            vec![
+                ASMInstruction::A(AValue::Symbolic("SP".to_string())),
+                ASMInstruction::C {
+                    expr: "M".to_string(),
+                    dest: Some("D".to_string()),
+                    jump: None,
+                },
+                ASMInstruction::A(AValue::Symbolic("LCL".to_string())),
+                ASMInstruction::C {
+                    expr: "D".to_string(),
+                    dest: Some("M".to_string()),
+                    jump: None,
+                },
+            ],
+        )
         .collect(),
     )]);
 

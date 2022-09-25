@@ -363,10 +363,31 @@ fn push_from_constant(constant: u16) -> Vec<ASMInstruction> {
         panic!("constant {} is bigger than max of {}", constant, max_constant);
     }
 
-    vec![load_constant_into_d(constant), push_from_d_register()]
-        .into_iter()
-        .flatten()
-        .collect()
+    if constant == 0 || constant == 1 {
+        vec![
+            ASMInstruction::A(AValue::Symbolic("SP".to_string())),
+            ASMInstruction::C {
+                expr: "M+1".to_string(),
+                dest: Some("M".to_string()),
+                jump: None,
+            },
+            ASMInstruction::C {
+                expr: "M-1".to_string(),
+                dest: Some("A".to_string()),
+                jump: None,
+            },
+            ASMInstruction::C {
+                expr: constant.to_string(),
+                dest: Some("M".to_string()),
+                jump: None,
+            },
+        ]
+    } else {
+        vec![load_constant_into_d(constant), push_from_d_register()]
+            .into_iter()
+            .flatten()
+            .collect()
+    }
 }
 
 #[derive(Default)]
@@ -719,17 +740,10 @@ impl CodeGenerator {
 
     fn compile_function_definition(&mut self, function_name: &str, local_var_count: u16) -> Vec<ASMInstruction> {
         fn initialize_locals(local_var_count: usize) -> Vec<ASMInstruction> {
-            iter::repeat_with(|| {
-                iter::once(ASMInstruction::C {
-                    expr: "0".to_string(),
-                    dest: Some("D".to_string()),
-                    jump: None,
-                })
-                .chain(push_from_d_register())
-            })
-            .take(local_var_count)
-            .flatten()
-            .collect()
+            iter::repeat_with(|| push_from_constant(0).into_iter())
+                .take(local_var_count)
+                .flatten()
+                .collect()
         }
         let result = iter::once(ASMInstruction::L {
             identifier: format!("$entry_{}", &function_name),

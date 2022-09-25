@@ -1,3 +1,4 @@
+- show asm instruction count
 - refactoring - tidy up selection clearing...
 - include linting and tsc in test suite
 - use viz to improve emitted code size

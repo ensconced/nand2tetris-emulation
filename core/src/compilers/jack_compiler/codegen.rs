@@ -584,6 +584,12 @@ impl CodeGenerator {
 
         self.record_vm_commands(commands, subroutine_declaration.node_idx);
         self.compile_statements(&subroutine.body.node.statements);
+
+        if let Some(ast_node) = subroutine.body.node.statements.last() {
+            if matches!(*ast_node.node, Statement::Return(_)) {
+                return;
+            }
+        }
         self.implicit_return(&subroutine.return_type, subroutine_declaration.node_idx);
     }
 

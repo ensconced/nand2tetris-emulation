@@ -202,6 +202,43 @@ fn pop_into_offset_memory_segment(segment: &OffsetSegmentVariant, index: u16) ->
     .collect()
 }
 
+fn load_pointer_value_into_a(pointer_address: &str, index: u16) -> Vec<ASMInstruction> {
+    if index == 0 {
+        vec![
+            ASMInstruction::A(AValue::Symbolic(pointer_address.to_string())),
+            ASMInstruction::C {
+                expr: "M".to_string(),
+                dest: Some("A".to_string()),
+                jump: None,
+            },
+        ]
+    } else if index == 1 {
+        vec![
+            ASMInstruction::A(AValue::Symbolic(pointer_address.to_string())),
+            ASMInstruction::C {
+                expr: "M+1".to_string(),
+                dest: Some("A".to_string()),
+                jump: None,
+            },
+        ]
+    } else {
+        vec![
+            load_constant_into_d(index),
+            vec![
+                ASMInstruction::A(AValue::Symbolic(pointer_address.to_string())),
+                ASMInstruction::C {
+                    expr: "M+D".to_string(),
+                    dest: Some("A".to_string()),
+                    jump: None,
+                },
+            ],
+        ]
+        .into_iter()
+        .flatten()
+        .collect()
+    }
+}
+
 fn push_from_pointer_memory_segment(segment: &PointerSegmentVariant, index: u16) -> Vec<ASMInstruction> {
     let pointer_address = match segment {
         Argument => "ARG",
@@ -209,21 +246,14 @@ fn push_from_pointer_memory_segment(segment: &PointerSegmentVariant, index: u16)
         This => "THIS",
         That => "THAT",
     };
+
     vec![
-        load_constant_into_d(index),
-        vec![
-            ASMInstruction::A(AValue::Symbolic(pointer_address.to_string())),
-            ASMInstruction::C {
-                expr: "M+D".to_string(),
-                dest: Some("A".to_string()),
-                jump: None,
-            },
-            ASMInstruction::C {
-                expr: "M".to_string(),
-                dest: Some("D".to_string()),
-                jump: None,
-            },
-        ],
+        load_pointer_value_into_a(pointer_address, index),
+        vec![ASMInstruction::C {
+            expr: "M".to_string(),
+            dest: Some("D".to_string()),
+            jump: None,
+        }],
         push_from_d_register(),
     ]
     .into_iter()

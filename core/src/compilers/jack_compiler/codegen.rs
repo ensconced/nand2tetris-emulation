@@ -40,6 +40,14 @@ pub struct CodeGenerator {
     vm_commands: Vec<Command>,
 }
 
+fn is_constant_zero(expression: &ASTNode<Expression>) -> bool {
+    if let Expression::PrimitiveTerm(PrimitiveTermVariant::IntegerConstant(int)) = &*expression.node {
+        int == "0"
+    } else {
+        false
+    }
+}
+
 impl CodeGenerator {
     fn record_vm_commands(&mut self, vm_commands: Vec<Command>, jack_node_idx: usize) {
         for vm_command in vm_commands {
@@ -100,20 +108,27 @@ impl CodeGenerator {
                 let_statement_node_idx,
             );
 
-            self.compile_expression(idx);
+            if !is_constant_zero(idx) {
+                self.compile_expression(idx);
+                self.record_vm_commands(
+                    vec![Command::Arithmetic(ArithmeticCommandVariant::Binary(BinaryArithmeticCommandVariant::Add))],
+                    let_statement_node_idx,
+                );
+            }
 
-            let commands = vec![
-                Command::Arithmetic(ArithmeticCommandVariant::Binary(BinaryArithmeticCommandVariant::Add)),
-                Command::Memory(MemoryCommandVariant::Pop(
-                    MemorySegmentVariant::OffsetSegment(OffsetSegmentVariant::Pointer),
-                    1,
-                )),
-                Command::Memory(MemoryCommandVariant::Pop(
-                    MemorySegmentVariant::PointerSegment(PointerSegmentVariant::That),
-                    0,
-                )),
-            ];
-            self.record_vm_commands(commands, let_statement_node_idx);
+            self.record_vm_commands(
+                vec![
+                    Command::Memory(MemoryCommandVariant::Pop(
+                        MemorySegmentVariant::OffsetSegment(OffsetSegmentVariant::Pointer),
+                        1,
+                    )),
+                    Command::Memory(MemoryCommandVariant::Pop(
+                        MemorySegmentVariant::PointerSegment(PointerSegmentVariant::That),
+                        0,
+                    )),
+                ],
+                let_statement_node_idx,
+            );
         } else {
             self.record_vm_commands(
                 vec![Command::Memory(MemoryCommandVariant::Pop(var_mem_segment, var_seg_idx as u16))],

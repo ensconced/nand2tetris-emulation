@@ -390,6 +390,23 @@ fn push_from_constant(constant: u16) -> Vec<ASMInstruction> {
     }
 }
 
+fn load_constant_into_register(return_address_label: &str, register: &str) -> Vec<ASMInstruction> {
+    vec![
+        ASMInstruction::A(AValue::Symbolic(return_address_label.to_string())),
+        ASMInstruction::C {
+            expr: "A".to_string(),
+            dest: Some("D".to_string()),
+            jump: None,
+        },
+        ASMInstruction::A(AValue::Symbolic(register.to_string())),
+        ASMInstruction::C {
+            expr: "D".to_string(),
+            dest: Some("M".to_string()),
+            jump: None,
+        },
+    ]
+}
+
 #[derive(Default)]
 struct CodeGenerator {
     after_set_to_false_count: u32,
@@ -644,23 +661,6 @@ impl CodeGenerator {
     }
 
     fn compile_function_call(&mut self, function_name: &str, arg_count: u16) -> Vec<ASMInstruction> {
-        fn load_return_address_into_r_8(return_address_label: &str) -> Vec<ASMInstruction> {
-            vec![
-                ASMInstruction::A(AValue::Symbolic(return_address_label.to_string())),
-                ASMInstruction::C {
-                    expr: "A".to_string(),
-                    dest: Some("D".to_string()),
-                    jump: None,
-                },
-                ASMInstruction::A(AValue::Symbolic("R8".to_string())),
-                ASMInstruction::C {
-                    expr: "D".to_string(),
-                    dest: Some("M".to_string()),
-                    jump: None,
-                },
-            ]
-        }
-
         fn set_arg_pointer(arg_count: u16) -> Vec<ASMInstruction> {
             // At this point, all the arguments have been pushed to the stack,
             // plus the return address, plus the four saved caller pointers.
@@ -727,7 +727,7 @@ impl CodeGenerator {
         self.return_address_count += 1;
 
         vec![
-            load_return_address_into_r_8(&return_address_label),
+            load_constant_into_register(&return_address_label, "R8"),
             self.call_subroutine("push_from_R8_then_push_caller_pointers".to_string()),
             set_arg_pointer(arg_count),
             set_lcl_pointer(),

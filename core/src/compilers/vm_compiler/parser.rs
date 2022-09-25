@@ -389,7 +389,7 @@ mod tests {
             pop this 5
             pop that 6
             pop pointer 7
-            pop temp 8
+            pop temp 1
 
             goto foobar
             label f12.3oo_bA:r
@@ -418,7 +418,7 @@ mod tests {
             Memory(Pop(PointerSegment(This), 5)),
             Memory(Pop(PointerSegment(That), 6)),
             Memory(Pop(OffsetSegment(Pointer), 7)),
-            Memory(Pop(OffsetSegment(Temp), 8)),
+            Memory(Pop(OffsetSegment(Temp), 1)),
             Flow(GoTo("foobar".to_string())),
             Flow(Label("f12.3oo_bA:r".to_string())),
             Flow(IfGoTo("foo:bar".to_string())),

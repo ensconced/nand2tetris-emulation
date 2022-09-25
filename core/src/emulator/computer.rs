@@ -179,7 +179,7 @@ impl Computer {
                 let stack = if sp >= 256 { &ram[256..ram[0] as usize] } else { &[] };
                 let heap = &ram[2048..18432];
                 let screen = &ram[18432..26624];
-                let temp = format!("{:?}", &ram[5..=12]);
+                let temp = format!("{:?}", &ram[5..=6]);
                 println!("statics: {:?}", &ram[16..26]);
                 let debug_info = DebugInfo {
                     pc: self.cpu.pc,

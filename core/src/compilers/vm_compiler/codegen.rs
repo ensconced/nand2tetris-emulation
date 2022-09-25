@@ -120,7 +120,7 @@ fn prelude() -> Vec<ASMInstruction> {
 fn offset_address(segment: &OffsetSegmentVariant, index: u16) -> u16 {
     let (segment_base_address, segment_top_address): (u16, u16) = match segment {
         OffsetSegmentVariant::Pointer => (3, 4),
-        OffsetSegmentVariant::Temp => (5, 12),
+        OffsetSegmentVariant::Temp => (5, 6),
     };
     let segment_max_index = segment_top_address - segment_base_address;
     if index > segment_max_index {
@@ -285,8 +285,8 @@ fn pop_into_pointer_memory_segment(segment: &PointerSegmentVariant, index: u16) 
         ]
     } else {
         vec![
-            // stash value from D into R13
-            ASMInstruction::A(AValue::Symbolic("R13".to_string())),
+            // stash value from D into R7
+            ASMInstruction::A(AValue::Symbolic("R7".to_string())),
             ASMInstruction::C {
                 expr: "D".to_string(),
                 dest: Some("M".to_string()),
@@ -306,22 +306,22 @@ fn pop_into_pointer_memory_segment(segment: &PointerSegmentVariant, index: u16) 
                 dest: Some("D".to_string()),
                 jump: None,
             },
-            // stash memory address in R14
-            ASMInstruction::A(AValue::Symbolic("R14".to_string())),
+            // stash memory address in R8
+            ASMInstruction::A(AValue::Symbolic("R8".to_string())),
             ASMInstruction::C {
                 expr: "D".to_string(),
                 dest: Some("M".to_string()),
                 jump: None,
             },
             // get value back into D
-            ASMInstruction::A(AValue::Symbolic("R13".to_string())),
+            ASMInstruction::A(AValue::Symbolic("R7".to_string())),
             ASMInstruction::C {
                 expr: "M".to_string(),
                 dest: Some("D".to_string()),
                 jump: None,
             },
             // load value into memory
-            ASMInstruction::A(AValue::Symbolic("R14".to_string())),
+            ASMInstruction::A(AValue::Symbolic("R8".to_string())),
             ASMInstruction::C {
                 expr: "M".to_string(),
                 dest: Some("A".to_string()),
@@ -531,13 +531,13 @@ impl CodeGenerator {
                 dest: Some("A".to_string()),
                 jump: None,
             },
-            // use R13 as another pointer to x
+            // use R7 as another pointer to x
             ASMInstruction::C {
                 expr: "A".to_string(),
                 dest: Some("D".to_string()),
                 jump: None,
             },
-            ASMInstruction::A(AValue::Symbolic("R13".to_string())),
+            ASMInstruction::A(AValue::Symbolic("R7".to_string())),
             ASMInstruction::C {
                 expr: "D".to_string(),
                 dest: Some("M".to_string()),
@@ -579,7 +579,7 @@ impl CodeGenerator {
                 dest: None,
                 jump: Some(format!("J{}", operation)),
             },
-            ASMInstruction::A(AValue::Symbolic("R13".to_string())),
+            ASMInstruction::A(AValue::Symbolic("R7".to_string())),
             ASMInstruction::C {
                 expr: "M".to_string(),
                 dest: Some("A".to_string()),
@@ -604,7 +604,7 @@ impl CodeGenerator {
                 dest: Some("D".to_string()),
                 jump: None,
             },
-            ASMInstruction::A(AValue::Symbolic("R13".to_string())),
+            ASMInstruction::A(AValue::Symbolic("R7".to_string())),
             ASMInstruction::C {
                 expr: "D".to_string(),
                 dest: Some("M".to_string()),
@@ -623,7 +623,7 @@ impl CodeGenerator {
     }
 
     fn compile_function_call(&mut self, function_name: &str, arg_count: u16) -> Vec<ASMInstruction> {
-        fn load_return_address_into_r_14(return_address_label: &str) -> Vec<ASMInstruction> {
+        fn load_return_address_into_r_8(return_address_label: &str) -> Vec<ASMInstruction> {
             vec![
                 ASMInstruction::A(AValue::Symbolic(return_address_label.to_string())),
                 ASMInstruction::C {
@@ -631,7 +631,7 @@ impl CodeGenerator {
                     dest: Some("D".to_string()),
                     jump: None,
                 },
-                ASMInstruction::A(AValue::Symbolic("R14".to_string())),
+                ASMInstruction::A(AValue::Symbolic("R8".to_string())),
                 ASMInstruction::C {
                     expr: "D".to_string(),
                     dest: Some("M".to_string()),
@@ -706,8 +706,8 @@ impl CodeGenerator {
         self.return_address_count += 1;
 
         vec![
-            load_return_address_into_r_14(&return_address_label),
-            self.call_subroutine("push_from_R14_then_push_caller_pointers".to_string()),
+            load_return_address_into_r_8(&return_address_label),
+            self.call_subroutine("push_from_R8_then_push_caller_pointers".to_string()),
             set_arg_pointer(arg_count),
             set_lcl_pointer(),
             jump(function_name, &return_address_label),
@@ -746,10 +746,10 @@ impl CodeGenerator {
         // This is carefully designed to not require tracking of the number of
         // arguments or locals for the callee.
 
-        // Use R13 as a copy of ARG. We'll use this when placing the return
+        // Use R7 as a copy of ARG. We'll use this when placing the return
         // value and restoring the stack pointer. We can't use ARG directly
         // because it's going to be overwritten when restoring the caller state.
-        fn copy_arg_to_r13() -> Vec<ASMInstruction> {
+        fn copy_arg_to_r7() -> Vec<ASMInstruction> {
             vec![
                 ASMInstruction::A(AValue::Symbolic("ARG".to_string())),
                 ASMInstruction::C {
@@ -757,7 +757,7 @@ impl CodeGenerator {
                     dest: Some("D".to_string()),
                     jump: None,
                 },
-                ASMInstruction::A(AValue::Symbolic("R13".to_string())),
+                ASMInstruction::A(AValue::Symbolic("R7".to_string())),
                 ASMInstruction::C {
                     expr: "D".to_string(),
                     dest: Some("M".to_string()),
@@ -766,13 +766,13 @@ impl CodeGenerator {
             ]
         }
 
-        // Use R14 as copy of LCL. We'll use this to pop all the caller state.
+        // Use R8 as copy of LCL. We'll use this to pop all the caller state.
         // We can't use LCL directly because LCL is one of the pieces of we're
         // restoring, so we would end up overwriting our pointer part way
         // through the process. (If LCL was the last thing to be restored we
         // would be able to get away with this, but since we want to carry on to
         // also pop the return address, it doesn't work.)
-        fn copy_lcl_to_r14() -> Vec<ASMInstruction> {
+        fn copy_lcl_to_r8() -> Vec<ASMInstruction> {
             vec![
                 ASMInstruction::A(AValue::Symbolic("LCL".to_string())),
                 ASMInstruction::C {
@@ -780,7 +780,7 @@ impl CodeGenerator {
                     dest: Some("D".to_string()),
                     jump: None,
                 },
-                ASMInstruction::A(AValue::Symbolic("R14".to_string())),
+                ASMInstruction::A(AValue::Symbolic("R8".to_string())),
                 ASMInstruction::C {
                     expr: "D".to_string(),
                     dest: Some("M".to_string()),
@@ -791,7 +791,7 @@ impl CodeGenerator {
 
         fn restore_caller_state() -> Vec<ASMInstruction> {
             vec![
-                pop_into_d_register("R14"),
+                pop_into_d_register("R8"),
                 vec![
                     ASMInstruction::A(AValue::Symbolic("THAT".to_string())),
                     ASMInstruction::C {
@@ -800,7 +800,7 @@ impl CodeGenerator {
                         jump: None,
                     },
                 ],
-                pop_into_d_register("R14"),
+                pop_into_d_register("R8"),
                 vec![
                     ASMInstruction::A(AValue::Symbolic("THIS".to_string())),
                     ASMInstruction::C {
@@ -809,7 +809,7 @@ impl CodeGenerator {
                         jump: None,
                     },
                 ],
-                pop_into_d_register("R14"),
+                pop_into_d_register("R8"),
                 vec![
                     ASMInstruction::A(AValue::Symbolic("ARG".to_string())),
                     ASMInstruction::C {
@@ -818,7 +818,7 @@ impl CodeGenerator {
                         jump: None,
                     },
                 ],
-                pop_into_d_register("R14"),
+                pop_into_d_register("R8"),
                 vec![
                     ASMInstruction::A(AValue::Symbolic("LCL".to_string())),
                     ASMInstruction::C {
@@ -833,11 +833,11 @@ impl CodeGenerator {
             .collect()
         }
 
-        fn stash_return_address_in_r14() -> Vec<ASMInstruction> {
+        fn stash_return_address_in_r8() -> Vec<ASMInstruction> {
             vec![
-                pop_into_d_register("R14"),
+                pop_into_d_register("R8"),
                 vec![
-                    ASMInstruction::A(AValue::Symbolic("R14".to_string())),
+                    ASMInstruction::A(AValue::Symbolic("R8".to_string())),
                     ASMInstruction::C {
                         expr: "D".to_string(),
                         dest: Some("M".to_string()),
@@ -854,7 +854,7 @@ impl CodeGenerator {
             vec![
                 pop_into_d_register("SP"),
                 vec![
-                    ASMInstruction::A(AValue::Symbolic("R13".to_string())),
+                    ASMInstruction::A(AValue::Symbolic("R7".to_string())),
                     ASMInstruction::C {
                         expr: "M".to_string(),
                         dest: Some("A".to_string()),
@@ -874,7 +874,7 @@ impl CodeGenerator {
 
         fn restore_stack_pointer() -> Vec<ASMInstruction> {
             vec![
-                ASMInstruction::A(AValue::Symbolic("R13".to_string())),
+                ASMInstruction::A(AValue::Symbolic("R7".to_string())),
                 ASMInstruction::C {
                     expr: "M".to_string(),
                     dest: Some("D".to_string()),
@@ -891,7 +891,7 @@ impl CodeGenerator {
 
         fn goto_return_address() -> Vec<ASMInstruction> {
             vec![
-                ASMInstruction::A(AValue::Symbolic("R14".to_string())),
+                ASMInstruction::A(AValue::Symbolic("R8".to_string())),
                 ASMInstruction::C {
                     expr: "M".to_string(),
                     dest: Some("A".to_string()),
@@ -906,10 +906,10 @@ impl CodeGenerator {
         }
 
         vec![
-            copy_arg_to_r13(),
-            copy_lcl_to_r14(),
+            copy_arg_to_r7(),
+            copy_lcl_to_r8(),
             restore_caller_state(),
-            stash_return_address_in_r14(),
+            stash_return_address_in_r8(),
             place_return_value(),
             restore_stack_pointer(),
             goto_return_address(),
@@ -1002,9 +1002,9 @@ pub struct VMCompilerResult {
 
 fn subroutine_block() -> Vec<ASMInstruction> {
     let subroutines: HashMap<&str, Vec<ASMInstruction>> = HashMap::from([(
-        "push_from_R14_then_push_caller_pointers",
+        "push_from_R8_then_push_caller_pointers",
         vec![
-            ASMInstruction::A(AValue::Symbolic("R14".to_string())),
+            ASMInstruction::A(AValue::Symbolic("R8".to_string())),
             ASMInstruction::C {
                 expr: "M".to_string(),
                 dest: Some("D".to_string()),
@@ -1037,7 +1037,7 @@ fn subroutine_block() -> Vec<ASMInstruction> {
                 }],
                 subroutine_instructions,
                 vec![
-                    ASMInstruction::A(AValue::Symbolic("R13".to_string())),
+                    ASMInstruction::A(AValue::Symbolic("R7".to_string())),
                     ASMInstruction::C {
                         expr: "M".to_string(),
                         dest: Some("A".to_string()),

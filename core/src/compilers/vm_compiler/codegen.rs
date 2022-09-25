@@ -339,21 +339,15 @@ fn push_from_constant(constant: u16) -> Vec<ASMInstruction> {
     vec![load_constant_into_d, push_from_d_register()].into_iter().flatten().collect()
 }
 
+#[derive(Default)]
 struct CodeGenerator {
     after_set_to_false_count: u32,
     return_address_count: u32,
+    subroutine_return_address_count: u32,
     current_function: Option<String>,
 }
 
 impl CodeGenerator {
-    pub fn new() -> Self {
-        Self {
-            after_set_to_false_count: 0,
-            return_address_count: 0,
-            current_function: None,
-        }
-    }
-
     fn pop_into_static_memory_segment(&self, index: u16, filename: &Path) -> Vec<ASMInstruction> {
         vec![
             pop_into_d_register("SP"),
@@ -570,6 +564,34 @@ impl CodeGenerator {
         ]
     }
 
+    fn call_subroutine(&mut self, subroutine_name: String) -> Vec<ASMInstruction> {
+        let return_address_label = format!("$subroutine_return_point_{}", self.subroutine_return_address_count);
+        self.subroutine_return_address_count += 1;
+        vec![
+            ASMInstruction::A(AValue::Symbolic(return_address_label.clone())),
+            ASMInstruction::C {
+                expr: "A".to_string(),
+                dest: Some("D".to_string()),
+                jump: None,
+            },
+            ASMInstruction::A(AValue::Symbolic("R13".to_string())),
+            ASMInstruction::C {
+                expr: "D".to_string(),
+                dest: Some("M".to_string()),
+                jump: None,
+            },
+            ASMInstruction::A(AValue::Symbolic(format!("$subroutine_entry_{}", subroutine_name))),
+            ASMInstruction::C {
+                expr: "0".to_string(),
+                dest: None,
+                jump: Some("JMP".to_string()),
+            },
+            ASMInstruction::L {
+                identifier: return_address_label,
+            },
+        ]
+    }
+
     fn compile_function_call(&mut self, function_name: &str, arg_count: u16) -> Vec<ASMInstruction> {
         fn load_return_address_into_d(return_address_label: &str) -> Vec<ASMInstruction> {
             vec![
@@ -580,24 +602,6 @@ impl CodeGenerator {
                     jump: None,
                 },
             ]
-        }
-
-        fn save_caller_pointers() -> Vec<ASMInstruction> {
-            vec!["LCL", "ARG", "THIS", "THAT"]
-                .into_iter()
-                .flat_map(|pointer| {
-                    vec![
-                        ASMInstruction::A(AValue::Symbolic(pointer.to_string())),
-                        ASMInstruction::C {
-                            expr: "M".to_string(),
-                            dest: Some("D".to_string()),
-                            jump: None,
-                        },
-                    ]
-                    .into_iter()
-                    .chain(push_from_d_register())
-                })
-                .collect()
         }
 
         fn set_arg_pointer(arg_count: u16) -> Vec<ASMInstruction> {
@@ -668,7 +672,7 @@ impl CodeGenerator {
         vec![
             load_return_address_into_d(&return_address_label),
             push_from_d_register(),
-            save_caller_pointers(),
+            self.call_subroutine("push_caller_pointers".to_string()),
             set_arg_pointer(arg_count),
             set_lcl_pointer(),
             jump(function_name, &return_address_label),
@@ -961,10 +965,59 @@ pub struct VMCompilerResult {
     pub instructions: Vec<ASMInstruction>,
 }
 
+fn subroutine_block() -> Vec<ASMInstruction> {
+    let subroutines: HashMap<&str, Vec<ASMInstruction>> = HashMap::from([(
+        "push_caller_pointers",
+        vec!["LCL", "ARG", "THIS", "THAT"]
+            .into_iter()
+            .flat_map(|pointer| {
+                vec![
+                    ASMInstruction::A(AValue::Symbolic(pointer.to_string())),
+                    ASMInstruction::C {
+                        expr: "M".to_string(),
+                        dest: Some("D".to_string()),
+                        jump: None,
+                    },
+                ]
+                .into_iter()
+                .chain(push_from_d_register())
+            })
+            .collect(),
+    )]);
+
+    subroutines
+        .into_iter()
+        .flat_map(|(subroutine_name, subroutine_instructions)| {
+            vec![
+                vec![ASMInstruction::L {
+                    identifier: (format!("$subroutine_entry_{}", subroutine_name)),
+                }],
+                subroutine_instructions,
+                vec![
+                    ASMInstruction::A(AValue::Symbolic("R13".to_string())),
+                    ASMInstruction::C {
+                        expr: "M".to_string(),
+                        dest: Some("A".to_string()),
+                        jump: None,
+                    },
+                    ASMInstruction::C {
+                        expr: "0".to_string(),
+                        dest: None,
+                        jump: Some("JMP".to_string()),
+                    },
+                ],
+            ]
+            .into_iter()
+            .flatten()
+        })
+        .collect()
+}
+
 pub fn generate_asm(std_lib_commands: &HashMap<PathBuf, Vec<Command>>, user_commands: &HashMap<PathBuf, Vec<Command>>) -> VMCompilerResult {
     let mut sourcemap = SourceMap::new();
-    let mut code_generator = CodeGenerator::new();
-    let mut instructions = prelude();
+    let mut code_generator = CodeGenerator::default();
+    let mut instructions: Vec<_> = vec![prelude(), subroutine_block()].into_iter().flatten().collect();
+
     let mut generate_asm_for_commands = |commands: &HashMap<PathBuf, Vec<Command>>| {
         for (filename, commands) in commands {
             for (vm_command_idx, command) in commands.iter().enumerate() {

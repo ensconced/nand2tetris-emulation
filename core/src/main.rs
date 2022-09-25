@@ -99,7 +99,7 @@ fn main() {
             run(file_path);
         }
         Commands::GenerateGlyphs => {
-            fs::write("./std_lib/Glyphs.jack", glyphs_class()).unwrap();
+            fs::write("../std_lib/Glyphs.jack", glyphs_class()).unwrap();
         }
     }
 }

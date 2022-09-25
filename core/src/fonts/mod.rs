@@ -161,6 +161,7 @@ fn safe_jack_number_string(num: i16) -> String {
 
 pub fn glyphs_class() -> String {
     let glyph_map = parse_psf_file();
+    let glyph_count = glyph_map.len();
     let glyph_allocations: Vec<_> = glyph_map
         .into_iter()
         // sort to keep things deterministic when iterating over hashmap
@@ -177,21 +178,10 @@ pub fn glyphs_class() -> String {
             // when converting the bytes into 16-bit chunks.
             let sixteen_bit_chunks = bitmap.chunks_exact(2);
             let words = sixteen_bit_chunks.map(|chunk| safe_jack_number_string(i16::from_be_bytes(<[u8; 2]>::try_from(chunk).unwrap())));
-
-            let bitmap_allocation = words
-                .into_iter()
+            words
                 .enumerate()
-                .map(|(idx, word)| format!("let bitmap[{}] = {};", idx, word))
-                .join("\n");
-
-            format!(
-                "
-          let bitmap = Memory.alloc(4);
-          {}
-          let arr[{}] = bitmap;
-        ",
-                bitmap_allocation, arr_idx
-            )
+                .map(|(word_idx, word)| format!("let bitmap[{}] = {}", 4 * (codepoint - 32) + word_idx as u16, word))
+                .join("\n")
         })
         .collect();
 
@@ -201,19 +191,11 @@ pub fn glyphs_class() -> String {
         static int arr;
 
         function void init() {{
-            var int bitmap, i;
-
+            var int bitmap;
 
             // I'm taking advantage here of the fact that the first 32 ascii
-            // characters do not have glyphs in my font. This helps me fit everything
-            // into a 128-word block of memory.
-            let arr = Memory.alloc(126);
-            // Initialize arr to all null pointers
-            let i = 0;
-            while (i < 126) {{
-                let arr[i] = 0;
-                let i = i + 1;
-            }}
+            // characters do not have glyphs in my font.
+            let bitmap = Memory.alloc(384);
             {}
         }}
 
@@ -223,7 +205,7 @@ pub fn glyphs_class() -> String {
             if (codepoint < 32) {{
                 return 0;
             }}
-            let glyph_ptr = arr[codepoint - 32];
+            let glyph_ptr = arr + 4 * (codepoint - 32);
             if (glyph_ptr) {{
                 return glyph_ptr;
             }}

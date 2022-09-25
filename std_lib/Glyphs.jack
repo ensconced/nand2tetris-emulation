@@ -1,0 +1,802 @@
+
+    class Glyphs {
+        static int arr;
+
+        function void init() {
+            var int bitmap, i;
+
+
+            // I'm taking advantage here of the fact that the first 32 ascii
+            // characters do not have glyphs in my font. This helps me fit everything
+            // into a 128-word block of memory.
+            let arr = Memory.alloc(126);
+            // Initialize arr to all null pointers
+            let i = 0;
+            while (i < 126) {
+                let arr[i] = 0;
+                let i = i + 1;
+            }
+            
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 0;
+let bitmap[1] = 0;
+let bitmap[2] = 0;
+let bitmap[3] = 0;
+          let arr[0] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 12408;
+let bitmap[1] = 30768;
+let bitmap[2] = 12288;
+let bitmap[3] = 12288;
+          let arr[1] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 27756;
+let bitmap[1] = 10240;
+let bitmap[2] = 0;
+let bitmap[3] = 0;
+          let arr[2] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 27756;
+let bitmap[1] = -404;
+let bitmap[2] = -404;
+let bitmap[3] = 27648;
+          let arr[3] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 4220;
+let bitmap[1] = -12164;
+let bitmap[2] = 5756;
+let bitmap[3] = 4096;
+          let arr[4] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 198;
+let bitmap[1] = -13288;
+let bitmap[2] = 12390;
+let bitmap[3] = -14848;
+          let arr[5] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 14444;
+let bitmap[1] = 14454;
+let bitmap[2] = -9012;
+let bitmap[3] = 30208;
+          let arr[6] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 6168;
+let bitmap[1] = 12288;
+let bitmap[2] = 0;
+let bitmap[3] = 0;
+          let arr[7] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 6192;
+let bitmap[1] = 24672;
+let bitmap[2] = 24624;
+let bitmap[3] = 6144;
+          let arr[8] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 24624;
+let bitmap[1] = 6168;
+let bitmap[2] = 6192;
+let bitmap[3] = 24576;
+          let arr[9] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 108;
+let bitmap[1] = 14590;
+let bitmap[2] = 14444;
+let bitmap[3] = 0;
+          let arr[10] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 48;
+let bitmap[1] = 12540;
+let bitmap[2] = 12336;
+let bitmap[3] = 0;
+          let arr[11] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 0;
+let bitmap[1] = 0;
+let bitmap[2] = 24;
+let bitmap[3] = 6192;
+          let arr[12] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 0;
+let bitmap[1] = 252;
+let bitmap[2] = 0;
+let bitmap[3] = 0;
+          let arr[13] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 0;
+let bitmap[1] = 0;
+let bitmap[2] = 48;
+let bitmap[3] = 12288;
+          let arr[14] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 1548;
+let bitmap[1] = 6192;
+let bitmap[2] = 24768;
+let bitmap[3] = 32767 + 1;
+          let arr[15] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 31942;
+let bitmap[1] = -14634;
+let bitmap[2] = -14650;
+let bitmap[3] = 31744;
+          let arr[16] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 12400;
+let bitmap[1] = 12336;
+let bitmap[2] = 12336;
+let bitmap[3] = -1024;
+          let arr[17] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 30924;
+let bitmap[1] = 3128;
+let bitmap[2] = 24780;
+let bitmap[3] = -1024;
+          let arr[18] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 30924;
+let bitmap[1] = 3128;
+let bitmap[2] = 3276;
+let bitmap[3] = 30720;
+          let arr[19] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 7228;
+let bitmap[1] = 27852;
+let bitmap[2] = -500;
+let bitmap[3] = 7680;
+          let arr[20] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = -832;
+let bitmap[1] = -2036;
+let bitmap[2] = 3276;
+let bitmap[3] = 30720;
+          let arr[21] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 14432;
+let bitmap[1] = -16136;
+let bitmap[2] = -13108;
+let bitmap[3] = 30720;
+          let arr[22] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = -820;
+let bitmap[1] = 3096;
+let bitmap[2] = 12336;
+let bitmap[3] = 12288;
+          let arr[23] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 30924;
+let bitmap[1] = -13192;
+let bitmap[2] = -13108;
+let bitmap[3] = 30720;
+          let arr[24] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 30924;
+let bitmap[1] = -13188;
+let bitmap[2] = 3096;
+let bitmap[3] = 28672;
+          let arr[25] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 48;
+let bitmap[1] = 12288;
+let bitmap[2] = 48;
+let bitmap[3] = 12288;
+          let arr[26] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 48;
+let bitmap[1] = 12288;
+let bitmap[2] = 48;
+let bitmap[3] = 12384;
+          let arr[27] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 6192;
+let bitmap[1] = 24768;
+let bitmap[2] = 24624;
+let bitmap[3] = 6144;
+          let arr[28] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 0;
+let bitmap[1] = -1024;
+let bitmap[2] = -1024;
+let bitmap[3] = 0;
+          let arr[29] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 24624;
+let bitmap[1] = 6156;
+let bitmap[2] = 6192;
+let bitmap[3] = 24576;
+          let arr[30] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 30924;
+let bitmap[1] = 3096;
+let bitmap[2] = 12288;
+let bitmap[3] = 12288;
+          let arr[31] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 31942;
+let bitmap[1] = -8482;
+let bitmap[2] = -9024;
+let bitmap[3] = 30720;
+          let arr[32] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 14444;
+let bitmap[1] = -14650;
+let bitmap[2] = -314;
+let bitmap[3] = -14848;
+          let arr[33] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = -922;
+let bitmap[1] = 26236;
+let bitmap[2] = 26214;
+let bitmap[3] = -1024;
+          let arr[34] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 15462;
+let bitmap[1] = -16192;
+let bitmap[2] = -16282;
+let bitmap[3] = 15360;
+          let arr[35] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = -1940;
+let bitmap[1] = 26214;
+let bitmap[2] = 26220;
+let bitmap[3] = -2048;
+          let arr[36] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = -414;
+let bitmap[1] = 26744;
+let bitmap[2] = 26722;
+let bitmap[3] = -512;
+          let arr[37] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = -414;
+let bitmap[1] = 26744;
+let bitmap[2] = 26720;
+let bitmap[3] = -4096;
+          let arr[38] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 15462;
+let bitmap[1] = -16192;
+let bitmap[2] = -12698;
+let bitmap[3] = 15872;
+          let arr[39] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = -14650;
+let bitmap[1] = -14594;
+let bitmap[2] = -14650;
+let bitmap[3] = -14848;
+          let arr[40] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 30768;
+let bitmap[1] = 12336;
+let bitmap[2] = 12336;
+let bitmap[3] = 30720;
+          let arr[41] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 7692;
+let bitmap[1] = 3084;
+let bitmap[2] = -13108;
+let bitmap[3] = 30720;
+          let arr[42] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = -6554;
+let bitmap[1] = 27768;
+let bitmap[2] = 27750;
+let bitmap[3] = -6656;
+          let arr[43] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = -4000;
+let bitmap[1] = 24672;
+let bitmap[2] = 25190;
+let bitmap[3] = -512;
+          let arr[44] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = -14610;
+let bitmap[1] = -258;
+let bitmap[2] = -10554;
+let bitmap[3] = -14848;
+          let arr[45] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = -14618;
+let bitmap[1] = -2338;
+let bitmap[2] = -12602;
+let bitmap[3] = -14848;
+          let arr[46] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 31942;
+let bitmap[1] = -14650;
+let bitmap[2] = -14650;
+let bitmap[3] = 31744;
+          let arr[47] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = -922;
+let bitmap[1] = 26236;
+let bitmap[2] = 24672;
+let bitmap[3] = -4096;
+          let arr[48] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 31942;
+let bitmap[1] = -14650;
+let bitmap[2] = -14642;
+let bitmap[3] = 31758;
+          let arr[49] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = -922;
+let bitmap[1] = 26236;
+let bitmap[2] = 27750;
+let bitmap[3] = -6656;
+          let arr[50] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 30924;
+let bitmap[1] = -8072;
+let bitmap[2] = 7372;
+let bitmap[3] = 30720;
+          let arr[51] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = -844;
+let bitmap[1] = 12336;
+let bitmap[2] = 12336;
+let bitmap[3] = 30720;
+          let arr[52] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = -14650;
+let bitmap[1] = -14650;
+let bitmap[2] = -14650;
+let bitmap[3] = 31744;
+          let arr[53] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = -14650;
+let bitmap[1] = -14650;
+let bitmap[2] = -14740;
+let bitmap[3] = 14336;
+          let arr[54] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = -14650;
+let bitmap[1] = -14634;
+let bitmap[2] = -10498;
+let bitmap[3] = 27648;
+          let arr[55] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = -14650;
+let bitmap[1] = 27704;
+let bitmap[2] = 27846;
+let bitmap[3] = -14848;
+          let arr[56] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = -13108;
+let bitmap[1] = -13192;
+let bitmap[2] = 12336;
+let bitmap[3] = 30720;
+          let arr[57] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = -308;
+let bitmap[1] = -26576;
+let bitmap[2] = 25286;
+let bitmap[3] = -512;
+          let arr[58] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 30816;
+let bitmap[1] = 24672;
+let bitmap[2] = 24672;
+let bitmap[3] = 30720;
+          let arr[59] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = -16288;
+let bitmap[1] = 12312;
+let bitmap[2] = 3078;
+let bitmap[3] = 512;
+          let arr[60] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 30744;
+let bitmap[1] = 6168;
+let bitmap[2] = 6168;
+let bitmap[3] = 30720;
+          let arr[61] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 4152;
+let bitmap[1] = 27846;
+let bitmap[2] = 0;
+let bitmap[3] = 0;
+          let arr[62] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 0;
+let bitmap[1] = 0;
+let bitmap[2] = 0;
+let bitmap[3] = 254;
+          let arr[63] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 12336;
+let bitmap[1] = 6144;
+let bitmap[2] = 0;
+let bitmap[3] = 0;
+          let arr[64] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 0;
+let bitmap[1] = 30732;
+let bitmap[2] = 31948;
+let bitmap[3] = 30208;
+          let arr[65] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = -8096;
+let bitmap[1] = 24700;
+let bitmap[2] = 26214;
+let bitmap[3] = -9216;
+          let arr[66] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 0;
+let bitmap[1] = 30924;
+let bitmap[2] = -16180;
+let bitmap[3] = 30720;
+          let arr[67] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 7180;
+let bitmap[1] = 3196;
+let bitmap[2] = -13108;
+let bitmap[3] = 30208;
+          let arr[68] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 0;
+let bitmap[1] = 30924;
+let bitmap[2] = -832;
+let bitmap[3] = 30720;
+          let arr[69] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 14444;
+let bitmap[1] = 24816;
+let bitmap[2] = 24672;
+let bitmap[3] = -4096;
+          let arr[70] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 0;
+let bitmap[1] = 30412;
+let bitmap[2] = -13188;
+let bitmap[3] = 3320;
+          let arr[71] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = -8096;
+let bitmap[1] = 27766;
+let bitmap[2] = 26214;
+let bitmap[3] = -6656;
+          let arr[72] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 12288;
+let bitmap[1] = 28720;
+let bitmap[2] = 12336;
+let bitmap[3] = 30720;
+          let arr[73] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 3072;
+let bitmap[1] = 7180;
+let bitmap[2] = 3276;
+let bitmap[3] = -13192;
+          let arr[74] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = -8096;
+let bitmap[1] = 26220;
+let bitmap[2] = 30828;
+let bitmap[3] = -6656;
+          let arr[75] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 28720;
+let bitmap[1] = 12336;
+let bitmap[2] = 12336;
+let bitmap[3] = 30720;
+          let arr[76] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 0;
+let bitmap[1] = -4866;
+let bitmap[2] = -10538;
+let bitmap[3] = -10752;
+          let arr[77] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 0;
+let bitmap[1] = -9114;
+let bitmap[2] = 26214;
+let bitmap[3] = 26112;
+          let arr[78] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 0;
+let bitmap[1] = 30924;
+let bitmap[2] = -13108;
+let bitmap[3] = 30720;
+          let arr[79] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 0;
+let bitmap[1] = -9114;
+let bitmap[2] = 26236;
+let bitmap[3] = 24816;
+          let arr[80] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 0;
+let bitmap[1] = 30412;
+let bitmap[2] = -13188;
+let bitmap[3] = 3102;
+          let arr[81] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 0;
+let bitmap[1] = -9098;
+let bitmap[2] = 24672;
+let bitmap[3] = -4096;
+          let arr[82] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 0;
+let bitmap[1] = 31936;
+let bitmap[2] = 30732;
+let bitmap[3] = -2048;
+          let arr[83] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 4144;
+let bitmap[1] = -976;
+let bitmap[2] = 12342;
+let bitmap[3] = 7168;
+          let arr[84] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 0;
+let bitmap[1] = -13108;
+let bitmap[2] = -13108;
+let bitmap[3] = 30208;
+          let arr[85] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 0;
+let bitmap[1] = -14650;
+let bitmap[2] = -14740;
+let bitmap[3] = 14336;
+          let arr[86] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 0;
+let bitmap[1] = -14634;
+let bitmap[2] = -10498;
+let bitmap[3] = 27648;
+          let arr[87] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 0;
+let bitmap[1] = -14740;
+let bitmap[2] = 14444;
+let bitmap[3] = -14848;
+          let arr[88] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 0;
+let bitmap[1] = -13108;
+let bitmap[2] = -13188;
+let bitmap[3] = 3320;
+          let arr[89] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 0;
+let bitmap[1] = -872;
+let bitmap[2] = 12388;
+let bitmap[3] = -1024;
+          let arr[90] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 7216;
+let bitmap[1] = 12512;
+let bitmap[2] = 12336;
+let bitmap[3] = 7168;
+          let arr[91] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 6168;
+let bitmap[1] = 6168;
+let bitmap[2] = 6168;
+let bitmap[3] = 6168;
+          let arr[92] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = -8144;
+let bitmap[1] = 12316;
+let bitmap[2] = 12336;
+let bitmap[3] = -8192;
+          let arr[93] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 30428;
+let bitmap[1] = 0;
+let bitmap[2] = 0;
+let bitmap[3] = 0;
+          let arr[94] = bitmap;
+        
+
+          let bitmap = Memory.alloc(4);
+          let bitmap[0] = 32451;
+let bitmap[1] = -26125;
+let bitmap[2] = -6145;
+let bitmap[3] = -6274;
+          let arr[0] = bitmap;
+        
+        }
+
+        function int glyph(int codepoint) {
+            var int glyph_ptr;
+
+            if (codepoint < 32) {
+                return 0;
+            }
+            let glyph_ptr = arr[codepoint - 32];
+            if (glyph_ptr) {
+                return glyph_ptr;
+            }
+            return arr[0]; // glyph for 0xFFFD codepoint - unicode replacement character
+        }
+    }
+    

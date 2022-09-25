@@ -210,13 +210,8 @@ fn push_from_pointer_memory_segment(segment: &PointerSegmentVariant, index: u16)
         That => "THAT",
     };
     vec![
+        load_constant_into_d(index),
         vec![
-            ASMInstruction::A(AValue::Numeric(index.to_string())),
-            ASMInstruction::C {
-                expr: "A".to_string(),
-                dest: Some("D".to_string()),
-                jump: None,
-            },
             ASMInstruction::A(AValue::Symbolic(pointer_address.to_string())),
             ASMInstruction::C {
                 expr: "M+D".to_string(),

@@ -4,7 +4,7 @@ set -eu
 
 rm -f bindings/*
 cd core
-cargo run -- debug-compile Glyphs.jack.todo ../web/debug-output.json
+cargo run -- debug-compile foo.jack ../web/debug-output.json
 cargo test || true
 cd ../web
 npm start

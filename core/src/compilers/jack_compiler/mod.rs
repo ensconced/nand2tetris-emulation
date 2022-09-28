@@ -822,8 +822,8 @@ mod tests {
 
         step_over(&mut computer); // step over Memory.init();
         step_over(&mut computer); // step over setupString
-        assert_eq!(string_from_pointer(&computer, static_var(&computer, 2)), "1234");
+        assert_eq!(string_from_pointer(&computer, static_var(&computer, 3)), "1234");
         tick_until(&mut computer, &program_completed);
-        assert_eq!(string_from_pointer(&computer, static_var(&computer, 2)), "5678");
+        assert_eq!(string_from_pointer(&computer, static_var(&computer, 3)), "5678");
     }
 }

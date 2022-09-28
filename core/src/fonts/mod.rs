@@ -135,11 +135,7 @@ fn parse_psf_file() -> HashMap<u16, [u8; 9]> {
     let mut result = HashMap::new();
 
     for glyph in glyphs {
-        for codepoint in glyph
-            .individual_codepoints
-            .into_iter()
-            .filter(|&codepoint| codepoint < 128 || codepoint == 0xFFFD)
-        {
+        for codepoint in glyph.individual_codepoints.into_iter().filter(|&codepoint| codepoint < 128) {
             result.insert(codepoint, glyph.bitmap);
         }
     }
@@ -170,8 +166,9 @@ pub fn glyphs_class() -> String {
             if codepoint < 32 {
                 panic!("unexpected glyph for codepoint < 32");
             }
-            let arr_idx = if codepoint == 0xFFFD { 0 } else { codepoint - 32 };
-
+            if codepoint > 127 {
+                panic!("unexpected glyph for codepoint > 127");
+            }
             // The height of the glyphs is nominally 9, but the bottom line of
             // each glyph is actually always blank, at least for the subset of
             // glyphs that I'm using. This means I can ignore the remainder here
@@ -180,7 +177,7 @@ pub fn glyphs_class() -> String {
             let words = sixteen_bit_chunks.map(|chunk| safe_jack_number_string(i16::from_be_bytes(<[u8; 2]>::try_from(chunk).unwrap())));
             words
                 .enumerate()
-                .map(|(word_idx, word)| format!("let bitmap[{}] = {}", 4 * (codepoint - 32) + word_idx as u16, word))
+                .map(|(word_idx, word)| format!("            let bitmap[{}] = {};", 4 * (codepoint - 32) + (word_idx as u16), word))
                 .join("\n")
         })
         .collect();
@@ -195,24 +192,21 @@ pub fn glyphs_class() -> String {
 
             // I'm taking advantage here of the fact that the first 32 ascii
             // characters do not have glyphs in my font.
-            let bitmap = Memory.alloc(384);
-            {}
+            let bitmap = Memory.alloc({});
+{}
         }}
 
         function int glyph(int codepoint) {{
             var int glyph_ptr;
 
-            if (codepoint < 32) {{
+            if (codepoint < 32 | codepoint > 127) {{
                 return 0;
             }}
-            let glyph_ptr = arr + 4 * (codepoint - 32);
-            if (glyph_ptr) {{
-                return glyph_ptr;
-            }}
-            return arr[0]; // glyph for 0xFFFD codepoint - unicode replacement character
+            return arr + 4 * (codepoint - 32);
         }}
     }}
     ",
+        glyph_count * 4,
         glyph_allocations.join("\n")
     )
 }

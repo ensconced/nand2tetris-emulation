@@ -148,9 +148,6 @@ impl CodeGenerator {
             C { expr, dest, jump } => c_command_code(expr, dest.as_ref(), jump.as_ref()),
             A(Numeric(num)) => numeric_a_command_code(num),
             A(Symbolic(sym)) => {
-                if sym == "$return_point_99" {
-                    println!("here we are");
-                }
                 let index = predefined_symbol_code(sym)
                     .or_else(|| self.resolved_symbols.get(sym).copied())
                     .unwrap_or_else(|| {

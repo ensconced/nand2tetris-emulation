@@ -40,11 +40,12 @@ pub struct CodeGenerator {
     vm_commands: Vec<Command>,
 }
 
-fn is_constant_zero(expression: &ASTNode<Expression>) -> bool {
-    if let Expression::PrimitiveTerm(PrimitiveTermVariant::IntegerConstant(int)) = &*expression.node {
-        int == "0"
-    } else {
-        false
+fn get_constant_value(expression: &ASTNode<Expression>) -> Option<u16> {
+    match &*expression.node {
+        Expression::PrimitiveTerm(PrimitiveTermVariant::IntegerConstant(int)) => {
+            Some(str::parse(int).expect("failed to convert string constant to int"))
+        }
+        _ => None,
     }
 }
 
@@ -108,27 +109,37 @@ impl CodeGenerator {
                 let_statement_node_idx,
             );
 
-            if !is_constant_zero(idx) {
+            if let Some(constant_value) = get_constant_value(idx) {
+                self.record_vm_commands(
+                    vec![
+                        Command::Memory(MemoryCommandVariant::Pop(
+                            MemorySegmentVariant::OffsetSegment(OffsetSegmentVariant::Pointer),
+                            1,
+                        )),
+                        Command::Memory(MemoryCommandVariant::Pop(
+                            MemorySegmentVariant::PointerSegment(PointerSegmentVariant::That),
+                            constant_value,
+                        )),
+                    ],
+                    let_statement_node_idx,
+                );
+            } else {
                 self.compile_expression(idx);
                 self.record_vm_commands(
-                    vec![Command::Arithmetic(ArithmeticCommandVariant::Binary(BinaryArithmeticCommandVariant::Add))],
+                    vec![
+                        Command::Arithmetic(ArithmeticCommandVariant::Binary(BinaryArithmeticCommandVariant::Add)),
+                        Command::Memory(MemoryCommandVariant::Pop(
+                            MemorySegmentVariant::OffsetSegment(OffsetSegmentVariant::Pointer),
+                            1,
+                        )),
+                        Command::Memory(MemoryCommandVariant::Pop(
+                            MemorySegmentVariant::PointerSegment(PointerSegmentVariant::That),
+                            0,
+                        )),
+                    ],
                     let_statement_node_idx,
                 );
             }
-
-            self.record_vm_commands(
-                vec![
-                    Command::Memory(MemoryCommandVariant::Pop(
-                        MemorySegmentVariant::OffsetSegment(OffsetSegmentVariant::Pointer),
-                        1,
-                    )),
-                    Command::Memory(MemoryCommandVariant::Pop(
-                        MemorySegmentVariant::PointerSegment(PointerSegmentVariant::That),
-                        0,
-                    )),
-                ],
-                let_statement_node_idx,
-            );
         } else {
             self.record_vm_commands(
                 vec![Command::Memory(MemoryCommandVariant::Pop(var_mem_segment, var_seg_idx as u16))],

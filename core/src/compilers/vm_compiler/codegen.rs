@@ -284,44 +284,37 @@ fn pop_into_pointer_memory_segment(segment: &PointerSegmentVariant, index: u16) 
             },
         ]
     } else {
-        vec![
-            // stash value from D into R7
-            ASMInstruction::A(AValue::Symbolic("R7".to_string())),
-            ASMInstruction::C {
-                expr: "D".to_string(),
-                dest: Some("M".to_string()),
-                jump: None,
-            },
-            // put value of pointer in D
+        return vec![
             ASMInstruction::A(AValue::Symbolic(pointer_address.to_string())),
             ASMInstruction::C {
                 expr: "M".to_string(),
                 dest: Some("D".to_string()),
                 jump: None,
             },
-            // add index
             ASMInstruction::A(AValue::Numeric(index.to_string())),
             ASMInstruction::C {
                 expr: "D+A".to_string(),
                 dest: Some("D".to_string()),
                 jump: None,
             },
-            // stash memory address in R8
-            ASMInstruction::A(AValue::Symbolic("R8".to_string())),
+            ASMInstruction::A(AValue::Symbolic("R7".to_string())),
             ASMInstruction::C {
                 expr: "D".to_string(),
                 dest: Some("M".to_string()),
                 jump: None,
             },
-            // get value back into D
-            ASMInstruction::A(AValue::Symbolic("R7".to_string())),
+            ASMInstruction::A(AValue::Symbolic("SP".to_string())),
+            ASMInstruction::C {
+                expr: "M-1".to_string(),
+                dest: Some("MA".to_string()),
+                jump: None,
+            },
             ASMInstruction::C {
                 expr: "M".to_string(),
                 dest: Some("D".to_string()),
                 jump: None,
             },
-            // load value into memory
-            ASMInstruction::A(AValue::Symbolic("R8".to_string())),
+            ASMInstruction::A(AValue::Symbolic("R7".to_string())),
             ASMInstruction::C {
                 expr: "M".to_string(),
                 dest: Some("A".to_string()),
@@ -332,7 +325,7 @@ fn pop_into_pointer_memory_segment(segment: &PointerSegmentVariant, index: u16) 
                 dest: Some("M".to_string()),
                 jump: None,
             },
-        ]
+        ];
     };
 
     vec![pop_into_d_register("SP"), instructions].into_iter().flatten().collect()

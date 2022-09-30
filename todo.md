@@ -1,3 +1,6 @@
+### Identical Code Folding - i.e. automatic generation of asm "subroutines"
+
+- code-size optimization - automatic extraction of subroutines
 - further optimization of function calls
 - write some comments about how asm subroutines work
 - further optimization of Glyphs module more generally...can we avoid having so many distinct Memory.alloc's?

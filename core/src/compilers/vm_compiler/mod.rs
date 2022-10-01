@@ -3,7 +3,7 @@ pub mod parser;
 mod sourcemap;
 mod tokenizer;
 
-use std::{collections::HashMap, io, path::Path};
+use std::{collections::HashMap, fs, io, path::Path};
 
 use self::parser::Command;
 
@@ -20,9 +20,9 @@ pub fn compile_files(src_path: &Path, dest_path: &Path) -> Result<(), io::Error>
         .iter()
         .map(|source_module| (source_module.filename.clone(), parse(source_module)))
         .collect();
-    let asm = codegen::generate_asm(&HashMap::new(), &vm_compiler_inputs);
-    todo!() // need to implement Display for ASMInstruction
-            // fs::write(dest_path, asm.join("\n"))
+    let vm_compiler_result = codegen::generate_asm(&HashMap::new(), &vm_compiler_inputs);
+    let instructions: Vec<_> = vm_compiler_result.instructions.into_iter().map(String::from).collect();
+    fs::write(dest_path, instructions.join("\n"))
 }
 
 #[cfg(test)]

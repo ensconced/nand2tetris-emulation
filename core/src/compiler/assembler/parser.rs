@@ -6,7 +6,7 @@ use super::tokenizer::{
     token_defs,
     TokenKind::{self, *},
 };
-use crate::compilers::utils::{
+use crate::compiler::utils::{
     parser_utils::{maybe_take, PeekableTokens},
     tokenizer::{Token, Tokenizer},
 };
@@ -240,7 +240,7 @@ pub fn parse(source: &str) -> impl Iterator<Item = ASMInstruction> + '_ {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::compilers::utils::tokenizer::Tokenizer;
+    use crate::compiler::utils::tokenizer::Tokenizer;
 
     #[test]
     fn test_take_c_command() {

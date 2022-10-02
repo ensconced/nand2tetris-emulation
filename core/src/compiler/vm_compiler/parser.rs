@@ -4,7 +4,7 @@ use super::tokenizer::{
     token_defs, ArithmeticCmdTokenVariant, FunctionCmdTokenVariant, MemoryCmdTokenVariant, MemorySegmentTokenVariant, ProgramFlowCmdTokenVariant,
     TokenKind,
 };
-use crate::compilers::utils::{
+use crate::compiler::utils::{
     parser_utils::{maybe_take, PeekableTokens},
     tokenizer::{Token, Tokenizer},
 };

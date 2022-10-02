@@ -9,7 +9,7 @@ use super::{
         TokenKind,
     },
 };
-use crate::compilers::utils::{parser_utils::PeekableTokens, tokenizer::Token};
+use crate::compiler::utils::{parser_utils::PeekableTokens, tokenizer::Token};
 
 // A version of this should doon be present in the std lib https://github.com/rust-lang/rust/issues/87800
 fn unzip<T, S>(tuple_opt: Option<(T, S)>) -> (Option<T>, Option<S>) {
@@ -777,8 +777,8 @@ impl<'a> Parser<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::compilers::jack_compiler::tokenizer::token_defs;
-    use crate::compilers::utils::tokenizer::Tokenizer;
+    use crate::compiler::jack_compiler::tokenizer::token_defs;
+    use crate::compiler::utils::tokenizer::Tokenizer;
 
     use pretty_assertions::assert_eq;
 

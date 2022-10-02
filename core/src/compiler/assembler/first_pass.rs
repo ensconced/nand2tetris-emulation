@@ -29,7 +29,7 @@ pub fn first_pass(commands: impl Iterator<Item = ASMInstruction>) -> FirstPassRe
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::compilers::assembler::parser::{parse, AValue};
+    use crate::compiler::assembler::parser::{parse, AValue};
 
     #[test]
     fn test_first_pass() {

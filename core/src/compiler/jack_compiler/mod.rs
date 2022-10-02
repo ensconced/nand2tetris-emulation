@@ -72,7 +72,7 @@ pub fn compile_jack(user_code: Vec<SourceModule>) -> JackCompilerResult {
 
 #[cfg(test)]
 mod tests {
-    use crate::compilers::utils::{source_modules::mock_from_sources, testing::test_utils::*};
+    use crate::compiler::utils::{source_modules::mock_from_sources, testing::test_utils::*};
     use itertools::repeat_n;
 
     #[test]

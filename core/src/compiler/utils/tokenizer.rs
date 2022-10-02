@@ -92,7 +92,7 @@ fn get_first_token<LangTokenKind>(string: &str, token_defs: &[TokenDef<LangToken
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::compilers::assembler::tokenizer::{token_defs, TokenKind};
+    use crate::compiler::assembler::tokenizer::{token_defs, TokenKind};
 
     #[test]
     fn test_get_token() {

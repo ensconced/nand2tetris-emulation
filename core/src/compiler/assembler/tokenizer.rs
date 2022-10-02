@@ -1,4 +1,4 @@
-use crate::compilers::utils::tokenizer::TokenDef;
+use crate::compiler::utils::tokenizer::TokenDef;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum TokenKind {

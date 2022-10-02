@@ -1,7 +1,7 @@
 use serde::Serialize;
 use ts_rs::TS;
 
-use crate::compilers::utils::tokenizer::TokenDef;
+use crate::compiler::utils::tokenizer::TokenDef;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, TS)]
 #[ts(export)]
@@ -131,7 +131,7 @@ pub fn token_defs() -> Vec<TokenDef<TokenKind>> {
 #[cfg(test)]
 mod tests {
     use super::{KeywordTokenVariant::*, OperatorVariant::*, TokenKind::*, *};
-    use crate::compilers::utils::tokenizer::{Token, Tokenizer};
+    use crate::compiler::utils::tokenizer::{Token, Tokenizer};
 
     fn tokenize(str: &str) -> Vec<Token<TokenKind>> {
         Tokenizer::new(token_defs()).tokenize(str)

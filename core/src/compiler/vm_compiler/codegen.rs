@@ -7,7 +7,7 @@ use std::{
 use serde::Serialize;
 use ts_rs::TS;
 
-use crate::compilers::assembler::parser::{ASMInstruction, AValue};
+use crate::compiler::assembler::parser::{ASMInstruction, AValue};
 
 use super::{
     parser::{

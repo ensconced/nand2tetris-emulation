@@ -1,4 +1,4 @@
-use crate::compilers::vm_compiler::parser::{
+use crate::compiler::vm_compiler::parser::{
     ArithmeticCommandVariant, BinaryArithmeticCommandVariant, Command, FlowCommandVariant, FunctionCommandVariant, MemoryCommandVariant,
     MemorySegmentVariant, OffsetSegmentVariant, PointerSegmentVariant, UnaryArithmeticCommandVariant,
 };

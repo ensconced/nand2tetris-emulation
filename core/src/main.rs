@@ -1,9 +1,9 @@
-mod compilers;
+mod compiler;
 mod emulator;
 mod fonts;
 
 use clap::{Parser, Subcommand};
-use compilers::{
+use compiler::{
     assembler::assemble_file,
     jack_compiler::{compile_jack, jack_node_types::Class},
     utils::source_modules::get_source_modules,

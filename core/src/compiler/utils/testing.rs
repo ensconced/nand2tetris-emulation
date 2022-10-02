@@ -1,7 +1,7 @@
 #[cfg(test)]
 pub mod test_utils {
-    use crate::compilers::compile_to_machine_code;
-    use crate::compilers::{assembler::assemble, utils::source_modules::SourceModule, vm_compiler};
+    use crate::compiler::compile_to_machine_code;
+    use crate::compiler::{assembler::assemble, utils::source_modules::SourceModule, vm_compiler};
     use crate::{emulator::computer::Computer, emulator::config, emulator::generate_rom};
     use std::collections::HashMap;
 

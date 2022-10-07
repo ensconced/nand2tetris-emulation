@@ -1,0 +1,15 @@
+class Sys {
+  function void init() {
+    do Memory.init();
+    do Math.init();
+    do Output.init();
+
+    do Output.printChar(73);
+  }
+
+  function void halt() {}
+
+  function void error() {}
+
+  function void wait() {}
+}

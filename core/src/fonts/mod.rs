@@ -166,6 +166,7 @@ pub fn glyphs_asm() -> Vec<ASMInstruction> {
             let words: Vec<_> = sixteen_bit_chunks
                 .map(|chunk| i16::from_be_bytes(<[u8; 2]>::try_from(chunk).unwrap()))
                 .collect();
+
             words.into_iter().flat_map(|word| {
                 fn load_and_increment_address() -> impl Iterator<Item = ASMInstruction> {
                     vec![

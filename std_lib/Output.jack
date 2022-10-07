@@ -1,0 +1,52 @@
+class Output {
+  static int cursor_x, cursor_y;
+
+  // for internal use only
+  function void init() {
+    let cursor_x = 0;
+    let cursor_y = 0;
+  }
+
+  // moves the cursor to the j-th column of the i-th row,
+  // and erases the character displayed there.
+  function void moveCursor(int i, int j) {}
+
+  // prints c at the cursor location and advances
+  // the cursor one column forward
+  function void printChar(char c) {
+    var int i, glyphs_base, screen, glyphs_offset, screen_offset, j;
+
+    let glyphs_base = 26625;
+    let screen = 18432;
+
+    let i = 0;
+    let screen_offset = 0;
+    let glyphs_offset = 0;
+    while (i < 32) {
+      let j = 0;
+      while (j < 4) {
+        let screen[screen_offset] = glyphs_base[glyphs_offset + j] & -256;
+        let screen_offset = screen_offset + 32;
+        let screen[screen_offset] = (glyphs_base[glyphs_offset + j] & 255) * 256;
+        let screen_offset = screen_offset + 32;
+        let j = j + 1;
+      }
+      let glyphs_offset = glyphs_offset + 4;
+      let i = i + 1;
+    }
+  }
+
+  // prints string starting at the cursor location and
+  // advances the cursor appropriately
+  function void printString(String s) {}
+
+  // prints i starting at the cursor location and advances
+  // the cursor appropriately
+  function void printInt(int i) {}
+
+  // advances the cursor to the beginning of the next line
+  function void println() {}
+
+  // moves the cursor one column back
+  function void backSpace() {}
+}

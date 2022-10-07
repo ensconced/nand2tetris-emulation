@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+set -eu
+
+cd core
+
+cargo run -- debug-compile ../programs/machine-code/hello-world ../debug-output
+cargo run -- run ../programs/machine-code/hello-world

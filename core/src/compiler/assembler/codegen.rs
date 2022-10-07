@@ -30,6 +30,7 @@ fn predefined_symbol_code(sym: &str) -> Option<i16> {
         "R15" => Some(15),
         "SCREEN" => Some(18432),
         "KBD" => Some(26624),
+        "GLYPHS" => Some(26625),
         _ => None,
     }
 }

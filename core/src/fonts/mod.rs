@@ -9,6 +9,8 @@ use std::{
 
 use itertools::Itertools;
 
+use crate::compiler::assembler::parser::{ASMInstruction, AValue};
+
 #[derive(PartialEq, Debug)]
 struct GlyphUnicodeInfo {
     individual_codepoints: Vec<u16>,
@@ -143,26 +145,13 @@ fn parse_psf_file() -> HashMap<u16, [u8; 9]> {
     result
 }
 
-fn safe_jack_number_string(num: i16) -> String {
-    if num == -32768 {
-        // This is a special case because while -32768 is a valid i16, 32768 is not.
-        // If the jack compiler sees -32768, it treats that as a unary neg operation on
-        // a positive int 32768. But then it will realise that 32768 is not a valid i16
-        // and panic. To get around this we use an overflow.
-        "32767 + 1".to_string()
-    } else {
-        num.to_string()
-    }
-}
-
-pub fn glyphs_class() -> String {
+pub fn glyphs_asm() -> Vec<ASMInstruction> {
     let glyph_map = parse_psf_file();
-    let glyph_count = glyph_map.len();
-    let glyph_allocations: Vec<_> = glyph_map
+    let glyph_loading_asm = glyph_map
         .into_iter()
         // sort to keep things deterministic when iterating over hashmap
         .sorted()
-        .map(|(codepoint, bitmap)| {
+        .flat_map(|(codepoint, bitmap)| {
             if codepoint < 32 {
                 panic!("unexpected glyph for codepoint < 32");
             }
@@ -174,59 +163,63 @@ pub fn glyphs_class() -> String {
             // glyphs that I'm using. This means I can ignore the remainder here
             // when converting the bytes into 16-bit chunks.
             let sixteen_bit_chunks = bitmap.chunks_exact(2);
-            let words = sixteen_bit_chunks.map(|chunk| safe_jack_number_string(i16::from_be_bytes(<[u8; 2]>::try_from(chunk).unwrap())));
-            words
-                .enumerate()
-                .map(|(word_idx, word)| format!("            let bitmap[{}] = {};", 4 * (codepoint - 32) + (word_idx as u16), word))
-                .join("\n")
-        })
-        .collect();
+            let words: Vec<_> = sixteen_bit_chunks
+                .map(|chunk| i16::from_be_bytes(<[u8; 2]>::try_from(chunk).unwrap()))
+                .collect();
+            words.into_iter().flat_map(|word| {
+                let val = if word == -32768 { 32767 } else { word.abs() };
 
-    format!(
-        "
-    class Glyphs {{
-        static int arr;
+                let mut instructions = vec![
+                    ASMInstruction::A(AValue::Numeric(val.to_string())),
+                    ASMInstruction::C {
+                        expr: "A".to_string(),
+                        dest: Some("D".to_string()),
+                        jump: None,
+                    },
+                    ASMInstruction::A(AValue::Symbolic("R7".to_string())),
+                    ASMInstruction::C {
+                        expr: "M+1".to_string(),
+                        dest: Some("AM".to_string()),
+                        jump: None,
+                    },
+                    ASMInstruction::C {
+                        expr: "D".to_string(),
+                        dest: Some("M".to_string()),
+                        jump: None,
+                    },
+                ];
 
-        function void init() {{
-            var int bitmap;
+                if word == -32768 {
+                    instructions.push(ASMInstruction::C {
+                        expr: "M+1".to_string(),
+                        dest: Some("M".to_string()),
+                        jump: None,
+                    })
+                } else if word < 0 {
+                    instructions.push(ASMInstruction::C {
+                        expr: "-M".to_string(),
+                        dest: Some("M".to_string()),
+                        jump: None,
+                    })
+                }
 
-            // I'm taking advantage here of the fact that the first 32 ascii
-            // characters do not have glyphs in my font.
-            let bitmap = Memory.alloc({});
-{}
-        }}
+                instructions
+            })
+        });
 
-        function int glyph(int codepoint) {{
-            var int glyph_ptr;
-
-            if (codepoint < 32 | codepoint > 127) {{
-                return 0;
-            }}
-            return arr + 4 * (codepoint - 32);
-        }}
-    }}
-    ",
-        glyph_count * 4,
-        glyph_allocations.join("\n")
-    )
-}
-
-#[cfg(test)]
-
-mod tests {
-    use std::num::Wrapping;
-
-    use crate::compiler::{compile_to_machine_code, utils::source_modules::mock_from_sources};
-
-    use super::*;
-    #[test]
-    fn test_glyph_module_compiles() {
-        // just check that the output compiles
-        compile_to_machine_code(mock_from_sources(vec![&glyphs_class()]));
-    }
-
-    #[test]
-    fn test_number_wrapping_strategy() {
-        assert_eq!(Wrapping(32767_i16) + Wrapping(1), Wrapping(-32768));
-    }
+    let prelude = vec![
+        ASMInstruction::A(AValue::Symbolic("GLYPHS".to_string())),
+        ASMInstruction::C {
+            expr: "A-1".to_string(),
+            dest: Some("D".to_string()),
+            jump: None,
+        },
+        ASMInstruction::A(AValue::Symbolic("R7".to_string())),
+        ASMInstruction::C {
+            expr: "D".to_string(),
+            dest: Some("M".to_string()),
+            jump: None,
+        },
+    ];
+    prelude.into_iter().chain(glyph_loading_asm).collect()
 }

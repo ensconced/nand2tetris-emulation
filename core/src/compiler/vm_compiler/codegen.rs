@@ -7,7 +7,10 @@ use std::{
 use serde::Serialize;
 use ts_rs::TS;
 
-use crate::compiler::assembler::parser::{ASMInstruction, AValue};
+use crate::{
+    compiler::assembler::parser::{ASMInstruction, AValue},
+    fonts::glyphs_asm,
+};
 
 use super::{
     parser::{
@@ -25,7 +28,7 @@ use super::{
     sourcemap::SourceMap,
 };
 
-fn prelude() -> Vec<ASMInstruction> {
+fn holding_pattern() -> Vec<ASMInstruction> {
     vec![
         // This will be the very first instruction in the computer's ROM.
         // We don't want to go into an infinite loop quite yet, so skip over it!
@@ -49,6 +52,11 @@ fn prelude() -> Vec<ASMInstruction> {
         ASMInstruction::L {
             identifier: "$skip_infinite_loop".to_string(),
         },
+    ]
+}
+
+fn init_call_stack() -> Vec<ASMInstruction> {
+    vec![
         // For each stack frame, ARG points to the base of the frame. This is the
         // first stack frame, so here ARG points to the base of the entire stack.
         ASMInstruction::A(AValue::Numeric("256".to_string())),
@@ -1067,7 +1075,10 @@ fn subroutine_block() -> Vec<ASMInstruction> {
 pub fn generate_asm(std_lib_commands: &HashMap<PathBuf, Vec<Command>>, user_commands: &HashMap<PathBuf, Vec<Command>>) -> VMCompilerResult {
     let mut sourcemap = SourceMap::new();
     let mut code_generator = CodeGenerator::default();
-    let mut instructions: Vec<_> = vec![prelude(), subroutine_block()].into_iter().flatten().collect();
+    let mut instructions: Vec<_> = vec![holding_pattern(), glyphs_asm(), init_call_stack(), subroutine_block()]
+        .into_iter()
+        .flatten()
+        .collect();
 
     let mut generate_asm_for_commands = |commands: &HashMap<PathBuf, Vec<Command>>| {
         for (filename, commands) in commands {

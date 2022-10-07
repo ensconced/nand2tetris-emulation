@@ -32,4 +32,5 @@ Also, my TEMP segment is smaller, and I have more virtual registers.
 | 2048-18431    | HEAP                      |
 | 18432-26623   | SCREEN                    |
 | 26624         | KBD                       |
-| 26625-32767   | FREE FOR FUTURE USE       |
+| 26625-30424   | GLYPHS                    |
+| 30425-32767   | FREE FOR FUTURE USE       |

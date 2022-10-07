@@ -9,6 +9,7 @@
 - show contextual jack node
 - include linting and tsc in test suite
 - restore Glyphs.jack.todo
+- glyphs are just too expensive - load them into memory automatically on startup (i.e. hard-code into RAM, will need to do the same in verilog)
 
 ### debugging
 

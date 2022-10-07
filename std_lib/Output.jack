@@ -9,31 +9,55 @@ class Output {
 
   // moves the cursor to the j-th column of the i-th row,
   // and erases the character displayed there.
-  function void moveCursor(int i, int j) {}
+  function void moveCursor(int i, int j) {
+    let cursor_x = i;
+    let cursor_y = j;
+  }
+
+  function int getGlyph(char c) {
+    var int result, i, glyph_base, line_pair, msb, lsb;
+
+    let glyph_base = 26625 + (c - 32) * 4;
+
+    let result = Memory.alloc(8);
+    let i = 0;
+    while (i < 4) {
+      let line_pair = glyph_base[i];
+      let msb = line_pair / 256;
+      let lsb = line_pair & 255;
+      let result[2 * i] = msb;
+      let result[2 * i + 1] = lsb;
+      let i = i + 1;
+    }
+    return result;
+  }
 
   // prints c at the cursor location and advances
   // the cursor one column forward
   function void printChar(char c) {
-    var int i, glyphs_base, screen, glyphs_offset, screen_offset, j;
+    var int glyph, screen, screen_offset, use_cursor_lsb, i, line;
 
-    let glyphs_base = 26625;
     let screen = 18432;
+    let screen_offset = cursor_y * 256 + (cursor_x / 2);
+    let use_cursor_lsb = cursor_x & 1;
 
+    let glyph = Output.getGlyph(c);
     let i = 0;
-    let screen_offset = 0;
-    let glyphs_offset = 0;
-    while (i < 32) {
-      let j = 0;
-      while (j < 4) {
-        let screen[screen_offset] = glyphs_base[glyphs_offset + j] & -256;
-        let screen_offset = screen_offset + 32;
-        let screen[screen_offset] = (glyphs_base[glyphs_offset + j] & 255) * 256;
-        let screen_offset = screen_offset + 32;
-        let j = j + 1;
+    while (i < 8) {
+      let line = glyph[i];
+
+      if (use_cursor_lsb) {
+        let screen[screen_offset] = screen[screen_offset] | line;
+      } else {
+        let screen[screen_offset] = screen[screen_offset] | (line * 256);
       }
-      let glyphs_offset = glyphs_offset + 4;
+
       let i = i + 1;
+      let screen_offset = screen_offset + 32;
     }
+
+    do Memory.deAlloc(glyph);
+    do moveCursor(cursor_x + 1, cursor_y);
   }
 
   // prints string starting at the cursor location and

@@ -1,10 +1,28 @@
 class Sys {
   function void init() {
+    var int i;
+
     do Memory.init();
     do Math.init();
     do Output.init();
 
-    do Output.printChar(73);
+    let i = 0;
+
+    while (i < 3) {
+      do Output.printChar(104);
+      do Output.printChar(101);
+      do Output.printChar(108);
+      do Output.printChar(108);
+      do Output.printChar(111);
+      do Output.printChar(32);
+      do Output.printChar(119);
+      do Output.printChar(111);
+      do Output.printChar(114);
+      do Output.printChar(108);
+      do Output.printChar(100);
+
+      let i = i + 1;
+    }
   }
 
   function void halt() {}

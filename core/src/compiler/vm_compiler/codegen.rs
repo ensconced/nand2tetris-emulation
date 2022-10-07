@@ -32,7 +32,7 @@ fn holding_pattern() -> Vec<ASMInstruction> {
     vec![
         // This will be the very first instruction in the computer's ROM.
         // We don't want to go into an infinite loop quite yet, so skip over it!
-        ASMInstruction::A(AValue::Symbolic("$skip_infinite_loop".to_string())),
+        ASMInstruction::A(AValue::Symbolic("$skip_holding_pattern".to_string())),
         ASMInstruction::C {
             expr: "0".to_string(),
             dest: None,
@@ -41,16 +41,16 @@ fn holding_pattern() -> Vec<ASMInstruction> {
         // This will be the return address of the main Sys.init function, so when
         // that function exits, the computer just goes into an infinite loop
         ASMInstruction::L {
-            identifier: "$infinite_loop".to_string(),
+            identifier: "$holding_pattern".to_string(),
         },
-        ASMInstruction::A(AValue::Symbolic("$infinite_loop".to_string())),
+        ASMInstruction::A(AValue::Symbolic("$holding_pattern".to_string())),
         ASMInstruction::C {
             expr: "0".to_string(),
             dest: None,
             jump: Some("JMP".to_string()),
         },
         ASMInstruction::L {
-            identifier: "$skip_infinite_loop".to_string(),
+            identifier: "$skip_holding_pattern".to_string(),
         },
     ]
 }
@@ -103,7 +103,7 @@ fn init_call_stack() -> Vec<ASMInstruction> {
         },
         // Load the return address. Sys.init takes no arguments, so this is
         // located right at the base of the stack.
-        ASMInstruction::A(AValue::Symbolic("$infinite_loop".to_string())),
+        ASMInstruction::A(AValue::Symbolic("$holding_pattern".to_string())),
         ASMInstruction::C {
             expr: "A".to_string(),
             dest: Some("D".to_string()),

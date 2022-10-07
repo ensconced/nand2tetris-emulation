@@ -1,9 +1,9 @@
-@$skip_infinite_loop
+@$skip_holding_pattern
 0;JMP
-($infinite_loop)
-@$infinite_loop
+($holding_pattern)
+@$holding_pattern
 0;JMP
-($skip_infinite_loop)
+($skip_holding_pattern)
 @256
 D=A
 @ARG
@@ -16,7 +16,7 @@ M=D
 D=A
 @LCL
 M=D
-@$infinite_loop
+@$holding_pattern
 D=A
 @256
 M=D

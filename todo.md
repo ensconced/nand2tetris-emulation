@@ -1,15 +1,16 @@
-- get game of life running again
+- write Glyphs.jack stdlib module to check glyph loading is working as designed
 
 ### Identical Code Folding - i.e. automatic generation of asm "subroutines"
 
 - code-size optimization - automatic extraction of subroutines
 - remove hand-written subroutine stuff for function calls - should be covered automatically now
-- further optimization of Glyphs module more generally...can we avoid having so many distinct Memory.alloc's?
 - refactoring - tidy up selection clearing...
 - show contextual jack node
 - include linting and tsc in test suite
-- restore Glyphs.jack.todo
-- glyphs are just too expensive - load them into memory automatically on startup (i.e. hard-code into RAM, will need to do the same in verilog)
+
+### optimize vm compiler
+
+- identify push/pop and just replace stack value in place?
 
 ### debugging
 

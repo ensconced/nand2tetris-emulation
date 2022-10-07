@@ -26,6 +26,7 @@ code {
 }
 
 .footer {
+  justify-content: space-around;
   padding: 3px 10px;
   height: 22px;
   color: #50fa7b;

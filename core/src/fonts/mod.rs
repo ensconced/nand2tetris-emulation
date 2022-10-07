@@ -167,42 +167,93 @@ pub fn glyphs_asm() -> Vec<ASMInstruction> {
                 .map(|chunk| i16::from_be_bytes(<[u8; 2]>::try_from(chunk).unwrap()))
                 .collect();
             words.into_iter().flat_map(|word| {
-                let val = if word == -32768 { 32767 } else { word.abs() };
+                fn load_and_increment_address() -> impl Iterator<Item = ASMInstruction> {
+                    vec![
+                        ASMInstruction::A(AValue::Symbolic("R7".to_string())),
+                        ASMInstruction::C {
+                            expr: "M+1".to_string(),
+                            dest: Some("AM".to_string()),
+                            jump: None,
+                        },
+                    ]
+                    .into_iter()
+                }
 
-                let mut instructions = vec![
-                    ASMInstruction::A(AValue::Numeric(val.to_string())),
-                    ASMInstruction::C {
-                        expr: "A".to_string(),
-                        dest: Some("D".to_string()),
-                        jump: None,
-                    },
-                    ASMInstruction::A(AValue::Symbolic("R7".to_string())),
-                    ASMInstruction::C {
-                        expr: "M+1".to_string(),
-                        dest: Some("AM".to_string()),
-                        jump: None,
-                    },
-                    ASMInstruction::C {
+                let alu_constants = vec![-1, 0, 1];
+
+                let instructions: Vec<_> = if alu_constants.contains(&word) {
+                    load_and_increment_address()
+                        .chain(vec![ASMInstruction::C {
+                            expr: word.to_string(),
+                            dest: Some("M".to_string()),
+                            jump: None,
+                        }])
+                        .collect()
+                } else if let Some(alu_constant) = alu_constants.iter().find(|&&alu_const| !alu_const == word) {
+                    load_and_increment_address()
+                        .chain(vec![
+                            ASMInstruction::C {
+                                expr: alu_constant.to_string(),
+                                dest: Some("M".to_string()),
+                                jump: None,
+                            },
+                            ASMInstruction::C {
+                                expr: "!M".to_string(),
+                                dest: Some("M".to_string()),
+                                jump: None,
+                            },
+                        ])
+                        .collect()
+                } else if let Some(alu_constant) = alu_constants.iter().find(|&&alu_const| -alu_const == word) {
+                    load_and_increment_address()
+                        .chain(vec![
+                            ASMInstruction::C {
+                                expr: alu_constant.to_string(),
+                                dest: Some("M".to_string()),
+                                jump: None,
+                            },
+                            ASMInstruction::C {
+                                expr: "-M".to_string(),
+                                dest: Some("M".to_string()),
+                                jump: None,
+                            },
+                        ])
+                        .collect()
+                } else if word < 0 {
+                    vec![
+                        ASMInstruction::A(AValue::Numeric((!word).to_string())),
+                        ASMInstruction::C {
+                            expr: "!A".to_string(),
+                            dest: Some("D".to_string()),
+                            jump: None,
+                        },
+                    ]
+                    .into_iter()
+                    .chain(load_and_increment_address())
+                    .chain(vec![ASMInstruction::C {
                         expr: "D".to_string(),
                         dest: Some("M".to_string()),
                         jump: None,
-                    },
-                ];
-
-                if word == -32768 {
-                    instructions.push(ASMInstruction::C {
-                        expr: "M+1".to_string(),
+                    }])
+                    .collect()
+                } else {
+                    vec![
+                        ASMInstruction::A(AValue::Numeric((word).to_string())),
+                        ASMInstruction::C {
+                            expr: "A".to_string(),
+                            dest: Some("D".to_string()),
+                            jump: None,
+                        },
+                    ]
+                    .into_iter()
+                    .chain(load_and_increment_address())
+                    .chain(vec![ASMInstruction::C {
+                        expr: "D".to_string(),
                         dest: Some("M".to_string()),
                         jump: None,
-                    })
-                } else if word < 0 {
-                    instructions.push(ASMInstruction::C {
-                        expr: "-M".to_string(),
-                        dest: Some("M".to_string()),
-                        jump: None,
-                    })
-                }
-
+                    }])
+                    .collect()
+                };
                 instructions
             })
         });

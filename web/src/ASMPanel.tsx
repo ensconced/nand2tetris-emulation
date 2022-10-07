@@ -61,8 +61,11 @@ export default function ASMPanel({
           setDirectlySelectedInstructionIdx(idx);
         }}
       />
-      <code className="footer" style={{ color: "#ff79c6" }}>
-        selected instructions: {selectedItemIdxs?.idxs.size ?? 0}
+      <code className="footer">
+        <span style={{ color: "#8be9fd" }}>total: {instructions.length}</span>
+        <span style={{ color: "#ff79c6" }}>
+          selected: {selectedItemIdxs?.idxs.size ?? 0}
+        </span>
       </code>
     </div>
   );

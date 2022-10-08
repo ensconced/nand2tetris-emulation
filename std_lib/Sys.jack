@@ -1,17 +1,11 @@
 class Sys {
   function void init() {
-    var int i;
-    var String str;
-
     do Memory.init();
     do Math.init();
     do Output.init();
 
-    let str = "hello, world! ";
-
-    while (true) {
-      do Output.printString(str);
-    }
+    do Output.printInt(4321);
+    do Output.printInt(4321);
   }
 
   function void halt() {}

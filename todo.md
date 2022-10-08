@@ -1,4 +1,5 @@
 - turn viz into a more general debugging harness. wasm???
+- use this to debug int printing issue
 - write Glyphs.jack stdlib module to check glyph loading is working as designed
 - use an even smaller font e.g. this 5x5 px one https://www.dafont.com/5x5.font (and caps only?)
 

@@ -1,4 +1,6 @@
+- turn viz into a more general debugging harness. wasm???
 - write Glyphs.jack stdlib module to check glyph loading is working as designed
+- use an even smaller font e.g. this 5x5 px one https://www.dafont.com/5x5.font (caps only)
 
 ### Identical Code Folding - i.e. automatic generation of asm "subroutines"
 
@@ -70,6 +72,6 @@
 - add timer?
 - multiplication / division?
 - floating point?
-- bitshift?
+- bitshift - this would be really helpful...
 - ethernet...?
 - graphics: fix flickering by assigning a "don't draw" register which programs can use to flag when frame buffer is in an inconsistent state, and which the computer will read to decide whether or not to actually refresh the screen. will need to figure out how to make this work on the fpga too!

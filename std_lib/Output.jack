@@ -14,6 +14,29 @@ class Output {
     let cursor_y = j;
   }
 
+  function int getMsb(int word) {
+    var int result, mask, i, bit;
+
+    let mask = 256;
+    let bit = 1;
+    let i = 0;
+    while (i < 8) {
+      if (word & mask) {
+        let result = result + bit;
+      }
+      let bit = bit * 2;
+      let mask = mask * 2;
+      let i = i + 1;
+    }
+
+    return result;
+  }
+
+  function int getLsb(int word) {
+    return word & 255;
+  }
+
+
   function int getGlyph(char c) {
     var int result, i, glyph_base, line_pair, msb, lsb;
 
@@ -23,8 +46,8 @@ class Output {
     let i = 0;
     while (i < 4) {
       let line_pair = glyph_base[i];
-      let msb = line_pair / 256;
-      let lsb = line_pair & 255;
+      let msb = getMsb(line_pair);
+      let lsb = getLsb(line_pair);
       let result[2 * i] = msb;
       let result[2 * i + 1] = lsb;
       let i = i + 1;

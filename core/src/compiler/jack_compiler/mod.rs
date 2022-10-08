@@ -797,33 +797,4 @@ mod tests {
         step_over(&mut computer); // step over str.intValue();
         assert_eq!(peek_stack(&computer), 1234);
     }
-
-    #[test]
-    fn test_string_set_int() {
-        let mut computer = computer_from_jack_code(mock_from_sources(vec![
-            "
-                    class Sys {
-                        static String str;
-
-                        function String setupString() {
-                            let str = \"1234\";
-                        }
-
-                        function void init () {
-                            do Memory.init();
-                            do setupString();
-                            do str.setInt(5678);
-                        }
-                    }
-                    ",
-        ]));
-
-        tick_until(&mut computer, &|computer| frame_stack_depth(computer) == 1);
-
-        step_over(&mut computer); // step over Memory.init();
-        step_over(&mut computer); // step over setupString
-        assert_eq!(string_from_pointer(&computer, static_var(&computer, 2)), "1234");
-        tick_until(&mut computer, &program_completed);
-        assert_eq!(string_from_pointer(&computer, static_var(&computer, 2)), "5678");
-    }
 }

@@ -167,10 +167,6 @@ pub fn glyphs_asm() -> Vec<ASMInstruction> {
                 .map(|chunk| i16::from_be_bytes(<[u8; 2]>::try_from(chunk).unwrap()))
                 .collect();
 
-            if codepoint == 104 {
-                dbg!(&words);
-            }
-
             words.into_iter().flat_map(|word| {
                 fn load_and_increment_address() -> impl Iterator<Item = ASMInstruction> {
                     vec![

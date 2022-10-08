@@ -155,11 +155,6 @@ pub mod test_utils {
         ram[ram[2] as usize + arg_idx]
     }
 
-    pub fn static_var(computer: &Computer, idx: usize) -> i16 {
-        let ram = computer.ram.lock().unwrap();
-        ram[16 + idx]
-    }
-
     pub fn tick_until(computer: &mut Computer, predicate: &dyn Fn(&Computer) -> bool) {
         let max_ticks: usize = 10_000_000_000;
         for _ in 0..=max_ticks {

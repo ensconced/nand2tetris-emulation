@@ -6,7 +6,6 @@ use clap::{Parser, Subcommand};
 use compiler::{
     assembler::{assemble, assemble_file},
     jack_compiler::{compile_jack, jack_node_types::Class},
-    utils::source_modules::get_source_modules,
     vm_compiler::{self, codegen::generate_asm},
     CompilerResult,
 };

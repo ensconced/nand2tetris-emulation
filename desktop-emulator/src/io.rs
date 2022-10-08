@@ -1,4 +1,4 @@
-use super::computer::bit;
+use emulator_core::computer::bit;
 use minifb::{Key, Scale, ScaleMode, Window, WindowOptions};
 use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
@@ -91,6 +91,12 @@ fn kbd_output(keys: Vec<Key>) -> i16 {
         Key::Tab => 0x9,
         _ => 0,
     })
+}
+
+impl Default for IO {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl IO {

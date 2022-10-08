@@ -1,9 +1,10 @@
 use std::thread;
 
-use crate::{computer::Computer, generate_rom, io::IO};
+use crate::io::IO;
+use emulator_core::{computer::Computer, generate_rom};
 
-pub fn run(file_path: &str) {
-    let mut computer = Computer::new(generate_rom::from_file(file_path));
+pub fn run(machine_code: String) {
+    let mut computer = Computer::new(generate_rom::from_string(machine_code));
     let cloned_ram = computer.ram.clone();
 
     thread::spawn(move || loop {

@@ -1,5 +1,5 @@
 import "./styles/reset.css";
-import { NodeInfo } from "../../bindings/NodeInfo";
+import { NodeInfo } from "../bindings/NodeInfo";
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import Footer from "./Footer";
@@ -7,6 +7,9 @@ import ASMPanel from "./ASMPanel";
 import { filenames, tokensByFilename, vmCommands } from "./sourcemapUtils";
 import useCoordinatedInteractions from "./useCoordinatedInteractions";
 import JackModule from "./JackModule";
+import { greet } from "../../web-emulator/pkg";
+
+console.log(greet());
 
 function getElementById(id: string): HTMLElement {
   const element = document.getElementById(id);

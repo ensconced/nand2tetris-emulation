@@ -35,4 +35,7 @@ module.exports = {
     extensions: [".js", ".json", ".ts", ".tsx"],
   },
   plugins: [new HtmlWebpackPlugin({ title: "template project" })],
+  experiments: {
+    asyncWebAssembly: true,
+  },
 };

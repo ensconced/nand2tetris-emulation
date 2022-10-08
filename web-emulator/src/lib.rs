@@ -9,11 +9,12 @@ use wasm_bindgen::prelude::*;
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[wasm_bindgen]
-extern {
+extern "C" {
     fn alert(s: &str);
 }
 
 #[wasm_bindgen]
-pub fn greet() {
-    alert("Hello, web-emulator!");
+pub fn greet() -> Vec<u8> {
+    alert("now I'll return a vec...");
+    vec![1, 2, 3]
 }

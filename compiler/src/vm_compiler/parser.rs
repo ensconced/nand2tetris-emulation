@@ -1,10 +1,10 @@
 use std::fmt::{Display, Formatter};
 
 use super::tokenizer::{
-    token_defs, ArithmeticCmdTokenVariant, FunctionCmdTokenVariant, MemoryCmdTokenVariant, MemorySegmentTokenVariant, ProgramFlowCmdTokenVariant,
-    TokenKind,
+    token_defs, ArithmeticCmdTokenVariant, FunctionCmdTokenVariant, MemoryCmdTokenVariant,
+    MemorySegmentTokenVariant, ProgramFlowCmdTokenVariant, TokenKind,
 };
-use crate::compiler::utils::{
+use crate::utils::{
     parser_utils::{maybe_take, PeekableTokens},
     tokenizer::{Token, Tokenizer},
 };
@@ -73,8 +73,12 @@ pub enum MemoryCommandVariant {
 impl Display for MemoryCommandVariant {
     fn fmt(&self, f: &mut Formatter) -> Result<(), std::fmt::Error> {
         match self {
-            MemoryCommandVariant::Push(memory_segment, offset) => write!(f, "push {} {}", memory_segment, offset),
-            MemoryCommandVariant::Pop(memory_segment, offset) => write!(f, "pop {} {}", memory_segment, offset),
+            MemoryCommandVariant::Push(memory_segment, offset) => {
+                write!(f, "push {} {}", memory_segment, offset)
+            }
+            MemoryCommandVariant::Pop(memory_segment, offset) => {
+                write!(f, "pop {} {}", memory_segment, offset)
+            }
         }
     }
 }
@@ -124,7 +128,9 @@ pub enum MemorySegmentVariant {
 impl Display for MemorySegmentVariant {
     fn fmt(&self, f: &mut Formatter) -> Result<(), std::fmt::Error> {
         match self {
-            MemorySegmentVariant::PointerSegment(pointer_segment) => write!(f, "{}", pointer_segment),
+            MemorySegmentVariant::PointerSegment(pointer_segment) => {
+                write!(f, "{}", pointer_segment)
+            }
             MemorySegmentVariant::OffsetSegment(offset_segment) => write!(f, "{}", offset_segment),
             MemorySegmentVariant::Static => write!(f, "static"),
             MemorySegmentVariant::Constant => write!(f, "constant"),
@@ -159,8 +165,12 @@ pub enum FunctionCommandVariant {
 impl Display for FunctionCommandVariant {
     fn fmt(&self, f: &mut Formatter) -> Result<(), std::fmt::Error> {
         match self {
-            FunctionCommandVariant::Define(fn_name, locals_count) => write!(f, "function {} {}", fn_name, locals_count),
-            FunctionCommandVariant::Call(fn_name, arg_count) => write!(f, "call {} {}", fn_name, arg_count),
+            FunctionCommandVariant::Define(fn_name, locals_count) => {
+                write!(f, "function {} {}", fn_name, locals_count)
+            }
+            FunctionCommandVariant::Call(fn_name, arg_count) => {
+                write!(f, "call {} {}", fn_name, arg_count)
+            }
             FunctionCommandVariant::ReturnFrom => write!(f, "return"),
         }
     }
@@ -224,7 +234,10 @@ fn take_arithmetic_command(tokens: &mut PeekableTokens<TokenKind>, line_number: 
     }
 }
 
-fn take_mem_segment(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> MemorySegmentVariant {
+fn take_mem_segment(
+    tokens: &mut PeekableTokens<TokenKind>,
+    line_number: usize,
+) -> MemorySegmentVariant {
     match tokens.next() {
         Some(Token {
             kind: TokenKind::MemorySegmentToken(kind),
@@ -257,7 +270,8 @@ fn take_number(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> u1
 
 fn take_whitespace(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) {
     if let Some(Token {
-        kind: TokenKind::Whitespace, ..
+        kind: TokenKind::Whitespace,
+        ..
     }) = tokens.next()
     {
         // all good
@@ -336,7 +350,10 @@ fn take_flow_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize)
     }
 }
 
-fn maybe_take_command(tokens: &mut PeekableTokens<TokenKind>, line_number: usize) -> Option<Command> {
+fn maybe_take_command(
+    tokens: &mut PeekableTokens<TokenKind>,
+    line_number: usize,
+) -> Option<Command> {
     let first_token_kind = tokens.peek().map(|token| token.kind.clone());
     first_token_kind.and_then(|kind| match kind {
         TokenKind::ArithmeticCmdToken(_) => Some(take_arithmetic_command(tokens, line_number)),

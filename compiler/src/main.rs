@@ -1,18 +1,39 @@
-mod compiler;
-mod emulator;
+mod asm_compressor;
+mod assembler;
+mod config;
 mod fonts;
+mod jack_compiler;
+mod utils;
+mod vm_compiler;
 
 use clap::{Parser, Subcommand};
-use compiler::{
-    assembler::{assemble, assemble_file},
-    jack_compiler::{compile_jack, jack_node_types::Class},
-    vm_compiler::{self, codegen::generate_asm},
-    CompilerResult,
-};
-use emulator::{config::ROM_DEPTH, run::run};
+use config::ROM_DEPTH;
+use jack_compiler::JackCompilerResult;
 use serde::Serialize;
 use std::{fs, path::Path};
 use ts_rs::TS;
+use utils::source_modules::SourceModule;
+use vm_compiler::codegen::VMCompilerResult;
+use {
+    assembler::{assemble, assemble_file},
+    jack_compiler::{compile_jack, jack_node_types::Class},
+    vm_compiler::codegen::generate_asm,
+};
+
+#[derive(Default, Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "../bindings/")]
+struct CompilerResult {
+    pub jack_compiler_result: JackCompilerResult,
+    pub vm_compiler_result: VMCompilerResult,
+}
+
+// TODO - move into test module
+pub fn compile_to_machine_code(jack_code: Vec<SourceModule>) -> Vec<String> {
+    let jack_compiler_results = compile_jack(jack_code);
+    let vm_compiler_result = vm_compiler::codegen::generate_asm(&jack_compiler_results.std_lib_commands, &jack_compiler_results.user_commands);
+    assemble(vm_compiler_result.instructions, config::ROM_DEPTH)
+}
 
 #[derive(Serialize, TS)]
 #[ts(export)]
@@ -46,8 +67,6 @@ enum Commands {
         source_path: Option<String>,
         dest_path: Option<String>,
     },
-    /// Run machine code on emulator
-    Run { file_path: Option<String> },
 }
 
 fn main() {
@@ -79,7 +98,7 @@ fn main() {
             let source_path = source_path_maybe.as_ref().expect("source path is required");
             let dest_path = dest_path_maybe.as_ref().expect("dest path is required");
             println!("assembling {} to {}", source_path, dest_path);
-            assemble_file(Path::new(source_path), Path::new(dest_path), emulator::config::ROM_DEPTH);
+            assemble_file(Path::new(source_path), Path::new(dest_path), config::ROM_DEPTH);
         }
         Commands::Compile {
             source_path: source_path_maybe,
@@ -89,11 +108,6 @@ fn main() {
             let dest_path = dest_path_maybe.as_ref().expect("dest path is required");
             println!("assembling {} to {}", source_path, dest_path);
             vm_compiler::compile_files(Path::new(source_path), Path::new(dest_path)).unwrap();
-        }
-        Commands::Run { file_path: file_path_maybe } => {
-            let file_path = file_path_maybe.as_ref().expect("path is required");
-            println!("running {}", file_path);
-            run(file_path);
         }
     }
 }

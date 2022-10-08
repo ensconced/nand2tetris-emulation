@@ -9,7 +9,7 @@ use super::{
         TokenKind,
     },
 };
-use crate::compiler::utils::{parser_utils::PeekableTokens, tokenizer::Token};
+use crate::utils::{parser_utils::PeekableTokens, tokenizer::Token};
 
 // A version of this should doon be present in the std lib https://github.com/rust-lang/rust/issues/87800
 fn unzip<T, S>(tuple_opt: Option<(T, S)>) -> (Option<T>, Option<S>) {
@@ -53,14 +53,17 @@ pub fn parse(tokens: &[Token<TokenKind>]) -> JackParserResult {
             !matches!(
                 token,
                 Token {
-                    kind: TokenKind::Whitespace | TokenKind::MultiLineComment | TokenKind::SingleLineComment,
+                    kind: TokenKind::Whitespace
+                        | TokenKind::MultiLineComment
+                        | TokenKind::SingleLineComment,
                     ..
                 }
             )
         })
         .collect();
 
-    let cloned_tokens_without_whitespace: Vec<_> = tokens_without_whitespace.into_iter().cloned().collect();
+    let cloned_tokens_without_whitespace: Vec<_> =
+        tokens_without_whitespace.into_iter().cloned().collect();
 
     let mut sourcemap = JackParserSourceMap::new();
 
@@ -80,8 +83,15 @@ struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    fn make_ast_node<T>(&mut self, node: T, token_range: Range<usize>, child_node_idxs: Vec<usize>) -> ASTNode<T> {
-        let node_idx = self.sourcemap.record_jack_node(token_range.clone(), child_node_idxs);
+    fn make_ast_node<T>(
+        &mut self,
+        node: T,
+        token_range: Range<usize>,
+        child_node_idxs: Vec<usize>,
+    ) -> ASTNode<T> {
+        let node_idx = self
+            .sourcemap
+            .record_jack_node(token_range.clone(), child_node_idxs);
         ASTNode {
             node: Box::new(node),
             node_idx,
@@ -96,11 +106,15 @@ impl<'a> Parser<'a> {
             let maybe_exp = match &token.kind {
                 IntegerLiteral(string) => {
                     self.token_iter.next();
-                    Some(Expression::PrimitiveTerm(IntegerConstant(string.to_string())))
+                    Some(Expression::PrimitiveTerm(IntegerConstant(
+                        string.to_string(),
+                    )))
                 }
                 StringLiteral(string) => {
                     self.token_iter.next();
-                    Some(Expression::PrimitiveTerm(StringConstant(string.to_string())))
+                    Some(Expression::PrimitiveTerm(StringConstant(
+                        string.to_string(),
+                    )))
                 }
                 Keyword(KeywordTokenVariant::True) => {
                     self.token_iter.next();
@@ -133,7 +147,14 @@ impl<'a> Parser<'a> {
         let r_bracket = self.take_token(RSquareBracket);
         let token_range = l_bracket.idx..r_bracket.idx + 1;
         let child_node_idxs = vec![index_expr.node_idx];
-        self.make_ast_node(Expression::ArrayAccess { var_name, index: index_expr }, token_range, child_node_idxs)
+        self.make_ast_node(
+            Expression::ArrayAccess {
+                var_name,
+                index: index_expr,
+            },
+            token_range,
+            child_node_idxs,
+        )
     }
 
     fn maybe_take_parenthesized_expression(&mut self) -> Option<ASTNode<Expression>> {
@@ -151,7 +172,11 @@ impl<'a> Parser<'a> {
             let r_paren = self.take_token(RParen);
             let token_range = token_range_start..r_paren.idx + 1;
             let child_node_idxs = vec![expr.node_idx];
-            Some(self.make_ast_node(Expression::Parenthesized(expr), token_range, child_node_idxs))
+            Some(self.make_ast_node(
+                Expression::Parenthesized(expr),
+                token_range,
+                child_node_idxs,
+            ))
         } else {
             None
         }
@@ -163,18 +188,29 @@ impl<'a> Parser<'a> {
         // lookahead instead? (I think itertools would make that easy).
         let peeked_token = self.token_iter.peek();
         if let Some(Token {
-            kind: Identifier(string), ..
+            kind: Identifier(string),
+            ..
         }) = peeked_token
         {
             let string = string.to_string();
             let (identifier, identifier_token_idx) = self.take_identifier();
             match self.token_iter.peek() {
-                Some(Token { kind: LSquareBracket, .. }) => Some(self.take_array_access(identifier)),
-                Some(Token { kind: Dot | LParen, .. }) => {
-                    let subroutine_call = self.take_subroutine_call(identifier, identifier_token_idx);
+                Some(Token {
+                    kind: LSquareBracket,
+                    ..
+                }) => Some(self.take_array_access(identifier)),
+                Some(Token {
+                    kind: Dot | LParen, ..
+                }) => {
+                    let subroutine_call =
+                        self.take_subroutine_call(identifier, identifier_token_idx);
                     let subroutine_call_token_range = subroutine_call.token_range.clone();
                     let child_node_idxs = vec![subroutine_call.node_idx];
-                    Some(self.make_ast_node(Expression::SubroutineCall(subroutine_call), subroutine_call_token_range, child_node_idxs))
+                    Some(self.make_ast_node(
+                        Expression::SubroutineCall(subroutine_call),
+                        subroutine_call_token_range,
+                        child_node_idxs,
+                    ))
                 }
                 _ => {
                     let token_range = identifier_token_idx..identifier_token_idx + 1;
@@ -188,11 +224,17 @@ impl<'a> Parser<'a> {
 
     fn maybe_take_unary_expression(&mut self) -> Option<ASTNode<Expression>> {
         use TokenKind::*;
-        if let Some(Token { kind: Operator(op), idx, .. }) = self.token_iter.peek() {
+        if let Some(Token {
+            kind: Operator(op),
+            idx,
+            ..
+        }) = self.token_iter.peek()
+        {
             let op_token_idx = *idx;
             let op = op.clone();
             self.token_iter.next();
-            let right_binding_power = prefix_precedence(op.clone()).expect("invalid prefix operator");
+            let right_binding_power =
+                prefix_precedence(op.clone()).expect("invalid prefix operator");
             let operand = self
                 .maybe_take_expression_with_binding_power(right_binding_power)
                 .expect("unary operator has no operand");
@@ -203,15 +245,26 @@ impl<'a> Parser<'a> {
             };
             let token_range = op_token_idx..operand.token_range.end;
             let child_node_idxs = vec![operand.node_idx];
-            Some(self.make_ast_node(Expression::Unary { operator, operand }, token_range, child_node_idxs))
+            Some(self.make_ast_node(
+                Expression::Unary { operator, operand },
+                token_range,
+                child_node_idxs,
+            ))
         } else {
             None
         }
     }
 
-    fn maybe_append_rhs_to_lhs(&mut self, lhs_node: ASTNode<Expression>, binding_power: u8) -> (ASTNode<Expression>, bool) {
+    fn maybe_append_rhs_to_lhs(
+        &mut self,
+        lhs_node: ASTNode<Expression>,
+        binding_power: u8,
+    ) -> (ASTNode<Expression>, bool) {
         use TokenKind::*;
-        if let Some(Token { kind: Operator(op), .. }) = self.token_iter.peek() {
+        if let Some(Token {
+            kind: Operator(op), ..
+        }) = self.token_iter.peek()
+        {
             let (lbp, rbp) = infix_precedence(op.clone()).expect("invalid infix operator");
             if lbp < binding_power {
                 // There is no rhs to append - the next term will instead associate towards the right.
@@ -244,13 +297,19 @@ impl<'a> Parser<'a> {
             };
             let child_node_idxs = vec![lhs.node_idx, rhs.node_idx];
             let new_lhs_node = Expression::Binary { operator, lhs, rhs };
-            (self.make_ast_node(new_lhs_node, new_token_range, child_node_idxs), false)
+            (
+                self.make_ast_node(new_lhs_node, new_token_range, child_node_idxs),
+                false,
+            )
         } else {
             (lhs_node, true)
         }
     }
 
-    fn maybe_take_expression_with_binding_power(&mut self, binding_power: u8) -> Option<ASTNode<Expression>> {
+    fn maybe_take_expression_with_binding_power(
+        &mut self,
+        binding_power: u8,
+    ) -> Option<ASTNode<Expression>> {
         let mut lhs = self
             .maybe_take_unary_expression()
             .or_else(|| self.maybe_take_primitive_expression())
@@ -302,7 +361,8 @@ impl<'a> Parser<'a> {
     }
 
     fn take_expression(&mut self) -> ASTNode<Expression> {
-        self.maybe_take_expression_with_binding_power(0).expect("expected expression")
+        self.maybe_take_expression_with_binding_power(0)
+            .expect("expected expression")
     }
 
     fn take_expression_list(&mut self) -> Vec<ASTNode<Expression>> {
@@ -318,7 +378,11 @@ impl<'a> Parser<'a> {
         result
     }
 
-    fn take_subroutine_call(&mut self, name: String, identifier_token_idx: usize) -> ASTNode<SubroutineCall> {
+    fn take_subroutine_call(
+        &mut self,
+        name: String,
+        identifier_token_idx: usize,
+    ) -> ASTNode<SubroutineCall> {
         use TokenKind::*;
         match self.token_iter.peek() {
             Some(Token { kind: LParen, .. }) => {
@@ -370,7 +434,10 @@ impl<'a> Parser<'a> {
     fn maybe_take_parameter(&mut self) -> Option<ASTNode<Parameter>> {
         self.maybe_take_type().map(|type_name| {
             let (var_name, identifier_token_idx) = self.take_identifier();
-            let parameter = Parameter { type_name, var_name };
+            let parameter = Parameter {
+                type_name,
+                var_name,
+            };
             let token_range = identifier_token_idx..identifier_token_idx + 1;
             self.make_ast_node(parameter, token_range, vec![])
         })
@@ -381,9 +448,16 @@ impl<'a> Parser<'a> {
         if let Some(parameter) = self.maybe_take_parameter() {
             result.push(parameter);
 
-            while let Some(Token { kind: TokenKind::Comma, .. }) = self.token_iter.peek() {
+            while let Some(Token {
+                kind: TokenKind::Comma,
+                ..
+            }) = self.token_iter.peek()
+            {
                 self.token_iter.next(); // comma
-                result.push(self.maybe_take_parameter().unwrap_or_else(|| panic!("expected parameter after comma")));
+                result.push(
+                    self.maybe_take_parameter()
+                        .unwrap_or_else(|| panic!("expected parameter after comma")),
+                );
             }
         }
         result
@@ -479,7 +553,10 @@ impl<'a> Parser<'a> {
         let (statements, statements_token_range) = self.take_statement_block();
         let mut child_node_idxs = vec![condition.node_idx];
         child_node_idxs.extend(statements.iter().map(|stmt| stmt.node_idx));
-        let statement = Statement::While { condition, statements };
+        let statement = Statement::While {
+            condition,
+            statements,
+        };
         let token_range = while_keyword_token_idx..statements_token_range.end;
         self.make_ast_node(statement, token_range, child_node_idxs)
     }
@@ -498,7 +575,11 @@ impl<'a> Parser<'a> {
     fn take_return_statement(&mut self, return_keyword_token_idx: usize) -> ASTNode<Statement> {
         self.token_iter.next(); // "return" keyword
         let expression = self.maybe_take_expression_with_binding_power(0);
-        let child_node_idxs = expression.as_ref().map(|expr| expr.node_idx).into_iter().collect();
+        let child_node_idxs = expression
+            .as_ref()
+            .map(|expr| expr.node_idx)
+            .into_iter()
+            .collect();
         let semicolon = self.take_token(TokenKind::Semicolon);
         let statement = Statement::Return(expression);
         let token_range = return_keyword_token_idx..semicolon.idx + 1;
@@ -545,7 +626,10 @@ impl<'a> Parser<'a> {
             let type_name = self.take_type();
             let var_names = self.take_var_names();
             let semicolon = self.take_token(TokenKind::Semicolon);
-            let var_declaration = VarDeclaration { type_name, var_names };
+            let var_declaration = VarDeclaration {
+                type_name,
+                var_names,
+            };
             let token_range = *var_keyword_token_idx..semicolon.idx + 1;
             self.make_ast_node(var_declaration, token_range, vec![])
         } else {
@@ -604,7 +688,11 @@ impl<'a> Parser<'a> {
             let parameters = self.take_parameters();
             self.take_token(TokenKind::RParen);
             let body = self.take_subroutine_body();
-            let child_node_idxs = parameters.iter().map(|param| param.node_idx).chain(iter::once(body.node_idx)).collect();
+            let child_node_idxs = parameters
+                .iter()
+                .map(|param| param.node_idx)
+                .chain(iter::once(body.node_idx))
+                .collect();
             let token_range = *subroutine_kind_token_idx..body.token_range.end;
             let subroutine_declaration = SubroutineDeclaration {
                 subroutine_kind,
@@ -676,7 +764,11 @@ impl<'a> Parser<'a> {
         // There has to be at least one var name.
         let first_var = self.take_var_name();
         let mut names = vec![first_var];
-        while let Some(Token { kind: TokenKind::Comma, .. }) = self.token_iter.peek() {
+        while let Some(Token {
+            kind: TokenKind::Comma,
+            ..
+        }) = self.token_iter.peek()
+        {
             self.token_iter.next(); // comma
             let var = self.take_var_name();
             names.push(var);
@@ -761,7 +853,11 @@ impl<'a> Parser<'a> {
         let child_node_idxs = var_declarations
             .iter()
             .map(|var_dec| var_dec.node_idx)
-            .chain(subroutine_declarations.iter().map(|subroutine| subroutine.node_idx))
+            .chain(
+                subroutine_declarations
+                    .iter()
+                    .map(|subroutine| subroutine.node_idx),
+            )
             .collect();
         let class = Class {
             name,
@@ -777,8 +873,8 @@ impl<'a> Parser<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::compiler::jack_compiler::tokenizer::token_defs;
-    use crate::compiler::utils::tokenizer::Tokenizer;
+    use crate::jack_compiler::tokenizer::token_defs;
+    use crate::utils::tokenizer::Tokenizer;
 
     use pretty_assertions::assert_eq;
 
@@ -790,7 +886,9 @@ mod tests {
                 !matches!(
                     token,
                     Token {
-                        kind: TokenKind::Whitespace | TokenKind::MultiLineComment | TokenKind::SingleLineComment,
+                        kind: TokenKind::Whitespace
+                            | TokenKind::MultiLineComment
+                            | TokenKind::SingleLineComment,
                         ..
                     }
                 )
@@ -882,7 +980,11 @@ mod tests {
                                 token_range: 14..15,
                             },
                             type_name: Type::Char,
-                            var_names: vec!["baz".to_string(), "buz".to_string(), "boz".to_string()],
+                            var_names: vec![
+                                "baz".to_string(),
+                                "buz".to_string(),
+                                "boz".to_string()
+                            ],
                         }),
                         node_idx: 3,
                         token_range: 14..26,
@@ -1338,12 +1440,24 @@ mod tests {
                                                     node: Box::new(Expression::Binary {
                                                         operator: BinaryOperator::Plus,
                                                         lhs: ASTNode {
-                                                            node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                                            node: Box::new(
+                                                                Expression::PrimitiveTerm(
+                                                                    IntegerConstant(
+                                                                        "1".to_string()
+                                                                    )
+                                                                )
+                                                            ),
                                                             node_idx: 0,
                                                             token_range: 24..29,
                                                         },
                                                         rhs: ASTNode {
-                                                            node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                                                            node: Box::new(
+                                                                Expression::PrimitiveTerm(
+                                                                    IntegerConstant(
+                                                                        "2".to_string()
+                                                                    )
+                                                                )
+                                                            ),
                                                             node_idx: 1,
                                                             token_range: 28..29,
                                                         },
@@ -1352,7 +1466,9 @@ mod tests {
                                                     token_range: 24..33,
                                                 },
                                                 rhs: ASTNode {
-                                                    node: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
+                                                    node: Box::new(Expression::PrimitiveTerm(
+                                                        IntegerConstant("3".to_string())
+                                                    )),
                                                     node_idx: 3,
                                                     token_range: 32..33,
                                                 },
@@ -1390,12 +1506,16 @@ mod tests {
                                 node: Box::new(Expression::Binary {
                                     operator: BinaryOperator::Plus,
                                     lhs: ASTNode {
-                                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                            "1".to_string()
+                                        ))),
                                         node_idx: 0,
                                         token_range: 0..5,
                                     },
                                     rhs: ASTNode {
-                                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                            "2".to_string()
+                                        ))),
                                         node_idx: 1,
                                         token_range: 4..5,
                                     },
@@ -1404,7 +1524,9 @@ mod tests {
                                 token_range: 0..9,
                             },
                             rhs: ASTNode {
-                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
+                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                    "3".to_string()
+                                ))),
                                 node_idx: 3,
                                 token_range: 8..9,
                             },
@@ -1435,7 +1557,9 @@ mod tests {
                         node: Box::new(Expression::Binary {
                             operator: BinaryOperator::Plus,
                             lhs: ASTNode {
-                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                    "1".to_string()
+                                ))),
                                 node_idx: 0,
                                 token_range: 0..9
                             },
@@ -1443,12 +1567,16 @@ mod tests {
                                 node: Box::new(Expression::Binary {
                                     operator: BinaryOperator::Multiply,
                                     lhs: ASTNode {
-                                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                            "2".to_string()
+                                        ))),
                                         node_idx: 1,
                                         token_range: 4..9
                                     },
                                     rhs: ASTNode {
-                                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
+                                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                            "3".to_string()
+                                        ))),
                                         node_idx: 2,
                                         token_range: 8..9
                                     },
@@ -1502,7 +1630,9 @@ mod tests {
                         node: Box::new(Expression::Unary {
                             operator: UnaryOperator::Not,
                             operand: ASTNode {
-                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                    "1".to_string()
+                                ))),
                                 node_idx: 0,
                                 token_range: 1..2
                             },
@@ -1514,7 +1644,9 @@ mod tests {
                         node: Box::new(Expression::Unary {
                             operator: UnaryOperator::Not,
                             operand: ASTNode {
-                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                    "2".to_string()
+                                ))),
                                 node_idx: 2,
                                 token_range: 6..7
                             }
@@ -1540,7 +1672,9 @@ mod tests {
                         node: Box::new(Expression::Binary {
                             operator: BinaryOperator::Plus,
                             lhs: ASTNode {
-                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                    "1".to_string()
+                                ))),
                                 node_idx: 0,
                                 token_range: 0..22
                             },
@@ -1550,36 +1684,54 @@ mod tests {
                                         subroutine_name: "foo".to_string(),
                                         arguments: vec![
                                             ASTNode {
-                                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                                node: Box::new(Expression::PrimitiveTerm(
+                                                    IntegerConstant("1".to_string())
+                                                )),
                                                 node_idx: 1,
                                                 token_range: 6..7
                                             },
                                             ASTNode {
-                                                node: Box::new(Expression::SubroutineCall(ASTNode {
-                                                    node: Box::new(SubroutineCall::Method {
-                                                        this_name: "baz".to_string(),
-                                                        method_name: "bar".to_string(),
-                                                        arguments: vec![
-                                                            ASTNode {
-                                                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
-                                                                node_idx: 2,
-                                                                token_range: 13..14
-                                                            },
-                                                            ASTNode {
-                                                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
-                                                                node_idx: 3,
-                                                                token_range: 16..17
-                                                            },
-                                                        ]
-                                                    }),
-                                                    node_idx: 4,
-                                                    token_range: 11..18
-                                                })),
+                                                node: Box::new(Expression::SubroutineCall(
+                                                    ASTNode {
+                                                        node: Box::new(SubroutineCall::Method {
+                                                            this_name: "baz".to_string(),
+                                                            method_name: "bar".to_string(),
+                                                            arguments: vec![
+                                                                ASTNode {
+                                                                    node: Box::new(
+                                                                        Expression::PrimitiveTerm(
+                                                                            IntegerConstant(
+                                                                                "1".to_string()
+                                                                            )
+                                                                        )
+                                                                    ),
+                                                                    node_idx: 2,
+                                                                    token_range: 13..14
+                                                                },
+                                                                ASTNode {
+                                                                    node: Box::new(
+                                                                        Expression::PrimitiveTerm(
+                                                                            IntegerConstant(
+                                                                                "2".to_string()
+                                                                            )
+                                                                        )
+                                                                    ),
+                                                                    node_idx: 3,
+                                                                    token_range: 16..17
+                                                                },
+                                                            ]
+                                                        }),
+                                                        node_idx: 4,
+                                                        token_range: 11..18
+                                                    }
+                                                )),
                                                 node_idx: 5,
                                                 token_range: 11..18
                                             },
                                             ASTNode {
-                                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
+                                                node: Box::new(Expression::PrimitiveTerm(
+                                                    IntegerConstant("3".to_string())
+                                                )),
                                                 node_idx: 6,
                                                 token_range: 20..21
                                             },
@@ -1618,7 +1770,9 @@ mod tests {
                         node: Box::new(Expression::Binary {
                             operator: BinaryOperator::Plus,
                             lhs: ASTNode {
-                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                    "1".to_string()
+                                ))),
                                 node_idx: 0,
                                 token_range: 0..21
                             },
@@ -1628,7 +1782,9 @@ mod tests {
                                         subroutine_name: "foo".to_string(),
                                         arguments: vec![
                                             ASTNode {
-                                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                                node: Box::new(Expression::PrimitiveTerm(
+                                                    IntegerConstant("1".to_string())
+                                                )),
                                                 node_idx: 1,
                                                 token_range: 6..7
                                             },
@@ -1639,12 +1795,24 @@ mod tests {
                                                         node: Box::new(Expression::Binary {
                                                             operator: BinaryOperator::Plus,
                                                             lhs: ASTNode {
-                                                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                                                node: Box::new(
+                                                                    Expression::PrimitiveTerm(
+                                                                        IntegerConstant(
+                                                                            "1".to_string()
+                                                                        )
+                                                                    )
+                                                                ),
                                                                 node_idx: 2,
                                                                 token_range: 11..16
                                                             },
                                                             rhs: ASTNode {
-                                                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                                                                node: Box::new(
+                                                                    Expression::PrimitiveTerm(
+                                                                        IntegerConstant(
+                                                                            "2".to_string()
+                                                                        )
+                                                                    )
+                                                                ),
                                                                 node_idx: 3,
                                                                 token_range: 15..16
                                                             },
@@ -1657,7 +1825,9 @@ mod tests {
                                                 token_range: 10..17
                                             },
                                             ASTNode {
-                                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
+                                                node: Box::new(Expression::PrimitiveTerm(
+                                                    IntegerConstant("3".to_string())
+                                                )),
                                                 node_idx: 6,
                                                 token_range: 19..20
                                             },
@@ -1786,12 +1956,16 @@ mod tests {
                                                 node: Box::new(Expression::Binary {
                                                     operator: BinaryOperator::Plus,
                                                     lhs: ASTNode {
-                                                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                                        node: Box::new(Expression::PrimitiveTerm(
+                                                            IntegerConstant("1".to_string())
+                                                        )),
                                                         node_idx: 0,
                                                         token_range: 0..5
                                                     },
                                                     rhs: ASTNode {
-                                                        node: Box::new(Expression::PrimitiveTerm(StringConstant("hello".to_string()))),
+                                                        node: Box::new(Expression::PrimitiveTerm(
+                                                            StringConstant("hello".to_string())
+                                                        )),
                                                         node_idx: 1,
                                                         token_range: 4..5
                                                     },
@@ -1800,7 +1974,9 @@ mod tests {
                                                 token_range: 0..9
                                             },
                                             rhs: ASTNode {
-                                                node: Box::new(Expression::PrimitiveTerm(PrimitiveTermVariant::True)),
+                                                node: Box::new(Expression::PrimitiveTerm(
+                                                    PrimitiveTermVariant::True
+                                                )),
                                                 node_idx: 3,
                                                 token_range: 8..9
                                             },
@@ -1809,7 +1985,9 @@ mod tests {
                                         token_range: 0..13
                                     },
                                     rhs: ASTNode {
-                                        node: Box::new(Expression::PrimitiveTerm(PrimitiveTermVariant::False)),
+                                        node: Box::new(Expression::PrimitiveTerm(
+                                            PrimitiveTermVariant::False
+                                        )),
                                         node_idx: 5,
                                         token_range: 12..13
                                     },
@@ -1818,7 +1996,9 @@ mod tests {
                                 token_range: 0..17
                             },
                             rhs: ASTNode {
-                                node: Box::new(Expression::PrimitiveTerm(PrimitiveTermVariant::Null)),
+                                node: Box::new(Expression::PrimitiveTerm(
+                                    PrimitiveTermVariant::Null
+                                )),
                                 node_idx: 7,
                                 token_range: 16..17
                             },
@@ -1850,12 +2030,16 @@ mod tests {
                             node: Box::new(Expression::Binary {
                                 operator: BinaryOperator::Plus,
                                 lhs: ASTNode {
-                                    node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                    node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                        "1".to_string()
+                                    ))),
                                     node_idx: 0,
                                     token_range: 1..6
                                 },
                                 rhs: ASTNode {
-                                    node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                                    node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                        "2".to_string()
+                                    ))),
                                     node_idx: 1,
                                     token_range: 5..6
                                 },

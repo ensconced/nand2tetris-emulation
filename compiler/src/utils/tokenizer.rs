@@ -68,18 +68,26 @@ impl<LangTokenKind> TokenDef<LangTokenKind> {
     }
 
     fn get_token(&self, string: &str, idx: usize) -> Option<Token<LangTokenKind>> {
-        self.regex.find(string).map(|match_result| self.make_token(match_result, idx))
+        self.regex
+            .find(string)
+            .map(|match_result| self.make_token(match_result, idx))
     }
 }
 
-fn get_first_token<LangTokenKind>(string: &str, token_defs: &[TokenDef<LangTokenKind>], idx: usize) -> Option<Token<LangTokenKind>> {
+fn get_first_token<LangTokenKind>(
+    string: &str,
+    token_defs: &[TokenDef<LangTokenKind>],
+    idx: usize,
+) -> Option<Token<LangTokenKind>> {
     if string.is_empty() {
         return None;
     }
 
     // It's not the most efficient way of implementing maximal munch but it
     // does the job.
-    let token_alternatives = token_defs.iter().filter_map(|matcher| matcher.get_token(string, idx));
+    let token_alternatives = token_defs
+        .iter()
+        .filter_map(|matcher| matcher.get_token(string, idx));
     let longest_token = token_alternatives.max_by_key(|token| token.source.len());
 
     if longest_token.is_some() {
@@ -92,7 +100,7 @@ fn get_first_token<LangTokenKind>(string: &str, token_defs: &[TokenDef<LangToken
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::compiler::assembler::tokenizer::{token_defs, TokenKind};
+    use crate::assembler::tokenizer::{token_defs, TokenKind};
 
     #[test]
     fn test_get_token() {
@@ -100,19 +108,39 @@ mod tests {
 
         let tokens = tokenizer.tokenize("AMD=(@FOO+_bar) ; JMP 1234 // whatever");
         let expected_tokens = vec![
-            Token::new(TokenKind::Destination("AMD".to_string()), "AMD=".to_string(), 0),
+            Token::new(
+                TokenKind::Destination("AMD".to_string()),
+                "AMD=".to_string(),
+                0,
+            ),
             Token::new(TokenKind::LParen, "(".to_string(), 1),
             Token::new(TokenKind::At, "@".to_string(), 2),
-            Token::new(TokenKind::Identifier("FOO".to_string()), "FOO".to_string(), 3),
+            Token::new(
+                TokenKind::Identifier("FOO".to_string()),
+                "FOO".to_string(),
+                3,
+            ),
             Token::new(TokenKind::Operator("+".to_string()), "+".to_string(), 4),
-            Token::new(TokenKind::Identifier("_bar".to_string()), "_bar".to_string(), 5),
+            Token::new(
+                TokenKind::Identifier("_bar".to_string()),
+                "_bar".to_string(),
+                5,
+            ),
             Token::new(TokenKind::RParen, ")".to_string(), 6),
             Token::new(TokenKind::InlineWhitespace, " ".to_string(), 7),
             Token::new(TokenKind::Semicolon, ";".to_string(), 8),
             Token::new(TokenKind::InlineWhitespace, " ".to_string(), 9),
-            Token::new(TokenKind::Identifier("JMP".to_string()), "JMP".to_string(), 10),
+            Token::new(
+                TokenKind::Identifier("JMP".to_string()),
+                "JMP".to_string(),
+                10,
+            ),
             Token::new(TokenKind::InlineWhitespace, " ".to_string(), 11),
-            Token::new(TokenKind::Number("1234".to_string()), "1234".to_string(), 12),
+            Token::new(
+                TokenKind::Number("1234".to_string()),
+                "1234".to_string(),
+                12,
+            ),
             Token::new(TokenKind::InlineWhitespace, " ".to_string(), 13),
             Token::new(TokenKind::Comment, "// whatever".to_string(), 14),
         ];

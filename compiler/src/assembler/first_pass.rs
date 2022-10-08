@@ -29,7 +29,7 @@ pub fn first_pass(commands: impl Iterator<Item = ASMInstruction>) -> FirstPassRe
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::compiler::assembler::parser::{parse, AValue};
+    use crate::assembler::parser::{parse, AValue};
 
     #[test]
     fn test_first_pass() {
@@ -48,7 +48,11 @@ mod tests {
             resolved_symbols,
             commands_without_labels,
         } = first_pass(commands);
-        let expected_resolved_symbols = HashMap::from([("foo".to_string(), 0), ("bar".to_string(), 2), ("baz".to_string(), 4)]);
+        let expected_resolved_symbols = HashMap::from([
+            ("foo".to_string(), 0),
+            ("bar".to_string(), 2),
+            ("baz".to_string(), 4),
+        ]);
         assert_eq!(resolved_symbols, expected_resolved_symbols);
 
         let expected_commands_without_labels = vec![

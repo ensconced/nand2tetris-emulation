@@ -37,7 +37,11 @@ pub struct JackCompilerResult {
     pub user_commands: HashMap<PathBuf, Vec<Command>>,
 }
 
-fn compile_jack_mod(jack_source_module: SourceModule, result: &mut JackCompilerResult, is_std_lib: bool) {
+fn compile_jack_mod(
+    jack_source_module: SourceModule,
+    result: &mut JackCompilerResult,
+    is_std_lib: bool,
+) {
     let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(&jack_source_module.source);
     let parse_result = parse(&tokens);
     let codegen_result = generate_vm_code(parse_result.class);
@@ -46,18 +50,27 @@ fn compile_jack_mod(jack_source_module: SourceModule, result: &mut JackCompilerR
         codegen_sourcemap: codegen_result.sourcemap,
     };
 
-    result.sourcemaps.insert(jack_source_module.filename.clone(), sourcemap);
-    result.tokens.insert(jack_source_module.filename.clone(), tokens);
+    result
+        .sourcemaps
+        .insert(jack_source_module.filename.clone(), sourcemap);
+    result
+        .tokens
+        .insert(jack_source_module.filename.clone(), tokens);
     if is_std_lib {
-        result.std_lib_commands.insert(jack_source_module.filename, codegen_result.commands);
+        result
+            .std_lib_commands
+            .insert(jack_source_module.filename, codegen_result.commands);
     } else {
-        result.user_commands.insert(jack_source_module.filename, codegen_result.commands);
+        result
+            .user_commands
+            .insert(jack_source_module.filename, codegen_result.commands);
     }
 }
 
 pub fn compile_jack(user_code: Vec<SourceModule>) -> JackCompilerResult {
     let std_lib_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../std_lib");
-    let std_lib_source: Vec<_> = get_source_modules(&std_lib_dir).expect("failed to get stdlib modules");
+    let std_lib_source: Vec<_> =
+        get_source_modules(&std_lib_dir).expect("failed to get stdlib modules");
 
     let mut result = JackCompilerResult::default();
 
@@ -72,7 +85,7 @@ pub fn compile_jack(user_code: Vec<SourceModule>) -> JackCompilerResult {
 
 #[cfg(test)]
 mod tests {
-    use crate::compiler::utils::{source_modules::mock_from_sources, testing::test_utils::*};
+    use crate::utils::{source_modules::mock_from_sources, testing::test_utils::*};
     use itertools::repeat_n;
 
     #[test]
@@ -87,7 +100,9 @@ mod tests {
             }
         ",
         ]));
-        tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        tick_until(&mut computer, &|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
+        });
         tick_until(&mut computer, &|computer| peek_stack(computer) == 3000);
     }
 
@@ -106,7 +121,9 @@ mod tests {
             }
         ",
         ]));
-        tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        tick_until(&mut computer, &|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
+        });
         tick_until(&mut computer, &|computer| peek_stack(computer) == 2000);
         tick_until(&mut computer, &|computer| peek_stack(computer) == 2003);
     }
@@ -132,7 +149,9 @@ mod tests {
             }
         ",
         ]));
-        tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        tick_until(&mut computer, &|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
+        });
         tick_until(&mut computer, &|computer| peek_stack(computer) == 28657);
     }
 
@@ -177,7 +196,9 @@ mod tests {
             }
         ",
         ]));
-        tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        tick_until(&mut computer, &|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
+        });
         tick_until(&mut computer, &|computer| peek_stack(computer) == 3382);
     }
 
@@ -213,7 +234,9 @@ mod tests {
             }
         ",
         ]));
-        tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        tick_until(&mut computer, &|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
+        });
         tick_until(&mut computer, &|computer| peek_stack(computer) == 18);
     }
 
@@ -232,10 +255,14 @@ mod tests {
             }
         ",
         ]));
-        tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        tick_until(&mut computer, &|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
+        });
         tick_until(&mut computer, &|computer| peek_stack(computer) == 333 * 83);
         tick_until(&mut computer, &|computer| peek_stack(computer) == 10 * -2);
-        tick_until(&mut computer, &|computer| peek_stack(computer) == -123 * -123);
+        tick_until(&mut computer, &|computer| {
+            peek_stack(computer) == -123 * -123
+        });
     }
 
     #[test]
@@ -251,8 +278,12 @@ mod tests {
             }
         ",
         ]));
-        tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        tick_until(&mut computer, &|computer| peek_stack(computer) == 1234 + 1234);
+        tick_until(&mut computer, &|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
+        });
+        tick_until(&mut computer, &|computer| {
+            peek_stack(computer) == 1234 + 1234
+        });
         tick_until(&mut computer, &|computer| peek_stack(computer) == 999 + 999);
     }
 
@@ -272,10 +303,16 @@ mod tests {
             }
         ",
         ]));
-        tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        tick_until(&mut computer, &|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
+        });
         tick_until(&mut computer, &|computer| peek_stack(computer) == 4191 / -3);
-        tick_until(&mut computer, &|computer| peek_stack(computer) == 1234 / 123);
-        tick_until(&mut computer, &|computer| peek_stack(computer) == -5198 / 182);
+        tick_until(&mut computer, &|computer| {
+            peek_stack(computer) == 1234 / 123
+        });
+        tick_until(&mut computer, &|computer| {
+            peek_stack(computer) == -5198 / 182
+        });
         tick_until(&mut computer, &|computer| peek_stack(computer) == 9099 / 33);
     }
 
@@ -294,7 +331,9 @@ mod tests {
             }
         ",
         ]));
-        tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        tick_until(&mut computer, &|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
+        });
         tick_until(&mut computer, &|computer| peek_stack(computer) == 12);
         tick_until(&mut computer, &|computer| peek_stack(computer) == 10);
         tick_until(&mut computer, &|computer| peek_stack(computer) == 100);
@@ -316,7 +355,9 @@ mod tests {
             }
             ",
         ]));
-        tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
+        tick_until(&mut computer, &|computer| {
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS
+        });
         let chars: Vec<_> = "hello".encode_utf16().map(|ch| ch as i16).collect();
         for char in chars.iter() {
             tick_until(&mut computer, &|computer| peek_stack(computer) == *char);
@@ -680,7 +721,10 @@ mod tests {
 
         // check arrays were properly allocated
         let sequence: Vec<_> = repeat_n(9, 20).collect();
-        assert_eq!(count_nonoverlapping_sequences_in_heap(&computer, &sequence), 495);
+        assert_eq!(
+            count_nonoverlapping_sequences_in_heap(&computer, &sequence),
+            495
+        );
 
         // The heap should be completely full, apart from one remaining 16-word
         // block which we don't have any use for.
@@ -761,11 +805,20 @@ mod tests {
         step_over(&mut computer); // step over Memory.init();
         step_over(&mut computer); // step over setupString
         step_in(&mut computer); // step into removeChars
-        assert_eq!(string_from_pointer(&computer, top_frame_arg(&computer, 0)), "hello there");
+        assert_eq!(
+            string_from_pointer(&computer, top_frame_arg(&computer, 0)),
+            "hello there"
+        );
         step_over(&mut computer); // step over eraseLastChar()
-        assert_eq!(string_from_pointer(&computer, top_frame_arg(&computer, 0)), "hello ther");
+        assert_eq!(
+            string_from_pointer(&computer, top_frame_arg(&computer, 0)),
+            "hello ther"
+        );
         step_over(&mut computer); // step over eraseLastChar()
-        assert_eq!(string_from_pointer(&computer, top_frame_arg(&computer, 0)), "hello the");
+        assert_eq!(
+            string_from_pointer(&computer, top_frame_arg(&computer, 0)),
+            "hello the"
+        );
     }
 
     #[test]

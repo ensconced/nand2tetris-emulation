@@ -9,7 +9,7 @@ use std::{
 
 use itertools::Itertools;
 
-use crate::compiler::assembler::parser::{ASMInstruction, AValue};
+use crate::assembler::parser::{ASMInstruction, AValue};
 
 #[derive(PartialEq, Debug)]
 struct GlyphUnicodeInfo {
@@ -27,9 +27,16 @@ pub struct Glyph {
 const GLYPH_COUNT_IS_512_MASK: u8 = 0x01;
 const HAS_UNICODE_TABLE_MASK: u8 = 0x02;
 
-fn take_glyphs(bytes: &mut impl Iterator<Item = u8>, glyph_count: usize, glyph_height: usize) -> Vec<[u8; 9]> {
+fn take_glyphs(
+    bytes: &mut impl Iterator<Item = u8>,
+    glyph_count: usize,
+    glyph_height: usize,
+) -> Vec<[u8; 9]> {
     let glyphs: Vec<_> = bytes.take(glyph_count * glyph_height).collect();
-    glyphs.chunks(glyph_height).map(|sl| <[u8; 9]>::try_from(sl).unwrap()).collect()
+    glyphs
+        .chunks(glyph_height)
+        .map(|sl| <[u8; 9]>::try_from(sl).unwrap())
+        .collect()
 }
 
 fn take_codepoints(codepoints: &mut Peekable<impl Iterator<Item = u16>>) -> Vec<u16> {
@@ -44,7 +51,9 @@ fn take_codepoints(codepoints: &mut Peekable<impl Iterator<Item = u16>>) -> Vec<
     result
 }
 
-fn maybe_take_codepoint_sequence(codepoints: &mut Peekable<impl Iterator<Item = u16>>) -> Option<Vec<u16>> {
+fn maybe_take_codepoint_sequence(
+    codepoints: &mut Peekable<impl Iterator<Item = u16>>,
+) -> Option<Vec<u16>> {
     if let Some(&codepoint) = codepoints.peek() {
         if codepoint == 0xFFFE {
             codepoints.next();
@@ -77,7 +86,9 @@ fn take_term(codepoints: &mut Peekable<impl Iterator<Item = u16>>) {
     }
 }
 
-fn take_glyph_unicode_description(codepoints: &mut Peekable<impl Iterator<Item = u16>>) -> GlyphUnicodeInfo {
+fn take_glyph_unicode_description(
+    codepoints: &mut Peekable<impl Iterator<Item = u16>>,
+) -> GlyphUnicodeInfo {
     let individual_codepoints = take_codepoints(codepoints);
     let codepoint_sequences = take_codepoint_sequences(codepoints);
     take_term(codepoints);
@@ -87,7 +98,10 @@ fn take_glyph_unicode_description(codepoints: &mut Peekable<impl Iterator<Item =
     }
 }
 
-fn take_unicode_info(bytes: &mut impl Iterator<Item = u8>, glyph_count: usize) -> Vec<GlyphUnicodeInfo> {
+fn take_unicode_info(
+    bytes: &mut impl Iterator<Item = u8>,
+    glyph_count: usize,
+) -> Vec<GlyphUnicodeInfo> {
     // All the remaining bytes can be considered in pairs as u16 codepoints.
     let bytes_vec: Vec<_> = bytes.collect();
     let mut codepoints = bytes_vec
@@ -137,7 +151,11 @@ fn parse_psf_file() -> HashMap<u16, [u8; 9]> {
     let mut result = HashMap::new();
 
     for glyph in glyphs {
-        for codepoint in glyph.individual_codepoints.into_iter().filter(|&codepoint| codepoint < 128) {
+        for codepoint in glyph
+            .individual_codepoints
+            .into_iter()
+            .filter(|&codepoint| codepoint < 128)
+        {
             result.insert(codepoint, glyph.bitmap);
         }
     }
@@ -190,7 +208,9 @@ pub fn glyphs_asm() -> Vec<ASMInstruction> {
                             jump: None,
                         }])
                         .collect()
-                } else if let Some(alu_constant) = alu_constants.iter().find(|&&alu_const| !alu_const == word) {
+                } else if let Some(alu_constant) =
+                    alu_constants.iter().find(|&&alu_const| !alu_const == word)
+                {
                     load_and_increment_address()
                         .chain(vec![
                             ASMInstruction::C {
@@ -205,7 +225,9 @@ pub fn glyphs_asm() -> Vec<ASMInstruction> {
                             },
                         ])
                         .collect()
-                } else if let Some(alu_constant) = alu_constants.iter().find(|&&alu_const| -alu_const == word) {
+                } else if let Some(alu_constant) =
+                    alu_constants.iter().find(|&&alu_const| -alu_const == word)
+                {
                     load_and_increment_address()
                         .chain(vec![
                             ASMInstruction::C {

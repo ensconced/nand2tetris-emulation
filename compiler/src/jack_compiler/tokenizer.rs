@@ -1,7 +1,7 @@
 use serde::Serialize;
 use ts_rs::TS;
 
-use crate::compiler::utils::tokenizer::TokenDef;
+use crate::utils::tokenizer::TokenDef;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, TS)]
 #[ts(export)]
@@ -102,7 +102,9 @@ pub fn token_defs() -> Vec<TokenDef<TokenKind>> {
         TokenDef::new(r"=", |_| Operator(Equals)),
         TokenDef::new(r"~", |_| Operator(Tilde)),
         TokenDef::new(r"\d+", IntegerLiteral),
-        TokenDef::new("\"[^\"]*\"", |match_str| StringLiteral(match_str[1..match_str.len() - 1].to_string())),
+        TokenDef::new("\"[^\"]*\"", |match_str| {
+            StringLiteral(match_str[1..match_str.len() - 1].to_string())
+        }),
         TokenDef::new(r"[a-zA-Z_][a-zA-Z0-9_]*", Identifier),
         TokenDef::new(r"class", |_| Keyword(Class)),
         TokenDef::new(r"constructor", |_| Keyword(Constructor)),
@@ -131,7 +133,7 @@ pub fn token_defs() -> Vec<TokenDef<TokenKind>> {
 #[cfg(test)]
 mod tests {
     use super::{KeywordTokenVariant::*, OperatorVariant::*, TokenKind::*, *};
-    use crate::compiler::utils::tokenizer::{Token, Tokenizer};
+    use crate::utils::tokenizer::{Token, Tokenizer};
 
     fn tokenize(str: &str) -> Vec<Token<TokenKind>> {
         Tokenizer::new(token_defs()).tokenize(str)
@@ -235,7 +237,11 @@ mod tests {
                 Token::new(Whitespace, " ".to_string(), 39),
                 Token::new(IntegerLiteral("1234".to_string()), "1234".to_string(), 40),
                 Token::new(Whitespace, " ".to_string(), 41),
-                Token::new(StringLiteral("hello".to_string()), "\"hello\"".to_string(), 42),
+                Token::new(
+                    StringLiteral("hello".to_string()),
+                    "\"hello\"".to_string(),
+                    42
+                ),
                 Token::new(Whitespace, " ".to_string(), 43),
                 Token::new(Identifier("_aBc123".to_string()), "_aBc123".to_string(), 44),
             ]

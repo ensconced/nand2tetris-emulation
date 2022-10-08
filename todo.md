@@ -1,3 +1,4 @@
+- reorganise repo in preparation for wasm setup
 - turn viz into a more general debugging harness. wasm???
 - use this to debug int printing issue
 - write Glyphs.jack stdlib module to check glyph loading is working as designed

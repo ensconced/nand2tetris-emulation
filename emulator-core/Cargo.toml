@@ -1,0 +1,9 @@
+[package]
+name = "emulator-core"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.63"
+
+[dependencies]
+minifb = "0.23.0"
+tabled = "0.7.0"

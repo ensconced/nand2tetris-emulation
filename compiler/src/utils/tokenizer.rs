@@ -28,7 +28,7 @@ impl<LangTokenKind: Debug> Tokenizer<LangTokenKind> {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, TS)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub struct Token<LangTokenKind>
 where
     LangTokenKind: 'static,

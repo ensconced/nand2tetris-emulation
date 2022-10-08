@@ -1,5 +1,4 @@
-- finish reorg & get all scripts, game_of_life, web viz etc working
-- add web_emulator crate, bootstrapped with wasm-pack -> this will be used to generate an npm package to be used by viz
+- use web-emulator to generate an npm package to be used by viz
 - turn viz into a more general debugging harness
 - use this to debug int printing issue
 - write Glyphs.jack stdlib module to check glyph loading is working as designed

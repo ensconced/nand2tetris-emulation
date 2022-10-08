@@ -8,7 +8,7 @@ use ts_rs::TS;
 
 #[derive(Default, Serialize, TS)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub struct VMCommandIdentifier {
     filename: PathBuf,
     vm_command_idx: usize,
@@ -16,7 +16,7 @@ pub struct VMCommandIdentifier {
 
 #[derive(Default, Serialize, TS)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub struct SourceMap {
     pub asm_instruction_idx_to_vm_cmd: HashMap<usize, VMCommandIdentifier>,
     pub vm_filename_and_idx_to_asm_instruction_idx: HashMap<PathBuf, HashMap<usize, Vec<usize>>>,

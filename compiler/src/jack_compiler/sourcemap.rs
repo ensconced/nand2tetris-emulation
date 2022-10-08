@@ -4,7 +4,7 @@ use ts_rs::TS;
 
 #[derive(Serialize, TS)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub struct JackParserSourceMap {
     pub token_idx_to_jack_node_idxs: HashMap<usize, Vec<usize>>,
     pub jack_nodes: Vec<NodeInfo>,
@@ -36,7 +36,7 @@ impl JackParserSourceMap {
 
 #[derive(Serialize, TS)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub struct NodeInfo {
     token_range: Range<usize>,
     child_node_idxs: Vec<usize>,
@@ -45,7 +45,7 @@ pub struct NodeInfo {
 
 #[derive(Default, Serialize, TS)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub struct JackCodegenSourceMap {
     pub jack_node_idx_to_vm_command_idx: HashMap<usize, Vec<usize>>,
     pub vm_command_idx_to_jack_node_idx: HashMap<usize, usize>,
@@ -62,7 +62,7 @@ impl JackCodegenSourceMap {
 
 #[derive(Serialize, TS)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub struct JackCompilerSourceMap {
     pub parser_sourcemap: JackParserSourceMap,
     pub codegen_sourcemap: JackCodegenSourceMap,

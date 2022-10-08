@@ -5,7 +5,7 @@ use ts_rs::TS;
 
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub struct ASTNode<T> {
     pub node: Box<T>,
     pub node_idx: usize,
@@ -14,7 +14,7 @@ pub struct ASTNode<T> {
 
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub struct Class {
     pub name: String,
     pub var_declarations: Vec<ASTNode<ClassVarDeclaration>>,
@@ -23,7 +23,7 @@ pub struct Class {
 
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub enum ClassVarDeclarationKind {
     Static,
     Field,
@@ -31,7 +31,7 @@ pub enum ClassVarDeclarationKind {
 
 #[derive(Serialize, TS, Clone, Debug, PartialEq, Eq)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub enum Type {
     Int,
     Char,
@@ -41,7 +41,7 @@ pub enum Type {
 
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub struct ClassVarDeclaration {
     pub type_name: Type,
     pub qualifier: ASTNode<ClassVarDeclarationKind>,
@@ -50,7 +50,7 @@ pub struct ClassVarDeclaration {
 
 #[derive(Serialize, TS, Copy, Clone, Debug, PartialEq, Eq)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub enum SubroutineKind {
     Constructor,
     Function,
@@ -59,7 +59,7 @@ pub enum SubroutineKind {
 
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub enum PrimitiveTermVariant {
     IntegerConstant(String),
     StringConstant(String),
@@ -71,7 +71,7 @@ pub enum PrimitiveTermVariant {
 
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub enum BinaryOperator {
     Plus,
     Minus,
@@ -88,7 +88,7 @@ pub enum BinaryOperator {
 
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub enum UnaryOperator {
     Minus,
     Not,
@@ -96,7 +96,7 @@ pub enum UnaryOperator {
 
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub enum Expression {
     Parenthesized(ASTNode<Expression>),
     PrimitiveTerm(PrimitiveTermVariant),
@@ -119,7 +119,7 @@ pub enum Expression {
 
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub struct Parameter {
     pub type_name: Type,
     pub var_name: String,
@@ -127,7 +127,7 @@ pub struct Parameter {
 
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub enum SubroutineCall {
     Direct {
         subroutine_name: String,
@@ -142,7 +142,7 @@ pub enum SubroutineCall {
 
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub enum Statement {
     Let {
         var_name: String,
@@ -163,7 +163,7 @@ pub enum Statement {
 }
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub struct VarDeclaration {
     pub type_name: Type,
     pub var_names: Vec<String>,
@@ -171,14 +171,14 @@ pub struct VarDeclaration {
 
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub struct SubroutineBody {
     pub var_declarations: Vec<ASTNode<VarDeclaration>>,
     pub statements: Vec<ASTNode<Statement>>,
 }
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub struct SubroutineDeclaration {
     pub subroutine_kind: SubroutineKind,
     pub return_type: Option<Type>,

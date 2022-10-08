@@ -961,7 +961,7 @@ impl CodeGenerator {
 
 #[derive(Default, Serialize, TS)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub struct VMCompilerResult {
     pub sourcemap: SourceMap,
     #[ts(type = "Array<string>")]

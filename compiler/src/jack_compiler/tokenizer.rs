@@ -5,7 +5,7 @@ use crate::utils::tokenizer::TokenDef;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, TS)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub enum KeywordTokenVariant {
     Class,
     Constructor,
@@ -32,7 +32,7 @@ pub enum KeywordTokenVariant {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, TS)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub enum OperatorVariant {
     Plus,
     Minus,
@@ -50,7 +50,7 @@ pub enum OperatorVariant {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, TS)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub enum TokenKind {
     Keyword(KeywordTokenVariant),
     IntegerLiteral(String),

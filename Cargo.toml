@@ -5,9 +5,9 @@ opt-level = 3
 opt-level = 3
 
 [workspace]
-
 members = [
     "compiler",
-    "emulator_core",
-    "desktop_emulator",
+    "emulator-core",
+    "desktop-emulator",
+    "web-emulator",
 ]

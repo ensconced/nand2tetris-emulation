@@ -2,9 +2,8 @@
 
 set -eu
 
-rm -f bindings/*
-cd core
-cargo run -- debug-compile foo.jack ../web/debug-output.json
+rm -f ./web/bindings/*
+cargo run --package compiler -- debug-compile /dev/null ./web/debug-output.json
 cargo test || true
-cd ../web
+cd web
 npm start

@@ -27,7 +27,7 @@ pub mod tokenizer;
 
 #[derive(Default, Serialize, TS)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 pub struct JackCompilerResult {
     pub sourcemaps: HashMap<PathBuf, JackCompilerSourceMap>,
     pub tokens: HashMap<PathBuf, Vec<Token<TokenKind>>>,

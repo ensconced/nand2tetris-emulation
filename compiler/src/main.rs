@@ -22,7 +22,7 @@ use {
 
 #[derive(Default, Serialize, TS)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 struct CompilerResult {
     pub jack_compiler_result: JackCompilerResult,
     pub vm_compiler_result: VMCompilerResult,
@@ -37,7 +37,7 @@ pub fn compile_to_machine_code(jack_code: Vec<SourceModule>) -> Vec<String> {
 
 #[derive(Serialize, TS)]
 #[ts(export)]
-#[ts(export_to = "../bindings/")]
+#[ts(export_to = "../web/bindings/")]
 struct ParserVizData {
     source: String,
     parsed_class: Class,

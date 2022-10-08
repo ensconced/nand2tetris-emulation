@@ -1,5 +1,6 @@
-- reorganise repo in preparation for wasm setup
-- turn viz into a more general debugging harness. wasm???
+- finish reorg & get all scripts, game_of_life, web viz etc working
+- add web_emulator crate, bootstrapped with wasm-pack -> this will be used to generate an npm package to be used by viz
+- turn viz into a more general debugging harness
 - use this to debug int printing issue
 - write Glyphs.jack stdlib module to check glyph loading is working as designed
 - use an even smaller font e.g. this 5x5 px one https://www.dafont.com/5x5.font (and caps only?)

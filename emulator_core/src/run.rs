@@ -1,7 +1,6 @@
-use super::computer::Computer;
-use super::generate_rom;
-use super::io::IO;
 use std::thread;
+
+use crate::{computer::Computer, generate_rom, io::IO};
 
 pub fn run(file_path: &str) {
     let mut computer = Computer::new(generate_rom::from_file(file_path));

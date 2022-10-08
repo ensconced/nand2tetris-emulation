@@ -2,7 +2,5 @@
 
 set -eu
 
-cd core
-
-cargo run -- debug-compile ../programs/machine-code/hello-world ../debug-output
-cargo run -- run ../programs/machine-code/hello-world
+cargo run --package compiler -- debug-compile ./programs/machine-code/hello-world /tmp/debug-output
+cargo run --package desktop_emulator -- run ./programs/machine-code/hello-world

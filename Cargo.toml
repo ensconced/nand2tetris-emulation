@@ -1,6 +1,13 @@
+[profile.dev]
+opt-level = 3
+
+[profile.test]
+opt-level = 3
+
 [workspace]
 
 members = [
     "compiler",
-    "emulator",
+    "emulator_core",
+    "desktop_emulator",
 ]

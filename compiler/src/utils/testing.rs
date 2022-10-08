@@ -1,8 +1,9 @@
 #[cfg(test)]
 pub mod test_utils {
     use crate::compile_to_machine_code;
+    use crate::config::ROM_DEPTH;
     use crate::{assembler::assemble, utils::source_modules::SourceModule, vm_compiler};
-    use crate::{emulator::computer::Computer, emulator::config, emulator::generate_rom};
+    use emulator_core::{computer::Computer, generate_rom};
     use std::collections::HashMap;
 
     pub const INITIAL_STACK_POINTER_ADDRESS: i16 = 261;
@@ -21,16 +22,10 @@ pub mod test_utils {
 
         let parsed_vm_modules: HashMap<_, _> = source_modules
             .iter()
-            .map(|source_module| {
-                (
-                    source_module.filename.clone(),
-                    vm_compiler::parse(source_module),
-                )
-            })
+            .map(|source_module| (source_module.filename.clone(), vm_compiler::parse(source_module)))
             .collect();
-        let asm =
-            vm_compiler::codegen::generate_asm(&HashMap::new(), &parsed_vm_modules).instructions;
-        let machine_code = assemble(asm, config::ROM_DEPTH);
+        let asm = vm_compiler::codegen::generate_asm(&HashMap::new(), &parsed_vm_modules).instructions;
+        let machine_code = assemble(asm, ROM_DEPTH);
         Computer::new(generate_rom::from_string(machine_code.join("\n")))
     }
 
@@ -143,9 +138,7 @@ pub mod test_utils {
 
     pub fn step_out(computer: &mut Computer) {
         let start_frame_depth = frame_stack_depth(computer);
-        tick_until(computer, &|comp| {
-            frame_stack_depth(comp) == start_frame_depth - 1
-        })
+        tick_until(computer, &|comp| frame_stack_depth(comp) == start_frame_depth - 1)
     }
 
     pub fn step_over(computer: &mut Computer) {

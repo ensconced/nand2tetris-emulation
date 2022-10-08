@@ -1,14 +1,8 @@
 [package]
-name = "emulator"
+name = "emulator_core"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.63"
-
-[profile.dev]
-opt-level = 3
-
-[profile.test]
-opt-level = 3
 
 [dependencies]
 cargo-llvm-cov = "0.4.8"

@@ -20,9 +20,7 @@ use TokenKind::*;
 pub fn token_defs() -> Vec<TokenDef<TokenKind>> {
     vec![
         TokenDef::new(r"//.*", |_| Comment),
-        TokenDef::new(r"[AMD]{1,3}=", |src| {
-            Destination(src[0..src.len() - 1].to_string())
-        }),
+        TokenDef::new(r"[AMD]{1,3}=", |src| Destination(src[0..src.len() - 1].to_string())),
         TokenDef::new(r"\s+", |_| LineBreakingWhitespace),
         TokenDef::new(r"[\s&&[^\n]]+", |_| InlineWhitespace),
         TokenDef::new(r"(\||\+|-|&|!)", Operator),

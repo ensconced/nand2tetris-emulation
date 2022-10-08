@@ -6,8 +6,7 @@ class Sys {
     do Math.init();
     do Output.init();
 
-    do Output.moveCursor(3, 4);
-    while (i < 3) {
+    while (true) {
       do Output.printChar(104);
       do Output.printChar(101);
       do Output.printChar(108);

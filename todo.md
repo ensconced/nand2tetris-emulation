@@ -1,6 +1,6 @@
 - turn viz into a more general debugging harness. wasm???
 - write Glyphs.jack stdlib module to check glyph loading is working as designed
-- use an even smaller font e.g. this 5x5 px one https://www.dafont.com/5x5.font (caps only)
+- use an even smaller font e.g. this 5x5 px one https://www.dafont.com/5x5.font (and caps only?)
 
 ### Identical Code Folding - i.e. automatic generation of asm "subroutines"
 
@@ -9,6 +9,8 @@
 - refactoring - tidy up selection clearing...
 - show contextual jack node
 - include linting and tsc in test suite
+
+- dead code elimination?
 
 ### optimize vm compiler
 

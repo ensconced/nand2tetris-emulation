@@ -14,6 +14,13 @@ class Output {
     let cursor_y = j;
   }
 
+  function void advanceCursor() {
+    let cursor_x = (cursor_x + 1) & 63;
+    if (cursor_x = 0) {
+      let cursor_y = (cursor_y + 1) & 31;
+    }
+  }
+
   function int getMsb(int word) {
     var int result, mask, i, bit;
 
@@ -70,9 +77,9 @@ class Output {
       let line = glyph[i];
 
       if (use_cursor_lsb) {
-        let screen[screen_offset] = screen[screen_offset] | line;
+        let screen[screen_offset] = (screen[screen_offset] & -256) | line;
       } else {
-        let screen[screen_offset] = screen[screen_offset] | (line * 256);
+        let screen[screen_offset] = (screen[screen_offset] & 255) | (line * 256);
       }
 
       let i = i + 1;
@@ -80,7 +87,7 @@ class Output {
     }
 
     do Memory.deAlloc(glyph);
-    do moveCursor(cursor_x + 1, cursor_y);
+    do advanceCursor();
   }
 
   // prints string starting at the cursor location and

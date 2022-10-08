@@ -2,6 +2,8 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const path = require("path");
 const webpack = require("webpack");
 const WebpackDevServer = require("webpack-dev-server");
+const { execSync } = require("child_process");
+const chokidar = require("chokidar");
 
 const TEN_MEGABYTES = 10 * 1024 * 1024;
 
@@ -41,19 +43,28 @@ const webpackConfig = {
   experiments: {
     asyncWebAssembly: true,
   },
-  watchOptions: {
-    ignored: path.resolve(__dirname, "../web-emulator/pkg"),
-  },
 };
 
 const compiler = webpack(webpackConfig);
 
-const devServerOptions = { ...webpackConfig.devServer, open: true };
-const server = new WebpackDevServer(devServerOptions, compiler);
+const server = new WebpackDevServer({ open: true, hot: false }, compiler);
+
+const watcher = chokidar.watch(path.resolve(__dirname, "../web-emulator"), {
+  ignored: /web-emulator\/pkg\//,
+});
 
 const runServer = async () => {
   console.log("Starting server...");
   await server.start();
+  watcher.on("change", () => {
+    console.log("rebuilding wasm");
+    execSync("./node_modules/.bin/wasm-pack build ../web-emulator", {
+      cwd: __dirname,
+    });
+    server.middleware.invalidate();
+  });
 };
 
-runServer();
+runServer().catch((err) => {
+  console.error(err);
+});

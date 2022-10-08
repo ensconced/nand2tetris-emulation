@@ -2,11 +2,8 @@
 
 set -eu
 
-cd web-emulator
-cargo watch -i .gitignore -i "pkg/*" -s "wasm-pack build" &
-cd ..
-rm -f ./web/bindings/*
 cargo run --package compiler -- debug-compile /dev/null ./web/debug-output.json
 cargo test || true
 cd web
+rm -f ./bindings/*
 npm start

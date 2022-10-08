@@ -8,5 +8,5 @@
     "moduleResolution": "node",
     "target": "ES2020"
   },
-  "include": ["src/**/*", ".eslintrc.js", "webpack.config.ts"]
+  "include": ["src/**/*", ".eslintrc.js"]
 }

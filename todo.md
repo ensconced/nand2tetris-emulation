@@ -1,4 +1,3 @@
-- watch/compile web-emulator by shelling out from start.js and manually invalidating compiler using the invalidate route
 - use web-emulator to generate an npm package to be used by viz
 - turn viz into a more general debugging harness
 - use this to debug int printing issue

@@ -15,6 +15,6 @@ extern "C" {
 
 #[wasm_bindgen]
 pub fn greet() -> Vec<u8> {
-    alert("now I'll return a thing no longer watched foopasdlfkjasldkfj...");
-    vec![1, 2, 3]
+    alert("what in the bejesus");
+    vec![1, 2, 3, 4, 5]
 }

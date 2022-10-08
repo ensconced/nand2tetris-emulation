@@ -62,6 +62,18 @@ class Output {
     return result;
   }
 
+  // prints string starting at the cursor location and
+  // advances the cursor appropriately
+  function void printString(String str) {
+    var int i;
+
+    let i = 0;
+    while (i < str.length()) {
+      do printChar(str.charAt(i));
+      let i = i + 1;
+    }
+  }
+
   // prints c at the cursor location and advances
   // the cursor one column forward
   function void printChar(char c) {
@@ -89,10 +101,6 @@ class Output {
     do Memory.deAlloc(glyph);
     do advanceCursor();
   }
-
-  // prints string starting at the cursor location and
-  // advances the cursor appropriately
-  function void printString(String s) {}
 
   // prints i starting at the cursor location and advances
   // the cursor appropriately

@@ -210,7 +210,7 @@ fn take_command_line(tokens: &mut PeekableTokens<TokenKind>) -> ASMInstruction {
     command
 }
 
-pub fn parse(source: &str) -> impl Iterator<Item = ASMInstruction> + '_ {
+pub fn parse(source: &str) -> Vec<ASMInstruction> {
     let tokenizer = Tokenizer::new(token_defs());
     let token_vec = tokenizer.tokenize(source);
     let mut tokens = token_vec.iter().peekable();
@@ -234,7 +234,7 @@ pub fn parse(source: &str) -> impl Iterator<Item = ASMInstruction> + '_ {
         }
     }
 
-    result.into_iter()
+    result
 }
 
 #[cfg(test)]
@@ -405,37 +405,33 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        // let line = "";
-        // let mut result = parse(line);
-        // assert_eq!(result.next(), None);
-
         let line = "     ";
-        let mut result = parse(line);
-        assert_eq!(result.next(), None);
+        let result = parse(line);
+        assert_eq!(result.get(0), None);
 
         let line = "  // hello this is a comment   ";
-        let mut result = parse(line);
-        assert_eq!(result.next(), None);
+        let result = parse(line);
+        assert_eq!(result.get(0), None);
 
         let line = "// hello this is a comment";
-        let mut result = parse(line);
-        assert_eq!(result.next(), None);
+        let result = parse(line);
+        assert_eq!(result.get(0), None);
 
         let line = "@1234";
-        let mut result = parse(line);
-        assert_eq!(result.next(), Some(ASMInstruction::A(AValue::Numeric("1234".to_string()))));
+        let result = parse(line);
+        assert_eq!(result[0], ASMInstruction::A(AValue::Numeric("1234".to_string())));
 
         let line = "   @1234  // here is a comment  ";
-        let mut result = parse(line);
-        assert_eq!(result.next(), Some(ASMInstruction::A(AValue::Numeric("1234".to_string()))));
+        let result = parse(line);
+        assert_eq!(result[0], ASMInstruction::A(AValue::Numeric("1234".to_string())));
     }
 
     #[test]
     #[should_panic(expected = "expected end of line. instead found another token")]
     fn test_parse_panic() {
         let line = "   @1234 blah blah blah";
-        let mut result = parse(line);
-        assert_eq!(result.next(), Some(ASMInstruction::A(AValue::Numeric("1234".to_string()))));
+        let result = parse(line);
+        assert_eq!(result[0], ASMInstruction::A(AValue::Numeric("1234".to_string())));
     }
 
     #[test]
@@ -446,7 +442,7 @@ mod tests {
             (FOOBAR)
             @FOOBAR
             ";
-        let result: Vec<ASMInstruction> = parse(source).collect();
+        let result: Vec<ASMInstruction> = parse(source);
         assert_eq!(
             result,
             vec![

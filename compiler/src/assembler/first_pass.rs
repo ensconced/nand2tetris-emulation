@@ -3,18 +3,18 @@ use std::collections::HashMap;
 use super::parser::ASMInstruction;
 
 #[derive(Debug)]
-pub struct FirstPassResult {
-    pub resolved_symbols: HashMap<String, i16>,
-    pub commands_without_labels: Vec<ASMInstruction>,
+pub struct FirstPassResult<'a> {
+    pub resolved_symbols: HashMap<&'a str, i16>,
+    pub commands_without_labels: Vec<&'a ASMInstruction>,
 }
 
-pub fn first_pass(commands: impl Iterator<Item = ASMInstruction>) -> FirstPassResult {
+pub fn first_pass<'a>(commands: &'a [ASMInstruction]) -> FirstPassResult<'a> {
     let mut resolved_symbols = HashMap::new();
     let mut commands_without_labels = Vec::new();
-    let mut index = 0;
+    let mut index: i16 = 0;
     for command in commands {
         if let ASMInstruction::L { identifier } = command {
-            resolved_symbols.insert(identifier, index);
+            resolved_symbols.insert(identifier.as_str(), index);
         } else {
             index += 1;
             commands_without_labels.push(command);
@@ -47,9 +47,8 @@ mod tests {
         let FirstPassResult {
             resolved_symbols,
             commands_without_labels,
-        } = first_pass(commands);
-        let expected_resolved_symbols = HashMap::from([("foo".to_string(), 0), ("bar".to_string(), 2), ("baz".to_string(), 4)]);
-        assert_eq!(resolved_symbols, expected_resolved_symbols);
+        } = first_pass(&commands);
+        assert_eq!(resolved_symbols, HashMap::from([("foo", 0), ("bar", 2), ("baz", 4)]));
 
         let expected_commands_without_labels = vec![
             ASMInstruction::C {
@@ -66,6 +65,7 @@ mod tests {
             ASMInstruction::A(AValue::Symbolic("bar".to_string())),
             ASMInstruction::A(AValue::Numeric("1234".to_string())),
         ];
-        assert_eq!(commands_without_labels, expected_commands_without_labels);
+        let ref_vec: Vec<_> = expected_commands_without_labels.iter().collect();
+        assert_eq!(commands_without_labels, ref_vec);
     }
 }

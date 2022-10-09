@@ -1,6 +1,6 @@
 import { FileIdx, NodeInfoId } from ".";
-import { CompilerResult } from "../../bindings/CompilerResult";
-import { NodeInfo } from "../../bindings/NodeInfo";
+import { CompilerResult } from "../bindings/CompilerResult";
+import { NodeInfo } from "../bindings/NodeInfo";
 import data from "../debug-output.json";
 import { FileIdxs } from "./code-panel";
 import _ from "lodash";

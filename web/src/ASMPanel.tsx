@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { FileIdx } from ".";
-import { CompilerResult } from "../../bindings/CompilerResult";
+import { CompilerResult } from "../bindings/CompilerResult";
 import data from "../debug-output.json";
 import CodePanel, { InteractedInstructionIdxs } from "./code-panel";
 

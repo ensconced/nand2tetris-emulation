@@ -26,8 +26,8 @@ pub mod test_utils {
             .map(|source_module| (source_module.filename.clone(), vm_compiler::parse(source_module)))
             .collect();
         let asm = vm_compiler::codegen::generate_asm(&HashMap::new(), &parsed_vm_modules).instructions;
-        let machine_code = assemble(asm, ROM_DEPTH);
-        Computer::new(generate_rom::from_string(machine_code.join("\n")))
+        let assembly_result = assemble(&asm, ROM_DEPTH);
+        Computer::new(generate_rom::from_string(assembly_result.instructions.join("\n")))
     }
 
     pub fn computer_from_jack_code(jack_code: Vec<SourceModule>) -> Computer {

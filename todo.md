@@ -21,6 +21,8 @@
 
 - completely skip vm code stage???
 
+- add another hardware register???
+
 ### optimize vm compiler
 
 - identify push/pop and just replace stack value in place?

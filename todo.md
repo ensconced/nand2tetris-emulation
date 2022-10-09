@@ -1,4 +1,3 @@
-- include machine code in compiler output to use in web app
 - refactor computer constructor to take an IO implementation (define IO trait to be impld by both desktop and web emulators)
 - turn viz into a more general debugging harness
 - use this to debug int printing issue

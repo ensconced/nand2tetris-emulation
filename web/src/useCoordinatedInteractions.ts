@@ -14,10 +14,7 @@ import {
 const compilerResult = data as CompilerResult;
 const {
   vm_compiler_result: { sourcemap: vmCompilerSourcemap },
-  assembly_result,
 } = compilerResult;
-
-console.log(assembly_result);
 
 interface InteractedItems {
   interactedTokens: InteractedItemIdxs;

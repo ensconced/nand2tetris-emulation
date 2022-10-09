@@ -1,5 +1,7 @@
 mod utils;
 
+use std::convert::TryInto;
+
 use emulator_core::computer::Computer;
 use wasm_bindgen::prelude::*;
 
@@ -15,6 +17,6 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-pub fn greet() -> Computer {
-    Computer::new([0; 32768])
+pub fn make_computer(rom: &[i16]) -> Computer {
+    Computer::new(rom.try_into().expect("failed to convert slice into rom array"))
 }

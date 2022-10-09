@@ -2,8 +2,8 @@
 
 set -eu
 
-cargo run --package compiler -- debug-compile /dev/null ./web/debug-output.json
+rm -f ./web/bindings/*
 cargo test || true
+cargo run --package compiler -- debug-compile /dev/null ./web/debug-output.json
 cd web
-rm -f ./bindings/*
 npm start

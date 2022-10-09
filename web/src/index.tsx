@@ -7,9 +7,16 @@ import ASMPanel from "./ASMPanel";
 import { filenames, tokensByFilename, vmCommands } from "./sourcemapUtils";
 import useCoordinatedInteractions from "./useCoordinatedInteractions";
 import JackModule from "./JackModule";
-import * as foo from "../../web-emulator/pkg";
+import { make_computer as makeComputer, tick } from "../../web-emulator/pkg";
 
-console.log(foo);
+const rom = new Int16Array(32768);
+const computer = makeComputer(rom);
+tick(computer);
+console.log(computer.cpu.pc);
+tick(computer);
+console.log(computer.cpu.pc);
+tick(computer);
+console.log(computer.cpu.pc);
 
 function getElementById(id: string): HTMLElement {
   const element = document.getElementById(id);

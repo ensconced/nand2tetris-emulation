@@ -1,10 +1,9 @@
 mod io;
-mod run;
-
-use run::run;
 use std::fs;
 
 use clap::{Parser, Subcommand};
+use emulator_core::{computer::Computer, generate_rom, run::run};
+use io::DesktopIO;
 
 #[derive(Parser, Debug)]
 #[clap()]
@@ -25,7 +24,8 @@ fn main() {
     match &args.command {
         Commands::Run { file_path: file_path_maybe } => {
             let file_path = file_path_maybe.as_ref().expect("path is required");
-            run(fs::read_to_string(file_path).expect("failed to read machine code from file"));
+            let rom = generate_rom::from_string(fs::read_to_string(file_path).expect("failed to read machine code from file"));
+            run(Computer::new(rom), &mut DesktopIO::new());
         }
     }
 }

@@ -1,4 +1,7 @@
-use emulator_core::computer::{bit, Ram};
+use emulator_core::{
+    computer::{bit, Ram},
+    run::IO,
+};
 use minifb::{Key, Scale, ScaleMode, Window, WindowOptions};
 use std::time::SystemTime;
 
@@ -6,7 +9,7 @@ const WORD_SIZE: usize = 16;
 const WIDTH: usize = 512;
 const HEIGHT: usize = 256;
 
-pub struct IO {
+pub struct DesktopIO {
     window: Window,
     buffer: [u32; WIDTH * HEIGHT],
     last_draw_time: SystemTime,
@@ -92,13 +95,36 @@ fn kbd_output(keys: Vec<Key>) -> i16 {
     })
 }
 
-impl Default for IO {
+impl Default for DesktopIO {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl IO {
+impl IO for DesktopIO {
+    fn refresh(&mut self, ram: &Ram) {
+        let time = SystemTime::now();
+        if let Ok(t) = time.duration_since(self.last_draw_time) {
+            if t.as_millis() >= 16 {
+                for (pixel_idx, pixel) in self.buffer.iter_mut().enumerate() {
+                    let word_idx = pixel_idx / WORD_SIZE;
+                    let word = ram.lock()[word_idx + 18432];
+                    let bit_position_in_word = 15 - (pixel_idx % 16);
+                    *pixel = if bit(word, bit_position_in_word as u32) == 0 {
+                        0xff000000
+                    } else {
+                        0xffffffff
+                    }
+                }
+                self.last_draw_time = time;
+            }
+            ram.lock()[26624] = kbd_output(self.window.get_keys());
+            self.window.update_with_buffer(&self.buffer, WIDTH, HEIGHT).unwrap();
+        }
+    }
+}
+
+impl DesktopIO {
     pub fn new() -> Self {
         let mut window = Window::new(
             "Display",
@@ -122,27 +148,6 @@ impl IO {
             window,
             buffer: [0; WIDTH * HEIGHT],
             last_draw_time: SystemTime::now(),
-        }
-    }
-
-    pub fn refresh(&mut self, ram: &Ram) {
-        let time = SystemTime::now();
-        if let Ok(t) = time.duration_since(self.last_draw_time) {
-            if t.as_millis() >= 16 {
-                for (pixel_idx, pixel) in self.buffer.iter_mut().enumerate() {
-                    let word_idx = pixel_idx / WORD_SIZE;
-                    let word = ram.lock()[word_idx + 18432];
-                    let bit_position_in_word = 15 - (pixel_idx % 16);
-                    *pixel = if bit(word, bit_position_in_word as u32) == 0 {
-                        0xff000000
-                    } else {
-                        0xffffffff
-                    }
-                }
-                self.last_draw_time = time;
-            }
-            ram.lock()[26624] = kbd_output(self.window.get_keys());
-            self.window.update_with_buffer(&self.buffer, WIDTH, HEIGHT).unwrap();
         }
     }
 }

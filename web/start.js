@@ -54,13 +54,13 @@ const watcher = chokidar.watch(path.resolve(__dirname, "../web-emulator"), {
 });
 
 const runServer = async () => {
+  execSync("./node_modules/.bin/wasm-pack build ../web-emulator", {
+    cwd: __dirname,
+  });
   console.log("Starting server...");
   await server.start();
   watcher.on("change", () => {
     console.log("rebuilding wasm");
-    execSync("./node_modules/.bin/wasm-pack build ../web-emulator", {
-      cwd: __dirname,
-    });
     server.middleware.invalidate();
   });
 };

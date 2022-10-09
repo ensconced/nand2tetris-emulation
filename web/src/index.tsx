@@ -7,9 +7,9 @@ import ASMPanel from "./ASMPanel";
 import { filenames, tokensByFilename, vmCommands } from "./sourcemapUtils";
 import useCoordinatedInteractions from "./useCoordinatedInteractions";
 import JackModule from "./JackModule";
-import { greet } from "../../web-emulator/pkg";
+import * as foo from "../../web-emulator/pkg";
 
-console.log(greet());
+console.log(foo);
 
 function getElementById(id: string): HTMLElement {
   const element = document.getElementById(id);

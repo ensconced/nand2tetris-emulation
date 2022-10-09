@@ -1,5 +1,6 @@
 mod utils;
 
+use emulator_core::computer::Computer;
 use wasm_bindgen::prelude::*;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -14,7 +15,6 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-pub fn greet() -> Vec<u8> {
-    alert("what in the bejesus");
-    vec![1, 2, 3, 4, 5]
+pub fn greet() -> Computer {
+    Computer::new([0; 32768])
 }

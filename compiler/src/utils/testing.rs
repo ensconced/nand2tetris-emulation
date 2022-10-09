@@ -3,6 +3,7 @@ pub mod test_utils {
     use crate::compile_to_machine_code;
     use crate::config::ROM_DEPTH;
     use crate::{assembler::assemble, utils::source_modules::SourceModule, vm_compiler};
+    use emulator_core::computer::tick;
     use emulator_core::{computer::Computer, generate_rom};
     use std::collections::HashMap;
 
@@ -35,27 +36,27 @@ pub mod test_utils {
     }
 
     pub fn stack_pointer(computer: &Computer) -> i16 {
-        computer.ram.lock().unwrap()[0]
+        computer.ram.lock()[0]
     }
 
     pub fn this(computer: &Computer, offset: usize) -> i16 {
         let pointer_to_this = pointer(computer, 0);
-        let ram = computer.ram.lock().unwrap();
+        let ram = computer.ram.lock();
         ram[pointer_to_this as usize + offset]
     }
 
     pub fn pointer(computer: &Computer, offset: usize) -> i16 {
-        let ram = computer.ram.lock().unwrap();
+        let ram = computer.ram.lock();
         ram[3 + offset]
     }
 
     pub fn static_variable(computer: &Computer, offset: usize) -> i16 {
-        let ram = computer.ram.lock().unwrap();
+        let ram = computer.ram.lock();
         ram[16 + offset]
     }
 
     pub fn nth_stack_value(computer: &Computer, n: usize) -> i16 {
-        let ram = computer.ram.lock().unwrap();
+        let ram = computer.ram.lock();
         ram[ram[0] as usize - (1 + n)]
     }
 
@@ -64,7 +65,7 @@ pub mod test_utils {
     }
 
     pub fn heap_includes(computer: &Computer, values: &[i16]) -> bool {
-        let ram = computer.ram.lock().unwrap();
+        let ram = computer.ram.lock();
         let heap = &ram[2048..18432];
         (0..heap.len()).any(|heap_idx| heap.iter().skip(heap_idx).take(values.len()).eq(values))
     }
@@ -88,7 +89,7 @@ pub mod test_utils {
     }
 
     pub fn count_nonoverlapping_sequences_in_heap(computer: &Computer, needle: &[i16]) -> usize {
-        let ram = computer.ram.lock().unwrap();
+        let ram = computer.ram.lock();
         let heap = &ram[2048..18432];
         count_nonoverlapping_sequences(heap, needle)
     }
@@ -96,7 +97,7 @@ pub mod test_utils {
     pub fn heap_avail_list(computer: &Computer) -> HashMap<usize, Vec<i16>> {
         let mut result = HashMap::new();
 
-        let ram = computer.ram.lock().unwrap();
+        let ram = computer.ram.lock();
         let avail_list = &ram[2050..2050 + 13];
         for (idx, &list_head) in avail_list.iter().enumerate() {
             let mut current = list_head;
@@ -116,7 +117,7 @@ pub mod test_utils {
 
     pub fn frame_stack_depth(computer: &Computer) -> usize {
         let mut result = 0;
-        let ram = computer.ram.lock().unwrap();
+        let ram = computer.ram.lock();
         let mut lcl_ptr = ram[1];
         while lcl_ptr >= 256 {
             lcl_ptr = ram[lcl_ptr as usize - 4];
@@ -147,12 +148,12 @@ pub mod test_utils {
     }
 
     pub fn top_frame_local(computer: &Computer, local_idx: usize) -> i16 {
-        let ram = computer.ram.lock().unwrap();
+        let ram = computer.ram.lock();
         ram[ram[1] as usize + local_idx]
     }
 
     pub fn top_frame_arg(computer: &Computer, arg_idx: usize) -> i16 {
-        let ram = computer.ram.lock().unwrap();
+        let ram = computer.ram.lock();
         ram[ram[2] as usize + arg_idx]
     }
 
@@ -162,13 +163,13 @@ pub mod test_utils {
             if predicate(computer) {
                 return;
             }
-            computer.tick();
+            tick(computer);
         }
         panic!("predicate was not true within {} ticks", max_ticks);
     }
 
     pub fn string_from_pointer(computer: &Computer, pointer: i16) -> String {
-        let ram = computer.ram.lock().unwrap();
+        let ram = computer.ram.lock();
         let str_length = ram[pointer as usize + 1] as usize;
         let buffer_base = ram[pointer as usize] as usize;
         let str_buffer = &ram[buffer_base..buffer_base + str_length];

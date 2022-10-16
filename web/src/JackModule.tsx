@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { Token } from "../bindings/Token";
 import { TokenKind } from "../bindings/TokenKind";
-import CodePanel, { FileIdxs, InteractedItemIdxs } from "./code-panel";
+import CodePanel, { FileIdxs, InteractedItemIdxs } from "./CodePanel";
 import { FileIdx } from "./types";
 
 interface Props {

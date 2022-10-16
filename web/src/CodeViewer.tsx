@@ -6,6 +6,7 @@ import { filenames, tokensByFilename, vmCommands } from "./sourcemapUtils";
 import useCoordinatedInteractions from "./useCoordinatedInteractions";
 import JackModule from "./JackModule";
 import { FileIdx } from "./types";
+import TabControls from "./TabControls";
 
 export default function CodeViewer() {
   const jackModuleContainer = useRef<HTMLDivElement>(null);
@@ -71,23 +72,19 @@ export default function CodeViewer() {
   return (
     <>
       <div className="panel-container">
-        <fieldset style={{ flex: "0 0 auto" }}>
-          {filenames.map((filename, idx) => (
-            <React.Fragment key={filename}>
-              <input
-                id={`file-${idx}`}
-                type="radio"
-                name="file-tab"
-                checked={openFileIdx === idx}
-                onChange={() => setOpenFileIdx(idx)}
-              />
-              <label htmlFor={`file-${idx}`}>{filename}</label>
-            </React.Fragment>
-          ))}
-        </fieldset>
+        <TabControls
+          groupName="file-tab"
+          items={filenames}
+          onChange={(idx) => setOpenFileIdx(idx)}
+          checkedIdx={openFileIdx}
+        />
         <div
           ref={jackModuleContainer}
-          style={{ flex: "1", minHeight: 0, overflow: "hidden" }}
+          style={{
+            flex: "1",
+            minHeight: 0,
+            overflow: "hidden",
+          }}
         >
           {filenames.map((filename) => {
             return (

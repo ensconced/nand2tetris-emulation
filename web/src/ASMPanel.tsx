@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { CompilerResult } from "../bindings/CompilerResult";
 import data from "../debug-output.json";
-import CodePanel, { InteractedInstructionIdxs } from "./code-panel";
+import CodePanel, { InteractedInstructionIdxs } from "./CodePanel";
 import { FileIdx } from "./types";
 
 const compilerResult = data as CompilerResult;

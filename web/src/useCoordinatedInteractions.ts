@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { CompilerResult } from "../bindings/CompilerResult";
 
 import data from "../debug-output.json";
-import { InteractedInstructionIdxs, InteractedItemIdxs } from "./code-panel";
+import { InteractedInstructionIdxs, InteractedItemIdxs } from "./CodePanel";
 import {
   allVMCommandIdxs,
   findInnermostJackNode,

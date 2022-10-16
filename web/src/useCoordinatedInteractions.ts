@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { FileIdx, NodeInfoId } from ".";
 import { CompilerResult } from "../bindings/CompilerResult";
 
 import data from "../debug-output.json";
@@ -10,6 +9,7 @@ import {
   jackNodeTokens,
   vmCommandToJackNode,
 } from "./sourcemapUtils";
+import { FileIdx, NodeInfoId } from "./types";
 
 const compilerResult = data as CompilerResult;
 const {

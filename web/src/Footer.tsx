@@ -1,5 +1,5 @@
 import React from "react";
-import { NodeInfoId } from "./index";
+import { NodeInfoId } from "./types";
 
 interface Props {
   hoveredJackNode: NodeInfoId | undefined;

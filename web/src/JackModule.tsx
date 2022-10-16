@@ -1,8 +1,8 @@
 import React, { useMemo } from "react";
-import { FileIdx } from ".";
-import { Token } from "../../bindings/Token";
-import { TokenKind } from "../../bindings/TokenKind";
+import { Token } from "../bindings/Token";
+import { TokenKind } from "../bindings/TokenKind";
 import CodePanel, { FileIdxs, InteractedItemIdxs } from "./code-panel";
+import { FileIdx } from "./types";
 
 interface Props {
   filename: string;

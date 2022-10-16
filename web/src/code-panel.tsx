@@ -23,7 +23,6 @@ interface Props {
 }
 
 export default function CodePanel({
-  id,
   filename,
   items,
   hoveredItemIdxs,

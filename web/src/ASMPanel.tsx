@@ -40,11 +40,9 @@ export default function ASMPanel({
 
   return (
     <div
+      className="panel-container"
       style={{
-        height: "100vh",
         overflow: "auto",
-        display: "flex",
-        flexDirection: "column",
       }}
     >
       <CodePanel

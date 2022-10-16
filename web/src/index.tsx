@@ -5,17 +5,16 @@ import CodeViewer from "./CodeViewer";
 
 import {
   make_computer as makeComputer,
+  get_ram_copy,
   tick,
 } from "../../web-emulator/pkg/web_emulator";
 
 const rom = new Int16Array(32768);
 const computer = makeComputer(rom);
 tick(computer);
-console.log(computer.cpu.pc);
 tick(computer);
-console.log(computer.cpu.pc);
 tick(computer);
-console.log(computer.cpu.pc);
+const ram = get_ram_copy(computer.ram);
 
 function getElementById(id: string): HTMLElement {
   const element = document.getElementById(id);
@@ -26,14 +25,17 @@ function getElementById(id: string): HTMLElement {
 }
 
 function Computer() {
-  console.log(computer);
-  return <div>hello i am the ram</div>;
+  return (
+    <div className="panel-container">
+      <code className="code-panel">{ram.join("\n")}</code>
+    </div>
+  );
 }
 
 function App() {
   return (
     <div style={{ display: "flex" }}>
-      <CodeViewer />;
+      <CodeViewer />
       <Computer />
     </div>
   );

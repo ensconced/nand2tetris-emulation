@@ -104,6 +104,11 @@ impl Cpu {
 }
 
 #[wasm_bindgen]
+pub fn get_ram_copy(ram: &Ram) -> Box<[i16]> {
+    Box::new(*ram.0.lock().unwrap())
+}
+
+#[wasm_bindgen]
 #[derive(Clone)]
 pub struct Ram(Arc<Mutex<[i16; 32768]>>);
 

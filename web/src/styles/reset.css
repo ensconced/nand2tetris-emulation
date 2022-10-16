@@ -19,7 +19,8 @@ code {
   border: 1px solid #6272a4;
 }
 
-#root {
+#root,
+.panel-container {
   display: flex;
   flex-direction: column;
   height: 100vh;

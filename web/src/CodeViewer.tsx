@@ -69,15 +69,8 @@ export default function CodeViewer() {
   }
 
   return (
-    <div style={{ display: "flex" }}>
-      <div
-        style={{
-          flex: 1,
-          height: "100vh",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
+    <>
+      <div className="panel-container">
         <fieldset style={{ flex: "0 0 auto" }}>
           {filenames.map((filename, idx) => (
             <React.Fragment key={filename}>
@@ -133,6 +126,6 @@ export default function CodeViewer() {
         hoveredInstructionIdxs={hoveredInstructionIdxs?.idxs ?? new Set()}
         selectedInstructionIdxs={selectedInstructionIdxs}
       />
-    </div>
+    </>
   );
 }

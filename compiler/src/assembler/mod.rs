@@ -14,7 +14,7 @@ use self::{
 
 pub fn assemble(source: &[ASMInstruction], rom_depth: usize) -> AssemblyResult {
     let first_pass_result = first_pass(source);
-    let mut code_generator = CodeGenerator::new(first_pass_result);
+    let mut code_generator = CodeGenerator::new(first_pass_result, source);
     let mut assembly_result = code_generator.generate();
     while assembly_result.instructions.len() < rom_depth {
         assembly_result.instructions.push("0000000000000000".to_string());

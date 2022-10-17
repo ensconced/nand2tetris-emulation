@@ -3,6 +3,7 @@
   padding: 0;
   box-sizing: border-box;
   background-color: #282a36;
+  font-family: monospace;
 }
 
 .code-panel {
@@ -48,12 +49,17 @@ code > span.selected {
   background-color: #ff79c6;
 }
 
-code > span.highlighted {
+code > span.hovered {
   color: #282a36;
   background-color: #f8f8f2;
 }
 
-code > span.highlighted.selected {
+code > span.current {
+  display: block;
+  outline: 1px solid #50fa7b;
+}
+
+code > span.hovered.selected {
   color: #282a36;
   background-color: #fcb9dc;
 }
@@ -65,7 +71,8 @@ fieldset {
   color: #f8f8f2;
 }
 
-fieldset label {
+fieldset label,
+fieldset button {
   padding: 0 10px;
 }
 
@@ -79,6 +86,11 @@ fieldset label:hover {
 }
 
 input:checked + label {
+  background-color: #f8f8f2;
+  color: #282a36;
+}
+
+button {
   background-color: #f8f8f2;
   color: #282a36;
 }

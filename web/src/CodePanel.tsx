@@ -17,6 +17,7 @@ interface Props {
   items: Array<string>;
   hoveredItemIdxs: FileIdxs | undefined;
   selectedItemIdxs: InteractedItemIdxs;
+  currentIdx: number | undefined;
   onSpanMouseEnter(itemIdx: number): void;
   onSpanClick(itemIdx: number): void;
   onSpanMouseLeave(): void;
@@ -30,6 +31,7 @@ export default function CodePanel({
   onSpanMouseEnter,
   onSpanClick,
   onSpanMouseLeave,
+  currentIdx,
 }: Props) {
   const codeRef = useRef<HTMLElement>(null);
 
@@ -59,12 +61,13 @@ export default function CodePanel({
           <span
             key={idx}
             className={classnames({
-              highlighted:
+              hovered:
                 hoveredItemIdxs?.filename === filename &&
                 hoveredItemIdxs.idxs.has(idx),
               selected:
                 selectedItemIdxs?.filename === filename &&
                 selectedItemIdxs.idxs.has(idx),
+              current: currentIdx === idx,
             })}
             onMouseEnter={() => onSpanMouseEnter(idx)}
             onMouseLeave={onSpanMouseLeave}

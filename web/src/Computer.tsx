@@ -1,31 +1,24 @@
-import React, { useMemo, useState } from "react";
-import {
-  make_computer as makeComputer,
-  get_formatted_ram,
-  tick,
-} from "../../web-emulator/pkg/web_emulator";
+import React from "react";
 import TabControls from "./TabControls";
-
-const rom = new Int16Array(32768);
-const computer = makeComputer(rom);
-tick(computer);
-tick(computer);
-tick(computer);
 
 const wordDisplayBaseOptions = ["binary", "decimal"];
 
-export default function Computer() {
-  const [wordDisplayBaseIdx, setWordDisplayBaseIdx] = useState(0);
-  const ram = useMemo(() => {
-    const ramString = get_formatted_ram(computer.ram, wordDisplayBaseIdx);
-    return ramString.split(/(?=\n)/);
-  }, [wordDisplayBaseIdx]);
+interface Props {
+  ram: string[];
+  wordDisplayBaseIdx: number;
+  onWordDisplayBaseIdxChange: (idx: number) => void;
+}
 
+export default function Computer({
+  ram,
+  wordDisplayBaseIdx,
+  onWordDisplayBaseIdxChange: onChange,
+}: Props) {
   return (
     <div className="panel-container">
       <TabControls
         items={wordDisplayBaseOptions}
-        onChange={(idx) => setWordDisplayBaseIdx(idx)}
+        onChange={onChange}
         checkedIdx={wordDisplayBaseIdx}
         groupName="ram-display"
       />

@@ -8,7 +8,12 @@ import JackModule from "./JackModule";
 import { FileIdx } from "./types";
 import TabControls from "./TabControls";
 
-export default function CodeViewer() {
+interface Props {
+  programCounter: number;
+  onTick: () => void;
+}
+
+export default function CodeViewer({ programCounter, onTick }: Props) {
   const jackModuleContainer = useRef<HTMLDivElement>(null);
   const [openFileIdx, setOpenFileIdx] = useState(0);
 
@@ -122,6 +127,8 @@ export default function CodeViewer() {
         setDirectlySelectedToken={setDirectlySelectedToken}
         hoveredInstructionIdxs={hoveredInstructionIdxs?.idxs ?? new Set()}
         selectedInstructionIdxs={selectedInstructionIdxs}
+        programCounter={programCounter}
+        onTick={onTick}
       />
     </>
   );

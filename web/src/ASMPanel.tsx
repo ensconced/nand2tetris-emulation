@@ -7,6 +7,7 @@ import { FileIdx } from "./types";
 const compilerResult = data as CompilerResult;
 const {
   vm_compiler_result: { instructions },
+  assembly_result,
 } = compilerResult;
 
 const instructionsWithNewLines = instructions.map(
@@ -21,6 +22,8 @@ interface Props {
   setDirectlySelectedInstructionIdx: (idx: number | undefined) => void;
   setDirectlySelectedToken: (idx: FileIdx | undefined) => void;
   setDirectlySelectedVMCommand: (idx: FileIdx | undefined) => void;
+  programCounter: number;
+  onTick: () => void;
 }
 
 export default function ASMPanel({
@@ -30,6 +33,8 @@ export default function ASMPanel({
   setDirectlySelectedInstructionIdx,
   setDirectlySelectedToken,
   setDirectlySelectedVMCommand,
+  programCounter,
+  onTick,
 }: Props) {
   const filename = "asm";
   const hoveredItemIdxs = { filename, idxs: hoveredInstructionIdxs };
@@ -38,6 +43,14 @@ export default function ASMPanel({
     return selectedInstructionIdxs && { ...selectedInstructionIdxs, filename };
   }, [selectedInstructionIdxs]);
 
+  const currentASMInstructionIdx = useMemo(() => {
+    const asmInstructionIdx = assembly_result.sourcemap[programCounter];
+    if (asmInstructionIdx === undefined) {
+      throw new Error("failed to find current ASM instruction");
+    }
+    return asmInstructionIdx;
+  }, [programCounter]);
+
   return (
     <div
       className="panel-container"
@@ -45,12 +58,16 @@ export default function ASMPanel({
         overflow: "auto",
       }}
     >
+      <fieldset>
+        <button onClick={onTick}>tick</button>
+      </fieldset>
       <CodePanel
         id={`${filename}`}
         filename={filename}
         items={instructionsWithNewLines}
         hoveredItemIdxs={hoveredItemIdxs}
         selectedItemIdxs={selectedItemIdxs}
+        currentIdx={currentASMInstructionIdx}
         onSpanMouseEnter={(idx) => setDirectlyHoveredInstructionIdx(idx)}
         onSpanMouseLeave={() => setDirectlyHoveredInstructionIdx(undefined)}
         onSpanClick={(idx) => {

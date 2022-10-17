@@ -1,4 +1,4 @@
-- allow clicking button to step through asm
+- why is stepping not working properly??
 - create web IO implementation for web debugger
 - make code panels draggable/collapsible
 - use this to debug int printing issue

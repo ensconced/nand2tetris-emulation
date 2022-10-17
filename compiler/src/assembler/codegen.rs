@@ -134,7 +134,7 @@ fn numeric_a_command_code(num_string: &str) -> String {
 
 pub struct CodeGenerator<'a> {
     resolved_symbols: HashMap<&'a str, i16>,
-    commands_without_labels: Vec<&'a ASMInstruction>,
+    commands: &'a [ASMInstruction],
     address_next_static_variable: i16,
 }
 
@@ -147,11 +147,33 @@ pub struct AssemblyResult {
 }
 
 impl<'a> CodeGenerator<'a> {
-    pub fn new(first_pass_result: FirstPassResult<'a>) -> Self {
+    pub fn new(first_pass_result: FirstPassResult<'a>, commands: &'a [ASMInstruction]) -> Self {
         Self {
             address_next_static_variable: 16,
             resolved_symbols: first_pass_result.resolved_symbols,
-            commands_without_labels: first_pass_result.commands_without_labels,
+            commands,
+        }
+    }
+
+    fn machine_code(&mut self, command: &'a ASMInstruction) -> Option<String> {
+        match command {
+            C { expr, dest, jump } => Some(c_command_code(expr, dest.as_ref(), jump.as_ref())),
+            A(Numeric(num)) => Some(numeric_a_command_code(num)),
+            A(Symbolic(sym)) => {
+                let index = predefined_symbol_code(sym)
+                    .or_else(|| self.resolved_symbols.get(sym.as_str()).copied())
+                    .unwrap_or_else(|| {
+                        let address = self.address_next_static_variable;
+                        if address > 255 {
+                            panic!("too many static variables - ran out of place while trying to place \"{}\"", sym)
+                        }
+                        self.resolved_symbols.insert(sym.as_str(), address);
+                        self.address_next_static_variable += 1;
+                        address
+                    });
+                Some(format!("{:016b}", index))
+            }
+            L { identifier: _ } => None,
         }
     }
 
@@ -159,30 +181,11 @@ impl<'a> CodeGenerator<'a> {
         let mut instructions = vec![];
         let mut sourcemap = vec![];
 
-        for (command_idx, command) in self.commands_without_labels.iter().enumerate() {
-            let instruction = match command {
-                C { expr, dest, jump } => c_command_code(expr, dest.as_ref(), jump.as_ref()),
-                A(Numeric(num)) => numeric_a_command_code(num),
-                A(Symbolic(sym)) => {
-                    let index = predefined_symbol_code(sym)
-                        .or_else(|| self.resolved_symbols.get(sym.as_str()).copied())
-                        .unwrap_or_else(|| {
-                            let address = self.address_next_static_variable;
-                            if address > 255 {
-                                panic!("too many static variables - ran out of place while trying to place \"{}\"", sym)
-                            }
-                            self.resolved_symbols.insert(sym.as_str(), address);
-                            self.address_next_static_variable += 1;
-                            address
-                        });
-                    format!("{:016b}", index)
-                }
-                L { identifier: _ } => {
-                    panic!("unexpected l_command remaining after first pass")
-                }
-            };
-            instructions.push(instruction);
-            sourcemap.push(command_idx);
+        for (command_idx, command) in self.commands.iter().enumerate() {
+            if let Some(instruction) = self.machine_code(command) {
+                sourcemap.push(command_idx);
+                instructions.push(instruction);
+            }
         }
         AssemblyResult { instructions, sourcemap }
     }
@@ -219,20 +222,18 @@ mod tests {
 
     #[test]
     fn test_label_symbol_a_command_code() {
-        let commands_without_labels = vec![A(Symbolic("foo".to_string()))];
-        let ref_vec: Vec<_> = commands_without_labels.iter().collect();
+        let commands = vec![A(Symbolic("foo".to_string()))];
         let first_pass_result = FirstPassResult {
             resolved_symbols: HashMap::from([("foo", 32)]),
-            commands_without_labels: ref_vec,
         };
-        let mut code_generator = CodeGenerator::new(first_pass_result);
+        let mut code_generator = CodeGenerator::new(first_pass_result, &commands);
         let AssemblyResult { instructions, .. } = code_generator.generate();
         assert_eq!(instructions[0], "0000000000100000");
     }
 
     #[test]
     fn test_variable_symbol_a_command_code() {
-        let commands_without_labels: Vec<_> = vec![
+        let commands: Vec<_> = vec![
             A(Symbolic("foo".to_string())),
             A(Symbolic("bar".to_string())),
             A(Symbolic("i_am_a_label_symbol".to_string())),
@@ -240,13 +241,11 @@ mod tests {
             A(Symbolic("foo".to_string())),
             A(Symbolic("bar".to_string())),
         ];
-        let ref_vec: Vec<_> = commands_without_labels.iter().collect();
 
         let first_pass_result = FirstPassResult {
             resolved_symbols: HashMap::from([("i_am_a_label_symbol", 255)]),
-            commands_without_labels: ref_vec,
         };
-        let mut code_generator = CodeGenerator::new(first_pass_result);
+        let mut code_generator = CodeGenerator::new(first_pass_result, &commands);
         assert_eq!(
             code_generator.generate().instructions,
             vec![
@@ -262,12 +261,11 @@ mod tests {
 
     #[test]
     fn test_predefined_variable_symbol_a_command_code() {
-        let command = A(Symbolic("SCREEN".to_string()));
+        let commands = vec![A(Symbolic("SCREEN".to_string()))];
         let first_pass_result = FirstPassResult {
             resolved_symbols: HashMap::from([("foo", 32)]),
-            commands_without_labels: vec![&command],
         };
-        let mut code_generator = CodeGenerator::new(first_pass_result);
+        let mut code_generator = CodeGenerator::new(first_pass_result, &commands);
         assert_eq!(code_generator.generate().instructions[0], "0100100000000000");
     }
 }

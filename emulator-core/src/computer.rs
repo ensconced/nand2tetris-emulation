@@ -32,7 +32,7 @@ pub struct Cpu {
 }
 
 impl Cpu {
-    fn execute(&mut self, instruction: u16, in_m: Wrapping<i16>) {
+    fn execute(&mut self, instruction: u16, in_m: i16) {
         if bit(instruction, 15) == 0 {
             // A Instruction
             self.reg_a = instruction;
@@ -59,16 +59,16 @@ impl Cpu {
                 0b0000111 => Wrapping(self.reg_a as i16) - Wrapping(self.reg_d),
                 0b0000000 => Wrapping(self.reg_d) & Wrapping(self.reg_a as i16),
                 0b0010101 => Wrapping(self.reg_d) | Wrapping(self.reg_a as i16),
-                0b1110000 => in_m,
-                0b1110001 => !in_m,
-                0b1110011 => -in_m,
-                0b1110111 => in_m + Wrapping(1),
-                0b1110010 => in_m - Wrapping(1),
-                0b1000010 => Wrapping(self.reg_d) + in_m,
-                0b1010011 => Wrapping(self.reg_d) - in_m,
-                0b1000111 => in_m - Wrapping(self.reg_d),
-                0b1000000 => Wrapping(self.reg_d) & in_m,
-                0b1010101 => Wrapping(self.reg_d) | in_m,
+                0b1110000 => Wrapping(in_m),
+                0b1110001 => !Wrapping(in_m),
+                0b1110011 => -Wrapping(in_m),
+                0b1110111 => Wrapping(in_m) + Wrapping(1),
+                0b1110010 => Wrapping(in_m) - Wrapping(1),
+                0b1000010 => Wrapping(self.reg_d) + Wrapping(in_m),
+                0b1010011 => Wrapping(self.reg_d) - Wrapping(in_m),
+                0b1000111 => Wrapping(in_m) - Wrapping(self.reg_d),
+                0b1000000 => Wrapping(self.reg_d) & Wrapping(in_m),
+                0b1010101 => Wrapping(self.reg_d) | Wrapping(in_m),
                 _ => panic!("bad instruction"),
             };
             if (bit(instruction, 0) == 1 && alu_out > Wrapping(0))
@@ -134,7 +134,7 @@ pub fn tick(computer: &mut Computer) {
     let prev_reg_a = computer.cpu.reg_a;
     let instruction = computer.rom[computer.cpu.pc as usize];
     let addr = computer.cpu.reg_a as usize % computer.ram.lock().len();
-    let in_m = Wrapping(computer.ram.lock()[addr]);
+    let in_m = computer.ram.lock()[addr];
     computer.cpu.execute(instruction, in_m);
     if computer.cpu.memory_load {
         computer.ram.lock()[prev_reg_a as usize] = computer.cpu.out_m;

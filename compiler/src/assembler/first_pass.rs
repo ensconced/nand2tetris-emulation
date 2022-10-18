@@ -4,12 +4,12 @@ use super::parser::ASMInstruction;
 
 #[derive(Debug)]
 pub struct FirstPassResult<'a> {
-    pub resolved_symbols: HashMap<&'a str, i16>,
+    pub resolved_symbols: HashMap<&'a str, u16>,
 }
 
 pub fn first_pass(commands: &[ASMInstruction]) -> FirstPassResult {
     let mut resolved_symbols = HashMap::new();
-    let mut index: i16 = 0;
+    let mut index = 0;
     for command in commands {
         if let ASMInstruction::L { identifier } = command {
             resolved_symbols.insert(identifier.as_str(), index);
@@ -23,7 +23,7 @@ pub fn first_pass(commands: &[ASMInstruction]) -> FirstPassResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::assembler::parser::{parse, AValue};
+    use crate::assembler::parser::parse;
 
     #[test]
     fn test_first_pass() {

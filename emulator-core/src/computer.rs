@@ -59,16 +59,16 @@ impl Cpu {
                 0b0000111 => Wrapping(self.reg_a) - Wrapping(self.reg_d),
                 0b0000000 => Wrapping(self.reg_d) & Wrapping(self.reg_a),
                 0b0010101 => Wrapping(self.reg_d) | Wrapping(self.reg_a),
-                0b1110000 => Wrapping(in_m as u16),
-                0b1110001 => !Wrapping(in_m as u16),
-                0b1110011 => -Wrapping(in_m as u16),
-                0b1110111 => Wrapping(in_m as u16) + Wrapping(1),
-                0b1110010 => Wrapping(in_m as u16) - Wrapping(1),
-                0b1000010 => Wrapping(self.reg_d) + Wrapping(in_m as u16),
-                0b1010011 => Wrapping(self.reg_d) - Wrapping(in_m as u16),
-                0b1000111 => Wrapping(in_m as u16) - Wrapping(self.reg_d),
-                0b1000000 => Wrapping(self.reg_d) & Wrapping(in_m as u16),
-                0b1010101 => Wrapping(self.reg_d) | Wrapping(in_m as u16),
+                0b1110000 => Wrapping(in_m),
+                0b1110001 => !Wrapping(in_m),
+                0b1110011 => -Wrapping(in_m),
+                0b1110111 => Wrapping(in_m) + Wrapping(1),
+                0b1110010 => Wrapping(in_m) - Wrapping(1),
+                0b1000010 => Wrapping(self.reg_d) + Wrapping(in_m),
+                0b1010011 => Wrapping(self.reg_d) - Wrapping(in_m),
+                0b1000111 => Wrapping(in_m) - Wrapping(self.reg_d),
+                0b1000000 => Wrapping(self.reg_d) & Wrapping(in_m),
+                0b1010101 => Wrapping(self.reg_d) | Wrapping(in_m),
                 _ => panic!("bad instruction"),
             };
             if (bit(instruction, 0) == 1 && (alu_out.0 as i16) > 0)
@@ -81,13 +81,13 @@ impl Cpu {
             }
             self.memory_load = bit(instruction, 3) == 1;
             if self.memory_load {
-                self.out_m = alu_out.0 as u16;
+                self.out_m = alu_out.0;
             }
             if bit(instruction, 4) == 1 {
                 self.reg_d = alu_out.0;
             }
             if bit(instruction, 5) == 1 {
-                self.reg_a = alu_out.0 as u16;
+                self.reg_a = alu_out.0;
             }
         }
     }

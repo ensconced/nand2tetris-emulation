@@ -31,7 +31,7 @@ struct CompilerResult {
 }
 
 // TODO - move into test module
-pub fn compile_to_machine_code(jack_code: Vec<SourceModule>) -> Vec<String> {
+pub fn compile_to_machine_code(jack_code: Vec<SourceModule>) -> Vec<u16> {
     let jack_compiler_results = compile_jack(jack_code);
     let vm_compiler_result = vm_compiler::codegen::generate_asm(&jack_compiler_results.std_lib_commands, &jack_compiler_results.user_commands);
     assemble(&vm_compiler_result.instructions, config::ROM_DEPTH).instructions
@@ -92,7 +92,13 @@ fn main() {
             };
             let json = serde_json::to_string_pretty(&compiler_result).expect("failed to serialize jack compiler result");
             fs::write(debug_output_path, json).expect("failed to write result to debug output path");
-            fs::write(dest_path, compiler_result.assembly_result.instructions.join("\n")).expect("failed to write result to dest path");
+            let machine_code_strings: Vec<_> = compiler_result
+                .assembly_result
+                .instructions
+                .into_iter()
+                .map(|instruction| format!("{:016b}", instruction))
+                .collect();
+            fs::write(dest_path, machine_code_strings.join("\n")).expect("failed to write result to dest path");
         }
         Commands::Assemble {
             source_path: source_path_maybe,

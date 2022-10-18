@@ -27,12 +27,16 @@ pub mod test_utils {
             .collect();
         let asm = vm_compiler::codegen::generate_asm(&HashMap::new(), &parsed_vm_modules).instructions;
         let assembly_result = assemble(&asm, ROM_DEPTH);
-        Computer::new(generate_rom::from_string(assembly_result.instructions.join("\n")))
+        let machine_code_strings: Vec<_> = assembly_result
+            .instructions
+            .into_iter()
+            .map(|instruction| format!("{:016b}", instruction))
+            .collect();
+        Computer::new(generate_rom::from_string(machine_code_strings.join("\n")))
     }
 
     pub fn computer_from_jack_code(jack_code: Vec<SourceModule>) -> Computer {
-        let machine_code = compile_to_machine_code(jack_code);
-        Computer::new(generate_rom::from_string(machine_code.join("\n")))
+        Computer::new(compile_to_machine_code(jack_code).try_into().unwrap())
     }
 
     pub fn stack_pointer(computer: &Computer) -> u16 {

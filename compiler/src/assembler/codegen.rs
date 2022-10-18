@@ -8,7 +8,7 @@ use super::parser::{
 };
 use std::collections::HashMap;
 
-fn predefined_symbol_code(sym: &str) -> Option<i16> {
+fn predefined_symbol_code(sym: &str) -> Option<u16> {
     match sym {
         "SP" => Some(0),
         "LCL" => Some(1),
@@ -38,89 +38,89 @@ fn predefined_symbol_code(sym: &str) -> Option<i16> {
     }
 }
 
-fn expression_code(expr: &str) -> &'static str {
+fn expression_code(expr: &str) -> u16 {
     match expr {
-        "0" => "0101010",
-        "1" => "0111111",
-        "-1" => "0111010",
-        "D" => "0001100",
-        "A" => "0110000",
-        "!D" => "0001101",
-        "!A" => "0110001",
-        "-D" => "0001111",
-        "-A" => "0110011",
-        "D+1" => "0011111",
-        "1+D" => "0011111",
-        "A+1" | "1+A" => "0110111",
-        "D-1" => "0001110",
-        "A-1" => "0110010",
-        "D+A" | "A+D" => "0000010",
-        "D-A" => "0010011",
-        "A-D" => "0000111",
-        "D&A" | "A&D" => "0000000",
-        "D|A" | "A|D" => "0010101",
-        "M" => "1110000",
-        "!M" => "1110001",
-        "-M" => "1110011",
-        "M+1" | "1+M" => "1110111",
-        "M-1" => "1110010",
-        "D+M" | "M+D" => "1000010",
-        "D-M" => "1010011",
-        "M-D" => "1000111",
-        "D&M" | "M&D" => "1000000",
-        "D|M" | "M|D" => "1010101",
+        "0" => 0b0101010,
+        "1" => 0b0111111,
+        "-1" => 0b0111010,
+        "D" => 0b0001100,
+        "A" => 0b0110000,
+        "!D" => 0b0001101,
+        "!A" => 0b0110001,
+        "-D" => 0b0001111,
+        "-A" => 0b0110011,
+        "D+1" => 0b0011111,
+        "1+D" => 0b0011111,
+        "A+1" | "1+A" => 0b0110111,
+        "D-1" => 0b0001110,
+        "A-1" => 0b0110010,
+        "D+A" | "A+D" => 0b0000010,
+        "D-A" => 0b0010011,
+        "A-D" => 0b0000111,
+        "D&A" | "A&D" => 0b0000000,
+        "D|A" | "A|D" => 0b0010101,
+        "M" => 0b1110000,
+        "!M" => 0b1110001,
+        "-M" => 0b1110011,
+        "M+1" | "1+M" => 0b1110111,
+        "M-1" => 0b1110010,
+        "D+M" | "M+D" => 0b1000010,
+        "D-M" => 0b1010011,
+        "M-D" => 0b1000111,
+        "D&M" | "M&D" => 0b1000000,
+        "D|M" | "M|D" => 0b1010101,
         _ => panic!("unrecognized expression {}", expr),
     }
 }
 
-fn dest_code(dest_opt: Option<&String>) -> &'static str {
+fn dest_code(dest_opt: Option<&String>) -> u16 {
     match dest_opt {
-        None => "000",
+        None => 0b000,
         Some(string) => {
             let str = string.as_str();
             match str {
-                "A" => "100",
-                "D" => "010",
-                "M" => "001",
-                "AD" => "110",
-                "AM" => "101",
-                "DA" => "110",
-                "DM" => "011",
-                "MA" => "101",
-                "MD" => "011",
-                "AMD" => "111",
-                "ADM" => "111",
-                "DAM" => "111",
-                "DMA" => "111",
-                "MAD" => "111",
-                "MDA" => "111",
+                "A" => 0b100,
+                "D" => 0b010,
+                "M" => 0b001,
+                "AD" => 0b110,
+                "AM" => 0b101,
+                "DA" => 0b110,
+                "DM" => 0b011,
+                "MA" => 0b101,
+                "MD" => 0b011,
+                "AMD" => 0b111,
+                "ADM" => 0b111,
+                "DAM" => 0b111,
+                "DMA" => 0b111,
+                "MAD" => 0b111,
+                "MDA" => 0b111,
                 _ => panic!("unrecognized destination"),
             }
         }
     }
 }
 
-fn jump_code(jump_opt: Option<&String>) -> &'static str {
+fn jump_code(jump_opt: Option<&String>) -> u16 {
     match jump_opt {
-        None => "000",
+        None => 0b000,
         Some(string) => match string.as_str() {
-            "JGT" => "001",
-            "JEQ" => "010",
-            "JGE" => "011",
-            "JLT" => "100",
-            "JNE" => "101",
-            "JLE" => "110",
-            "JMP" => "111",
+            "JGT" => 0b001,
+            "JEQ" => 0b010,
+            "JGE" => 0b011,
+            "JLT" => 0b100,
+            "JNE" => 0b101,
+            "JLE" => 0b110,
+            "JMP" => 0b111,
             _ => panic!("unrecognized jump \"{}\"", string),
         },
     }
 }
 
-fn c_command_code(expr: &str, dest: Option<&String>, jump: Option<&String>) -> String {
-    format!("111{}{}{}", expression_code(expr), dest_code(dest), jump_code(jump))
+fn c_command_code(expr: &str, dest: Option<&String>, jump: Option<&String>) -> u16 {
+    (111 << 13) | (expression_code(expr) << 6) | (dest_code(dest) << 3) | jump_code(jump)
 }
 
-fn numeric_a_command_code(num_string: &str) -> String {
+fn numeric_a_command_code(num_string: &str) -> u16 {
     let num = num_string.parse::<i16>().expect("failed to parse numeric a-command");
     if num < 0 {
         // The most significant bit (msb) is reserved for distinguishing between
@@ -129,20 +129,20 @@ fn numeric_a_command_code(num_string: &str) -> String {
         // A-commands.
         panic!("negative numbers are not allowed in a-commands");
     }
-    format!("{:016b}", num)
+    num as u16
 }
 
 pub struct CodeGenerator<'a> {
-    resolved_symbols: HashMap<&'a str, i16>,
+    resolved_symbols: HashMap<&'a str, u16>,
     commands: &'a [ASMInstruction],
-    address_next_static_variable: i16,
+    address_next_static_variable: u16,
 }
 
 #[derive(Default, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "../web/bindings/")]
 pub struct AssemblyResult {
-    pub instructions: Vec<String>,
+    pub instructions: Vec<u16>,
     pub sourcemap: Vec<usize>,
 }
 
@@ -155,7 +155,7 @@ impl<'a> CodeGenerator<'a> {
         }
     }
 
-    fn machine_code(&mut self, command: &'a ASMInstruction) -> Option<String> {
+    fn machine_code(&mut self, command: &'a ASMInstruction) -> Option<u16> {
         match command {
             C { expr, dest, jump } => Some(c_command_code(expr, dest.as_ref(), jump.as_ref())),
             A(Numeric(num)) => Some(numeric_a_command_code(num)),
@@ -171,7 +171,7 @@ impl<'a> CodeGenerator<'a> {
                         self.address_next_static_variable += 1;
                         address
                     });
-                Some(format!("{:016b}", index))
+                Some(index)
             }
             L { identifier: _ } => None,
         }
@@ -199,25 +199,25 @@ mod tests {
     fn test_c_command_code() {
         assert_eq!(
             c_command_code("M+1", Some(&"A".to_string()), Some(&"JGT".to_string()),),
-            "1111110111100001".to_string()
+            0b1111110111100001
         );
     }
     #[test]
     fn test_numeric_a_command_code() {
-        assert_eq!(numeric_a_command_code("1"), "0000000000000001");
-        assert_eq!(numeric_a_command_code("1234"), "0000010011010010");
+        assert_eq!(numeric_a_command_code("1"), 0b0000000000000001);
+        assert_eq!(numeric_a_command_code("1234"), 0b0000010011010010);
     }
 
     #[test]
     #[should_panic(expected = "negative numbers are not allowed in a-commands")]
     fn test_negative_numeric_a_command_code() {
-        assert_eq!(numeric_a_command_code("-1234"), "whatever");
+        assert_eq!(numeric_a_command_code("-1234"), 1);
     }
 
     #[test]
     #[should_panic]
     fn test_too_big_numeric_a_command_code() {
-        assert_eq!(numeric_a_command_code("100000"), "whatever");
+        assert_eq!(numeric_a_command_code("100000"), 1);
     }
 
     #[test]
@@ -228,7 +228,7 @@ mod tests {
         };
         let mut code_generator = CodeGenerator::new(first_pass_result, &commands);
         let AssemblyResult { instructions, .. } = code_generator.generate();
-        assert_eq!(instructions[0], "0000000000100000");
+        assert_eq!(instructions[0], 0b0000000000100000);
     }
 
     #[test]
@@ -249,12 +249,12 @@ mod tests {
         assert_eq!(
             code_generator.generate().instructions,
             vec![
-                "0000000000010000",
-                "0000000000010001",
-                "0000000011111111",
-                "0000000000010010",
-                "0000000000010000",
-                "0000000000010001",
+                0b0000000000010000,
+                0b0000000000010001,
+                0b0000000011111111,
+                0b0000000000010010,
+                0b0000000000010000,
+                0b0000000000010001,
             ]
         );
     }
@@ -266,6 +266,6 @@ mod tests {
             resolved_symbols: HashMap::from([("foo", 32)]),
         };
         let mut code_generator = CodeGenerator::new(first_pass_result, &commands);
-        assert_eq!(code_generator.generate().instructions[0], "0100100000000000");
+        assert_eq!(code_generator.generate().instructions[0], 0b0100100000000000);
     }
 }

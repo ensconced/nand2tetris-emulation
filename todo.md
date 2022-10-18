@@ -1,4 +1,4 @@
-- why is stepping not working properly??
+- why is stepping not working properly...because the rom isn't being loaded!
 - create web IO implementation for web debugger
 - make code panels draggable/collapsible
 - use this to debug int printing issue

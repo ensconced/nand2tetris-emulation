@@ -10,7 +10,15 @@ import {
   tick,
 } from "../../web-emulator/pkg/web_emulator";
 
-const rom = new Int16Array(32768);
+import data from "../debug-output.json";
+import { CompilerResult } from "../bindings/CompilerResult";
+
+const compilerResult = data as CompilerResult;
+const {
+  assembly_result: { instructions },
+} = compilerResult;
+
+const rom = new Uint16Array(instructions);
 const computer = makeComputer(rom);
 
 function getElementById(id: string): HTMLElement {

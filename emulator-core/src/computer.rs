@@ -17,7 +17,7 @@ pub fn bit(instruction: u16, idx: u32) -> u16 {
     (instruction & (2u16).pow(idx)) >> idx
 }
 
-fn comp_bits(instruction: i16) -> i16 {
+fn comp_bits(instruction: u16) -> u16 {
     (instruction >> 6) & 0b1111111
 }
 
@@ -50,7 +50,7 @@ impl Cpu {
             self.memory_load = false;
         } else {
             // C Instruction
-            let alu_out = match comp_bits(instruction as i16) {
+            let alu_out = match comp_bits(instruction) {
                 0b0101010 => Wrapping(0),
                 0b0111111 => Wrapping(1),
                 0b0111010 => Wrapping(-1),

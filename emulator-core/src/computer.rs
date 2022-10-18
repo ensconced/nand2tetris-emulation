@@ -27,7 +27,7 @@ pub struct Cpu {
     pub reg_a: u16,
     pub reg_d: i16,
     out_m: i16,
-    pub pc: i16,
+    pub pc: u16,
     memory_load: bool,
 }
 
@@ -75,7 +75,7 @@ impl Cpu {
                 || (bit(instruction, 1) == 1 && alu_out == Wrapping(0))
                 || (bit(instruction, 2) == 1 && alu_out < Wrapping(0))
             {
-                self.pc = self.reg_a as i16;
+                self.pc = self.reg_a;
             } else {
                 self.pc += 1;
             }

@@ -26,7 +26,7 @@ fn comp_bits(instruction: u16) -> u16 {
 pub struct Cpu {
     pub reg_a: u16,
     pub reg_d: i16,
-    out_m: i16,
+    out_m: u16,
     pub pc: u16,
     memory_load: bool,
 }
@@ -81,7 +81,7 @@ impl Cpu {
             }
             self.memory_load = bit(instruction, 3) == 1;
             if self.memory_load {
-                self.out_m = alu_out.0;
+                self.out_m = alu_out.0 as u16;
             }
             if bit(instruction, 4) == 1 {
                 self.reg_d = alu_out.0;
@@ -137,7 +137,7 @@ pub fn tick(computer: &mut Computer) {
     let in_m = computer.ram.lock()[addr];
     computer.cpu.execute(instruction, in_m);
     if computer.cpu.memory_load {
-        computer.ram.lock()[prev_reg_a as usize] = computer.cpu.out_m;
+        computer.ram.lock()[prev_reg_a as usize] = computer.cpu.out_m as i16;
     }
 }
 

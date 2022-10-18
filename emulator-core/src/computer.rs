@@ -21,17 +21,6 @@ fn comp_bits(instruction: u16) -> u16 {
     (instruction >> 6) & 0b1111111
 }
 
-// TODO - temp for refactoring - remove me
-#[wasm_bindgen]
-#[derive(Clone, Copy)]
-pub struct Wrappedu16(Wrapping<u16>);
-
-impl Wrappedu16 {
-    fn new(i: u16) -> Self {
-        Self(Wrapping(i))
-    }
-}
-
 #[wasm_bindgen]
 #[derive(Clone)]
 pub struct Cpu {

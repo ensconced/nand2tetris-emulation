@@ -28,7 +28,7 @@ pub fn assemble_file(source_path: &Path, dest_path: &Path, rom_depth: usize) {
     let machine_code_strings: Vec<_> = assemble(&parsed_instructions, rom_depth)
         .instructions
         .into_iter()
-        .map(|instruction| format!("{:160b}", instruction))
+        .map(|instruction| format!("{:016b}", instruction))
         .collect();
     fs::write(dest_path, machine_code_strings.join("\n")).expect("failed to write output");
 }

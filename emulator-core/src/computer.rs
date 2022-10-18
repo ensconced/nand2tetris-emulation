@@ -26,8 +26,8 @@ fn comp_bits(instruction: u16) -> u16 {
 pub struct Wrappedi16(Wrapping<i16>);
 
 impl Wrappedi16 {
-    fn new(i: i16) -> Self {
-        Self(Wrapping(i))
+    fn new(i: u16) -> Self {
+        Self(Wrapping(i as i16))
     }
 }
 
@@ -45,7 +45,7 @@ impl Cpu {
     fn execute(&mut self, instruction: u16, in_m: Wrapping<i16>) {
         if bit(instruction, 15) == 0 {
             // A Instruction
-            self.reg_a = Wrappedi16::new(instruction as i16);
+            self.reg_a = Wrappedi16::new(instruction);
             self.pc += 1;
             self.memory_load = false;
         } else {
@@ -91,13 +91,13 @@ impl Cpu {
             }
             self.memory_load = bit(instruction, 3) == 1;
             if self.memory_load {
-                self.out_m = Wrappedi16::new(alu_out.0);
+                self.out_m = Wrappedi16::new(alu_out.0 as u16);
             }
             if bit(instruction, 4) == 1 {
-                self.reg_d = Wrappedi16::new(alu_out.0);
+                self.reg_d = Wrappedi16::new(alu_out.0 as u16);
             }
             if bit(instruction, 5) == 1 {
-                self.reg_a = Wrappedi16::new(alu_out.0);
+                self.reg_a = Wrappedi16::new(alu_out.0 as u16);
             }
         }
     }

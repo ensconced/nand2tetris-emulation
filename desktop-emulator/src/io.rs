@@ -15,7 +15,7 @@ pub struct DesktopIO {
     last_draw_time: SystemTime,
 }
 
-fn kbd_output(keys: Vec<Key>) -> i16 {
+fn kbd_output(keys: Vec<Key>) -> u16 {
     keys.into_iter().next().map_or(0, |key| match key {
         Key::Key0 => 0x30,
         Key::Key1 => 0x31,

@@ -129,7 +129,7 @@ mod tests {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 5 && nth_stack_value(computer, 0) == 5
         });
         tick_until(&mut computer, &|computer| {
-            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 4 && nth_stack_value(computer, 0) == -1
+            stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 4 && nth_stack_value(computer, 0) == -1_i16 as u16
         });
         tick_until(&mut computer, &|computer| {
             stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS + 3 && nth_stack_value(computer, 0) == 3

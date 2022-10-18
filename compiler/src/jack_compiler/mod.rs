@@ -234,8 +234,8 @@ mod tests {
         ]));
         tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
         tick_until(&mut computer, &|computer| peek_stack(computer) == 333 * 83);
-        tick_until(&mut computer, &|computer| peek_stack(computer) == 10 * -2);
-        tick_until(&mut computer, &|computer| peek_stack(computer) == -123 * -123);
+        tick_until(&mut computer, &|computer| peek_stack(computer) == (10 * -2_i16) as u16);
+        tick_until(&mut computer, &|computer| peek_stack(computer) == (-123_i16 * -123_i16) as u16);
     }
 
     #[test]
@@ -273,9 +273,9 @@ mod tests {
         ",
         ]));
         tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        tick_until(&mut computer, &|computer| peek_stack(computer) == 4191 / -3);
+        tick_until(&mut computer, &|computer| peek_stack(computer) == (4191 / -3_i16) as u16);
         tick_until(&mut computer, &|computer| peek_stack(computer) == 1234 / 123);
-        tick_until(&mut computer, &|computer| peek_stack(computer) == -5198 / 182);
+        tick_until(&mut computer, &|computer| peek_stack(computer) == (-5198_i16 / 182) as u16);
         tick_until(&mut computer, &|computer| peek_stack(computer) == 9099 / 33);
     }
 
@@ -317,7 +317,7 @@ mod tests {
             ",
         ]));
         tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        let chars: Vec<_> = "hello".encode_utf16().map(|ch| ch as i16).collect();
+        let chars: Vec<_> = "hello".encode_utf16().collect();
         for char in chars.iter() {
             tick_until(&mut computer, &|computer| peek_stack(computer) == *char);
         }

@@ -32,7 +32,7 @@ pub struct Cpu {
 }
 
 impl Cpu {
-    fn execute(&mut self, instruction: u16, in_m: i16) {
+    fn execute(&mut self, instruction: u16, in_m: u16) {
         if bit(instruction, 15) == 0 {
             // A Instruction
             self.reg_a = instruction;
@@ -114,10 +114,10 @@ pub fn get_formatted_ram(ram: &Ram, format: RamFormat) -> String {
 
 #[wasm_bindgen]
 #[derive(Clone)]
-pub struct Ram(Arc<Mutex<[i16; 32768]>>);
+pub struct Ram(Arc<Mutex<[u16; 32768]>>);
 
 impl Ram {
-    pub fn lock(&self) -> MutexGuard<[i16; 32768]> {
+    pub fn lock(&self) -> MutexGuard<[u16; 32768]> {
         self.0.lock().unwrap()
     }
 }
@@ -137,7 +137,7 @@ pub fn tick(computer: &mut Computer) {
     let in_m = computer.ram.lock()[addr];
     computer.cpu.execute(instruction, in_m);
     if computer.cpu.memory_load {
-        computer.ram.lock()[prev_reg_a as usize] = computer.cpu.out_m as i16;
+        computer.ram.lock()[prev_reg_a as usize] = computer.cpu.out_m;
     }
 }
 

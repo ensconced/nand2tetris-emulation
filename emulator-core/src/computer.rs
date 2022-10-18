@@ -1,5 +1,4 @@
 use std::{
-    array::IntoIter,
     num::Wrapping,
     sync::{Arc, Mutex, MutexGuard},
 };
@@ -135,7 +134,7 @@ impl Ram {
 
 #[wasm_bindgen(getter_with_clone)]
 pub struct Computer {
-    rom: [i16; 32768],
+    rom: [u16; 32768],
     pub ram: Ram,
     pub cpu: Cpu,
 }
@@ -146,14 +145,14 @@ pub fn tick(computer: &mut Computer) {
     let instruction = computer.rom[computer.cpu.pc as usize];
     let addr = (computer.cpu.reg_a.0).0 as usize % computer.ram.lock().len();
     let in_m = Wrapping(computer.ram.lock()[addr]);
-    computer.cpu.execute(instruction as u16, in_m);
+    computer.cpu.execute(instruction, in_m);
     if computer.cpu.memory_load {
         computer.ram.lock()[(prev_reg_a.0).0 as usize] = (computer.cpu.out_m.0).0;
     }
 }
 
 impl Computer {
-    pub fn new(rom: [i16; 32768]) -> Self {
+    pub fn new(rom: [u16; 32768]) -> Self {
         Self {
             rom,
             ram: Ram(Arc::new(Mutex::new([0; 32768]))),

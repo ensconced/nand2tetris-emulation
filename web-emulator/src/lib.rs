@@ -17,6 +17,6 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-pub fn make_computer(rom: &[i16]) -> Computer {
+pub fn make_computer(rom: &[u16]) -> Computer {
     Computer::new(rom.try_into().expect("failed to convert slice into rom array"))
 }

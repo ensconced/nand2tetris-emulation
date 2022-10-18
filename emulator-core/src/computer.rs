@@ -25,21 +25,27 @@ fn comp_bits(instruction: u16) -> u16 {
 #[derive(Clone, Copy)]
 pub struct Wrappedi16(Wrapping<i16>);
 
-// TODO - temp for refactoring - remove me
-#[wasm_bindgen]
-#[derive(Clone, Copy)]
-pub struct Wrappedu16(Wrapping<u16>);
-
 impl Wrappedi16 {
     fn new(i: u16) -> Self {
         Self(Wrapping(i as i16))
     }
 }
 
+// TODO - temp for refactoring - remove me
+#[wasm_bindgen]
+#[derive(Clone, Copy)]
+pub struct Wrappedu16(Wrapping<u16>);
+
+impl Wrappedu16 {
+    fn new(i: u16) -> Self {
+        Self(Wrapping(i))
+    }
+}
+
 #[wasm_bindgen]
 #[derive(Clone)]
 pub struct Cpu {
-    pub reg_a: Wrappedi16,
+    pub reg_a: Wrappedu16,
     pub reg_d: Wrappedi16,
     out_m: Wrappedi16,
     pub pc: i16,
@@ -50,7 +56,7 @@ impl Cpu {
     fn execute(&mut self, instruction: u16, in_m: Wrapping<i16>) {
         if bit(instruction, 15) == 0 {
             // A Instruction
-            self.reg_a = Wrappedi16::new(instruction);
+            self.reg_a = Wrappedu16::new(instruction);
             self.pc += 1;
             self.memory_load = false;
         } else {
@@ -60,20 +66,20 @@ impl Cpu {
                 0b0111111 => Wrapping(1),
                 0b0111010 => Wrapping(-1),
                 0b0001100 => self.reg_d.0,
-                0b0110000 => self.reg_a.0,
+                0b0110000 => Wrapping(self.reg_a.0 .0 as i16),
                 0b0001101 => !self.reg_d.0,
-                0b0110001 => !self.reg_a.0,
+                0b0110001 => !Wrapping((self.reg_a.0).0 as i16),
                 0b0001111 => -self.reg_d.0,
-                0b0110011 => -self.reg_a.0,
+                0b0110011 => -Wrapping((self.reg_a.0).0 as i16),
                 0b0011111 => self.reg_d.0 + Wrapping(1),
-                0b0110111 => self.reg_a.0 + Wrapping(1),
+                0b0110111 => Wrapping((self.reg_a.0).0 as i16) + Wrapping(1),
                 0b0001110 => self.reg_d.0 - Wrapping(1),
-                0b0110010 => self.reg_a.0 - Wrapping(1),
-                0b0000010 => self.reg_d.0 + self.reg_a.0,
-                0b0010011 => self.reg_d.0 - self.reg_a.0,
-                0b0000111 => self.reg_a.0 - self.reg_d.0,
-                0b0000000 => self.reg_d.0 & self.reg_a.0,
-                0b0010101 => self.reg_d.0 | self.reg_a.0,
+                0b0110010 => Wrapping((self.reg_a.0).0 as i16) - Wrapping(1),
+                0b0000010 => self.reg_d.0 + Wrapping((self.reg_a.0).0 as i16),
+                0b0010011 => self.reg_d.0 - Wrapping((self.reg_a.0).0 as i16),
+                0b0000111 => Wrapping((self.reg_a.0).0 as i16) - self.reg_d.0,
+                0b0000000 => self.reg_d.0 & Wrapping((self.reg_a.0).0 as i16),
+                0b0010101 => self.reg_d.0 | Wrapping((self.reg_a.0).0 as i16),
                 0b1110000 => in_m,
                 0b1110001 => !in_m,
                 0b1110011 => -in_m,
@@ -90,7 +96,7 @@ impl Cpu {
                 || (bit(instruction, 1) == 1 && alu_out == Wrapping(0))
                 || (bit(instruction, 2) == 1 && alu_out < Wrapping(0))
             {
-                self.pc = (self.reg_a.0).0;
+                self.pc = (self.reg_a.0).0 as i16;
             } else {
                 self.pc += 1;
             }
@@ -102,7 +108,7 @@ impl Cpu {
                 self.reg_d = Wrappedi16::new(alu_out.0 as u16);
             }
             if bit(instruction, 5) == 1 {
-                self.reg_a = Wrappedi16::new(alu_out.0 as u16);
+                self.reg_a = Wrappedu16::new(alu_out.0 as u16);
             }
         }
     }
@@ -162,7 +168,7 @@ impl Computer {
             rom,
             ram: Ram(Arc::new(Mutex::new([0; 32768]))),
             cpu: Cpu {
-                reg_a: Wrappedi16::new(0),
+                reg_a: Wrappedu16::new(0),
                 reg_d: Wrappedi16::new(0),
                 pc: 0,
                 out_m: Wrappedi16::new(0),

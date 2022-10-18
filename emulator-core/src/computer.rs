@@ -25,7 +25,7 @@ fn comp_bits(instruction: u16) -> u16 {
 #[derive(Clone)]
 pub struct Cpu {
     pub reg_a: u16,
-    pub reg_d: i16,
+    pub reg_d: u16,
     out_m: u16,
     pub pc: u16,
     memory_load: bool,
@@ -43,37 +43,37 @@ impl Cpu {
             let alu_out = match comp_bits(instruction) {
                 0b0101010 => Wrapping(0),
                 0b0111111 => Wrapping(1),
-                0b0111010 => Wrapping(-1),
+                0b0111010 => Wrapping(-1_i16 as u16),
                 0b0001100 => Wrapping(self.reg_d),
-                0b0110000 => Wrapping(self.reg_a as i16),
+                0b0110000 => Wrapping(self.reg_a),
                 0b0001101 => Wrapping(!self.reg_d),
-                0b0110001 => !Wrapping(self.reg_a as i16),
+                0b0110001 => !Wrapping(self.reg_a),
                 0b0001111 => -Wrapping(self.reg_d),
-                0b0110011 => -Wrapping(self.reg_a as i16),
+                0b0110011 => -Wrapping(self.reg_a),
                 0b0011111 => Wrapping(self.reg_d) + Wrapping(1),
-                0b0110111 => Wrapping(self.reg_a as i16) + Wrapping(1),
+                0b0110111 => Wrapping(self.reg_a) + Wrapping(1),
                 0b0001110 => Wrapping(self.reg_d) - Wrapping(1),
-                0b0110010 => Wrapping(self.reg_a as i16) - Wrapping(1),
-                0b0000010 => Wrapping(self.reg_d) + Wrapping(self.reg_a as i16),
-                0b0010011 => Wrapping(self.reg_d) - Wrapping(self.reg_a as i16),
-                0b0000111 => Wrapping(self.reg_a as i16) - Wrapping(self.reg_d),
-                0b0000000 => Wrapping(self.reg_d) & Wrapping(self.reg_a as i16),
-                0b0010101 => Wrapping(self.reg_d) | Wrapping(self.reg_a as i16),
-                0b1110000 => Wrapping(in_m),
-                0b1110001 => !Wrapping(in_m),
-                0b1110011 => -Wrapping(in_m),
-                0b1110111 => Wrapping(in_m) + Wrapping(1),
-                0b1110010 => Wrapping(in_m) - Wrapping(1),
-                0b1000010 => Wrapping(self.reg_d) + Wrapping(in_m),
-                0b1010011 => Wrapping(self.reg_d) - Wrapping(in_m),
-                0b1000111 => Wrapping(in_m) - Wrapping(self.reg_d),
-                0b1000000 => Wrapping(self.reg_d) & Wrapping(in_m),
-                0b1010101 => Wrapping(self.reg_d) | Wrapping(in_m),
+                0b0110010 => Wrapping(self.reg_a) - Wrapping(1),
+                0b0000010 => Wrapping(self.reg_d) + Wrapping(self.reg_a),
+                0b0010011 => Wrapping(self.reg_d) - Wrapping(self.reg_a),
+                0b0000111 => Wrapping(self.reg_a) - Wrapping(self.reg_d),
+                0b0000000 => Wrapping(self.reg_d) & Wrapping(self.reg_a),
+                0b0010101 => Wrapping(self.reg_d) | Wrapping(self.reg_a),
+                0b1110000 => Wrapping(in_m as u16),
+                0b1110001 => !Wrapping(in_m as u16),
+                0b1110011 => -Wrapping(in_m as u16),
+                0b1110111 => Wrapping(in_m as u16) + Wrapping(1),
+                0b1110010 => Wrapping(in_m as u16) - Wrapping(1),
+                0b1000010 => Wrapping(self.reg_d) + Wrapping(in_m as u16),
+                0b1010011 => Wrapping(self.reg_d) - Wrapping(in_m as u16),
+                0b1000111 => Wrapping(in_m as u16) - Wrapping(self.reg_d),
+                0b1000000 => Wrapping(self.reg_d) & Wrapping(in_m as u16),
+                0b1010101 => Wrapping(self.reg_d) | Wrapping(in_m as u16),
                 _ => panic!("bad instruction"),
             };
-            if (bit(instruction, 0) == 1 && alu_out > Wrapping(0))
+            if (bit(instruction, 0) == 1 && (alu_out.0 as i16) > 0)
                 || (bit(instruction, 1) == 1 && alu_out == Wrapping(0))
-                || (bit(instruction, 2) == 1 && alu_out < Wrapping(0))
+                || (bit(instruction, 2) == 1 && (alu_out.0 as i16) < 0)
             {
                 self.pc = self.reg_a;
             } else {

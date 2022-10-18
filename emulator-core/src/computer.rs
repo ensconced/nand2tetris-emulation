@@ -21,16 +21,6 @@ fn comp_bits(instruction: u16) -> u16 {
     (instruction >> 6) & 0b1111111
 }
 
-#[wasm_bindgen]
-#[derive(Clone, Copy)]
-pub struct Wrappedi16(Wrapping<i16>);
-
-impl Wrappedi16 {
-    fn new(i: u16) -> Self {
-        Self(Wrapping(i as i16))
-    }
-}
-
 // TODO - temp for refactoring - remove me
 #[wasm_bindgen]
 #[derive(Clone, Copy)]
@@ -47,7 +37,7 @@ impl Wrappedu16 {
 pub struct Cpu {
     pub reg_a: u16,
     pub reg_d: i16,
-    out_m: Wrappedi16,
+    out_m: i16,
     pub pc: i16,
     memory_load: bool,
 }
@@ -102,7 +92,7 @@ impl Cpu {
             }
             self.memory_load = bit(instruction, 3) == 1;
             if self.memory_load {
-                self.out_m = Wrappedi16::new(alu_out.0 as u16);
+                self.out_m = alu_out.0;
             }
             if bit(instruction, 4) == 1 {
                 self.reg_d = alu_out.0;
@@ -158,7 +148,7 @@ pub fn tick(computer: &mut Computer) {
     let in_m = Wrapping(computer.ram.lock()[addr]);
     computer.cpu.execute(instruction, in_m);
     if computer.cpu.memory_load {
-        computer.ram.lock()[prev_reg_a as usize] = (computer.cpu.out_m.0).0;
+        computer.ram.lock()[prev_reg_a as usize] = computer.cpu.out_m;
     }
 }
 
@@ -171,7 +161,7 @@ impl Computer {
                 reg_a: 0,
                 reg_d: 0,
                 pc: 0,
-                out_m: Wrappedi16::new(0),
+                out_m: 0,
                 memory_load: false,
             },
         }

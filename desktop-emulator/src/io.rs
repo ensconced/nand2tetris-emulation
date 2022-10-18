@@ -110,7 +110,7 @@ impl IO for DesktopIO {
                     let word_idx = pixel_idx / WORD_SIZE;
                     let word = ram.lock()[word_idx + 18432];
                     let bit_position_in_word = 15 - (pixel_idx % 16);
-                    *pixel = if bit(word, bit_position_in_word as u32) == 0 {
+                    *pixel = if bit(word as u16, bit_position_in_word as u32) == 0 {
                         0xff000000
                     } else {
                         0xffffffff

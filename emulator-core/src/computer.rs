@@ -23,9 +23,14 @@ fn comp_bits(instruction: u16) -> u16 {
 
 #[wasm_bindgen]
 #[derive(Clone, Copy)]
-pub struct Wrappedu16(Wrapping<i16>);
+pub struct Wrappedi16(Wrapping<i16>);
 
-impl Wrappedu16 {
+// TODO - temp for refactoring - remove me
+#[wasm_bindgen]
+#[derive(Clone, Copy)]
+pub struct Wrappedu16(Wrapping<u16>);
+
+impl Wrappedi16 {
     fn new(i: u16) -> Self {
         Self(Wrapping(i as i16))
     }
@@ -34,9 +39,9 @@ impl Wrappedu16 {
 #[wasm_bindgen]
 #[derive(Clone)]
 pub struct Cpu {
-    pub reg_a: Wrappedu16,
-    pub reg_d: Wrappedu16,
-    out_m: Wrappedu16,
+    pub reg_a: Wrappedi16,
+    pub reg_d: Wrappedi16,
+    out_m: Wrappedi16,
     pub pc: i16,
     memory_load: bool,
 }
@@ -45,7 +50,7 @@ impl Cpu {
     fn execute(&mut self, instruction: u16, in_m: Wrapping<i16>) {
         if bit(instruction, 15) == 0 {
             // A Instruction
-            self.reg_a = Wrappedu16::new(instruction);
+            self.reg_a = Wrappedi16::new(instruction);
             self.pc += 1;
             self.memory_load = false;
         } else {
@@ -91,13 +96,13 @@ impl Cpu {
             }
             self.memory_load = bit(instruction, 3) == 1;
             if self.memory_load {
-                self.out_m = Wrappedu16::new(alu_out.0 as u16);
+                self.out_m = Wrappedi16::new(alu_out.0 as u16);
             }
             if bit(instruction, 4) == 1 {
-                self.reg_d = Wrappedu16::new(alu_out.0 as u16);
+                self.reg_d = Wrappedi16::new(alu_out.0 as u16);
             }
             if bit(instruction, 5) == 1 {
-                self.reg_a = Wrappedu16::new(alu_out.0 as u16);
+                self.reg_a = Wrappedi16::new(alu_out.0 as u16);
             }
         }
     }
@@ -157,10 +162,10 @@ impl Computer {
             rom,
             ram: Ram(Arc::new(Mutex::new([0; 32768]))),
             cpu: Cpu {
-                reg_a: Wrappedu16::new(0),
-                reg_d: Wrappedu16::new(0),
+                reg_a: Wrappedi16::new(0),
+                reg_d: Wrappedi16::new(0),
                 pc: 0,
-                out_m: Wrappedu16::new(0),
+                out_m: Wrappedi16::new(0),
                 memory_load: false,
             },
         }

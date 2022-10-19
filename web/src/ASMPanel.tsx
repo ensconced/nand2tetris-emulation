@@ -62,6 +62,7 @@ export default function ASMPanel({
         <button onClick={onTick}>tick</button>
       </fieldset>
       <CodePanel
+        windowed={true}
         id={`${filename}`}
         filename={filename}
         items={instructionsWithNewLines}

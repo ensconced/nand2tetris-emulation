@@ -94,22 +94,8 @@ impl Cpu {
 }
 
 #[wasm_bindgen]
-pub enum RamFormat {
-    binary,
-    decimal,
-}
-
-#[wasm_bindgen]
-pub fn get_formatted_ram(ram: &Ram, format: RamFormat) -> String {
-    let v: Vec<_> = (*ram.0.lock().unwrap())
-        .into_iter()
-        .map(|word| match format {
-            RamFormat::binary => format!("{word:016b}"),
-            RamFormat::decimal => format!("{word}"),
-        })
-        .collect();
-
-    v.join("\n")
+pub fn get_formatted_ram(ram: &Ram) -> Box<[u16]> {
+    Box::new(*ram.0.lock().unwrap())
 }
 
 #[wasm_bindgen]

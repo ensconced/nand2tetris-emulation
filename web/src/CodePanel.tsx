@@ -1,5 +1,6 @@
 import classnames from "classnames";
 import React, { useEffect, useRef } from "react";
+import { FixedSizeList, ListChildComponentProps } from "react-window";
 
 export interface FileIdxs {
   filename: string;
@@ -21,6 +22,7 @@ interface Props {
   onSpanMouseEnter(itemIdx: number): void;
   onSpanClick(itemIdx: number): void;
   onSpanMouseLeave(): void;
+  windowed: boolean;
 }
 
 export default function CodePanel({
@@ -32,6 +34,7 @@ export default function CodePanel({
   onSpanClick,
   onSpanMouseLeave,
   currentIdx,
+  windowed,
 }: Props) {
   const codeRef = useRef<HTMLElement>(null);
 
@@ -53,6 +56,43 @@ export default function CodePanel({
       }
     }
   }, [selectedItemIdxs]);
+
+  if (windowed) {
+    const Row = ({ index, style }: ListChildComponentProps) => {
+      const item = items[index]!;
+      return (
+        <span
+          style={style}
+          className={classnames({
+            hovered:
+              hoveredItemIdxs?.filename === filename &&
+              hoveredItemIdxs.idxs.has(index),
+            selected:
+              selectedItemIdxs?.filename === filename &&
+              selectedItemIdxs.idxs.has(index),
+            current: currentIdx === index,
+          })}
+          onMouseEnter={() => onSpanMouseEnter(index)}
+          onMouseLeave={onSpanMouseLeave}
+          onClick={() => onSpanClick(index)}
+        >
+          {item}
+        </span>
+      );
+    };
+    return (
+      <code className="code-panel" ref={codeRef}>
+        <FixedSizeList
+          height={1000}
+          width={200}
+          itemCount={items.length}
+          itemSize={13 * 1.2}
+        >
+          {Row}
+        </FixedSizeList>
+      </code>
+    );
+  }
 
   return (
     <code className="code-panel" ref={codeRef}>

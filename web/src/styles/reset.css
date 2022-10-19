@@ -4,6 +4,8 @@
   box-sizing: border-box;
   background-color: #282a36;
   font-family: monospace;
+  font-size: 13px;
+  line-height: 1.2;
 }
 
 .code-panel {
@@ -40,26 +42,27 @@ code {
   flex: 1;
 }
 
-code > span {
+code span {
   cursor: pointer;
 }
 
-code > span.selected {
+code span.selected {
   color: #282a36;
   background-color: #ff79c6;
 }
 
-code > span.hovered {
+code span.hovered {
   color: #282a36;
   background-color: #f8f8f2;
 }
 
-code > span.current {
+code span.current {
   display: block;
-  outline: 1px solid #50fa7b;
+  color: #282a36;
+  background-color: #50fa7b;
 }
 
-code > span.hovered.selected {
+code span.hovered.selected {
   color: #282a36;
   background-color: #fcb9dc;
 }

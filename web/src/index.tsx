@@ -34,8 +34,14 @@ function App() {
   const [programCounter, setProgramCounter] = useState(0);
 
   const ram = useMemo(() => {
-    const ramString = get_formatted_ram(computer.ram, wordDisplayBaseIdx);
-    return ramString.split(/(?=\n)/);
+    const ram = get_formatted_ram(computer.ram);
+    const result: string[] = [];
+    ram.forEach((word) => {
+      result.push(
+        word.toString(wordDisplayBaseIdx === 0 ? 2 : 10).padStart(16, "0")
+      );
+    });
+    return result;
   }, [wordDisplayBaseIdx, programCounter]);
 
   const handleTick = useCallback(() => {

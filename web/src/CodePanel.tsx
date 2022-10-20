@@ -25,6 +25,8 @@ interface Props {
   windowed: boolean;
 }
 
+const lineHeight = 13 * 1.2;
+
 export default function CodePanel({
   filename,
   items,
@@ -45,10 +47,18 @@ export default function CodePanel({
       // for multiple elements simultaneously in chrome
       // https://bugs.chromium.org/p/chromium/issues/detail?id=833617
       if (codeRef.current) {
-        const child = codeRef.current.children[firstHighlighedIdx];
-        if (child instanceof HTMLElement) {
+        let offsetTop: number | undefined;
+        if (windowed) {
+          offsetTop = lineHeight * firstHighlighedIdx;
+        } else {
+          const child = codeRef.current.children[firstHighlighedIdx];
+          if (child instanceof HTMLElement) {
+            offsetTop = child.offsetTop;
+          }
+        }
+        if (offsetTop !== undefined) {
           codeRef.current.scrollTo({
-            top: child.offsetTop,
+            top: offsetTop,
             left: 0,
             behavior: "smooth",
           });
@@ -81,12 +91,13 @@ export default function CodePanel({
       );
     };
     return (
-      <code className="code-panel" ref={codeRef}>
+      <code className="code-panel">
         <FixedSizeList
+          outerRef={codeRef}
           height={1000}
           width={200}
           itemCount={items.length}
-          itemSize={13 * 1.2}
+          itemSize={lineHeight}
         >
           {Row}
         </FixedSizeList>

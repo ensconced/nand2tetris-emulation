@@ -21,6 +21,8 @@ const {
 const rom = new Uint16Array(instructions);
 const computer = makeComputer(rom);
 
+const textDecoder = new TextDecoder("utf-16");
+
 function getElementById(id: string): HTMLElement {
   const element = document.getElementById(id);
   if (element === null) {
@@ -33,16 +35,17 @@ function App() {
   const [wordDisplayBaseIdx, setWordDisplayBaseIdx] = useState(0);
   const [programCounter, setProgramCounter] = useState(0);
 
-  const ram = useMemo(() => {
-    const ram = get_formatted_ram(computer.ram);
-    const result: string[] = [];
-    ram.forEach((word) => {
-      result.push(
-        word.toString(wordDisplayBaseIdx === 0 ? 2 : 10).padStart(16, "0")
-      );
-    });
-    return result;
-  }, [wordDisplayBaseIdx, programCounter]);
+  const ram = useMemo(
+    function computeRam() {
+      const ram = get_formatted_ram(computer.ram);
+      const result: string[] = [];
+      ram.forEach(function formatWord(word) {
+        result.push(formatter(word).padStart(16, "0"));
+      });
+      return result;
+    },
+    [wordDisplayBaseIdx, programCounter]
+  );
 
   const handleTick = useCallback(() => {
     tick(computer);

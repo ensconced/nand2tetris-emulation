@@ -15,10 +15,10 @@ export default function Computer({
   wordDisplayBaseIdx,
   onWordDisplayBaseIdxChange: onChange,
 }: Props) {
-  const Row = ({ index, style }: ListChildComponentProps) => {
+  function Row({ index, style }: ListChildComponentProps) {
     const word = ram[index]!;
     return <span style={style}>{`${word}\n`}</span>;
-  };
+  }
 
   return (
     <div className="panel-container">

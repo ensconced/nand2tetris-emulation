@@ -8,7 +8,7 @@ const chokidar = require("chokidar");
 const TEN_MEGABYTES = 10 * 1024 * 1024;
 
 const webpackConfig = {
-  mode: "production",
+  mode: "development",
   cache: false,
   entry: "./src/index.tsx",
   output: {

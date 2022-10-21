@@ -1,3 +1,4 @@
+- perf: get ram words individually from wasm for windowing
 - fix auto-interactions with windowed ASM - https://github.com/bvaughn/react-window/issues?q=is%3Aissue+smooth#issuecomment-540807657
 - sort out auto-sizing of windowed code panels
 - create web IO implementation for web debugger

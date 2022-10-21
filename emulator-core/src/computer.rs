@@ -94,8 +94,11 @@ impl Cpu {
 }
 
 #[wasm_bindgen]
-pub fn get_formatted_ram(ram: &Ram) -> Box<[u16]> {
-    Box::new(*ram.0.lock().unwrap())
+pub fn get_formatted_ram(ram: &Ram) -> Vec<Vec<u16>> {
+    (*ram.0.lock().unwrap())
+        .into_iter()
+        .map(|word| format!("{:016b}", word).encode_utf16().collect::<Vec<_>>())
+        .collect()
 }
 
 #[wasm_bindgen]

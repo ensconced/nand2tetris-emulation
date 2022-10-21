@@ -1,6 +1,7 @@
 import classnames from "classnames";
 import React, { useEffect, useRef } from "react";
 import { FixedSizeList, ListChildComponentProps } from "react-window";
+import AutoSizer from "react-virtualized-auto-sizer";
 
 export interface FileIdxs {
   filename: string;
@@ -93,15 +94,19 @@ export default function CodePanel({
     };
     return (
       <code className="code-panel">
-        <FixedSizeList
-          outerRef={codeRef}
-          height={1000}
-          width={200}
-          itemCount={items.length}
-          itemSize={lineHeight}
-        >
-          {Row}
-        </FixedSizeList>
+        <AutoSizer>
+          {({ height, width }) => (
+            <FixedSizeList
+              outerRef={codeRef}
+              height={height}
+              width={width}
+              itemCount={items.length}
+              itemSize={lineHeight}
+            >
+              {Row}
+            </FixedSizeList>
+          )}
+        </AutoSizer>
       </code>
     );
   }

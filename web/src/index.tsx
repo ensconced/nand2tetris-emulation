@@ -1,5 +1,5 @@
 import "./styles/reset.css";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { createRoot } from "react-dom/client";
 import CodeViewer from "./CodeViewer";
 import Computer from "./Computer";
@@ -22,8 +22,6 @@ const {
 const rom = new Uint16Array(instructions);
 const computer = makeComputer(rom);
 
-const textDecoder = new TextDecoder("utf-16");
-
 function getElementById(id: string): HTMLElement {
   const element = document.getElementById(id);
   if (element === null) {
@@ -43,13 +41,24 @@ function App() {
     setProgramCounter(computer.cpu.pc);
   }, []);
 
+  const handlePlay = useCallback(() => {
+    setInterval(() => {
+      tick(computer);
+      setProgramCounter(computer.cpu.pc);
+    }, 0);
+  }, []);
+
   return (
     <div style={{ display: "flex" }}>
-      <CodeViewer onTick={handleTick} programCounter={programCounter} />
+      <CodeViewer
+        onTick={handleTick}
+        onPlay={handlePlay}
+        programCounter={programCounter}
+      />
       <Computer
         getRamWord={(addr) => get_ram_word(computer.ram, addr, wordDisplayBase)}
         wordDisplayBase={wordDisplayBase}
-        onWordDisplayBaseIdxChange={(idx) => setWordDisplayBaseIdx(idx)}
+        onWordDisplayBaseChange={(idx) => setWordDisplayBase(idx)}
       />
     </div>
   );

@@ -24,6 +24,7 @@ interface Props {
   setDirectlySelectedVMCommand: (idx: FileIdx | undefined) => void;
   programCounter: number;
   onTick: () => void;
+  onPlay: () => void;
 }
 
 export default function ASMPanel({
@@ -35,6 +36,7 @@ export default function ASMPanel({
   setDirectlySelectedVMCommand,
   programCounter,
   onTick,
+  onPlay,
 }: Props) {
   const filename = "asm";
   const hoveredItemIdxs = { filename, idxs: hoveredInstructionIdxs };
@@ -60,6 +62,7 @@ export default function ASMPanel({
     >
       <fieldset>
         <button onClick={onTick}>tick</button>
+        <button onClick={onPlay}>play</button>
       </fieldset>
       <CodePanel
         windowed={true}

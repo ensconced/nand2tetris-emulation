@@ -4,8 +4,8 @@ class Sys {
     do Math.init();
     do Output.init();
 
-    do Output.printInt(4321);
-    do Output.printInt(4321);
+    do Output.printInt(1234);
+    do Output.printInt(1234);
   }
 
   function void halt() {}

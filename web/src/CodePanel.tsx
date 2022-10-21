@@ -25,7 +25,8 @@ interface Props {
   windowed: boolean;
 }
 
-const lineHeight = 13 * 1.2;
+// This is font-size * line-height (values copied from reset.css), to match the height of all the other spans on the page.
+export const lineHeight = 13 * 1.2;
 
 export default function CodePanel({
   filename,

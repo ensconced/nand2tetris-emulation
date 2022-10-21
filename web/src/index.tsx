@@ -6,8 +6,9 @@ import Computer from "./Computer";
 
 import {
   make_computer as makeComputer,
-  get_formatted_ram,
+  get_ram_word,
   tick,
+  WordDisplayBase,
 } from "../../web-emulator/pkg/web_emulator";
 
 import data from "../debug-output.json";
@@ -32,20 +33,10 @@ function getElementById(id: string): HTMLElement {
 }
 
 function App() {
-  const [wordDisplayBaseIdx, setWordDisplayBaseIdx] = useState(0);
-  const [programCounter, setProgramCounter] = useState(0);
-
-  const ram = useMemo(
-    function computeRam() {
-      const ram = get_formatted_ram(computer.ram);
-      const result: string[] = [];
-      ram.forEach(function formatWord(word) {
-        result.push(formatter(word).padStart(16, "0"));
-      });
-      return result;
-    },
-    [wordDisplayBaseIdx, programCounter]
+  const [wordDisplayBase, setWordDisplayBase] = useState(
+    WordDisplayBase.Binary
   );
+  const [programCounter, setProgramCounter] = useState(0);
 
   const handleTick = useCallback(() => {
     tick(computer);
@@ -56,8 +47,8 @@ function App() {
     <div style={{ display: "flex" }}>
       <CodeViewer onTick={handleTick} programCounter={programCounter} />
       <Computer
-        wordDisplayBaseIdx={wordDisplayBaseIdx}
-        ram={ram}
+        getRamWord={(addr) => get_ram_word(computer.ram, addr, wordDisplayBase)}
+        wordDisplayBase={wordDisplayBase}
         onWordDisplayBaseIdxChange={(idx) => setWordDisplayBaseIdx(idx)}
       />
     </div>

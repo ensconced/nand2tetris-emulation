@@ -1,23 +1,23 @@
 import React from "react";
 import TabControls from "./TabControls";
 import { FixedSizeList, ListChildComponentProps } from "react-window";
+import { WordDisplayBase } from "../../web-emulator/pkg/web_emulator";
 
 const wordDisplayBaseOptions = ["binary", "decimal"];
 
 interface Props {
-  ram: string[];
-  wordDisplayBaseIdx: number;
+  wordDisplayBase: WordDisplayBase;
   onWordDisplayBaseIdxChange: (idx: number) => void;
+  getRamWord: (addr: number) => string;
 }
 
 export default function Computer({
-  ram,
-  wordDisplayBaseIdx,
+  wordDisplayBase,
   onWordDisplayBaseIdxChange: onChange,
+  getRamWord,
 }: Props) {
   function Row({ index, style }: ListChildComponentProps) {
-    const word = ram[index]!;
-    return <span style={style}>{`${word}\n`}</span>;
+    return <span style={style}>{`${getRamWord(index)}\n`}</span>;
   }
 
   return (

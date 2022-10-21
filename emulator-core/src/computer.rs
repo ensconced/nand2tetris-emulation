@@ -94,11 +94,18 @@ impl Cpu {
 }
 
 #[wasm_bindgen]
-pub fn get_formatted_ram(ram: &Ram) -> Vec<Vec<u16>> {
-    (*ram.0.lock().unwrap())
-        .into_iter()
-        .map(|word| format!("{:016b}", word).encode_utf16().collect::<Vec<_>>())
-        .collect()
+pub enum WordDisplayBase {
+    Binary,
+    Decimal,
+}
+
+#[wasm_bindgen]
+pub fn get_ram_word(ram: &Ram, addr: usize, display_base: WordDisplayBase) -> String {
+    let word = (*ram.0.lock().unwrap())[addr];
+    match display_base {
+        WordDisplayBase::Binary => format!("{:016b}", word),
+        WordDisplayBase::Decimal => format!("{}", word),
+    }
 }
 
 #[wasm_bindgen]

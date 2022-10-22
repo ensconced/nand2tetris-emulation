@@ -73,6 +73,7 @@ pub fn compile_jack(user_code: Vec<SourceModule>) -> JackCompilerResult {
 #[cfg(test)]
 mod tests {
     use crate::utils::{source_modules::mock_from_sources, testing::test_utils::*};
+    use emulator_core::computer::tick_until;
     use itertools::repeat_n;
 
     #[test]

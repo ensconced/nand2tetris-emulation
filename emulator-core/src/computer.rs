@@ -139,6 +139,22 @@ pub fn tick(computer: &mut Computer) {
     }
 }
 
+pub fn tick_until(computer: &mut Computer, predicate: &dyn Fn(&Computer) -> bool) {
+    let max_ticks: usize = 4_000_000_000;
+    for _ in 0..=max_ticks {
+        if predicate(computer) {
+            return;
+        }
+        tick(computer);
+    }
+    panic!("predicate was not true within {} ticks", max_ticks);
+}
+
+#[wasm_bindgen]
+pub fn tick_to_breakpoint(computer: &mut Computer, breakpoint: u16) {
+    tick_until(computer, &|comp| comp.cpu.pc == breakpoint)
+}
+
 impl Computer {
     pub fn new(rom: [u16; 32768]) -> Self {
         Self {

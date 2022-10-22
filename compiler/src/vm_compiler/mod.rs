@@ -27,6 +27,8 @@ pub fn compile_files(src_path: &Path, dest_path: &Path) -> Result<(), io::Error>
 
 #[cfg(test)]
 mod tests {
+    use emulator_core::computer::tick_until;
+
     use crate::utils::testing::test_utils::*;
 
     #[test]

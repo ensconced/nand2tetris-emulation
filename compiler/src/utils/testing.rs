@@ -3,7 +3,7 @@ pub mod test_utils {
     use crate::compile_to_machine_code;
     use crate::config::ROM_DEPTH;
     use crate::{assembler::assemble, utils::source_modules::SourceModule, vm_compiler};
-    use emulator_core::computer::tick;
+    use emulator_core::computer::tick_until;
     use emulator_core::{computer::Computer, generate_rom};
     use std::collections::HashMap;
 
@@ -159,17 +159,6 @@ pub mod test_utils {
     pub fn top_frame_arg(computer: &Computer, arg_idx: usize) -> u16 {
         let ram = computer.ram.lock();
         ram[ram[2] as usize + arg_idx]
-    }
-
-    pub fn tick_until(computer: &mut Computer, predicate: &dyn Fn(&Computer) -> bool) {
-        let max_ticks: usize = 10_000_000_000;
-        for _ in 0..=max_ticks {
-            if predicate(computer) {
-                return;
-            }
-            tick(computer);
-        }
-        panic!("predicate was not true within {} ticks", max_ticks);
     }
 
     pub fn string_from_pointer(computer: &Computer, pointer: u16) -> String {

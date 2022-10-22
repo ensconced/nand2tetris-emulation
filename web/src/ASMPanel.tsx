@@ -15,7 +15,7 @@ const instructionsWithNewLines = instructions.map(
 );
 
 import computer from "./computer-setup";
-import { tick } from "../../web-emulator/pkg/web_emulator";
+import { tick, tick_to_breakpoint } from "../../web-emulator/pkg/web_emulator";
 
 interface Props {
   directlyHoveredInstructionIdx: number | undefined;
@@ -68,7 +68,7 @@ export default function ASMPanel({
         <button
           onClick={() => {
             setInterval(() => {
-              tick(computer);
+              tick_to_breakpoint(computer, 2000);
               setProgramCounter(computer.cpu.pc);
             }, 0);
           }}

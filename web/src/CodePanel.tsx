@@ -102,6 +102,7 @@ export default function CodePanel({
               width={width}
               itemCount={items.length}
               itemSize={lineHeight}
+              overscanCount={20}
             >
               {Row}
             </FixedSizeList>

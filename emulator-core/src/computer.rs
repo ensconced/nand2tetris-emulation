@@ -97,6 +97,7 @@ impl Cpu {
 pub enum WordDisplayBase {
     Binary,
     Decimal,
+    BinaryBlocks,
 }
 
 #[wasm_bindgen]
@@ -104,6 +105,7 @@ pub fn get_ram_word(ram: &Ram, addr: usize, display_base: WordDisplayBase) -> St
     let word = (*ram.0.lock().unwrap())[addr];
     match display_base {
         WordDisplayBase::Binary => format!("{:016b}", word),
+        WordDisplayBase::BinaryBlocks => format!("{:016b}", word).replace('0', " ").replace('1', "█"),
         WordDisplayBase::Decimal => format!("{}", word),
     }
 }

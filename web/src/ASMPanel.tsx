@@ -14,6 +14,9 @@ const instructionsWithNewLines = instructions.map(
   (instruction) => `${instruction}\n`
 );
 
+import computer from "./computer-setup";
+import { tick } from "../../web-emulator/pkg/web_emulator";
+
 interface Props {
   directlyHoveredInstructionIdx: number | undefined;
   hoveredInstructionIdxs: Set<number>;
@@ -23,8 +26,7 @@ interface Props {
   setDirectlySelectedToken: (idx: FileIdx | undefined) => void;
   setDirectlySelectedVMCommand: (idx: FileIdx | undefined) => void;
   programCounter: number;
-  onTick: () => void;
-  onPlay: () => void;
+  setProgramCounter: (programCounter: number) => void;
 }
 
 export default function ASMPanel({
@@ -35,8 +37,7 @@ export default function ASMPanel({
   setDirectlySelectedToken,
   setDirectlySelectedVMCommand,
   programCounter,
-  onTick,
-  onPlay,
+  setProgramCounter,
 }: Props) {
   const filename = "asm";
   const hoveredItemIdxs = { filename, idxs: hoveredInstructionIdxs };
@@ -61,8 +62,24 @@ export default function ASMPanel({
       }}
     >
       <fieldset>
-        <button onClick={onTick}>tick</button>
-        <button onClick={onPlay}>play</button>
+        <button
+          onClick={() => {
+            tick(computer);
+            setProgramCounter(computer.cpu.pc);
+          }}
+        >
+          tick
+        </button>
+        <button
+          onClick={() => {
+            setInterval(() => {
+              tick(computer);
+              setProgramCounter(computer.cpu.pc);
+            }, 0);
+          }}
+        >
+          play
+        </button>
       </fieldset>
       <CodePanel
         windowed={true}
@@ -81,8 +98,10 @@ export default function ASMPanel({
         }}
       />
       <code className="footer">
-        <span style={{ color: "#8be9fd" }}>total: {instructions.length}</span>
-        <span style={{ color: "#ff79c6" }}>
+        <span className="footer-item" style={{ color: "#8be9fd" }}>
+          total: {instructions.length}
+        </span>
+        <span className="footer-item" style={{ color: "#ff79c6" }}>
           selected: {selectedItemIdxs?.idxs.size ?? 0}
         </span>
       </code>

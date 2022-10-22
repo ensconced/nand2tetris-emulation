@@ -10,11 +10,13 @@ import TabControls from "./TabControls";
 
 interface Props {
   programCounter: number;
-  onTick: () => void;
-  onPlay: () => void;
+  setProgramCounter: (programCounter: number) => void;
 }
 
-export default function CodeViewer({ programCounter, onTick, onPlay }: Props) {
+export default function CodeViewer({
+  programCounter,
+  setProgramCounter,
+}: Props) {
   const jackModuleContainer = useRef<HTMLDivElement>(null);
   const [openFileIdx, setOpenFileIdx] = useState(0);
 
@@ -129,8 +131,7 @@ export default function CodeViewer({ programCounter, onTick, onPlay }: Props) {
         hoveredInstructionIdxs={hoveredInstructionIdxs?.idxs ?? new Set()}
         selectedInstructionIdxs={selectedInstructionIdxs}
         programCounter={programCounter}
-        onTick={onTick}
-        onPlay={onPlay}
+        setProgramCounter={setProgramCounter}
       />
     </>
   );

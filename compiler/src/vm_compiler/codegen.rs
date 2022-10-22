@@ -564,16 +564,10 @@ impl CodeGenerator {
                 dest: Some("M".to_string()),
                 jump: None,
             },
-            // set A to point to x
+            // set both A and R7 to point to x
             ASMInstruction::C {
                 expr: "M-1".to_string(),
-                dest: Some("A".to_string()),
-                jump: None,
-            },
-            // use R7 as another pointer to x
-            ASMInstruction::C {
-                expr: "A".to_string(),
-                dest: Some("D".to_string()),
+                dest: Some("AD".to_string()),
                 jump: None,
             },
             ASMInstruction::A(AValue::Symbolic("R7".to_string())),

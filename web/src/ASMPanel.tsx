@@ -55,12 +55,7 @@ export default function ASMPanel({
   }, [programCounter]);
 
   return (
-    <div
-      className="panel-container"
-      style={{
-        overflow: "auto",
-      }}
-    >
+    <div className="panel-container">
       <fieldset>
         <button
           onClick={() => {
@@ -82,7 +77,6 @@ export default function ASMPanel({
         </button>
       </fieldset>
       <CodePanel
-        windowed={true}
         id={`${filename}`}
         filename={filename}
         items={instructionsWithNewLines}

@@ -1,3 +1,4 @@
+- DIY react window to make life simpler, get rid of horrible hack for ram addrs/values, and fix debouncing issue
 - sort out width of windowed code panels
 - create web IO implementation for web debugger
 - make code panels draggable/collapsible

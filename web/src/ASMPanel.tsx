@@ -1,8 +1,9 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { CompilerResult } from "../bindings/CompilerResult";
 import data from "../debug-output.json";
 import CodePanel, { InteractedInstructionIdxs } from "./CodePanel";
 import { FileIdx } from "./types";
+import _ from "lodash";
 
 const compilerResult = data as CompilerResult;
 const {
@@ -15,7 +16,10 @@ const instructionsWithNewLines = instructions.map(
 );
 
 import computer from "./computer-setup";
-import { tick, tick_to_breakpoint } from "../../web-emulator/pkg/web_emulator";
+import {
+  tick,
+  tick_to_some_breakpoint,
+} from "../../web-emulator/pkg/web_emulator";
 
 interface Props {
   directlyHoveredInstructionIdx: number | undefined;
@@ -47,12 +51,15 @@ export default function ASMPanel({
   }, [selectedInstructionIdxs]);
 
   const currentASMInstructionIdx = useMemo(() => {
-    const asmInstructionIdx = assembly_result.sourcemap[programCounter];
+    const asmInstructionIdx =
+      assembly_result.sourcemap.machine_code_to_asm[programCounter];
     if (asmInstructionIdx === undefined) {
       throw new Error("failed to find current ASM instruction");
     }
     return asmInstructionIdx;
   }, [programCounter]);
+
+  const [breakpoints, setBreakpoints] = useState<Record<number, boolean>>({});
 
   return (
     <div className="panel-container">
@@ -67,10 +74,20 @@ export default function ASMPanel({
         </button>
         <button
           onClick={() => {
-            setInterval(() => {
-              tick_to_breakpoint(computer, 2000);
-              setProgramCounter(computer.cpu.pc);
-            }, 0);
+            tick_to_some_breakpoint(
+              computer,
+              new Uint16Array(
+                Object.entries(breakpoints)
+                  .filter(([, on]) => on)
+                  .map(
+                    ([idx]) =>
+                      assembly_result.sourcemap.asm_to_machine_code[
+                        parseInt(idx, 10)
+                      ]!
+                  )
+              )
+            );
+            setProgramCounter(computer.cpu.pc);
           }}
         >
           play
@@ -89,6 +106,18 @@ export default function ASMPanel({
           setDirectlySelectedToken(undefined);
           setDirectlySelectedVMCommand(undefined);
           setDirectlySelectedInstructionIdx(idx);
+        }}
+        breakpoints={breakpoints}
+        setBreakpoints={(newBreakpoints) => {
+          setBreakpoints(
+            _.pickBy(newBreakpoints, (_on, asmIndex) => {
+              return (
+                assembly_result.sourcemap.asm_to_machine_code[
+                  parseInt(asmIndex, 10)
+                ] !== undefined
+              );
+            })
+          );
         }}
       />
       <code className="footer">

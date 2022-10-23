@@ -1,8 +1,9 @@
 class String {
-  field int buffer, length;
+  field int buffer, buffer_length, length;
 
   constructor String new(int max_length) {
-    let buffer = Memory.alloc(max_length);
+    let buffer_length = max_length;
+    let buffer = Memory.alloc(buffer_length);
     let length = 0;
     return this;
   }
@@ -25,6 +26,28 @@ class String {
   }
 
   method void appendChar(char c) {
+    var int new_buffer, new_buffer_length, i;
+
+    if (length = buffer_length) {
+      if (length = 0) {
+        let new_buffer_length = 1;
+      } else {
+        let new_buffer_length = buffer_length * 2;
+      }
+
+      let new_buffer = Memory.alloc(new_buffer_length);
+
+      let i = 0;
+      while (i < length) {
+        let new_buffer[i] = buffer[i];
+        let i = i + 1;
+      }
+
+      do Memory.deAlloc(buffer);
+      let buffer = new_buffer;
+      let buffer_length = new_buffer_length;
+    }
+
     let buffer[length] = c;
     let length = length + 1;
   }

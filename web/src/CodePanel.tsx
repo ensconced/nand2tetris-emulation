@@ -21,6 +21,8 @@ interface Props {
   onSpanMouseEnter(itemIdx: number): void;
   onSpanClick(itemIdx: number): void;
   onSpanMouseLeave(): void;
+  breakpoints: Record<number, boolean>;
+  setBreakpoints?: (breakpoints: Record<number, boolean>) => void;
 }
 
 export default function CodePanel({
@@ -32,6 +34,8 @@ export default function CodePanel({
   onSpanClick,
   onSpanMouseLeave,
   currentIdx,
+  breakpoints,
+  setBreakpoints,
 }: Props) {
   const codeRef = useRef<HTMLElement>(null);
 
@@ -68,9 +72,19 @@ export default function CodePanel({
                 selectedItemIdxs?.filename === filename &&
                 selectedItemIdxs.idxs.has(idx),
               current: currentIdx === idx,
+              breakpoint: breakpoints?.[idx],
             })}
             onMouseEnter={() => onSpanMouseEnter(idx)}
             onMouseLeave={onSpanMouseLeave}
+            onContextMenu={(evt) => {
+              if (setBreakpoints) {
+                evt.preventDefault();
+                setBreakpoints({
+                  ...breakpoints,
+                  [idx]: !breakpoints[idx],
+                });
+              }
+            }}
             onClick={() => onSpanClick(idx)}
           >
             {item}

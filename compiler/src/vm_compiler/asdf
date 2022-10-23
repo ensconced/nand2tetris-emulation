@@ -1,0 +1,97 @@
+Sys.init frame
+
+256 | 2 return address into holding pattern
+257 | 0
+258 | 0
+259 | 0
+260 | 0
+
+printInt frame
+
+261 | 4321 arg
+262 | 7530 return address into Sys.init
+263 | 261 saved LCL
+264 | 256 saved ARG
+265 | 0 saved THIS
+266 | 0 saved THAT
+267 | 0 local var str
+
+String.new frame
+
+268 | 0 arg
+269 | 4535 return address into printInt
+270 | 267 saved LCL
+271 | 261 saved ARG
+272 | 0 saved THIS
+273 | 0 saved THAT
+
+Memory.alloc frame
+
+274 | 2 arg - size of allocation
+275 | 4886 return address into String.new
+276 | 274 saved LCL
+277 | 268 saved ARG
+278 | 0 saved THIS
+279 | 0 saved THAT
+280 | 0 local var free_block
+281 | 2 local var block_order
+
+get_block frame
+
+282 | 2 arg required_order
+283 | 12981 return address into Memory.alloc
+284 | 280 saved LCL
+285 | 274 saved ARG
+286 | 0 saved THIS
+287 | 0 saved THAT
+288 | 0 local var block
+289 | 2072 local var bigger_block
+
+split_block frame
+
+290 | 2072 arg block
+291 | 12551 return address into get_block
+292 | 288 saved LCL
+293 | 282 saved ARG
+294 | 0 saved THIS
+295 | 0 saved THAT
+296 | 0 local var half_size
+297 | 2072 local var new_block
+298 | 49 local var block_order
+299 | 48 local var new_block_order
+
+Heap
+
+avail list
+
+addr | val | order
+
+after Memory.init
+
+2050 | 0 | order 2
+2051 | 0 | order 3
+2052 | 2064 | order 4
+2053 | 2080 | order 5
+2054 | 2112 | order 6
+2055 | 2176 | order 7
+2056 | 2304 | order 8
+2057 | 2560 | order 9
+2058 | 3072 | order 10
+2059 | 4096 | order 11
+2060 | 6144 | order 12
+2061 | 10240 | order 13
+
+just before calling printInt
+
+2050 | 0 | order 2
+2051 | 2072 | order 3
+2052 | 0 | order 4
+2053 | 2080 | order 5
+2054 | 2112 | order 6
+2055 | 2176 | order 7
+2056 | 2304 | order 8
+2057 | 2560 | order 9
+2058 | 3072 | order 10
+2059 | 4096 | order 11
+2060 | 6144 | order 12
+2061 | 10240 | order 13

@@ -163,7 +163,7 @@ pub mod test_utils {
 
     pub fn string_from_pointer(computer: &Computer, pointer: u16) -> String {
         let ram = computer.ram.lock();
-        let str_length = ram[pointer as usize + 1] as usize;
+        let str_length = ram[pointer as usize + 2] as usize;
         let buffer_base = ram[pointer as usize] as usize;
         String::from_utf16(&ram[buffer_base..buffer_base + str_length]).unwrap()
     }

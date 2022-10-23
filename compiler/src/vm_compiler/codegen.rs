@@ -627,34 +627,6 @@ impl CodeGenerator {
         ]
     }
 
-    fn call_subroutine(&mut self, subroutine_name: String) -> Vec<ASMInstruction> {
-        let return_address_label = format!("$subroutine_return_point_{}", self.subroutine_return_address_count);
-        self.subroutine_return_address_count += 1;
-        vec![
-            ASMInstruction::A(AValue::Symbolic(return_address_label.clone())),
-            ASMInstruction::C {
-                expr: "A".to_string(),
-                dest: Some("D".to_string()),
-                jump: None,
-            },
-            ASMInstruction::A(AValue::Symbolic("R7".to_string())),
-            ASMInstruction::C {
-                expr: "D".to_string(),
-                dest: Some("M".to_string()),
-                jump: None,
-            },
-            ASMInstruction::A(AValue::Symbolic(format!("$subroutine_entry_{}", subroutine_name))),
-            ASMInstruction::C {
-                expr: "0".to_string(),
-                dest: None,
-                jump: Some("JMP".to_string()),
-            },
-            ASMInstruction::L {
-                identifier: return_address_label,
-            },
-        ]
-    }
-
     fn compile_function_call(&mut self, function_name: &str, arg_count: u16) -> Vec<ASMInstruction> {
         fn jump(function_name: &str, return_address_label: &str) -> Vec<ASMInstruction> {
             vec![
@@ -678,7 +650,74 @@ impl CodeGenerator {
         vec![
             load_avalue_into_register(AValue::Symbolic(return_address_label.to_string()), "R8"),
             load_avalue_into_register(AValue::Numeric((5 + arg_count).to_string()), "R9"),
-            self.call_subroutine("call_function".to_string()),
+            vec![
+                ASMInstruction::A(AValue::Symbolic("R8".to_string())),
+                ASMInstruction::C {
+                    expr: "M".to_string(),
+                    dest: Some("D".to_string()),
+                    jump: None,
+                },
+            ],
+            push_from_d_register(),
+            vec!["LCL", "ARG", "THIS", "THAT"]
+                .into_iter()
+                .flat_map(|pointer| {
+                    vec![
+                        ASMInstruction::A(AValue::Symbolic(pointer.to_string())),
+                        ASMInstruction::C {
+                            expr: "M".to_string(),
+                            dest: Some("D".to_string()),
+                            jump: None,
+                        },
+                    ]
+                    .into_iter()
+                    .chain(push_from_d_register())
+                })
+                .collect(),
+            // Set arg pointer - at this point, all the arguments have been pushed to the stack,
+            // plus the return address, plus the four saved caller pointers.
+            // So to find the correct position for ARG, we can count 5 +
+            // arg_count steps back from the stack pointer.
+            vec![
+                ASMInstruction::A(AValue::Symbolic("SP".to_string())),
+                ASMInstruction::C {
+                    expr: "M".to_string(),
+                    dest: Some("D".to_string()),
+                    jump: None,
+                },
+                ASMInstruction::A(AValue::Symbolic("R9".to_string())),
+                ASMInstruction::C {
+                    expr: "M".to_string(),
+                    dest: Some("A".to_string()),
+                    jump: None,
+                },
+                ASMInstruction::C {
+                    expr: "D-A".to_string(),
+                    dest: Some("D".to_string()),
+                    jump: None,
+                },
+                ASMInstruction::A(AValue::Symbolic("ARG".to_string())),
+                ASMInstruction::C {
+                    expr: "D".to_string(),
+                    dest: Some("M".to_string()),
+                    jump: None,
+                },
+            ],
+            // set lcl pointer
+            vec![
+                ASMInstruction::A(AValue::Symbolic("SP".to_string())),
+                ASMInstruction::C {
+                    expr: "M".to_string(),
+                    dest: Some("D".to_string()),
+                    jump: None,
+                },
+                ASMInstruction::A(AValue::Symbolic("LCL".to_string())),
+                ASMInstruction::C {
+                    expr: "D".to_string(),
+                    dest: Some("M".to_string()),
+                    jump: None,
+                },
+            ],
             jump(function_name, &return_address_label),
         ]
         .into_iter()
@@ -962,117 +1001,10 @@ pub struct VMCompilerResult {
     pub instructions: Vec<ASMInstruction>,
 }
 
-fn subroutine_block() -> Vec<ASMInstruction> {
-    let subroutines: HashMap<&str, Vec<ASMInstruction>> = HashMap::from([(
-        "call_function",
-        vec![
-            ASMInstruction::A(AValue::Symbolic("R8".to_string())),
-            ASMInstruction::C {
-                expr: "M".to_string(),
-                dest: Some("D".to_string()),
-                jump: None,
-            },
-        ]
-        .into_iter()
-        .chain(push_from_d_register())
-        .chain(vec!["LCL", "ARG", "THIS", "THAT"].into_iter().flat_map(|pointer| {
-            vec![
-                ASMInstruction::A(AValue::Symbolic(pointer.to_string())),
-                ASMInstruction::C {
-                    expr: "M".to_string(),
-                    dest: Some("D".to_string()),
-                    jump: None,
-                },
-            ]
-            .into_iter()
-            .chain(push_from_d_register())
-        }))
-        .chain(
-            // Set arg pointer - at this point, all the arguments have been pushed to the stack,
-            // plus the return address, plus the four saved caller pointers.
-            // So to find the correct position for ARG, we can count 5 +
-            // arg_count steps back from the stack pointer.
-            vec![
-                ASMInstruction::A(AValue::Symbolic("SP".to_string())),
-                ASMInstruction::C {
-                    expr: "M".to_string(),
-                    dest: Some("D".to_string()),
-                    jump: None,
-                },
-                ASMInstruction::A(AValue::Symbolic("R9".to_string())),
-                ASMInstruction::C {
-                    expr: "M".to_string(),
-                    dest: Some("A".to_string()),
-                    jump: None,
-                },
-                ASMInstruction::C {
-                    expr: "D-A".to_string(),
-                    dest: Some("D".to_string()),
-                    jump: None,
-                },
-                ASMInstruction::A(AValue::Symbolic("ARG".to_string())),
-                ASMInstruction::C {
-                    expr: "D".to_string(),
-                    dest: Some("M".to_string()),
-                    jump: None,
-                },
-            ],
-        )
-        .chain(
-            // set lcl pointer
-            vec![
-                ASMInstruction::A(AValue::Symbolic("SP".to_string())),
-                ASMInstruction::C {
-                    expr: "M".to_string(),
-                    dest: Some("D".to_string()),
-                    jump: None,
-                },
-                ASMInstruction::A(AValue::Symbolic("LCL".to_string())),
-                ASMInstruction::C {
-                    expr: "D".to_string(),
-                    dest: Some("M".to_string()),
-                    jump: None,
-                },
-            ],
-        )
-        .collect(),
-    )]);
-
-    subroutines
-        .into_iter()
-        .flat_map(|(subroutine_name, subroutine_instructions)| {
-            vec![
-                vec![ASMInstruction::L {
-                    identifier: (format!("$subroutine_entry_{}", subroutine_name)),
-                }],
-                subroutine_instructions,
-                vec![
-                    ASMInstruction::A(AValue::Symbolic("R7".to_string())),
-                    ASMInstruction::C {
-                        expr: "M".to_string(),
-                        dest: Some("A".to_string()),
-                        jump: None,
-                    },
-                    ASMInstruction::C {
-                        expr: "0".to_string(),
-                        dest: None,
-                        jump: Some("JMP".to_string()),
-                    },
-                ],
-            ]
-            .into_iter()
-            .flatten()
-        })
-        .collect()
-}
-
 pub fn generate_asm(std_lib_commands: &HashMap<PathBuf, Vec<Command>>, user_commands: &HashMap<PathBuf, Vec<Command>>) -> VMCompilerResult {
     let mut sourcemap = SourceMap::new();
     let mut code_generator = CodeGenerator::default();
-    let mut instructions: Vec<_> = vec![holding_pattern(), glyphs_asm(), init_call_stack(), subroutine_block()]
-        .into_iter()
-        .flatten()
-        .collect();
+    let mut instructions: Vec<_> = vec![holding_pattern(), glyphs_asm(), init_call_stack()].into_iter().flatten().collect();
 
     let mut generate_asm_for_commands = |commands: &HashMap<PathBuf, Vec<Command>>| {
         for (filename, commands) in commands {

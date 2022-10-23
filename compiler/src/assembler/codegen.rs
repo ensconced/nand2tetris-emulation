@@ -141,9 +141,17 @@ pub struct CodeGenerator<'a> {
 #[derive(Default, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "../web/bindings/")]
+pub struct AssemblySourcemap {
+    machine_code_to_asm: Vec<usize>,
+    asm_to_machine_code: HashMap<usize, usize>,
+}
+
+#[derive(Default, Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "../web/bindings/")]
 pub struct AssemblyResult {
     pub instructions: Vec<u16>,
-    pub sourcemap: Vec<usize>,
+    pub sourcemap: AssemblySourcemap,
 }
 
 impl<'a> CodeGenerator<'a> {
@@ -179,11 +187,12 @@ impl<'a> CodeGenerator<'a> {
 
     pub fn generate(&mut self) -> AssemblyResult {
         let mut instructions = vec![];
-        let mut sourcemap = vec![];
+        let mut sourcemap = AssemblySourcemap::default();
 
         for (command_idx, command) in self.commands.iter().enumerate() {
             if let Some(instruction) = self.machine_code(command) {
-                sourcemap.push(command_idx);
+                sourcemap.machine_code_to_asm.push(command_idx);
+                sourcemap.asm_to_machine_code.insert(command_idx, instructions.len());
                 instructions.push(instruction);
             }
         }

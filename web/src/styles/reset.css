@@ -74,6 +74,19 @@ code span.hovered.selected {
   background-color: #fcb9dc;
 }
 
+code span.breakpoint {
+  position: relative;
+}
+
+code span.breakpoint::before {
+  content: ">";
+  color: #8be9fd;
+  display: inline-block;
+  font-weight: bold;
+  position: absolute;
+  left: -10px;
+}
+
 fieldset {
   border: 1px solid #6272a4;
   font-family: monospace;

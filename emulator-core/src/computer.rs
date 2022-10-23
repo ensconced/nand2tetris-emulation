@@ -1,4 +1,5 @@
 use std::{
+    collections::HashSet,
     num::Wrapping,
     sync::{Arc, Mutex, MutexGuard},
 };
@@ -153,6 +154,12 @@ pub fn tick_until(computer: &mut Computer, predicate: &dyn Fn(&Computer) -> bool
 #[wasm_bindgen]
 pub fn tick_to_breakpoint(computer: &mut Computer, breakpoint: u16) {
     tick_until(computer, &|comp| comp.cpu.pc == breakpoint)
+}
+
+#[wasm_bindgen]
+pub fn tick_to_some_breakpoint(computer: &mut Computer, breakpoints: &[u16]) {
+    tick(computer);
+    tick_until(computer, &|comp| breakpoints.iter().any(|breakpoint| comp.cpu.pc == *breakpoint))
 }
 
 impl Computer {

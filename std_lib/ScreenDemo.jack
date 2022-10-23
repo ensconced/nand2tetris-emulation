@@ -1,0 +1,20 @@
+class ScreenDemo {
+  function void runDemo() {
+    var int i;
+
+    while (true) {
+      let i = 0;
+      do Screen.setColor(true);
+      while (i < 256) {
+        do Screen.drawPixel(i, i);
+        let i = i + 1;
+      }
+      do Screen.setColor(false);
+      let i = 0;
+      while (i < 256) {
+        do Screen.drawPixel(i, i);
+        let i = i + 1;
+      }
+    }
+  }
+}

@@ -3,9 +3,9 @@ class Sys {
     do Memory.init();
     do Math.init();
     do Output.init();
+    do Screen.init();
 
-    do Output.printInt(4321);
-    do Output.printInt(4321);
+    do ScreenDemo.runDemo();
   }
 
   function void halt() {}

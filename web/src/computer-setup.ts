@@ -9,4 +9,8 @@ const {
 } = compilerResult;
 
 const rom = new Uint16Array(instructions);
-export default makeComputer(rom);
+const computer = makeComputer(rom);
+
+// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+(window as any).computer = computer;
+export default computer;

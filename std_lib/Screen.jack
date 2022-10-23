@@ -1,0 +1,44 @@
+class Screen {
+  static int color, screen;
+
+  function void init() {
+    let screen = 18432;
+  }
+
+  function void clearScreen() {
+    var int i;
+    while (i < 512) {
+      let screen[i] = 0;
+      let i = i + 1;
+    }
+  }
+
+  // sets a color to be used for all further drawXXX commands
+  function void setColor(boolean b) {
+    let color = b;
+  }
+
+  function void drawPixel(int x1, int y1) {
+    var int word_idx, bit_distance_from_lsb, mask, i;
+
+    let word_idx = (y1 * 32) + (x1 / 16);
+    let bit_distance_from_lsb = 15 - (x1 & 15);
+
+    let mask = 1;
+    let i = 0;
+    while (i < bit_distance_from_lsb) {
+      let mask = mask + mask;
+      let i = i + 1;
+    }
+
+    if (color) {
+      let screen[word_idx] = screen[word_idx] | mask;
+    } else {
+      let screen[word_idx] = screen[word_idx] & ~mask;
+    }
+  }
+
+  function void drawRectangle(int x1, int y1, int x2, int y2) {}
+
+  function void drawCircle(int x, int y, int r) {}
+}

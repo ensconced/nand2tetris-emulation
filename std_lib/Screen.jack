@@ -38,7 +38,34 @@ class Screen {
     }
   }
 
-  function void drawRectangle(int x1, int y1, int x2, int y2) {}
+  function void drawRectangle(int x1, int y1, int x2, int y2) {
+    var int left_mask, left_mask_word_idx, overhang_length, i, current_word, last_x_in_word;
+
+    // draw left edge
+    let left_mask_word_idx = x1 / 16;
+    let overhang_length = 16 - (x1 - (x1 & (~15)));
+    let left_mask = Math.pow2(overhang_length) - 1;
+
+    let i = y1;
+    let current_word = 32 * y1 + left_mask_word_idx;
+    while (i <= y2) {
+      if (color) {
+        let screen[current_word] = screen[current_word] | left_mask;
+      } else {
+        let screen[current_word] = screen[current_word] & ~left_mask;
+      }
+      let current_word = current_word + 32;
+      let i = i + 1;
+    }
+
+    // draw center part
+    let i = y1;
+    while (i <= y2) {
+      left last_x_in_word = 1234;
+    }
+
+    // TODO - draw right edge
+  }
 
   function void drawCircle(int x, int y, int r) {}
 }

@@ -2,6 +2,9 @@ class ScreenDemo {
   function void runDemo() {
     var int i;
 
+    do Screen.setColor(true);
+    do Screen.drawRectangle(100, 100, 200, 200);
+
     while (true) {
       let i = 0;
       do Screen.setColor(true);

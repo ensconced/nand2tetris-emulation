@@ -1,6 +1,4 @@
-- UI to add breakpoints
-- rust fn to tick to any of a set of breakpoints
-- play-to-breakpoint
+- drawRectangle
 - create web IO implementation for web debugger
 - make code panels draggable/collapsible
 - use test methods for stepping through in emulator?

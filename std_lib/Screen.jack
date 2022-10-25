@@ -5,14 +5,6 @@ class Screen {
     let screen = 18432;
   }
 
-  function void clearScreen() {
-    var int i;
-    while (i < 512) {
-      let screen[i] = 0;
-      let i = i + 1;
-    }
-  }
-
   // sets a color to be used for all further drawXXX commands
   function void setColor(boolean b) {
     let color = b;
@@ -71,4 +63,12 @@ class Screen {
   }
 
   function void drawCircle(int x, int y, int r) {}
+
+  function void clearScreen() {
+    var int i;
+    while (i < 8192) {
+      let screen[i] = 0;
+      let i = i + 1;
+    }
+  }
 }

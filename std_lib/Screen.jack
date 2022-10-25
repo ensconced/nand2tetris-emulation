@@ -31,22 +31,25 @@ class Screen {
   }
 
   function void drawRectangle(int x1, int y1, int x2, int y2) {
-    var int start_col, end_col, current_col, mask, i, word_idx;
+    var int start_col, end_col, current_col, mask, i, word_idx, left_mask, right_mask, row_offset;
 
     let start_col = x1 / 16;
     let end_col =  x2 / 16;
-    let current_col = start_col;
+    let left_mask = Math.pow2(16 - (x1 - start_col * 16)) - 1;
+    let right_mask = ~(Math.pow2(16 - (x2 - end_col * 16)) - 1);
+    let row_offset = y1 * 32;
 
+    let current_col = start_col;
     while (current_col <= end_col) {
       let mask = -1;
       if (current_col = start_col) {
-        let mask = mask & (Math.pow2(16 - (x1 - start_col * 16)) - 1);
+        let mask = mask & left_mask;
       }
       if (current_col = end_col) {
-        let mask = mask & ~(Math.pow2(16 - (x2 - end_col * 16)) - 1);
+        let mask = mask & right_mask;
       }
 
-      let word_idx = current_col + y1 * 32;
+      let word_idx = current_col + row_offset;
 
       let i = y1;
       while (i < y2) {

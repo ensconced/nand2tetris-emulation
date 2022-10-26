@@ -2,8 +2,10 @@
 
 what information do we need for:
 
-- dead code elimination?
 - function call/return optimisation (by minimising saved/restored frame pointers)
+- dead code elimination?
+
+same of both cases - essentially a call graph
 
 - drawRectangle
 - create web IO implementation for web debugger
@@ -14,23 +16,20 @@ what information do we need for:
 - read docs on wasm-bindgen https://rustwasm.github.io/docs/wasm-bindgen/examples/index.html
 - "realtime play"
 - try windowing again to improve perf
+- show contextual jack node
+- include linting and tsc in test suite
 
 ## Ideas for reducing code size
 
 ### Identical Code Folding - i.e. automatic generation of asm "subroutines"
 
 - code-size optimization - automatic extraction of subroutines
-- remove hand-written subroutine stuff for function calls - should be covered automatically now
-- refactoring - tidy up selection clearing...
-- show contextual jack node
-- include linting and tsc in test suite
 
-- dead code elimination
 - don't unnecessarily zero-out locals in jack code
 
 - use an even smaller font e.g. this 5x5 px one https://www.dafont.com/5x5.font (and caps only?)
 
-- completely skip vm code stage???
+- peephole optimisation of vm code
 
 - add another hardware register???
 
@@ -40,7 +39,6 @@ what information do we need for:
 
 ### emulator enhancements
 
-- add print instruction, only included when compilation is targeting the emulator
 - report stack overflows etc
 - add stepping ability
   - step line of jack code
@@ -55,15 +53,11 @@ what information do we need for:
 # TODO
 
 - write full stdlib
-- implement hashmap module
 - implement vector module
 - add SCREEN and GLYPHS variable for use in jack code
 - allow use of e.g. var int[4] foo; to declare fixed-length arrays to be allocated in static section, or on stack. this could make the code in Memory.jack much neater
-- make statics and stack sections bigger!
 - figure out limits of current algo for two's complement multiplication - is there a simple failing example for a small negative number?
 - booth's algo? or...read this: https://pages.cs.wisc.edu/~markhill/cs354/Fall2008/beyond354/int.mult.html ?
-- implement proper Sys class - Sys.init should init other stdlib classes then call Main.main
-- code to compile entire input directory - reuse what we already have from vm compiler
 - check arg count equals param count? might be difficult - would need to look across classes sometimes...
 
 ### jack extras
@@ -87,8 +81,8 @@ what information do we need for:
 ### hardware
 
 - add timer?
-- multiplication / division?
+- bitshift - this would be really helpful
 - floating point?
-- bitshift - this would be really helpful...
+- multiplication / division?
 - ethernet...?
 - graphics: fix flickering by assigning a "don't draw" register which programs can use to flag when frame buffer is in an inconsistent state, and which the computer will read to decide whether or not to actually refresh the screen. will need to figure out how to make this work on the fpga too!

@@ -1,6 +1,6 @@
 # call graph analysis
 
-gather information on functions during jack compilation:
+gather information on functions during jack compilation codegen phase:
 
 - name: String
 - arg_count: usize

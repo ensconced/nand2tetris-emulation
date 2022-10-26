@@ -1,9 +1,22 @@
 # call graph analysis
 
-what information do we need for:
+gather information on functions during jack compilation:
 
+- name: String
+- arg_count: usize
+- local_count: usize
+- returns_void: boolean
+
+then in vm compilation phase, augment with:
+
+- calls
+- called_by
+
+This information should allow a number of optimisations:
+
+- dead code elimination
 - function call/return optimisation (by minimising saved/restored frame pointers)
-- dead code elimination?
+- eliminate unnecessary pushing/popping of return values
 
 same of both cases - essentially a call graph
 

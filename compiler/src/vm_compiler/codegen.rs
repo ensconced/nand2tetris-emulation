@@ -408,6 +408,66 @@ fn load_avalue_into_register(avalue: AValue, register: &str) -> Vec<ASMInstructi
     ]
 }
 
+fn initialize_locals(local_var_count: usize) -> Vec<ASMInstruction> {
+    if local_var_count > 2 {
+        // In this case, we can take fewer instructions by only updating SP once, after pushing all
+        // the locals.
+        vec![
+            ASMInstruction::A(AValue::Symbolic("SP".to_string())),
+            ASMInstruction::C {
+                expr: "M".to_string(),
+                dest: Some("A".to_string()),
+                jump: None,
+            },
+            ASMInstruction::C {
+                expr: "0".to_string(),
+                dest: Some("M".to_string()),
+                jump: None,
+            },
+        ]
+        .into_iter()
+        .chain(
+            iter::repeat_with(|| {
+                vec![
+                    ASMInstruction::C {
+                        expr: "A+1".to_string(),
+                        dest: Some("A".to_string()),
+                        jump: None,
+                    },
+                    ASMInstruction::C {
+                        expr: "0".to_string(),
+                        dest: Some("M".to_string()),
+                        jump: None,
+                    },
+                ]
+                .into_iter()
+            })
+            .take(local_var_count - 1)
+            .flatten(),
+        )
+        .chain(vec![
+            ASMInstruction::A(AValue::Numeric(local_var_count.to_string())),
+            ASMInstruction::C {
+                expr: "A".to_string(),
+                dest: Some("D".to_string()),
+                jump: None,
+            },
+            ASMInstruction::A(AValue::Symbolic("SP".to_string())),
+            ASMInstruction::C {
+                expr: "M+D".to_string(),
+                dest: Some("M".to_string()),
+                jump: None,
+            },
+        ])
+        .collect()
+    } else {
+        iter::repeat_with(|| push_from_constant(0).into_iter())
+            .take(local_var_count)
+            .flatten()
+            .collect()
+    }
+}
+
 #[derive(Default)]
 struct CodeGenerator {
     after_set_to_false_count: u32,
@@ -726,12 +786,6 @@ impl CodeGenerator {
     }
 
     fn compile_function_definition(&mut self, function_name: &str, local_var_count: u16) -> Vec<ASMInstruction> {
-        fn initialize_locals(local_var_count: usize) -> Vec<ASMInstruction> {
-            iter::repeat_with(|| push_from_constant(0).into_iter())
-                .take(local_var_count)
-                .flatten()
-                .collect()
-        }
         let result = iter::once(ASMInstruction::L {
             identifier: format!("$entry_{}", &function_name),
         })

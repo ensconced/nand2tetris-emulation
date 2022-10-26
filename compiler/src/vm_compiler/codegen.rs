@@ -472,7 +472,6 @@ fn initialize_locals(local_var_count: usize) -> Vec<ASMInstruction> {
 struct CodeGenerator {
     after_set_to_false_count: u32,
     return_address_count: u32,
-    subroutine_return_address_count: u32,
     current_function: Option<String>,
 }
 
@@ -888,6 +887,8 @@ impl CodeGenerator {
             .collect()
         }
 
+        // When we place the return value, we may overwrite the return address. So we have to save
+        // the return address first.
         fn stash_return_address_in_r8() -> Vec<ASMInstruction> {
             vec![
                 pop_into_d_register("R8"),

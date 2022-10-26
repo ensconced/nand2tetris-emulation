@@ -1,3 +1,10 @@
+# call graph analysis
+
+what information do we need for:
+
+- dead code elimination?
+- function call/return optimisation (by minimising saved/restored frame pointers)
+
 - drawRectangle
 - create web IO implementation for web debugger
 - make code panels draggable/collapsible

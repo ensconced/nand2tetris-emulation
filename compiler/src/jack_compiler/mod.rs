@@ -20,7 +20,6 @@ use super::{
 };
 
 pub mod codegen;
-mod desugar;
 pub mod jack_node_types;
 pub mod parser;
 pub mod sourcemap;

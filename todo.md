@@ -1,7 +1,10 @@
 # call graph analysis
 
-Initial refactoring - need to add separate desugaring phase, so that stuff like multiplication operators and division is turned into proper function calls.
-This will allow for constructing the call graph based on just the parsed desugared jack code, either in its own phase or as part of the jack compiler codegen phase.
+- combine all jack modules into single ParsedJackProgram
+- create CallGraph from ParsedJackProgram
+- use CallGraph for dead-code elimination during jack codegen phase
+
+---
 
 gather information on functions during jack compilation codegen phase:
 

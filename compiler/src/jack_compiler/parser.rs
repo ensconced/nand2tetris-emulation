@@ -243,8 +243,39 @@ impl<'a> Parser<'a> {
                 token_range: new_token_range.clone(),
             };
             let child_node_idxs = vec![lhs.node_idx, rhs.node_idx];
-            let new_lhs_node = Expression::Binary { operator, lhs, rhs };
-            (self.make_ast_node(new_lhs_node, new_token_range, child_node_idxs), false)
+
+            if operator == BinaryOperator::Multiply {
+                // desugar the multiplication operator into a function call
+                let subroutine_call = self.make_ast_node(
+                    SubroutineCall::Method {
+                        this_name: "Math".to_string(),
+                        method_name: "multiply".to_string(),
+                        arguments: vec![lhs, rhs],
+                    },
+                    new_token_range.clone(),
+                    child_node_idxs,
+                );
+                let subroutine_call_index = subroutine_call.node_idx;
+                let new_lhs_node = Expression::SubroutineCall(subroutine_call);
+                (self.make_ast_node(new_lhs_node, new_token_range, vec![subroutine_call_index]), false)
+            } else if operator == BinaryOperator::Divide {
+                // desugar the division operator into a function call
+                let subroutine_call = self.make_ast_node(
+                    SubroutineCall::Method {
+                        this_name: "Math".to_string(),
+                        method_name: "divide".to_string(),
+                        arguments: vec![lhs, rhs],
+                    },
+                    new_token_range.clone(),
+                    child_node_idxs,
+                );
+                let subroutine_call_index = subroutine_call.node_idx;
+                let new_lhs_node = Expression::SubroutineCall(subroutine_call);
+                (self.make_ast_node(new_lhs_node, new_token_range, vec![subroutine_call_index]), false)
+            } else {
+                let new_lhs_node = Expression::Binary { operator, lhs, rhs };
+                (self.make_ast_node(new_lhs_node, new_token_range, child_node_idxs), false)
+            }
         } else {
             (lhs_node, true)
         }
@@ -1440,33 +1471,40 @@ mod tests {
                                 token_range: 0..9
                             },
                             rhs: ASTNode {
-                                node: Box::new(Expression::Binary {
-                                    operator: BinaryOperator::Multiply,
-                                    lhs: ASTNode {
-                                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
-                                        node_idx: 1,
-                                        token_range: 4..9
-                                    },
-                                    rhs: ASTNode {
-                                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
-                                        node_idx: 2,
-                                        token_range: 8..9
-                                    },
-                                }),
-                                node_idx: 3,
+                                node: Box::new(Expression::SubroutineCall(ASTNode {
+                                    node: Box::new(SubroutineCall::Method {
+                                        this_name: "Math".to_string(),
+                                        method_name: "multiply".to_string(),
+                                        arguments: vec![
+                                            ASTNode {
+                                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                                                node_idx: 1,
+                                                token_range: 4..9
+                                            },
+                                            ASTNode {
+                                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
+                                                node_idx: 2,
+                                                token_range: 8..9
+                                            },
+                                        ],
+                                    }),
+                                    node_idx: 3,
+                                    token_range: 4..9,
+                                })),
+                                node_idx: 4,
                                 token_range: 4..9
                             }
                         }),
-                        node_idx: 4,
+                        node_idx: 5,
                         token_range: 0..13
                     },
                     rhs: ASTNode {
                         node: Box::new(Expression::PrimitiveTerm(IntegerConstant("4".to_string()))),
-                        node_idx: 5,
+                        node_idx: 6,
                         token_range: 12..13
                     },
                 }),
-                node_idx: 6,
+                node_idx: 7,
                 token_range: 0..13
             }
         )
@@ -1709,58 +1747,67 @@ mod tests {
                                         token_range: 6..26
                                     },
                                     rhs: ASTNode {
-                                        node: Box::new(Expression::Binary {
-                                            operator: BinaryOperator::Divide,
-                                            lhs: ASTNode {
-                                                node: Box::new(Expression::SubroutineCall(ASTNode {
-                                                    node: Box::new(SubroutineCall::Method {
-                                                        this_name: "buz".to_string(),
-                                                        method_name: "boz".to_string(),
-                                                        arguments: vec![
-                                                            ASTNode {
-                                                                node: Box::new(Expression::Variable("qux".to_string())),
-                                                                node_idx: 2,
-                                                                token_range: 14..15
-                                                            },
-                                                            ASTNode {
-                                                                node: Box::new(Expression::ArrayAccess {
-                                                                    var_name: "wox".to_string(),
-                                                                    index: ASTNode {
-                                                                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("123".to_string()))),
-                                                                        node_idx: 3,
-                                                                        token_range: 19..20
-                                                                    }
-                                                                }),
-                                                                node_idx: 4,
-                                                                token_range: 18..21
-                                                            },
-                                                        ]
-                                                    }),
-                                                    node_idx: 5,
-                                                    token_range: 12..22
-                                                })),
-                                                node_idx: 6,
-                                                token_range: 12..26
-                                            },
-                                            rhs: ASTNode {
-                                                node: Box::new(Expression::Variable("bing".to_string())),
-                                                node_idx: 7,
-                                                token_range: 25..26
-                                            }
-                                        }),
-                                        node_idx: 8,
+                                        node: Box::new(Expression::SubroutineCall(ASTNode {
+                                            node: Box::new(SubroutineCall::Method {
+                                                this_name: "Math".to_string(),
+                                                method_name: "divide".to_string(),
+                                                arguments: vec![
+                                                    ASTNode {
+                                                        node: Box::new(Expression::SubroutineCall(ASTNode {
+                                                            node: Box::new(SubroutineCall::Method {
+                                                                this_name: "buz".to_string(),
+                                                                method_name: "boz".to_string(),
+                                                                arguments: vec![
+                                                                    ASTNode {
+                                                                        node: Box::new(Expression::Variable("qux".to_string())),
+                                                                        node_idx: 2,
+                                                                        token_range: 14..15
+                                                                    },
+                                                                    ASTNode {
+                                                                        node: Box::new(Expression::ArrayAccess {
+                                                                            var_name: "wox".to_string(),
+                                                                            index: ASTNode {
+                                                                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                                                                    "123".to_string()
+                                                                                ))),
+                                                                                node_idx: 3,
+                                                                                token_range: 19..20
+                                                                            }
+                                                                        }),
+                                                                        node_idx: 4,
+                                                                        token_range: 18..21
+                                                                    },
+                                                                ]
+                                                            }),
+                                                            node_idx: 5,
+                                                            token_range: 12..22
+                                                        })),
+                                                        node_idx: 6,
+                                                        token_range: 12..26
+                                                    },
+                                                    ASTNode {
+                                                        node: Box::new(Expression::Variable("bing".to_string())),
+                                                        node_idx: 7,
+                                                        token_range: 25..26
+                                                    }
+                                                ]
+                                            }),
+                                            node_idx: 8,
+                                            token_range: 12..26
+                                        })),
+                                        node_idx: 9,
                                         token_range: 12..26
                                     },
                                 }),
-                                node_idx: 9,
+                                node_idx: 10,
                                 token_range: 6..26
                             }
                         }),
-                        node_idx: 10,
+                        node_idx: 11,
                         token_range: 5..27
                     },
                 }),
-                node_idx: 11,
+                node_idx: 12,
                 token_range: 0..27
             })
         )
@@ -1843,36 +1890,43 @@ mod tests {
         assert_eq!(
             parse_expression("(1 + 2) * 3"),
             ASTNode {
-                node: Box::new(Expression::Binary {
-                    operator: BinaryOperator::Multiply,
-                    lhs: ASTNode {
-                        node: Box::new(Expression::Parenthesized(ASTNode {
-                            node: Box::new(Expression::Binary {
-                                operator: BinaryOperator::Plus,
-                                lhs: ASTNode {
-                                    node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
-                                    node_idx: 0,
+                node: Box::new(Expression::SubroutineCall(ASTNode {
+                    node: Box::new(SubroutineCall::Method {
+                        this_name: "Math".to_string(),
+                        method_name: "multiply".to_string(),
+                        arguments: vec![
+                            ASTNode {
+                                node: Box::new(Expression::Parenthesized(ASTNode {
+                                    node: Box::new(Expression::Binary {
+                                        operator: BinaryOperator::Plus,
+                                        lhs: ASTNode {
+                                            node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                            node_idx: 0,
+                                            token_range: 1..6
+                                        },
+                                        rhs: ASTNode {
+                                            node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                                            node_idx: 1,
+                                            token_range: 5..6
+                                        },
+                                    }),
+                                    node_idx: 2,
                                     token_range: 1..6
-                                },
-                                rhs: ASTNode {
-                                    node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
-                                    node_idx: 1,
-                                    token_range: 5..6
-                                },
-                            }),
-                            node_idx: 2,
-                            token_range: 1..6
-                        })),
-                        node_idx: 3,
-                        token_range: 0..11
-                    },
-                    rhs: ASTNode {
-                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
-                        node_idx: 4,
-                        token_range: 10..11
-                    },
-                }),
-                node_idx: 5,
+                                })),
+                                node_idx: 3,
+                                token_range: 0..11
+                            },
+                            ASTNode {
+                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
+                                node_idx: 4,
+                                token_range: 10..11
+                            },
+                        ]
+                    }),
+                    node_idx: 5,
+                    token_range: 0..11
+                })),
+                node_idx: 6,
                 token_range: 0..11
             }
         )

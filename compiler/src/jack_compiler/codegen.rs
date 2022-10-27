@@ -236,9 +236,6 @@ impl CodeGenerator {
 
         let perform_op = match operator {
             BinaryOperator::And => vec![Command::Arithmetic(ArithmeticCommandVariant::Binary(BinaryArithmeticCommandVariant::And))],
-            BinaryOperator::Divide => {
-                vec![Command::Function(FunctionCommandVariant::Call("Math.divide".to_string(), 2))]
-            }
             BinaryOperator::Equals => vec![Command::Arithmetic(ArithmeticCommandVariant::Binary(BinaryArithmeticCommandVariant::Eq))],
             BinaryOperator::GreaterThan => vec![Command::Arithmetic(ArithmeticCommandVariant::Binary(BinaryArithmeticCommandVariant::Gt))],
             BinaryOperator::GreaterThanOrEquals => vec![
@@ -251,9 +248,10 @@ impl CodeGenerator {
                 Command::Arithmetic(ArithmeticCommandVariant::Unary(UnaryArithmeticCommandVariant::Not)),
             ],
             BinaryOperator::Minus => vec![Command::Arithmetic(ArithmeticCommandVariant::Binary(BinaryArithmeticCommandVariant::Sub))],
-            BinaryOperator::Multiply => vec![Command::Function(FunctionCommandVariant::Call("Math.multiply".to_string(), 2))],
             BinaryOperator::Or => vec![Command::Arithmetic(ArithmeticCommandVariant::Binary(BinaryArithmeticCommandVariant::Or))],
             BinaryOperator::Plus => vec![Command::Arithmetic(ArithmeticCommandVariant::Binary(BinaryArithmeticCommandVariant::Add))],
+            BinaryOperator::Multiply => panic!("multiply operator should be desugared by parser"),
+            BinaryOperator::Divide => panic!("multiply operator should be desugared by parser"),
         };
 
         self.record_vm_commands(perform_op, binary_expression_node_idx);

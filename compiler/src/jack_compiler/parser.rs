@@ -244,6 +244,11 @@ impl<'a> Parser<'a> {
             };
             let child_node_idxs = vec![lhs.node_idx, rhs.node_idx];
 
+            // TODO - DRY up this desugaring.
+
+            // The desugaring has to be done early on in the overall compilation process, so that
+            // the call graph analysis is aware that multiplication, division are in fact function
+            // calls.
             if operator == BinaryOperator::Multiply {
                 // desugar the multiplication operator into a function call
                 let subroutine_call = self.make_ast_node(

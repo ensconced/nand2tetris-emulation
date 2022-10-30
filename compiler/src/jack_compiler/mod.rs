@@ -65,6 +65,7 @@ pub fn compile_jack(user_code: HashMap<PathBuf, SourceModule>) -> JackCompilerRe
     let jack_program_tokens = tokenize_jack_program(get_all_source_modules(user_code));
     let parsed_jack_program = parse_jack_program(&jack_program_tokens);
     let call_graph = call_graph_analysis(&parsed_jack_program);
+    dbg!(&call_graph);
 
     result.tokens = jack_program_tokens;
     for (filename, parse_result) in parsed_jack_program {

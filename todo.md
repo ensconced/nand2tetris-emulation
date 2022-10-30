@@ -1,6 +1,8 @@
 # call graph analysis
 
 - what's the deal with foo.appendChar in the call graph etc? how do we resolve which method that actually is?
+- need to rework symbol resolution (see maybe_resolve_symbol), or move earlier in process?
+- then we can tell which method exactly is being called...
 - use CallGraph for dead-code elimination during jack codegen phase
 
 ---

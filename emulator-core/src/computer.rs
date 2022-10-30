@@ -1,18 +1,9 @@
 use std::{
-    collections::HashSet,
     num::Wrapping,
     sync::{Arc, Mutex, MutexGuard},
 };
 
 use wasm_bindgen::prelude::wasm_bindgen;
-
-pub enum DebugMode {
-    #[allow(dead_code)]
-    Verbose,
-    #[allow(dead_code)]
-    Heap,
-    None,
-}
 
 pub fn bit(instruction: u16, idx: u32) -> u16 {
     (instruction & (2u16).pow(idx)) >> idx

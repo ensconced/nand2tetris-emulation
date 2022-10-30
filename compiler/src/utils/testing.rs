@@ -26,7 +26,7 @@ pub mod test_utils {
             .iter()
             .map(|source_module| (source_module.filename.clone(), vm_compiler::parse(source_module)))
             .collect();
-        let asm = vm_compiler::codegen::generate_asm(&HashMap::new(), &parsed_vm_modules).instructions;
+        let asm = vm_compiler::codegen::generate_asm(&parsed_vm_modules).instructions;
         let assembly_result = assemble(&asm, ROM_DEPTH);
         let machine_code_strings: Vec<_> = assembly_result
             .instructions

@@ -32,12 +32,10 @@ pub struct JackCompilerResult {
     pub sourcemaps: HashMap<PathBuf, JackCompilerSourceMap>,
     pub tokens: HashMap<PathBuf, Vec<Token<TokenKind>>>,
     #[ts(type = "Record<string, Array<string>>")]
-    pub std_lib_commands: HashMap<PathBuf, Vec<Command>>,
-    #[ts(type = "Record<string, Array<string>>")]
-    pub user_commands: HashMap<PathBuf, Vec<Command>>,
+    pub commands: HashMap<PathBuf, Vec<Command>>,
 }
 
-fn compile_jack_mod(jack_source_module: SourceModule, result: &mut JackCompilerResult, is_std_lib: bool) {
+fn compile_jack_mod(jack_source_module: SourceModule, result: &mut JackCompilerResult) {
     let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(&jack_source_module.source);
     let parse_result = parse(&tokens);
     let codegen_result = generate_vm_code(parse_result.class);
@@ -48,11 +46,7 @@ fn compile_jack_mod(jack_source_module: SourceModule, result: &mut JackCompilerR
 
     result.sourcemaps.insert(jack_source_module.filename.clone(), sourcemap);
     result.tokens.insert(jack_source_module.filename.clone(), tokens);
-    if is_std_lib {
-        result.std_lib_commands.insert(jack_source_module.filename, codegen_result.commands);
-    } else {
-        result.user_commands.insert(jack_source_module.filename, codegen_result.commands);
-    }
+    result.commands.insert(jack_source_module.filename, codegen_result.commands);
 }
 
 pub fn compile_jack(user_code: Vec<SourceModule>) -> JackCompilerResult {
@@ -62,10 +56,10 @@ pub fn compile_jack(user_code: Vec<SourceModule>) -> JackCompilerResult {
     let mut result = JackCompilerResult::default();
 
     for std_lib_module in std_lib_source {
-        compile_jack_mod(std_lib_module, &mut result, true);
+        compile_jack_mod(std_lib_module, &mut result);
     }
     for user_code_module in user_code {
-        compile_jack_mod(user_code_module, &mut result, false);
+        compile_jack_mod(user_code_module, &mut result);
     }
     result
 }

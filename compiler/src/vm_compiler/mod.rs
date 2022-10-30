@@ -20,7 +20,7 @@ pub fn compile_files(src_path: &Path, dest_path: &Path) -> Result<(), io::Error>
         .iter()
         .map(|source_module| (source_module.filename.clone(), parse(source_module)))
         .collect();
-    let vm_compiler_result = codegen::generate_asm(&HashMap::new(), &vm_compiler_inputs);
+    let vm_compiler_result = codegen::generate_asm(&vm_compiler_inputs);
     let instructions: Vec<_> = vm_compiler_result.instructions.into_iter().map(String::from).collect();
     fs::write(dest_path, instructions.join("\n"))
 }

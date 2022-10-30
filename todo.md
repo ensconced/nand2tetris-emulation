@@ -1,7 +1,6 @@
 # call graph analysis
 
-- combine all jack modules into single ParsedJackProgram
-- create CallGraph from ParsedJackProgram
+- what's the deal with foo.appendChar in the call graph etc? how do we resolve which method that actually is?
 - use CallGraph for dead-code elimination during jack codegen phase
 
 ---

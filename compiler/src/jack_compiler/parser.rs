@@ -41,6 +41,7 @@ fn infix_precedence(operator: OperatorVariant) -> Option<(u8, u8)> {
     }
 }
 
+#[derive(Debug)]
 pub struct JackParserResult {
     pub class: Class,
     pub sourcemap: JackParserSourceMap,

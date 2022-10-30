@@ -2,7 +2,7 @@ use serde::Serialize;
 use std::{collections::HashMap, ops::Range};
 use ts_rs::TS;
 
-#[derive(Serialize, TS)]
+#[derive(Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "../web/bindings/")]
 pub struct JackParserSourceMap {
@@ -34,7 +34,7 @@ impl JackParserSourceMap {
     }
 }
 
-#[derive(Serialize, TS)]
+#[derive(Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "../web/bindings/")]
 pub struct NodeInfo {

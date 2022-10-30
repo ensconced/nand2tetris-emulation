@@ -40,6 +40,10 @@ pub struct CodeGenerator {
     vm_commands: Vec<Command>,
 }
 
+pub fn full_subroutine_name(class_name: &str, subroutine_name: &str) -> String {
+    format!("{}.{}", class_name, subroutine_name)
+}
+
 fn get_constant_value(expression: &ASTNode<Expression>) -> Option<u16> {
     match &*expression.node {
         Expression::PrimitiveTerm(PrimitiveTermVariant::IntegerConstant(int)) => {
@@ -363,7 +367,7 @@ impl CodeGenerator {
                     self.compile_push_arguments(arguments);
                     self.record_vm_commands(
                         vec![Command::Function(FunctionCommandVariant::Call(
-                            format!("{}.{}", this_class, method_name),
+                            full_subroutine_name(&this_class, method_name),
                             arg_count_with_this as u16,
                         ))],
                         subroutine_call_node_idx,
@@ -378,7 +382,7 @@ impl CodeGenerator {
             self.compile_push_arguments(arguments);
             self.record_vm_commands(
                 vec![Command::Function(FunctionCommandVariant::Call(
-                    format!("{}.{}", this_name, method_name),
+                    full_subroutine_name(this_name, method_name),
                     arg_count as u16,
                 ))],
                 subroutine_call_node_idx,
@@ -397,7 +401,7 @@ impl CodeGenerator {
         self.compile_push_arguments(arguments);
         self.record_vm_commands(
             vec![Command::Function(FunctionCommandVariant::Call(
-                format!("{}.{}", class_name, subroutine_name),
+                full_subroutine_name(&class_name, subroutine_name),
                 arg_count as u16,
             ))],
             subroutine_call_node_idx,
@@ -575,12 +579,12 @@ impl CodeGenerator {
 
         let commands = match subroutine.subroutine_kind {
             SubroutineKind::Function => vec![Command::Function(FunctionCommandVariant::Define(
-                format!("{}.{}", class_name, subroutine.name),
+                full_subroutine_name(class_name, &subroutine.name),
                 locals_count as u16,
             ))],
             SubroutineKind::Method => vec![
                 Command::Function(FunctionCommandVariant::Define(
-                    format!("{}.{}", class_name, subroutine.name),
+                    full_subroutine_name(class_name, &subroutine.name),
                     locals_count as u16,
                 )),
                 Command::Memory(MemoryCommandVariant::Push(
@@ -594,7 +598,7 @@ impl CodeGenerator {
             ],
             SubroutineKind::Constructor => vec![
                 Command::Function(FunctionCommandVariant::Define(
-                    format!("{}.{}", class_name, subroutine.name),
+                    full_subroutine_name(class_name, &subroutine.name),
                     locals_count as u16,
                 )),
                 Command::Memory(MemoryCommandVariant::Push(MemorySegmentVariant::Constant, instance_size as u16)),

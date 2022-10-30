@@ -10,17 +10,13 @@ const {
   jack_compiler_result: {
     sourcemaps: jackCompilerSourcemaps,
     tokens: tokensByFilename,
-    std_lib_commands: stdLibCommands,
-    user_commands: userCommands,
+    commands,
   },
 } = compilerResult;
 
 export const filenames = Object.keys(tokensByFilename);
 
-export const vmCommands = {
-  ...stdLibCommands,
-  ...userCommands,
-};
+export const vmCommands = commands;
 export { tokensByFilename };
 
 export function jackNodeTokens(

@@ -6,8 +6,9 @@ use std::{
 use ts_rs::TS;
 
 use self::{
+    call_graph_analysis::analyse_call_graph,
     codegen::generate_vm_code,
-    parser::parse,
+    parser::{parse, JackParserResult},
     sourcemap::JackCompilerSourceMap,
     tokenizer::{token_defs, TokenKind},
 };
@@ -19,6 +20,7 @@ use super::{
     vm_compiler::parser::Command,
 };
 
+mod call_graph_analysis;
 pub mod codegen;
 pub mod jack_node_types;
 pub mod parser;
@@ -35,30 +37,48 @@ pub struct JackCompilerResult {
     pub commands: HashMap<PathBuf, Vec<Command>>,
 }
 
-fn compile_jack_mod(jack_source_module: SourceModule, result: &mut JackCompilerResult) {
-    let tokens: Vec<_> = Tokenizer::new(token_defs()).tokenize(&jack_source_module.source);
-    let parse_result = parse(&tokens);
-    let codegen_result = generate_vm_code(parse_result.class);
-    let sourcemap = JackCompilerSourceMap {
-        parser_sourcemap: parse_result.sourcemap,
-        codegen_sourcemap: codegen_result.sourcemap,
-    };
-
-    result.sourcemaps.insert(jack_source_module.filename.clone(), sourcemap);
-    result.tokens.insert(jack_source_module.filename.clone(), tokens);
-    result.commands.insert(jack_source_module.filename, codegen_result.commands);
-}
-
-pub fn compile_jack(user_code: HashMap<PathBuf, SourceModule>) -> JackCompilerResult {
+fn get_all_source_modules(user_code: HashMap<PathBuf, SourceModule>) -> HashMap<PathBuf, SourceModule> {
     let std_lib_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../std_lib");
     let mut source_modules = get_source_modules(&std_lib_dir).expect("failed to get stdlib modules");
 
-    let mut result = JackCompilerResult::default();
-
+    // User modules override any std_lib modules with the same filename.
     source_modules.extend(user_code);
-    for (_filename, module) in source_modules {
-        compile_jack_mod(module, &mut result);
+    source_modules
+}
+
+fn tokenize_jack_program(source_modules: HashMap<PathBuf, SourceModule>) -> HashMap<PathBuf, Vec<Token<TokenKind>>> {
+    source_modules
+        .into_iter()
+        .map(|(filename, source_module)| (filename, Tokenizer::new(token_defs()).tokenize(&source_module.source)))
+        .collect()
+}
+
+fn parse_jack_program(jack_program_tokens: &HashMap<PathBuf, Vec<Token<TokenKind>>>) -> HashMap<PathBuf, JackParserResult> {
+    jack_program_tokens
+        .iter()
+        .map(|(filename, tokens)| (filename.clone(), parse(tokens)))
+        .collect()
+}
+
+pub fn compile_jack(user_code: HashMap<PathBuf, SourceModule>) -> JackCompilerResult {
+    let mut result = JackCompilerResult::default();
+    let jack_program_tokens = tokenize_jack_program(get_all_source_modules(user_code));
+    let parsed_jack_program = parse_jack_program(&jack_program_tokens);
+    let call_graph_analysis = analyse_call_graph(&parsed_jack_program);
+
+    result.tokens = jack_program_tokens;
+    for (filename, parse_result) in parsed_jack_program {
+        let codegen_result = generate_vm_code(parse_result.class);
+        result.sourcemaps.insert(
+            filename.clone(),
+            JackCompilerSourceMap {
+                parser_sourcemap: parse_result.sourcemap,
+                codegen_sourcemap: codegen_result.sourcemap,
+            },
+        );
+        result.commands.insert(filename, codegen_result.commands);
     }
+
     result
 }
 

@@ -6,6 +6,7 @@ pub mod test_utils {
     use emulator_core::computer::tick_until;
     use emulator_core::{computer::Computer, generate_rom};
     use std::collections::HashMap;
+    use std::path::PathBuf;
 
     pub const INITIAL_STACK_POINTER_ADDRESS: u16 = 261;
 
@@ -35,8 +36,9 @@ pub mod test_utils {
         Computer::new(generate_rom::from_string(machine_code_strings.join("\n")))
     }
 
-    pub fn computer_from_jack_code(jack_code: Vec<SourceModule>) -> Computer {
-        Computer::new(compile_to_machine_code(jack_code).try_into().unwrap())
+    pub fn computer_from_jack_code(jack_code: HashMap<PathBuf, SourceModule>) -> Computer {
+        let source_modules: Vec<_> = jack_code.into_iter().map(|(_filename, source_module)| source_module).collect();
+        Computer::new(compile_to_machine_code(source_modules).try_into().unwrap())
     }
 
     pub fn stack_pointer(computer: &Computer) -> u16 {

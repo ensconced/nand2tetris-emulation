@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     fs, io,
     path::{Path, PathBuf},
 };
@@ -19,13 +20,17 @@ impl SourceModule {
 }
 
 // TODO - move this into test module
-pub fn mock_from_sources(sources: Vec<&str>) -> Vec<SourceModule> {
+pub fn mock_from_sources(sources: Vec<(&str, &str)>) -> HashMap<PathBuf, SourceModule> {
     sources
         .into_iter()
-        .enumerate()
-        .map(|(idx, source)| SourceModule {
-            filename: format!("mock_file_{}", idx).into(),
-            source: source.to_owned(),
+        .map(|(filename, source)| {
+            (
+                filename.into(),
+                SourceModule {
+                    filename: filename.into(),
+                    source: source.to_owned(),
+                },
+            )
         })
         .collect()
 }

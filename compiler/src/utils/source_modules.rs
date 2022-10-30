@@ -39,12 +39,12 @@ pub fn get_source_modules(src_path: &Path) -> Result<HashMap<PathBuf, SourceModu
             .flatten()
             .map(|entry| {
                 let filename: PathBuf = entry.path().file_name().unwrap().into();
-                (filename.clone(), SourceModule::new(entry.path()))
+                (filename, SourceModule::new(entry.path()))
             })
             .collect()
     } else {
         let filename: PathBuf = src_path.file_name().unwrap().into();
-        HashMap::from([(filename.clone(), SourceModule::new(src_path.to_owned()))])
+        HashMap::from([(filename, SourceModule::new(src_path.to_owned()))])
     };
     Ok(source_modules)
 }

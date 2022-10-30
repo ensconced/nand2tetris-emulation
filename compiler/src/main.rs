@@ -11,7 +11,11 @@ use clap::{Parser, Subcommand};
 use config::ROM_DEPTH;
 use jack_compiler::JackCompilerResult;
 use serde::Serialize;
-use std::{fs, path::Path};
+use std::{
+    collections::HashMap,
+    fs,
+    path::{Path, PathBuf},
+};
 use ts_rs::TS;
 use utils::source_modules::SourceModule;
 use vm_compiler::codegen::VMCompilerResult;
@@ -31,7 +35,7 @@ struct CompilerResult {
 }
 
 // TODO - move into test module
-pub fn compile_to_machine_code(jack_code: Vec<SourceModule>) -> Vec<u16> {
+pub fn compile_to_machine_code(jack_code: HashMap<PathBuf, SourceModule>) -> Vec<u16> {
     let jack_compiler_results = compile_jack(jack_code);
     let vm_compiler_result = vm_compiler::codegen::generate_asm(&jack_compiler_results.commands);
     assemble(&vm_compiler_result.instructions, config::ROM_DEPTH).instructions
@@ -82,7 +86,7 @@ fn main() {
             let debug_output_path = debug_output_path_maybe.as_ref().expect("debug output path is required");
             let dest_path = dest_path_maybe.as_ref().expect("dest path is required");
 
-            let jack_compiler_result = compile_jack(vec![]);
+            let jack_compiler_result = compile_jack(HashMap::default());
             let vm_compiler_result = generate_asm(&jack_compiler_result.commands);
             let assembly_result = assemble(&vm_compiler_result.instructions, ROM_DEPTH);
             let compiler_result = CompilerResult {

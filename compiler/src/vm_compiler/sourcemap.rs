@@ -39,7 +39,7 @@ impl SourceMap {
             },
         );
 
-        let cmd_idx_to_asm_instruction_idx = self.vm_filename_and_idx_to_asm_instruction_idx.entry(vm_filename.to_owned()).or_default();
+        let cmd_idx_to_asm_instruction_idx = self.vm_filename_and_idx_to_asm_instruction_idx.entry(vm_filename.into()).or_default();
         let asm_instructions = cmd_idx_to_asm_instruction_idx.entry(vm_command_idx).or_default();
         asm_instructions.push(asm_idx);
     }

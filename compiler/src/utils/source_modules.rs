@@ -10,12 +10,9 @@ pub struct SourceModule {
 }
 
 impl SourceModule {
-    pub fn new(path: PathBuf) -> Self {
-        let source = fs::read_to_string(&path).expect("failed to read file to string");
-        Self {
-            source,
-            filename: path.file_name().expect("file name should not terminate in \"..\"").to_owned().into(),
-        }
+    pub fn new(filename: PathBuf) -> Self {
+        let source = fs::read_to_string(&filename).expect("failed to read file to string");
+        Self { source, filename }
     }
 }
 
@@ -35,12 +32,19 @@ pub fn mock_from_sources(sources: Vec<(&str, &str)>) -> HashMap<PathBuf, SourceM
         .collect()
 }
 
-pub fn get_source_modules(src_path: &Path) -> Result<Vec<SourceModule>, io::Error> {
+pub fn get_source_modules(src_path: &Path) -> Result<HashMap<PathBuf, SourceModule>, io::Error> {
     let metadata = fs::metadata(src_path)?;
     let source_modules = if metadata.is_dir() {
-        fs::read_dir(src_path)?.flatten().map(|entry| SourceModule::new(entry.path())).collect()
+        fs::read_dir(src_path)?
+            .flatten()
+            .map(|entry| {
+                let filename: PathBuf = entry.path().file_name().unwrap().into();
+                (filename.clone(), SourceModule::new(entry.path()))
+            })
+            .collect()
     } else {
-        vec![SourceModule::new(src_path.to_owned())]
+        let filename: PathBuf = src_path.file_name().unwrap().into();
+        HashMap::from([(filename.clone(), SourceModule::new(src_path.to_owned()))])
     };
     Ok(source_modules)
 }

@@ -17,8 +17,8 @@ pub fn parse(source_module: &SourceModule) -> Vec<Command> {
 pub fn compile_files(src_path: &Path, dest_path: &Path) -> Result<(), io::Error> {
     let source_modules = get_source_modules(src_path)?;
     let vm_compiler_inputs: HashMap<_, _> = source_modules
-        .iter()
-        .map(|source_module| (source_module.filename.clone(), parse(source_module)))
+        .into_iter()
+        .map(|(filename, source_module)| (filename, parse(&source_module)))
         .collect();
     let vm_compiler_result = codegen::generate_asm(&vm_compiler_inputs);
     let instructions: Vec<_> = vm_compiler_result.instructions.into_iter().map(String::from).collect();

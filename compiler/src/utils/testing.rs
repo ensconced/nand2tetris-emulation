@@ -37,8 +37,7 @@ pub mod test_utils {
     }
 
     pub fn computer_from_jack_code(jack_code: HashMap<PathBuf, SourceModule>) -> Computer {
-        let source_modules: Vec<_> = jack_code.into_iter().map(|(_filename, source_module)| source_module).collect();
-        Computer::new(compile_to_machine_code(source_modules).try_into().unwrap())
+        Computer::new(compile_to_machine_code(jack_code).try_into().unwrap())
     }
 
     pub fn stack_pointer(computer: &Computer) -> u16 {

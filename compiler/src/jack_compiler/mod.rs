@@ -49,17 +49,15 @@ fn compile_jack_mod(jack_source_module: SourceModule, result: &mut JackCompilerR
     result.commands.insert(jack_source_module.filename, codegen_result.commands);
 }
 
-pub fn compile_jack(user_code: Vec<SourceModule>) -> JackCompilerResult {
+pub fn compile_jack(user_code: HashMap<PathBuf, SourceModule>) -> JackCompilerResult {
     let std_lib_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../std_lib");
-    let std_lib_source: Vec<_> = get_source_modules(&std_lib_dir).expect("failed to get stdlib modules");
+    let mut source_modules = get_source_modules(&std_lib_dir).expect("failed to get stdlib modules");
 
     let mut result = JackCompilerResult::default();
 
-    for std_lib_module in std_lib_source {
-        compile_jack_mod(std_lib_module, &mut result);
-    }
-    for user_code_module in user_code {
-        compile_jack_mod(user_code_module, &mut result);
+    source_modules.extend(user_code);
+    for (_filename, module) in source_modules {
+        compile_jack_mod(module, &mut result);
     }
     result
 }

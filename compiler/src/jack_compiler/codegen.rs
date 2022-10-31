@@ -735,7 +735,7 @@ pub struct SourcemappedCommand {
 }
 
 pub struct JackCodegenResult {
-    pub compiled_subroutines: Vec<Vec<Command>>,
+    pub subroutines: Vec<Vec<Command>>,
     pub sourcemap: JackCodegenSourceMap,
 }
 
@@ -760,7 +760,7 @@ pub fn generate_vm_code(class: Class) -> JackCodegenResult {
         .collect();
 
     JackCodegenResult {
-        compiled_subroutines,
+        subroutines: compiled_subroutines,
         sourcemap: code_generator.sourcemap,
     }
 }

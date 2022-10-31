@@ -72,7 +72,7 @@ pub fn compile_jack(user_code: HashMap<PathBuf, SourceModule>) -> JackCompilerRe
                 codegen_sourcemap: codegen_result.sourcemap,
             },
         );
-        let commands: Vec<_> = codegen_result.compiled_subroutines.into_iter().flatten().collect();
+        let commands: Vec<_> = codegen_result.subroutines.into_iter().flatten().collect();
         result.commands.insert(filename, commands);
     }
 

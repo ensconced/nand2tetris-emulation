@@ -31,8 +31,8 @@ pub mod tokenizer;
 pub struct JackCompilerResult {
     pub sourcemaps: HashMap<PathBuf, JackCompilerSourceMap>,
     pub tokens: HashMap<PathBuf, Vec<Token<TokenKind>>>,
-    #[ts(type = "Record<string, Array<string>>")]
-    pub commands: HashMap<PathBuf, Vec<Command>>,
+    #[ts(type = "Record<string, Array<Array<string>>>")]
+    pub subroutines: HashMap<PathBuf, Vec<Vec<Command>>>,
 }
 
 fn get_all_source_modules(user_code: HashMap<PathBuf, SourceModule>) -> HashMap<PathBuf, SourceModule> {
@@ -72,8 +72,7 @@ pub fn compile_jack(user_code: HashMap<PathBuf, SourceModule>) -> JackCompilerRe
                 codegen_sourcemap: codegen_result.sourcemap,
             },
         );
-        let commands: Vec<_> = codegen_result.subroutines.into_iter().flatten().collect();
-        result.commands.insert(filename, commands);
+        result.subroutines.insert(filename, codegen_result.subroutines);
     }
 
     result

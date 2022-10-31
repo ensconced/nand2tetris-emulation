@@ -10,8 +10,8 @@ use self::parser::Command;
 use super::utils::source_modules::{get_source_modules, SourceModule};
 use parser::parse_into_vm_commands;
 
-pub fn parse(source_module: &SourceModule) -> Vec<Command> {
-    parse_into_vm_commands(&source_module.source).collect()
+pub fn parse(source_module: &SourceModule) -> Vec<Vec<Command>> {
+    vec![parse_into_vm_commands(&source_module.source).collect()]
 }
 
 pub fn compile_files(src_path: &Path, dest_path: &Path) -> Result<(), io::Error> {

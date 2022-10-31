@@ -1056,13 +1056,13 @@ pub struct VMCompilerResult {
     pub instructions: Vec<ASMInstruction>,
 }
 
-pub fn generate_asm(commands: &HashMap<PathBuf, Vec<Command>>) -> VMCompilerResult {
+pub fn generate_asm(subroutines: &HashMap<PathBuf, Vec<Vec<Command>>>) -> VMCompilerResult {
     let mut sourcemap = SourceMap::new();
     let mut code_generator = CodeGenerator::default();
     let mut instructions: Vec<_> = vec![holding_pattern(), glyphs_asm(), init_call_stack()].into_iter().flatten().collect();
 
-    for (filename, commands) in commands {
-        for (vm_command_idx, command) in commands.iter().enumerate() {
+    for (filename, file_subroutines) in subroutines {
+        for (vm_command_idx, command) in file_subroutines.iter().flatten().enumerate() {
             for asm_instruction in code_generator.compile_vm_command(command, filename) {
                 sourcemap.record_asm_instruction(filename, vm_command_idx, instructions.len());
                 instructions.push(asm_instruction);

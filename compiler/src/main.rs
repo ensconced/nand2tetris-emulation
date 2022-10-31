@@ -37,7 +37,7 @@ struct CompilerResult {
 // TODO - move into test module
 pub fn compile_to_machine_code(jack_code: HashMap<PathBuf, SourceModule>) -> Vec<u16> {
     let jack_compiler_results = compile_jack(jack_code);
-    let vm_compiler_result = vm_compiler::codegen::generate_asm(&jack_compiler_results.commands);
+    let vm_compiler_result = vm_compiler::codegen::generate_asm(&jack_compiler_results.subroutines);
     assemble(&vm_compiler_result.instructions, config::ROM_DEPTH).instructions
 }
 
@@ -87,7 +87,7 @@ fn main() {
             let dest_path = dest_path_maybe.as_ref().expect("dest path is required");
 
             let jack_compiler_result = compile_jack(HashMap::default());
-            let vm_compiler_result = generate_asm(&jack_compiler_result.commands);
+            let vm_compiler_result = generate_asm(&jack_compiler_result.subroutines);
             let assembly_result = assemble(&vm_compiler_result.instructions, ROM_DEPTH);
             let compiler_result = CompilerResult {
                 jack_compiler_result,

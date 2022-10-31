@@ -1,15 +1,7 @@
 # call graph analysis
 
-- call graph analysis requires some things already to have been done:
-- multiplication/division to have been desugared into function calls
-- symbols to have been resolved so we know which method exactly is being called everywhere
-
-perhaps this suggests that it should actually be done on the vm code...
-
-- what's the deal with foo.appendChar in the call graph etc? how do we resolve which method that actually is?
-- need to rework symbol resolution (see maybe_resolve_symbol), or move earlier in process?
-- then we can tell which method exactly is being called...
-- use CallGraph for dead-code elimination during jack codegen phase
+- build up call graph
+- use call graph for dead-code elimination during jack codegen phase
 
 ---
 

@@ -13,24 +13,30 @@ use crate::jack_compiler::codegen::{CompiledSubroutine, SourcemappedCommand};
 use parser::parse_into_vm_commands;
 
 pub fn parse(source_module: &SourceModule) -> Vec<CompiledSubroutine> {
-    let commands: Vec<_> = parse_into_vm_commands(&source_module.source)
-        .map(|command| SourcemappedCommand { command, jack_node_idx: 0 })
-        .collect();
+    let mut compiled_subroutines = vec![];
+    let mut subroutine = None;
+    for command in parse_into_vm_commands(&source_module.source) {
+        if let Command::Function(FunctionCommandVariant::Define(name, ..)) = &command {
+            if let Some(subroutine) = subroutine {
+                compiled_subroutines.push(subroutine);
+            }
 
-    let subroutine_name = if let Some(SourcemappedCommand {
-        command: Command::Function(FunctionCommandVariant::Define(name, ..)),
-        ..
-    }) = commands.get(0)
-    {
-        name.to_owned()
-    } else {
-        panic!("failed to find name for subroutine");
-    };
-
-    vec![CompiledSubroutine {
-        name: subroutine_name,
-        commands,
-    }]
+            subroutine = Some(CompiledSubroutine {
+                name: name.to_owned(),
+                commands: vec![SourcemappedCommand { command, jack_node_idx: 0 }],
+            });
+        } else {
+            subroutine
+                .as_mut()
+                .unwrap_or_else(|| panic!("no subroutine"))
+                .commands
+                .push(SourcemappedCommand { command, jack_node_idx: 0 });
+        }
+    }
+    if let Some(subroutine) = subroutine {
+        compiled_subroutines.push(subroutine);
+    }
+    compiled_subroutines
 }
 
 pub fn compile_files(src_path: &Path, dest_path: &Path) -> Result<(), io::Error> {

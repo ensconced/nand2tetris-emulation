@@ -1,5 +1,4 @@
-- fix game of life
-- fix sourcemapping
+- fix sourcemapping of asm/vm-code
 - check dead-code-elimination is working
 
 # better

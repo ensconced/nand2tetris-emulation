@@ -6,13 +6,31 @@ mod tokenizer;
 
 use std::{collections::HashMap, fs, io, path::Path};
 
-use self::parser::Command;
+use self::parser::{Command, FunctionCommandVariant};
 
 use super::utils::source_modules::{get_source_modules, SourceModule};
+use crate::jack_compiler::codegen::{CompiledSubroutine, SourcemappedCommand};
 use parser::parse_into_vm_commands;
 
-pub fn parse(source_module: &SourceModule) -> Vec<Vec<Command>> {
-    vec![parse_into_vm_commands(&source_module.source).collect()]
+pub fn parse(source_module: &SourceModule) -> Vec<CompiledSubroutine> {
+    let commands: Vec<_> = parse_into_vm_commands(&source_module.source)
+        .map(|command| SourcemappedCommand { command, jack_node_idx: 0 })
+        .collect();
+
+    let subroutine_name = if let Some(SourcemappedCommand {
+        command: Command::Function(FunctionCommandVariant::Define(name, ..)),
+        ..
+    }) = commands.get(0)
+    {
+        name.to_owned()
+    } else {
+        panic!("failed to find name for subroutine");
+    };
+
+    vec![CompiledSubroutine {
+        name: subroutine_name,
+        commands,
+    }]
 }
 
 pub fn compile_files(src_path: &Path, dest_path: &Path) -> Result<(), io::Error> {
@@ -182,7 +200,8 @@ mod tests {
             push argument 1
             add
             return
-
+            ",
+            "
             function Sys.init 1
             push constant 1
             push constant 2
@@ -210,7 +229,8 @@ mod tests {
             push argument 1
             add
             return
-
+            ",
+            "
             function somefile.fibonacci 0
             // if n == 0, return 0
             push argument 0
@@ -243,7 +263,8 @@ mod tests {
             label return_one
             push constant 1
             return
-
+            ",
+            "
             function Sys.init 0
             push constant 10
             call somefile.fibonacci 1

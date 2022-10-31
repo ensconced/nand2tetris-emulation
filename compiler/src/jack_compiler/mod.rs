@@ -6,7 +6,7 @@ use std::{
 use ts_rs::TS;
 
 use self::{
-    codegen::generate_vm_code,
+    codegen::{generate_vm_code, CompiledSubroutine},
     parser::{parse, JackParserResult},
     sourcemap::JackCompilerSourceMap,
     tokenizer::{token_defs, TokenKind},
@@ -31,8 +31,8 @@ pub mod tokenizer;
 pub struct JackCompilerResult {
     pub sourcemaps: HashMap<PathBuf, JackCompilerSourceMap>,
     pub tokens: HashMap<PathBuf, Vec<Token<TokenKind>>>,
-    #[ts(type = "Record<string, Array<Array<string>>>")]
-    pub subroutines: HashMap<PathBuf, Vec<Vec<Command>>>,
+    #[ts(type = "Record<string, Array<CompiledSubroutine>>")]
+    pub subroutines: HashMap<PathBuf, Vec<CompiledSubroutine>>,
 }
 
 fn get_all_source_modules(user_code: HashMap<PathBuf, SourceModule>) -> HashMap<PathBuf, SourceModule> {
@@ -72,6 +72,7 @@ pub fn compile_jack(user_code: HashMap<PathBuf, SourceModule>) -> JackCompilerRe
                 codegen_sourcemap: codegen_result.sourcemap,
             },
         );
+
         result.subroutines.insert(filename, codegen_result.subroutines);
     }
 

@@ -110,12 +110,7 @@ export default function useCoordinatedInteractions(
     const result = new Set<number>();
     interactedVMCommands.idxs.forEach((vmCmdIdx) => {
       const asmInstructions = vmCommandIdxToASMInstructionIdxs[vmCmdIdx];
-      if (asmInstructions === undefined) {
-        throw new Error(
-          `failed to find asm instructions for vm command idx ${vmCmdIdx} in file ${interactedVMCommands.filename}`
-        );
-      }
-      asmInstructions.forEach((instruction) => result.add(instruction));
+      asmInstructions?.forEach((instruction) => result.add(instruction));
     });
 
     return {

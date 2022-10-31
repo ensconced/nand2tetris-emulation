@@ -1,7 +1,6 @@
-# call graph analysis
-
-- build up call graph
-- use call graph for dead-code elimination during jack codegen phase
+- fix game of life
+- fix sourcemapping
+- check dead-code-elimination is working
 
 # better
 

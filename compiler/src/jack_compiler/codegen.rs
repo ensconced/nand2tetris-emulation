@@ -1,3 +1,6 @@
+use serde::Serialize;
+use ts_rs::TS;
+
 use crate::vm_compiler::parser::{
     ArithmeticCommandVariant, BinaryArithmeticCommandVariant, Command, FlowCommandVariant, FunctionCommandVariant, MemoryCommandVariant,
     MemorySegmentVariant, OffsetSegmentVariant, PointerSegmentVariant, UnaryArithmeticCommandVariant,
@@ -628,7 +631,7 @@ impl CodeGenerator {
             .collect()
     }
 
-    fn compile_subroutine(&mut self, subroutine_declaration: &ASTNode<SubroutineDeclaration>, instance_size: usize) -> Vec<SourcemappedCommand> {
+    fn compile_subroutine(&mut self, subroutine_declaration: &ASTNode<SubroutineDeclaration>, instance_size: usize) -> CompiledSubroutine {
         let subroutine = &subroutine_declaration.node;
         self.clear_subroutine();
         self.subroutine_kind = Some(subroutine.subroutine_kind);
@@ -638,17 +641,14 @@ impl CodeGenerator {
         let locals_count = self.compile_subroutine_var_declarations(&subroutine.body.node.var_declarations);
 
         let class_name = self.get_class_name();
-
+        let subroutine_name = full_subroutine_name(class_name, &subroutine.name);
         let subroutine_prelude = match subroutine.subroutine_kind {
             SubroutineKind::Function => vec![Command::Function(FunctionCommandVariant::Define(
-                full_subroutine_name(class_name, &subroutine.name),
+                subroutine_name.clone(),
                 locals_count as u16,
             ))],
             SubroutineKind::Method => vec![
-                Command::Function(FunctionCommandVariant::Define(
-                    full_subroutine_name(class_name, &subroutine.name),
-                    locals_count as u16,
-                )),
+                Command::Function(FunctionCommandVariant::Define(subroutine_name.clone(), locals_count as u16)),
                 Command::Memory(MemoryCommandVariant::Push(
                     MemorySegmentVariant::PointerSegment(PointerSegmentVariant::Argument),
                     0,
@@ -659,10 +659,7 @@ impl CodeGenerator {
                 )),
             ],
             SubroutineKind::Constructor => vec![
-                Command::Function(FunctionCommandVariant::Define(
-                    full_subroutine_name(class_name, &subroutine.name),
-                    locals_count as u16,
-                )),
+                Command::Function(FunctionCommandVariant::Define(subroutine_name.clone(), locals_count as u16)),
                 Command::Memory(MemoryCommandVariant::Push(MemorySegmentVariant::Constant, instance_size as u16)),
                 Command::Function(FunctionCommandVariant::Call("Memory.alloc".to_string(), 1)),
                 Command::Memory(MemoryCommandVariant::Pop(
@@ -684,18 +681,24 @@ impl CodeGenerator {
 
         if let Some(ast_node) = subroutine.body.node.statements.last() {
             if matches!(*ast_node.node, Statement::Return(_)) {
-                return commands;
+                return CompiledSubroutine {
+                    name: subroutine_name,
+                    commands,
+                };
             }
         }
         commands.extend(self.implicit_return(&subroutine.return_type, subroutine_declaration.node_idx));
-        commands
+        CompiledSubroutine {
+            name: subroutine_name,
+            commands,
+        }
     }
 
     pub fn compile_subroutines(
         &mut self,
         subroutine_declarations: &[ASTNode<SubroutineDeclaration>],
         instance_size: usize,
-    ) -> Vec<Vec<SourcemappedCommand>> {
+    ) -> Vec<CompiledSubroutine> {
         subroutine_declarations
             .into_iter()
             .map(|subroutine| self.compile_subroutine(subroutine, instance_size))
@@ -729,13 +732,25 @@ impl CodeGenerator {
     }
 }
 
+#[derive(Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "../web/bindings/")]
+pub struct CompiledSubroutine {
+    pub name: String,
+    pub commands: Vec<SourcemappedCommand>,
+}
+
+#[derive(Serialize, TS)]
+#[ts(export)]
+#[ts(export_to = "../web/bindings/")]
 pub struct SourcemappedCommand {
+    #[ts(type = "string")]
     pub command: Command,
-    jack_node_idx: usize,
+    pub jack_node_idx: usize,
 }
 
 pub struct JackCodegenResult {
-    pub subroutines: Vec<Vec<Command>>,
+    pub subroutines: Vec<CompiledSubroutine>,
     pub sourcemap: JackCodegenSourceMap,
 }
 
@@ -746,18 +761,13 @@ pub fn generate_vm_code(class: Class) -> JackCodegenResult {
     };
     let class_instance_size = code_generator.compile_var_declarations(&class.var_declarations);
     let mut vm_command_idx = 0;
-    let compiled_sourcemapped_subroutines = code_generator.compile_subroutines(&class.subroutine_declarations, class_instance_size);
-    for sourcemapped_commands in compiled_sourcemapped_subroutines.iter() {
-        for SourcemappedCommand { jack_node_idx, .. } in sourcemapped_commands {
+    let compiled_subroutines = code_generator.compile_subroutines(&class.subroutine_declarations, class_instance_size);
+    for compiled_subroutine in compiled_subroutines.iter() {
+        for SourcemappedCommand { jack_node_idx, .. } in &compiled_subroutine.commands {
             code_generator.sourcemap.record_vm_command(vm_command_idx, *jack_node_idx);
             vm_command_idx += 1;
         }
     }
-
-    let compiled_subroutines = compiled_sourcemapped_subroutines
-        .into_iter()
-        .map(|commands| commands.into_iter().map(|SourcemappedCommand { command, .. }| command).collect())
-        .collect();
 
     JackCodegenResult {
         subroutines: compiled_subroutines,

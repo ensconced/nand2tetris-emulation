@@ -10,6 +10,7 @@ use ts_rs::TS;
 use crate::{
     assembler::parser::{ASMInstruction, AValue},
     fonts::glyphs_asm,
+    jack_compiler::codegen::{CompiledSubroutine, SourcemappedCommand},
 };
 
 use super::{
@@ -1057,17 +1058,21 @@ pub struct VMCompilerResult {
     pub instructions: Vec<ASMInstruction>,
 }
 
-pub fn generate_asm(subroutines: &HashMap<PathBuf, Vec<Vec<Command>>>) -> VMCompilerResult {
+pub fn generate_asm(subroutines: &HashMap<PathBuf, Vec<CompiledSubroutine>>) -> VMCompilerResult {
     let live_subroutines = find_live_subroutines(subroutines);
     let mut sourcemap = SourceMap::new();
     let mut code_generator = CodeGenerator::default();
     let mut instructions: Vec<_> = vec![holding_pattern(), glyphs_asm(), init_call_stack()].into_iter().flatten().collect();
 
     for (filename, file_subroutines) in subroutines {
-        for (vm_command_idx, command) in file_subroutines.iter().flatten().enumerate() {
-            for asm_instruction in code_generator.compile_vm_command(command, filename) {
-                sourcemap.record_asm_instruction(filename, vm_command_idx, instructions.len());
-                instructions.push(asm_instruction);
+        for (vm_command_idx, subroutine) in file_subroutines.iter().enumerate() {
+            if live_subroutines.contains(&subroutine.name) {
+                for SourcemappedCommand { command, .. } in &subroutine.commands {
+                    for asm_instruction in code_generator.compile_vm_command(command, filename) {
+                        sourcemap.record_asm_instruction(filename, vm_command_idx, instructions.len());
+                        instructions.push(asm_instruction);
+                    }
+                }
             }
         }
     }

@@ -3,6 +3,8 @@ use std::{
     path::PathBuf,
 };
 
+use crate::jack_compiler::codegen::{CompiledSubroutine, SourcemappedCommand};
+
 use super::parser::{Command, FunctionCommandVariant};
 
 #[derive(Debug, Default)]
@@ -13,20 +15,14 @@ pub struct SubroutineInfo {
 
 type CallGraph = HashMap<String, SubroutineInfo>;
 
-fn analyse_subroutine(subroutine: &[Command], call_graph: &mut CallGraph) {
-    let caller_name = if let Some(Command::Function(FunctionCommandVariant::Define(name, ..))) = subroutine.get(0) {
-        name
-    } else {
-        panic!("expected first command in subroutine to be function definition");
-    };
-
-    for command in subroutine {
+fn analyse_subroutine(subroutine: &CompiledSubroutine, call_graph: &mut CallGraph) {
+    for SourcemappedCommand { command, .. } in &subroutine.commands {
         if let Command::Function(FunctionCommandVariant::Call(callee_name, ..)) = command {
-            let caller_info = call_graph.entry(caller_name.clone()).or_default();
+            let caller_info = call_graph.entry(subroutine.name.clone()).or_default();
             caller_info.calls.insert(callee_name.clone());
 
             let callee_info = call_graph.entry(callee_name.clone()).or_default();
-            callee_info.callers.insert(caller_name.clone());
+            callee_info.callers.insert(subroutine.name.clone());
         }
     }
 }
@@ -44,7 +40,7 @@ fn depth_first_search(caller_name: String, call_graph: &CallGraph, discovered: &
     discovered
 }
 
-pub fn find_live_subroutines(subroutines: &HashMap<PathBuf, Vec<Vec<Command>>>) -> HashSet<String> {
+pub fn find_live_subroutines(subroutines: &HashMap<PathBuf, Vec<CompiledSubroutine>>) -> HashSet<String> {
     let mut call_graph = HashMap::new();
     for file_subroutines in subroutines.values() {
         for subroutine in file_subroutines {

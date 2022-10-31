@@ -37,7 +37,6 @@ pub struct CodeGenerator {
     subroutine_parameters: HashMap<String, Symbol>,
     subroutine_vars: HashMap<String, Symbol>,
     subroutine_kind: Option<SubroutineKind>,
-    vm_commands: Vec<Command>,
 }
 
 pub fn full_subroutine_name(class_name: &str, subroutine_name: &str) -> String {
@@ -54,14 +53,6 @@ fn get_constant_value(expression: &ASTNode<Expression>) -> Option<u16> {
 }
 
 impl CodeGenerator {
-    fn record_vm_commands(&mut self, vm_commands: Vec<Command>, jack_node_idx: usize) {
-        for vm_command in vm_commands {
-            let vm_command_idx = self.vm_commands.len();
-            self.sourcemap.record_vm_command(vm_command_idx, jack_node_idx);
-            self.vm_commands.push(vm_command);
-        }
-    }
-
     fn get_class_name(&self) -> &str {
         self.class_name.as_ref().unwrap_or_else(|| panic!("missing class_name"))
     }
@@ -91,10 +82,14 @@ impl CodeGenerator {
         }
         count
     }
-    fn compile_do_statement(&mut self, subroutine_call: &ASTNode<SubroutineCall>) {
+    fn compile_do_statement(&mut self, subroutine_call: &ASTNode<SubroutineCall>) -> Vec<SourcemappedCommand> {
         let pop_return_val = Command::Memory(MemoryCommandVariant::Pop(MemorySegmentVariant::Constant, 0));
-        self.compile_subroutine_call_expression(subroutine_call);
-        self.record_vm_commands(vec![pop_return_val], subroutine_call.node_idx)
+        let mut commands = self.compile_subroutine_call_expression(subroutine_call);
+        commands.push(SourcemappedCommand {
+            command: pop_return_val,
+            jack_node_idx: subroutine_call.node_idx,
+        });
+        commands
     }
 
     fn compile_let_statement(
@@ -103,52 +98,67 @@ impl CodeGenerator {
         array_index: &Option<ASTNode<Expression>>,
         value: &ASTNode<Expression>,
         let_statement_node_idx: usize,
-    ) {
-        self.compile_expression(value);
+    ) -> Vec<SourcemappedCommand> {
+        let mut commands = self.compile_expression(value);
         let (var_mem_segment, var_seg_idx) = self.compile_variable(var_name);
 
         if let Some(idx) = array_index {
-            self.record_vm_commands(
-                vec![Command::Memory(MemoryCommandVariant::Push(var_mem_segment, var_seg_idx as u16))],
-                let_statement_node_idx,
-            );
+            commands.push(SourcemappedCommand {
+                command: Command::Memory(MemoryCommandVariant::Push(var_mem_segment, var_seg_idx as u16)),
+                jack_node_idx: let_statement_node_idx,
+            });
 
             if let Some(constant_value) = get_constant_value(idx) {
-                self.record_vm_commands(
-                    vec![
-                        Command::Memory(MemoryCommandVariant::Pop(
-                            MemorySegmentVariant::OffsetSegment(OffsetSegmentVariant::Pointer),
-                            1,
-                        )),
-                        Command::Memory(MemoryCommandVariant::Pop(
-                            MemorySegmentVariant::PointerSegment(PointerSegmentVariant::That),
-                            constant_value,
-                        )),
-                    ],
-                    let_statement_node_idx,
-                );
+                commands
+                    .into_iter()
+                    .chain(
+                        vec![
+                            Command::Memory(MemoryCommandVariant::Pop(
+                                MemorySegmentVariant::OffsetSegment(OffsetSegmentVariant::Pointer),
+                                1,
+                            )),
+                            Command::Memory(MemoryCommandVariant::Pop(
+                                MemorySegmentVariant::PointerSegment(PointerSegmentVariant::That),
+                                constant_value,
+                            )),
+                        ]
+                        .into_iter()
+                        .map(|command| SourcemappedCommand {
+                            command,
+                            jack_node_idx: let_statement_node_idx,
+                        }),
+                    )
+                    .collect()
             } else {
-                self.compile_expression(idx);
-                self.record_vm_commands(
-                    vec![
-                        Command::Arithmetic(ArithmeticCommandVariant::Binary(BinaryArithmeticCommandVariant::Add)),
-                        Command::Memory(MemoryCommandVariant::Pop(
-                            MemorySegmentVariant::OffsetSegment(OffsetSegmentVariant::Pointer),
-                            1,
-                        )),
-                        Command::Memory(MemoryCommandVariant::Pop(
-                            MemorySegmentVariant::PointerSegment(PointerSegmentVariant::That),
-                            0,
-                        )),
-                    ],
-                    let_statement_node_idx,
-                );
+                commands
+                    .into_iter()
+                    .chain(self.compile_expression(idx))
+                    .chain(
+                        vec![
+                            Command::Arithmetic(ArithmeticCommandVariant::Binary(BinaryArithmeticCommandVariant::Add)),
+                            Command::Memory(MemoryCommandVariant::Pop(
+                                MemorySegmentVariant::OffsetSegment(OffsetSegmentVariant::Pointer),
+                                1,
+                            )),
+                            Command::Memory(MemoryCommandVariant::Pop(
+                                MemorySegmentVariant::PointerSegment(PointerSegmentVariant::That),
+                                0,
+                            )),
+                        ]
+                        .into_iter()
+                        .map(|command| SourcemappedCommand {
+                            command,
+                            jack_node_idx: let_statement_node_idx,
+                        }),
+                    )
+                    .collect()
             }
         } else {
-            self.record_vm_commands(
-                vec![Command::Memory(MemoryCommandVariant::Pop(var_mem_segment, var_seg_idx as u16))],
-                let_statement_node_idx,
-            );
+            commands.push(SourcemappedCommand {
+                command: Command::Memory(MemoryCommandVariant::Pop(var_mem_segment, var_seg_idx as u16)),
+                jack_node_idx: let_statement_node_idx,
+            });
+            commands
         }
     }
 
@@ -158,61 +168,72 @@ impl CodeGenerator {
         if_statements: &[ASTNode<Statement>],
         else_statements: &Option<Vec<ASTNode<Statement>>>,
         if_statement_node_idx: usize,
-    ) {
+    ) -> Vec<SourcemappedCommand> {
         let if_count = self.subroutine_if_count;
         self.subroutine_if_count += 1;
 
-        self.compile_expression(condition);
+        let mut commands = self.compile_expression(condition);
 
-        self.record_vm_commands(
-            vec![Command::Flow(FlowCommandVariant::IfGoTo(format!("if_statements_{}", if_count)))],
-            if_statement_node_idx,
-        );
+        commands.push(SourcemappedCommand {
+            command: Command::Flow(FlowCommandVariant::IfGoTo(format!("if_statements_{}", if_count))),
+            jack_node_idx: if_statement_node_idx,
+        });
 
         if let Some(statements) = else_statements {
-            self.compile_statements(statements)
+            commands.extend(self.compile_statements(statements));
         }
 
-        self.record_vm_commands(
+        commands.extend(
             vec![
                 Command::Flow(FlowCommandVariant::GoTo(format!("end_if_{}", if_count))),
                 Command::Flow(FlowCommandVariant::Label(format!("if_statements_{}", if_count))),
-            ],
-            if_statement_node_idx,
+            ]
+            .into_iter()
+            .map(|command| SourcemappedCommand {
+                command,
+                jack_node_idx: if_statement_node_idx,
+            }),
         );
 
-        self.compile_statements(if_statements);
-
-        self.record_vm_commands(
-            vec![Command::Flow(FlowCommandVariant::Label(format!("end_if_{}", if_count)))],
-            if_statement_node_idx,
-        );
+        commands.extend(self.compile_statements(if_statements));
+        commands.push(SourcemappedCommand {
+            command: Command::Flow(FlowCommandVariant::Label(format!("end_if_{}", if_count))),
+            jack_node_idx: if_statement_node_idx,
+        });
+        commands
     }
 
-    fn compile_return_statement(&mut self, return_value: &Option<ASTNode<Expression>>, return_statement_node_idx: usize) {
-        if let Some(expression) = return_value {
-            self.compile_expression(expression);
+    fn compile_return_statement(&mut self, return_value: &Option<ASTNode<Expression>>, return_statement_node_idx: usize) -> Vec<SourcemappedCommand> {
+        let mut commands = if let Some(expression) = return_value {
+            self.compile_expression(expression)
         } else {
-            self.record_vm_commands(
-                vec![Command::Memory(MemoryCommandVariant::Push(MemorySegmentVariant::Constant, 0))],
-                return_statement_node_idx,
-            )
+            vec![SourcemappedCommand {
+                command: Command::Memory(MemoryCommandVariant::Push(MemorySegmentVariant::Constant, 0)),
+                jack_node_idx: return_statement_node_idx,
+            }]
         };
-
-        self.record_vm_commands(vec![Command::Function(FunctionCommandVariant::ReturnFrom)], return_statement_node_idx)
+        commands.push(SourcemappedCommand {
+            command: Command::Function(FunctionCommandVariant::ReturnFrom),
+            jack_node_idx: return_statement_node_idx,
+        });
+        commands
     }
 
-    fn compile_array_access_expression(&mut self, var_name: &str, index: &ASTNode<Expression>, array_access_expression_node_idx: usize) {
+    fn compile_array_access_expression(
+        &mut self,
+        var_name: &str,
+        index: &ASTNode<Expression>,
+        array_access_expression_node_idx: usize,
+    ) -> Vec<SourcemappedCommand> {
         let (arr_mem_seg, arr_seg_idx) = self.compile_variable(var_name);
 
-        self.record_vm_commands(
-            vec![Command::Memory(MemoryCommandVariant::Push(arr_mem_seg, arr_seg_idx as u16))],
-            array_access_expression_node_idx,
-        );
-
-        self.compile_expression(index);
-
-        self.record_vm_commands(
+        vec![SourcemappedCommand {
+            command: Command::Memory(MemoryCommandVariant::Push(arr_mem_seg, arr_seg_idx as u16)),
+            jack_node_idx: array_access_expression_node_idx,
+        }]
+        .into_iter()
+        .chain(self.compile_expression(index))
+        .chain(
             vec![
                 Command::Arithmetic(ArithmeticCommandVariant::Binary(BinaryArithmeticCommandVariant::Add)),
                 Command::Memory(MemoryCommandVariant::Pop(
@@ -223,9 +244,14 @@ impl CodeGenerator {
                     MemorySegmentVariant::PointerSegment(PointerSegmentVariant::That),
                     0,
                 )),
-            ],
-            array_access_expression_node_idx,
-        );
+            ]
+            .into_iter()
+            .map(|command| SourcemappedCommand {
+                command,
+                jack_node_idx: array_access_expression_node_idx,
+            }),
+        )
+        .collect()
     }
 
     fn compile_binary_expression(
@@ -234,9 +260,8 @@ impl CodeGenerator {
         lhs: &ASTNode<Expression>,
         rhs: &ASTNode<Expression>,
         binary_expression_node_idx: usize,
-    ) {
-        self.compile_expression(lhs);
-        self.compile_expression(rhs);
+    ) -> Vec<SourcemappedCommand> {
+        let commands = self.compile_expression(lhs).into_iter().chain(self.compile_expression(rhs));
 
         let perform_op = match operator {
             BinaryOperator::And => vec![Command::Arithmetic(ArithmeticCommandVariant::Binary(BinaryArithmeticCommandVariant::And))],
@@ -254,14 +279,19 @@ impl CodeGenerator {
             BinaryOperator::Minus => vec![Command::Arithmetic(ArithmeticCommandVariant::Binary(BinaryArithmeticCommandVariant::Sub))],
             BinaryOperator::Or => vec![Command::Arithmetic(ArithmeticCommandVariant::Binary(BinaryArithmeticCommandVariant::Or))],
             BinaryOperator::Plus => vec![Command::Arithmetic(ArithmeticCommandVariant::Binary(BinaryArithmeticCommandVariant::Add))],
-            BinaryOperator::Multiply => panic!("multiply operator should be desugared by parser"),
-            BinaryOperator::Divide => panic!("multiply operator should be desugared by parser"),
+            BinaryOperator::Multiply => vec![Command::Function(FunctionCommandVariant::Call("Math.multiply".to_string(), 2))],
+            BinaryOperator::Divide => vec![Command::Function(FunctionCommandVariant::Call("Math.divide".to_string(), 2))],
         };
 
-        self.record_vm_commands(perform_op, binary_expression_node_idx);
+        commands
+            .chain(perform_op.into_iter().map(|command| SourcemappedCommand {
+                command,
+                jack_node_idx: binary_expression_node_idx,
+            }))
+            .collect()
     }
 
-    fn compile_primitive_term_expression(&mut self, primitive_term: &PrimitiveTermVariant, expression_node_idx: usize) {
+    fn compile_primitive_term_expression(&mut self, primitive_term: &PrimitiveTermVariant, expression_node_idx: usize) -> Vec<SourcemappedCommand> {
         let cmds = match primitive_term {
             PrimitiveTermVariant::False | PrimitiveTermVariant::Null => {
                 vec![Command::Memory(MemoryCommandVariant::Push(MemorySegmentVariant::Constant, 0))]
@@ -336,13 +366,16 @@ impl CodeGenerator {
                 .collect()
             }
         };
-        self.record_vm_commands(cmds, expression_node_idx);
+        cmds.into_iter()
+            .map(|command| SourcemappedCommand {
+                command,
+                jack_node_idx: expression_node_idx,
+            })
+            .collect()
     }
 
-    fn compile_push_arguments(&mut self, arguments: &[ASTNode<Expression>]) {
-        for argument in arguments {
-            self.compile_expression(argument);
-        }
+    fn compile_push_arguments(&mut self, arguments: &[ASTNode<Expression>]) -> Vec<SourcemappedCommand> {
+        arguments.iter().flat_map(|arg| self.compile_expression(arg)).collect()
     }
 
     fn compile_method_subroutine_call_expression(
@@ -351,7 +384,7 @@ impl CodeGenerator {
         method_name: &str,
         arguments: &[ASTNode<Expression>],
         subroutine_call_node_idx: usize,
-    ) {
+    ) -> Vec<SourcemappedCommand> {
         let arg_count = arguments.len();
 
         if let Some(symbol) = self.maybe_resolve_symbol(this_name) {
@@ -360,18 +393,20 @@ impl CodeGenerator {
                 Type::ClassName(this_class) => {
                     let arg_count_with_this = arg_count + 1;
                     let (this_memory_segment, this_idx) = self.compile_variable(this_name);
-                    self.record_vm_commands(
-                        vec![Command::Memory(MemoryCommandVariant::Push(this_memory_segment, this_idx as u16))],
-                        subroutine_call_node_idx,
-                    );
-                    self.compile_push_arguments(arguments);
-                    self.record_vm_commands(
-                        vec![Command::Function(FunctionCommandVariant::Call(
+                    vec![SourcemappedCommand {
+                        command: Command::Memory(MemoryCommandVariant::Push(this_memory_segment, this_idx as u16)),
+                        jack_node_idx: subroutine_call_node_idx,
+                    }]
+                    .into_iter()
+                    .chain(self.compile_push_arguments(arguments))
+                    .chain(std::iter::once(SourcemappedCommand {
+                        command: Command::Function(FunctionCommandVariant::Call(
                             full_subroutine_name(&this_class, method_name),
                             arg_count_with_this as u16,
-                        ))],
-                        subroutine_call_node_idx,
-                    );
+                        )),
+                        jack_node_idx: subroutine_call_node_idx,
+                    }))
+                    .collect()
                 }
                 other_type => panic!("cannot call method on {:?}", other_type),
             }
@@ -379,14 +414,15 @@ impl CodeGenerator {
             // Treat it as constructor or function. Could be on this class or on
             // a different class. These are not resolved by the jack compiler -
             // resolution happens later, in the vm compiler.
-            self.compile_push_arguments(arguments);
-            self.record_vm_commands(
-                vec![Command::Function(FunctionCommandVariant::Call(
+            let mut commands = self.compile_push_arguments(arguments);
+            commands.push(SourcemappedCommand {
+                command: Command::Function(FunctionCommandVariant::Call(
                     full_subroutine_name(this_name, method_name),
                     arg_count as u16,
-                ))],
-                subroutine_call_node_idx,
-            );
+                )),
+                jack_node_idx: subroutine_call_node_idx,
+            });
+            commands
         }
     }
 
@@ -395,20 +431,21 @@ impl CodeGenerator {
         subroutine_name: &str,
         arguments: &Vec<ASTNode<Expression>>,
         subroutine_call_node_idx: usize,
-    ) {
+    ) -> Vec<SourcemappedCommand> {
         let arg_count = arguments.len();
         let class_name = self.get_class_name().to_owned();
-        self.compile_push_arguments(arguments);
-        self.record_vm_commands(
-            vec![Command::Function(FunctionCommandVariant::Call(
+        let mut commands = self.compile_push_arguments(arguments);
+        commands.push(SourcemappedCommand {
+            command: Command::Function(FunctionCommandVariant::Call(
                 full_subroutine_name(&class_name, subroutine_name),
                 arg_count as u16,
-            ))],
-            subroutine_call_node_idx,
-        )
+            )),
+            jack_node_idx: subroutine_call_node_idx,
+        });
+        commands
     }
 
-    fn compile_subroutine_call_expression(&mut self, subroutine_call: &ASTNode<SubroutineCall>) {
+    fn compile_subroutine_call_expression(&mut self, subroutine_call: &ASTNode<SubroutineCall>) -> Vec<SourcemappedCommand> {
         match &*subroutine_call.node {
             SubroutineCall::Direct { subroutine_name, arguments } => {
                 self.compile_direct_subroutine_call_expression(subroutine_name, arguments, subroutine_call.node_idx)
@@ -421,13 +458,22 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_unary_expression(&mut self, operator: &UnaryOperator, operand: &ASTNode<Expression>, unary_expression_node_idx: usize) {
+    fn compile_unary_expression(
+        &mut self,
+        operator: &UnaryOperator,
+        operand: &ASTNode<Expression>,
+        unary_expression_node_idx: usize,
+    ) -> Vec<SourcemappedCommand> {
         let perform_op = match operator {
             UnaryOperator::Minus => Command::Arithmetic(ArithmeticCommandVariant::Unary(UnaryArithmeticCommandVariant::Neg)),
             UnaryOperator::Not => Command::Arithmetic(ArithmeticCommandVariant::Unary(UnaryArithmeticCommandVariant::Not)),
         };
-        self.compile_expression(operand);
-        self.record_vm_commands(vec![perform_op], unary_expression_node_idx);
+        let mut commands = self.compile_expression(operand);
+        commands.push(SourcemappedCommand {
+            command: perform_op,
+            jack_node_idx: unary_expression_node_idx,
+        });
+        commands
     }
 
     fn maybe_resolve_symbol(&mut self, var_name: &str) -> Option<&Symbol> {
@@ -462,7 +508,7 @@ impl CodeGenerator {
         (symbol_kind, symbol.offset)
     }
 
-    fn compile_expression(&mut self, expression: &ASTNode<Expression>) {
+    fn compile_expression(&mut self, expression: &ASTNode<Expression>) -> Vec<SourcemappedCommand> {
         match &*expression.node {
             Expression::Parenthesized(expr) => self.compile_expression(expr),
             Expression::ArrayAccess { var_name, index } => self.compile_array_access_expression(var_name, index, expression.node_idx),
@@ -472,51 +518,61 @@ impl CodeGenerator {
             Expression::Unary { operator, operand } => self.compile_unary_expression(operator, operand, expression.node_idx),
             Expression::Variable(var_name) => {
                 let (memory_segment, idx) = self.compile_variable(var_name);
-                self.record_vm_commands(
-                    vec![Command::Memory(MemoryCommandVariant::Push(memory_segment, idx as u16))],
-                    expression.node_idx,
-                )
+                vec![SourcemappedCommand {
+                    command: Command::Memory(MemoryCommandVariant::Push(memory_segment, idx as u16)),
+                    jack_node_idx: expression.node_idx,
+                }]
             }
         }
     }
 
-    fn compile_statements(&mut self, statements: &[ASTNode<Statement>]) {
-        for statement in statements {
-            self.compile_statement(statement);
-        }
+    fn compile_statements(&mut self, statements: &[ASTNode<Statement>]) -> Vec<SourcemappedCommand> {
+        statements.into_iter().flat_map(|statement| self.compile_statement(statement)).collect()
     }
 
-    fn compile_while_statement(&mut self, condition: &ASTNode<Expression>, statements: &[ASTNode<Statement>], while_statement_node_idx: usize) {
+    fn compile_while_statement(
+        &mut self,
+        condition: &ASTNode<Expression>,
+        statements: &[ASTNode<Statement>],
+        while_statement_node_idx: usize,
+    ) -> Vec<SourcemappedCommand> {
         let while_idx = self.subroutine_while_count;
         self.subroutine_while_count += 1;
 
-        self.record_vm_commands(
-            vec![Command::Flow(FlowCommandVariant::Label(format!("start_while_{}", while_idx)))],
-            while_statement_node_idx,
-        );
+        let mut commands = vec![SourcemappedCommand {
+            command: Command::Flow(FlowCommandVariant::Label(format!("start_while_{}", while_idx))),
+            jack_node_idx: while_statement_node_idx,
+        }];
 
-        self.compile_expression(condition);
-
-        self.record_vm_commands(
+        commands.extend(self.compile_expression(condition));
+        commands.extend(
             vec![
                 Command::Arithmetic(ArithmeticCommandVariant::Unary(UnaryArithmeticCommandVariant::Not)),
                 Command::Flow(FlowCommandVariant::IfGoTo(format!("end_while_{}", while_idx))),
-            ],
-            while_statement_node_idx,
+            ]
+            .into_iter()
+            .map(|command| SourcemappedCommand {
+                command,
+                jack_node_idx: while_statement_node_idx,
+            }),
         );
 
-        self.compile_statements(statements);
-
-        self.record_vm_commands(
+        commands.extend(self.compile_statements(statements));
+        commands.extend(
             vec![
                 Command::Flow(FlowCommandVariant::GoTo(format!("start_while_{}", while_idx))),
                 Command::Flow(FlowCommandVariant::Label(format!("end_while_{}", while_idx))),
-            ],
-            while_statement_node_idx,
+            ]
+            .into_iter()
+            .map(|command| SourcemappedCommand {
+                command,
+                jack_node_idx: while_statement_node_idx,
+            }),
         );
+        commands
     }
 
-    fn compile_statement(&mut self, statement: &ASTNode<Statement>) {
+    fn compile_statement(&mut self, statement: &ASTNode<Statement>) -> Vec<SourcemappedCommand> {
         match &*statement.node {
             Statement::Do(subroutine_call) => self.compile_do_statement(subroutine_call),
             Statement::Let {
@@ -553,7 +609,7 @@ impl CodeGenerator {
         }
     }
 
-    fn implicit_return(&mut self, return_type: &Option<Type>, subroutine_declaration_node_idx: usize) {
+    fn implicit_return(&mut self, return_type: &Option<Type>, subroutine_declaration_node_idx: usize) -> Vec<SourcemappedCommand> {
         let commands = if return_type.is_none() {
             vec![
                 Command::Memory(MemoryCommandVariant::Push(MemorySegmentVariant::Constant, 0)),
@@ -563,10 +619,16 @@ impl CodeGenerator {
             vec![Command::Function(FunctionCommandVariant::ReturnFrom)]
         };
 
-        self.record_vm_commands(commands, subroutine_declaration_node_idx);
+        commands
+            .into_iter()
+            .map(|command| SourcemappedCommand {
+                command,
+                jack_node_idx: subroutine_declaration_node_idx,
+            })
+            .collect()
     }
 
-    fn compile_subroutine(&mut self, subroutine_declaration: &ASTNode<SubroutineDeclaration>, instance_size: usize) {
+    fn compile_subroutine(&mut self, subroutine_declaration: &ASTNode<SubroutineDeclaration>, instance_size: usize) -> Vec<SourcemappedCommand> {
         let subroutine = &subroutine_declaration.node;
         self.clear_subroutine();
         self.subroutine_kind = Some(subroutine.subroutine_kind);
@@ -577,7 +639,7 @@ impl CodeGenerator {
 
         let class_name = self.get_class_name();
 
-        let commands = match subroutine.subroutine_kind {
+        let subroutine_prelude = match subroutine.subroutine_kind {
             SubroutineKind::Function => vec![Command::Function(FunctionCommandVariant::Define(
                 full_subroutine_name(class_name, &subroutine.name),
                 locals_count as u16,
@@ -610,21 +672,34 @@ impl CodeGenerator {
             ],
         };
 
-        self.record_vm_commands(commands, subroutine_declaration.node_idx);
-        self.compile_statements(&subroutine.body.node.statements);
+        let mut commands: Vec<_> = subroutine_prelude
+            .into_iter()
+            .map(|command| SourcemappedCommand {
+                command,
+                jack_node_idx: subroutine_declaration.node_idx,
+            })
+            .collect();
+
+        commands.extend(self.compile_statements(&subroutine.body.node.statements));
 
         if let Some(ast_node) = subroutine.body.node.statements.last() {
             if matches!(*ast_node.node, Statement::Return(_)) {
-                return;
+                return commands;
             }
         }
-        self.implicit_return(&subroutine.return_type, subroutine_declaration.node_idx);
+        commands.extend(self.implicit_return(&subroutine.return_type, subroutine_declaration.node_idx));
+        commands
     }
 
-    pub fn compile_subroutines(&mut self, subroutine_declarations: &[ASTNode<SubroutineDeclaration>], instance_size: usize) {
-        for subroutine in subroutine_declarations {
-            self.compile_subroutine(subroutine, instance_size);
-        }
+    pub fn compile_subroutines(
+        &mut self,
+        subroutine_declarations: &[ASTNode<SubroutineDeclaration>],
+        instance_size: usize,
+    ) -> Vec<Vec<SourcemappedCommand>> {
+        subroutine_declarations
+            .into_iter()
+            .map(|subroutine| self.compile_subroutine(subroutine, instance_size))
+            .collect()
     }
 
     pub fn compile_var_declarations(&mut self, var_declarations: &Vec<ASTNode<ClassVarDeclaration>>) -> usize {
@@ -654,8 +729,13 @@ impl CodeGenerator {
     }
 }
 
+pub struct SourcemappedCommand {
+    pub command: Command,
+    jack_node_idx: usize,
+}
+
 pub struct JackCodegenResult {
-    pub commands: Vec<Command>,
+    pub compiled_subroutines: Vec<Vec<Command>>,
     pub sourcemap: JackCodegenSourceMap,
 }
 
@@ -665,9 +745,22 @@ pub fn generate_vm_code(class: Class) -> JackCodegenResult {
         ..Default::default()
     };
     let class_instance_size = code_generator.compile_var_declarations(&class.var_declarations);
-    code_generator.compile_subroutines(&class.subroutine_declarations, class_instance_size);
+    let mut vm_command_idx = 0;
+    let compiled_sourcemapped_subroutines = code_generator.compile_subroutines(&class.subroutine_declarations, class_instance_size);
+    for sourcemapped_commands in compiled_sourcemapped_subroutines.iter() {
+        for SourcemappedCommand { jack_node_idx, .. } in sourcemapped_commands {
+            code_generator.sourcemap.record_vm_command(vm_command_idx, *jack_node_idx);
+            vm_command_idx += 1;
+        }
+    }
+
+    let compiled_subroutines = compiled_sourcemapped_subroutines
+        .into_iter()
+        .map(|commands| commands.into_iter().map(|SourcemappedCommand { command, .. }| command).collect())
+        .collect();
+
     JackCodegenResult {
-        commands: code_generator.vm_commands,
+        compiled_subroutines,
         sourcemap: code_generator.sourcemap,
     }
 }

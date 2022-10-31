@@ -6,7 +6,6 @@ use std::{
 use ts_rs::TS;
 
 use self::{
-    call_graph_analysis::call_graph_analysis,
     codegen::generate_vm_code,
     parser::{parse, JackParserResult},
     sourcemap::JackCompilerSourceMap,
@@ -20,7 +19,6 @@ use super::{
     vm_compiler::parser::Command,
 };
 
-mod call_graph_analysis;
 pub mod codegen;
 pub mod jack_node_types;
 pub mod parser;
@@ -64,9 +62,6 @@ pub fn compile_jack(user_code: HashMap<PathBuf, SourceModule>) -> JackCompilerRe
     let mut result = JackCompilerResult::default();
     let jack_program_tokens = tokenize_jack_program(get_all_source_modules(user_code));
     let parsed_jack_program = parse_jack_program(&jack_program_tokens);
-    let call_graph = call_graph_analysis(&parsed_jack_program);
-    dbg!(&call_graph);
-
     result.tokens = jack_program_tokens;
     for (filename, parse_result) in parsed_jack_program {
         let codegen_result = generate_vm_code(parse_result.class);
@@ -77,7 +72,8 @@ pub fn compile_jack(user_code: HashMap<PathBuf, SourceModule>) -> JackCompilerRe
                 codegen_sourcemap: codegen_result.sourcemap,
             },
         );
-        result.commands.insert(filename, codegen_result.commands);
+        let commands: Vec<_> = codegen_result.compiled_subroutines.into_iter().flatten().collect();
+        result.commands.insert(filename, commands);
     }
 
     result

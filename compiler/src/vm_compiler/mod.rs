@@ -155,7 +155,8 @@ mod tests {
             push argument 1
             add
             return
-
+            ",
+            "
             function Sys.init 0
             push constant 1
             push constant 2

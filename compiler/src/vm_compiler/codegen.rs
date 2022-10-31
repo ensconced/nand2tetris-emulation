@@ -13,7 +13,7 @@ use crate::{
 };
 
 use super::{
-    call_graph_analyser::analyse_call_graph,
+    call_graph_analyser::find_live_subroutines,
     parser::{
         ArithmeticCommandVariant::{self, *},
         BinaryArithmeticCommandVariant::*,
@@ -1058,7 +1058,7 @@ pub struct VMCompilerResult {
 }
 
 pub fn generate_asm(subroutines: &HashMap<PathBuf, Vec<Vec<Command>>>) -> VMCompilerResult {
-    let call_graph_analysis = analyse_call_graph(subroutines);
+    let live_subroutines = find_live_subroutines(subroutines);
     let mut sourcemap = SourceMap::new();
     let mut code_generator = CodeGenerator::default();
     let mut instructions: Vec<_> = vec![holding_pattern(), glyphs_asm(), init_call_stack()].into_iter().flatten().collect();

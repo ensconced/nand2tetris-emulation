@@ -3,7 +3,7 @@
 - build up call graph
 - use call graph for dead-code elimination during jack codegen phase
 
----
+# better
 
 gather information on functions during jack compilation codegen phase:
 

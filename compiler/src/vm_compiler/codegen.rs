@@ -1062,7 +1062,13 @@ pub fn generate_asm(subroutines: &HashMap<PathBuf, Vec<CompiledSubroutine>>) -> 
     let live_subroutines = find_live_subroutines(subroutines);
     let mut sourcemap = SourceMap::new();
     let mut code_generator = CodeGenerator::default();
-    let mut instructions: Vec<_> = vec![holding_pattern(), glyphs_asm(), init_call_stack()].into_iter().flatten().collect();
+    let mut instructions: Vec<_> = holding_pattern();
+
+    if live_subroutines.contains("Output.getGlyph") {
+        instructions.extend(glyphs_asm());
+    }
+
+    instructions.extend(init_call_stack());
 
     for (filename, file_subroutines) in subroutines {
         let mut vm_command_idx = 0;

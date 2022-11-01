@@ -732,7 +732,7 @@ impl CodeGenerator {
     }
 }
 
-#[derive(Serialize, TS)]
+#[derive(Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "../web/bindings/")]
 pub struct CompiledSubroutine {
@@ -740,7 +740,7 @@ pub struct CompiledSubroutine {
     pub commands: Vec<SourcemappedCommand>,
 }
 
-#[derive(Serialize, TS)]
+#[derive(Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "../web/bindings/")]
 pub struct SourcemappedCommand {

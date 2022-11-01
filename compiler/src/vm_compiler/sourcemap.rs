@@ -6,7 +6,7 @@ use std::{
 use serde::Serialize;
 use ts_rs::TS;
 
-#[derive(Default, Serialize, TS)]
+#[derive(Debug, Default, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "../web/bindings/")]
 pub struct VMCommandIdentifier {
@@ -14,7 +14,7 @@ pub struct VMCommandIdentifier {
     vm_command_idx: usize,
 }
 
-#[derive(Default, Serialize, TS)]
+#[derive(Debug, Default, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "../web/bindings/")]
 pub struct SourceMap {

@@ -22,8 +22,6 @@ export const vmCommands = _.mapValues(subroutines, (compiledSubroutines) =>
   )
 );
 
-console.log(vmCommands);
-
 export { tokensByFilename };
 
 export function jackNodeTokens(

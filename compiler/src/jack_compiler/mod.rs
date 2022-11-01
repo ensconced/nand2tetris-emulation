@@ -11,12 +11,9 @@ use self::{
     sourcemap::JackCompilerSourceMap,
     tokenizer::{token_defs, TokenKind},
 };
-use super::{
-    utils::{
-        source_modules::{get_source_modules, SourceModule},
-        tokenizer::{Token, Tokenizer},
-    },
-    vm_compiler::parser::Command,
+use super::utils::{
+    source_modules::{get_source_modules, SourceModule},
+    tokenizer::{Token, Tokenizer},
 };
 
 pub mod codegen;

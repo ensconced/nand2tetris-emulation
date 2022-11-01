@@ -1065,14 +1065,16 @@ pub fn generate_asm(subroutines: &HashMap<PathBuf, Vec<CompiledSubroutine>>) -> 
     let mut instructions: Vec<_> = vec![holding_pattern(), glyphs_asm(), init_call_stack()].into_iter().flatten().collect();
 
     for (filename, file_subroutines) in subroutines {
-        for (vm_command_idx, subroutine) in file_subroutines.iter().enumerate() {
-            if live_subroutines.contains(&subroutine.name) {
-                for SourcemappedCommand { command, .. } in &subroutine.commands {
+        let mut vm_command_idx = 0;
+        for subroutine in file_subroutines.iter() {
+            for SourcemappedCommand { command, .. } in &subroutine.commands {
+                if live_subroutines.contains(&subroutine.name) {
                     for asm_instruction in code_generator.compile_vm_command(command, filename) {
                         sourcemap.record_asm_instruction(filename, vm_command_idx, instructions.len());
                         instructions.push(asm_instruction);
                     }
                 }
+                vm_command_idx += 1;
             }
         }
     }

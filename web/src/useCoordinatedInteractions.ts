@@ -102,9 +102,7 @@ export default function useCoordinatedInteractions(
       ];
 
     if (vmCommandIdxToASMInstructionIdxs === undefined) {
-      throw new Error(
-        `failed to find instruction idx lookup for ${interactedVMCommands.filename}`
-      );
+      return undefined;
     }
 
     const result = new Set<number>();

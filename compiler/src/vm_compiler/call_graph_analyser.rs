@@ -7,8 +7,8 @@ use crate::jack_compiler::codegen::{CompiledSubroutine, SourcemappedCommand};
 
 use super::parser::{Command, FunctionCommandVariant, MemoryCommandVariant, MemorySegmentVariant, OffsetSegmentVariant, PointerSegmentVariant};
 
-#[derive(Debug, PartialEq, Eq, Hash)]
-enum Pointer {
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum Pointer {
     Lcl,
     Arg,
     This,
@@ -19,12 +19,15 @@ enum Pointer {
 pub struct SubroutineInfo {
     calls: HashSet<String>,
     callers: HashSet<String>,
+    reachable_subroutines: HashSet<String>,
     directly_used_pointers: HashSet<Pointer>,
     used_pointers: HashSet<Pointer>,
+    pointers_to_restore: HashSet<Pointer>,
 }
 
 pub struct CallGraphAnalysis {
     pub live_subroutines: HashSet<String>,
+    pub pointers_to_restore: HashMap<String, HashSet<Pointer>>,
 }
 
 type CallGraph = HashMap<String, SubroutineInfo>;
@@ -67,13 +70,6 @@ fn record_directly_used_pointers(command: &Command, subroutine_name: &str, call_
     }
 }
 
-fn analyse_subroutine(subroutine: &CompiledSubroutine, call_graph: &mut CallGraph) {
-    for SourcemappedCommand { command, .. } in &subroutine.commands {
-        include_in_call_graph(command, &subroutine.name, call_graph);
-        record_directly_used_pointers(command, &subroutine.name, call_graph);
-    }
-}
-
 fn depth_first_search(caller_name: String, call_graph: &CallGraph, discovered: &mut HashSet<String>) {
     let default_caller_info = SubroutineInfo::default();
     let caller_info = call_graph.get(&caller_name).unwrap_or(&default_caller_info);
@@ -95,21 +91,71 @@ pub fn analyse_call_graph(subroutines: &HashMap<PathBuf, Vec<CompiledSubroutine>
     let mut call_graph = HashMap::new();
     for file_subroutines in subroutines.values() {
         for subroutine in file_subroutines {
-            analyse_subroutine(subroutine, &mut call_graph);
+            for SourcemappedCommand { command, .. } in &subroutine.commands {
+                include_in_call_graph(command, &subroutine.name, &mut call_graph);
+                record_directly_used_pointers(command, &subroutine.name, &mut call_graph);
+            }
         }
     }
 
-    let mut all_subgraphs = HashMap::new();
     for file_subroutines in subroutines.values() {
         for subroutine in file_subroutines {
-            all_subgraphs.insert(subroutine.name.to_owned(), subroutines_reachable_from(&subroutine.name, &call_graph));
+            let subroutine_info = call_graph
+                .get(&subroutine.name)
+                .unwrap_or_else(|| panic!("expected to find subroutine info for {}", subroutine.name));
+
+            let reachable_subroutines = subroutines_reachable_from(&subroutine.name, &call_graph);
+
+            let used_pointers = reachable_subroutines
+                .iter()
+                .flat_map(|reachable_subroutine| {
+                    let reachable_subroutine_info = call_graph
+                        .get(reachable_subroutine)
+                        .unwrap_or_else(|| panic!("expected to find subroutine info for {}", reachable_subroutine));
+                    reachable_subroutine_info.directly_used_pointers.clone()
+                })
+                .collect();
+
+            let pointers_to_restore = subroutine_info
+                .callers
+                .iter()
+                .flat_map(|caller| {
+                    let caller_info = call_graph
+                        .get(caller)
+                        .unwrap_or_else(|| panic!("expected to find subroutine info for {}", caller));
+                    caller_info.directly_used_pointers.intersection(&used_pointers)
+                })
+                .cloned()
+                .collect();
+
+            let subroutine_info = call_graph
+                .get_mut(&subroutine.name)
+                .unwrap_or_else(|| panic!("expected to find subroutine info for {}", subroutine.name));
+            subroutine_info.reachable_subroutines = reachable_subroutines;
+            subroutine_info.used_pointers = used_pointers;
+            subroutine_info.pointers_to_restore = pointers_to_restore;
         }
     }
 
-    let live_subroutines = all_subgraphs
+    let live_subroutines = &call_graph
         .get("Sys.init")
         .unwrap_or_else(|| panic!("expected to find subgraph for Sys.init"))
-        .clone();
+        .reachable_subroutines;
 
-    CallGraphAnalysis { live_subroutines }
+    let pointers_to_restore = subroutines
+        .values()
+        .flatten()
+        .map(|subroutine| {
+            let subroutine_info = call_graph
+                .get(&subroutine.name)
+                .unwrap_or_else(|| panic!("expected to find subroutine info for {}", subroutine.name));
+
+            (subroutine.name.clone(), subroutine_info.pointers_to_restore.clone())
+        })
+        .collect();
+
+    CallGraphAnalysis {
+        live_subroutines: live_subroutines.clone(),
+        pointers_to_restore,
+    }
 }

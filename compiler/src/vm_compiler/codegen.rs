@@ -1059,7 +1059,11 @@ pub struct VMCompilerResult {
 }
 
 pub fn generate_asm(subroutines: &HashMap<PathBuf, Vec<CompiledSubroutine>>) -> VMCompilerResult {
-    let CallGraphAnalysis { live_subroutines } = analyse_call_graph(subroutines);
+    let CallGraphAnalysis {
+        live_subroutines,
+        pointers_to_restore,
+    } = analyse_call_graph(subroutines);
+
     let mut sourcemap = SourceMap::new();
     let mut code_generator = CodeGenerator::default();
     let mut instructions: Vec<_> = holding_pattern();
@@ -1073,6 +1077,10 @@ pub fn generate_asm(subroutines: &HashMap<PathBuf, Vec<CompiledSubroutine>>) -> 
     for (filename, file_subroutines) in subroutines {
         let mut vm_command_idx = 0;
         for subroutine in file_subroutines.iter() {
+            let subroutine_pointers_to_restore = pointers_to_restore
+                .get(&subroutine.name)
+                .unwrap_or_else(|| panic!("expected to find subroutine info for {}", subroutine.name));
+
             for SourcemappedCommand { command, .. } in &subroutine.commands {
                 if live_subroutines.contains(&subroutine.name) {
                     for asm_instruction in code_generator.compile_vm_command(command, filename) {

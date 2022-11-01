@@ -1,18 +1,6 @@
 # function return optimisation
 
-gather information on functions during jack compilation codegen phase:
-
-- name: String
-- arg_count: usize
-- local_count: usize
-- returns_void: boolean
-
-then in vm compilation phase, augment with:
-
-- calls
-- called_by
-
-This information should allow a number of optimisations:
+- use subroutine_pointers_to_restore to optimise subroutine call/returns - need to do both calls/returns in tandem
 
 - function call/return optimisation (by minimising saved/restored frame pointers)
 - eliminate unnecessary pushing/popping of return values

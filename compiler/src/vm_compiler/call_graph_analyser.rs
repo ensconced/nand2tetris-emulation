@@ -74,16 +74,20 @@ fn analyse_subroutine(subroutine: &CompiledSubroutine, call_graph: &mut CallGrap
     }
 }
 
-fn subroutines_reachable_from(caller_name: String, call_graph: &CallGraph, discovered: &HashSet<String>) -> HashSet<String> {
+fn depth_first_search(caller_name: String, call_graph: &CallGraph, discovered: &mut HashSet<String>) {
     let default_caller_info = SubroutineInfo::default();
     let caller_info = call_graph.get(&caller_name).unwrap_or(&default_caller_info);
-    let mut discovered = discovered.clone();
     if !discovered.contains(&caller_name) {
         discovered.insert(caller_name);
         for callee_name in &caller_info.calls {
-            discovered = subroutines_reachable_from(callee_name.clone(), call_graph, &discovered)
+            depth_first_search(callee_name.clone(), call_graph, discovered)
         }
     }
+}
+
+fn subroutines_reachable_from(subroutine_name: &str, call_graph: &CallGraph) -> HashSet<String> {
+    let mut discovered = HashSet::new();
+    depth_first_search(subroutine_name.to_owned(), call_graph, &mut discovered);
     discovered
 }
 
@@ -94,6 +98,18 @@ pub fn analyse_call_graph(subroutines: &HashMap<PathBuf, Vec<CompiledSubroutine>
             analyse_subroutine(subroutine, &mut call_graph);
         }
     }
-    let live_subroutines = subroutines_reachable_from("Sys.init".to_owned(), &call_graph, &HashSet::new());
+
+    let mut all_subgraphs = HashMap::new();
+    for file_subroutines in subroutines.values() {
+        for subroutine in file_subroutines {
+            all_subgraphs.insert(subroutine.name.to_owned(), subroutines_reachable_from(&subroutine.name, &call_graph));
+        }
+    }
+
+    let live_subroutines = all_subgraphs
+        .get("Sys.init")
+        .unwrap_or_else(|| panic!("expected to find subgraph for Sys.init"))
+        .clone();
+
     CallGraphAnalysis { live_subroutines }
 }

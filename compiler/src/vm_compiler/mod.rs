@@ -57,12 +57,6 @@ mod tests {
     use crate::utils::testing::test_utils::*;
 
     #[test]
-    fn test_initialization() {
-        let mut computer = computer_from_vm_code(vec![]);
-        tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-    }
-
-    #[test]
     fn test_push_constant() {
         let mut computer = computer_from_vm_code(vec![
             "

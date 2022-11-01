@@ -1,7 +1,4 @@
-- fix sourcemapping of asm/vm-code
-- check dead-code-elimination is working
-
-# better
+# function return optimisation
 
 gather information on functions during jack compilation codegen phase:
 
@@ -17,10 +14,8 @@ then in vm compilation phase, augment with:
 
 This information should allow a number of optimisations:
 
-- dead code elimination
 - function call/return optimisation (by minimising saved/restored frame pointers)
 - eliminate unnecessary pushing/popping of return values
-- only include glyphs_asm if glyphs class is used
 
 same of both cases - essentially a call graph
 

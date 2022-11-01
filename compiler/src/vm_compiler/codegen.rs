@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     iter,
     path::{Path, PathBuf},
 };
@@ -14,7 +14,7 @@ use crate::{
 };
 
 use super::{
-    call_graph_analyser::{analyse_call_graph, CallGraphAnalysis},
+    call_graph_analyser::{analyse_call_graph, CallGraphAnalysis, Pointer},
     parser::{
         ArithmeticCommandVariant::{self, *},
         BinaryArithmeticCommandVariant::*,
@@ -688,7 +688,12 @@ impl CodeGenerator {
         ]
     }
 
-    fn compile_function_call(&mut self, function_name: &str, arg_count: u16) -> Vec<ASMInstruction> {
+    fn compile_function_call(
+        &mut self,
+        function_name: &str,
+        arg_count: u16,
+        pointers_to_restore: &HashMap<String, HashSet<Pointer>>,
+    ) -> Vec<ASMInstruction> {
         fn jump(function_name: &str, return_address_label: &str) -> Vec<ASMInstruction> {
             vec![
                 // Jump to the callee
@@ -798,7 +803,7 @@ impl CodeGenerator {
         result
     }
 
-    fn compile_function_return(&mut self) -> Vec<ASMInstruction> {
+    fn compile_function_return(&mut self, pointers_to_restore: &HashMap<String, HashSet<Pointer>>) -> Vec<ASMInstruction> {
         // This is carefully designed to not require tracking of the number of
         // arguments or locals for the callee.
 
@@ -977,11 +982,15 @@ impl CodeGenerator {
         .collect()
     }
 
-    fn compile_function_command(&mut self, function_command: &FunctionCommandVariant) -> Vec<ASMInstruction> {
+    fn compile_function_command(
+        &mut self,
+        function_command: &FunctionCommandVariant,
+        pointers_to_restore: &HashMap<String, HashSet<Pointer>>,
+    ) -> Vec<ASMInstruction> {
         match function_command {
-            Call(function_name, arg_count) => self.compile_function_call(function_name, *arg_count),
+            Call(function_name, arg_count) => self.compile_function_call(function_name, *arg_count, pointers_to_restore),
             Define(function_name, local_var_count) => self.compile_function_definition(function_name, *local_var_count),
-            ReturnFrom => self.compile_function_return(),
+            ReturnFrom => self.compile_function_return(pointers_to_restore),
         }
     }
 
@@ -1039,11 +1048,16 @@ impl CodeGenerator {
         }
     }
 
-    fn compile_vm_command(&mut self, command: &Command, filename: &Path) -> Vec<ASMInstruction> {
+    fn compile_vm_command(
+        &mut self,
+        command: &Command,
+        filename: &Path,
+        pointers_to_restore: &HashMap<String, HashSet<Pointer>>,
+    ) -> Vec<ASMInstruction> {
         match command {
             Arithmetic(arithmetic_command) => self.compile_arithmetic_command(arithmetic_command),
             Memory(memory_command) => self.compile_memory_command(memory_command, filename),
-            Function(function_command) => self.compile_function_command(function_command),
+            Function(function_command) => self.compile_function_command(function_command, pointers_to_restore),
             Flow(flow_command) => self.compile_flow_command(flow_command),
         }
     }
@@ -1077,13 +1091,9 @@ pub fn generate_asm(subroutines: &HashMap<PathBuf, Vec<CompiledSubroutine>>) -> 
     for (filename, file_subroutines) in subroutines {
         let mut vm_command_idx = 0;
         for subroutine in file_subroutines.iter() {
-            let subroutine_pointers_to_restore = pointers_to_restore
-                .get(&subroutine.name)
-                .unwrap_or_else(|| panic!("expected to find subroutine info for {}", subroutine.name));
-
             for SourcemappedCommand { command, .. } in &subroutine.commands {
                 if live_subroutines.contains(&subroutine.name) {
-                    for asm_instruction in code_generator.compile_vm_command(command, filename) {
+                    for asm_instruction in code_generator.compile_vm_command(command, filename, &pointers_to_restore) {
                         sourcemap.record_asm_instruction(filename, vm_command_idx, instructions.len());
                         instructions.push(asm_instruction);
                     }

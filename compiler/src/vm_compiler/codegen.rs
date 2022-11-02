@@ -713,9 +713,13 @@ impl CodeGenerator {
         let return_address_label = format!("$return_point_{}", self.return_address_count);
         self.return_address_count += 1;
 
-        vec![
+        let pointers = pointers_to_restore
+            .get(function_name)
+            .unwrap_or_else(|| panic!("expected to find pointers to restore when calling {}", function_name));
+
+        let mut instructions: Vec<_> = vec![
             load_avalue_into_register(AValue::Symbolic(return_address_label.to_string()), "R8"),
-            load_avalue_into_register(AValue::Numeric((5 + arg_count).to_string()), "R9"),
+            load_avalue_into_register(AValue::Numeric((pointers.len() + 1 + arg_count as usize).to_string()), "R9"),
             vec![
                 ASMInstruction::A(AValue::Symbolic("R8".to_string())),
                 ASMInstruction::C {
@@ -727,6 +731,16 @@ impl CodeGenerator {
             push_from_d_register(),
             vec!["LCL", "ARG", "THIS", "THAT"]
                 .into_iter()
+                .filter(|pointer_str| {
+                    let pointer = match *pointer_str {
+                        "LCL" => Pointer::Lcl,
+                        "ARG" => Pointer::Arg,
+                        "THIS" => Pointer::This,
+                        "THAT" => Pointer::That,
+                        _ => panic!("unexpected pointer"),
+                    };
+                    pointers.contains(&pointer)
+                })
                 .flat_map(|pointer| {
                     vec![
                         ASMInstruction::A(AValue::Symbolic(pointer.to_string())),
@@ -741,24 +755,18 @@ impl CodeGenerator {
                 })
                 .collect(),
             // Set arg pointer - at this point, all the arguments have been pushed to the stack,
-            // plus the return address, plus the four saved caller pointers.
-            // So to find the correct position for ARG, we can count 5 +
-            // arg_count steps back from the stack pointer.
+            // plus the return address, plus the saved caller pointers.
+            // So to find the correct position for ARG, we can count back from the stack pointer.
             vec![
-                ASMInstruction::A(AValue::Symbolic("SP".to_string())),
+                ASMInstruction::A(AValue::Symbolic("R9".to_string())),
                 ASMInstruction::C {
                     expr: "M".to_string(),
                     dest: Some("D".to_string()),
                     jump: None,
                 },
-                ASMInstruction::A(AValue::Symbolic("R9".to_string())),
+                ASMInstruction::A(AValue::Symbolic("SP".to_string())),
                 ASMInstruction::C {
-                    expr: "M".to_string(),
-                    dest: Some("A".to_string()),
-                    jump: None,
-                },
-                ASMInstruction::C {
-                    expr: "D-A".to_string(),
+                    expr: "M-D".to_string(),
                     dest: Some("D".to_string()),
                     jump: None,
                 },
@@ -769,8 +777,14 @@ impl CodeGenerator {
                     jump: None,
                 },
             ],
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
+
+        if pointers.contains(&Pointer::Lcl) {
             // set lcl pointer
-            vec![
+            instructions.extend(vec![
                 ASMInstruction::A(AValue::Symbolic("SP".to_string())),
                 ASMInstruction::C {
                     expr: "M".to_string(),
@@ -783,12 +797,11 @@ impl CodeGenerator {
                     dest: Some("M".to_string()),
                     jump: None,
                 },
-            ],
-            jump(function_name, &return_address_label),
-        ]
-        .into_iter()
-        .flatten()
-        .collect()
+            ]);
+        }
+
+        instructions.extend(jump(function_name, &return_address_label));
+        instructions
     }
 
     fn compile_function_definition(&mut self, function_name: &str, local_var_count: u16) -> Vec<ASMInstruction> {
@@ -814,64 +827,6 @@ impl CodeGenerator {
                 pop_into_d_register("SP"),
                 vec![
                     ASMInstruction::A(AValue::Symbolic("R7".to_string())),
-                    ASMInstruction::C {
-                        expr: "D".to_string(),
-                        dest: Some("M".to_string()),
-                        jump: None,
-                    },
-                ],
-            ]
-            .into_iter()
-            .flatten()
-            .collect()
-        }
-
-        fn restore_caller_state(locals_count: usize) -> Vec<ASMInstruction> {
-            vec![
-                vec![
-                    ASMInstruction::A(AValue::Numeric(locals_count.to_string())),
-                    ASMInstruction::C {
-                        expr: "A".to_string(),
-                        dest: Some("D".to_string()),
-                        jump: None,
-                    },
-                    ASMInstruction::A(AValue::Symbolic("SP".to_owned())),
-                    ASMInstruction::C {
-                        expr: "M-D".to_string(),
-                        dest: Some("M".to_string()),
-                        jump: None,
-                    },
-                ],
-                pop_into_d_register("SP"),
-                vec![
-                    ASMInstruction::A(AValue::Symbolic("THAT".to_string())),
-                    ASMInstruction::C {
-                        expr: "D".to_string(),
-                        dest: Some("M".to_string()),
-                        jump: None,
-                    },
-                ],
-                pop_into_d_register("SP"),
-                vec![
-                    ASMInstruction::A(AValue::Symbolic("THIS".to_string())),
-                    ASMInstruction::C {
-                        expr: "D".to_string(),
-                        dest: Some("M".to_string()),
-                        jump: None,
-                    },
-                ],
-                pop_into_d_register("SP"),
-                vec![
-                    ASMInstruction::A(AValue::Symbolic("ARG".to_string())),
-                    ASMInstruction::C {
-                        expr: "D".to_string(),
-                        dest: Some("M".to_string()),
-                        jump: None,
-                    },
-                ],
-                pop_into_d_register("SP"),
-                vec![
-                    ASMInstruction::A(AValue::Symbolic("LCL".to_string())),
                     ASMInstruction::C {
                         expr: "D".to_string(),
                         dest: Some("M".to_string()),
@@ -948,16 +903,110 @@ impl CodeGenerator {
             ]
         }
 
-        vec![
-            stash_return_value_in_r7(),
-            restore_caller_state(locals_count),
-            stash_return_address_in_r8(),
-            place_return_value(arg_count),
-            goto_return_address(),
-        ]
-        .into_iter()
-        .flatten()
-        .collect()
+        let current_function = self
+            .current_function
+            .as_ref()
+            .unwrap_or_else(|| panic!("expected current function to be set when compiling return"));
+
+        let pointers = pointers_to_restore
+            .get(current_function)
+            .unwrap_or_else(|| panic!("expected to find pointers to restore when returning from {}", current_function));
+
+        let mut instructions: Vec<_> = stash_return_value_in_r7()
+            .into_iter()
+            .chain(vec![
+                ASMInstruction::A(AValue::Numeric(locals_count.to_string())),
+                ASMInstruction::C {
+                    expr: "A".to_string(),
+                    dest: Some("D".to_string()),
+                    jump: None,
+                },
+                ASMInstruction::A(AValue::Symbolic("SP".to_owned())),
+                ASMInstruction::C {
+                    expr: "M-D".to_string(),
+                    dest: Some("M".to_string()),
+                    jump: None,
+                },
+            ])
+            .collect();
+
+        if pointers.contains(&Pointer::That) {
+            instructions.extend(
+                vec![
+                    pop_into_d_register("SP"),
+                    vec![
+                        ASMInstruction::A(AValue::Symbolic("THAT".to_string())),
+                        ASMInstruction::C {
+                            expr: "D".to_string(),
+                            dest: Some("M".to_string()),
+                            jump: None,
+                        },
+                    ],
+                ]
+                .into_iter()
+                .flatten(),
+            )
+        }
+        if pointers.contains(&Pointer::This) {
+            instructions.extend(
+                vec![
+                    pop_into_d_register("SP"),
+                    vec![
+                        ASMInstruction::A(AValue::Symbolic("THIS".to_string())),
+                        ASMInstruction::C {
+                            expr: "D".to_string(),
+                            dest: Some("M".to_string()),
+                            jump: None,
+                        },
+                    ],
+                ]
+                .into_iter()
+                .flatten(),
+            )
+        }
+        if pointers.contains(&Pointer::Arg) {
+            instructions.extend(
+                vec![
+                    pop_into_d_register("SP"),
+                    vec![
+                        ASMInstruction::A(AValue::Symbolic("ARG".to_string())),
+                        ASMInstruction::C {
+                            expr: "D".to_string(),
+                            dest: Some("M".to_string()),
+                            jump: None,
+                        },
+                    ],
+                ]
+                .into_iter()
+                .flatten(),
+            )
+        }
+        if pointers.contains(&Pointer::Lcl) {
+            instructions.extend(
+                vec![
+                    pop_into_d_register("SP"),
+                    vec![
+                        ASMInstruction::A(AValue::Symbolic("LCL".to_string())),
+                        ASMInstruction::C {
+                            expr: "D".to_string(),
+                            dest: Some("M".to_string()),
+                            jump: None,
+                        },
+                    ],
+                ]
+                .into_iter()
+                .flatten(),
+            )
+        }
+
+        instructions
+            .into_iter()
+            .chain(
+                vec![stash_return_address_in_r8(), place_return_value(arg_count), goto_return_address()]
+                    .into_iter()
+                    .flatten(),
+            )
+            .collect()
     }
 
     fn compile_function_command(

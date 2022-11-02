@@ -150,7 +150,14 @@ pub fn analyse_call_graph(subroutines: &HashMap<PathBuf, Vec<CompiledSubroutine>
                 .get(&subroutine.name)
                 .unwrap_or_else(|| panic!("expected to find subroutine info for {}", subroutine.name));
 
-            (subroutine.name.clone(), subroutine_info.pointers_to_restore.clone())
+            (
+                subroutine.name.clone(),
+                subroutine_info
+                    .pointers_to_restore
+                    .union(&subroutine_info.directly_used_pointers)
+                    .cloned()
+                    .collect(),
+            )
         })
         .collect();
 

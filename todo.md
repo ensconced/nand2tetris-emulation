@@ -1,8 +1,12 @@
 # function return optimisation
 
-- use subroutine_pointers_to_restore to optimise subroutine call/returns - need to do both calls/returns in tandem
+- get tests passing
+- further optimise call/return assembly:
 
-- function call/return optimisation (by minimising saved/restored frame pointers)
+  - in returns, sometimes decrementing SP is sufficient - don't need to actually restore anything if you USED it but it's not in the original pointers_to_restore?? - currently we take union of these, but should keep them separate in order to make this optimisation
+  - don't waste an instruction on zeroes and ones
+  - I think I'm shuffling stuff around r7 or r8 unnecessarily sometimes
+
 - eliminate unnecessary pushing/popping of return values
 
 same of both cases - essentially a call graph

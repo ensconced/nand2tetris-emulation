@@ -2,7 +2,6 @@
 pub mod test_utils {
     use crate::compile_to_machine_code;
     use crate::utils::source_modules::SourceModule;
-    use emulator_core::computer::tick_until;
     use emulator_core::computer::Computer;
     use std::collections::HashMap;
     use std::path::PathBuf;

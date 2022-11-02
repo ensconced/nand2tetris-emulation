@@ -79,7 +79,7 @@ pub fn compile_jack(user_code: HashMap<PathBuf, SourceModule>) -> JackCompilerRe
 #[cfg(test)]
 mod tests {
     use crate::utils::{source_modules::mock_from_sources, testing::test_utils::*};
-    use emulator_core::computer::tick_until;
+    use emulator_core::computer::{frame_stack_depth, step_in, step_over, tick_until};
     use itertools::repeat_n;
 
     #[test]
@@ -827,6 +827,6 @@ mod tests {
         step_over(&mut computer); // step over Memory.init();
         step_over(&mut computer); // step over setupString
         step_over(&mut computer); // step over str.intValue();
-        assert_eq!(peek_stack(&computer), 1234);
+        tick_until(&mut computer, &|computer| peek_stack(computer) == 1234);
     }
 }

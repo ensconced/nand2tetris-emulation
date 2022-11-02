@@ -1,7 +1,10 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { CompilerResult } from "../bindings/CompilerResult";
 import data from "../debug-output.json";
-import CodePanel, { InteractedInstructionIdxs } from "./CodePanel";
+import CodePanel, {
+  CodePanelInstance,
+  InteractedInstructionIdxs,
+} from "./CodePanel";
 import { FileIdx } from "./types";
 import _ from "lodash";
 
@@ -19,6 +22,10 @@ import computer from "./computer-setup";
 import {
   tick,
   tick_to_some_breakpoint,
+  step_in,
+  step_out,
+  step_over,
+  tick_to_frame_stack_depth,
 } from "../../web-emulator/pkg/web_emulator";
 
 interface Props {
@@ -46,6 +53,8 @@ export default function ASMPanel({
   const filename = "asm";
   const hoveredItemIdxs = { filename, idxs: hoveredInstructionIdxs };
 
+  const codeRef = useRef<CodePanelInstance | null>(null);
+
   const selectedItemIdxs = useMemo(() => {
     return selectedInstructionIdxs && { ...selectedInstructionIdxs, filename };
   }, [selectedInstructionIdxs]);
@@ -60,6 +69,10 @@ export default function ASMPanel({
   }, [programCounter]);
 
   const [breakpoints, setBreakpoints] = useState<Record<number, boolean>>({});
+
+  useEffect(() => {
+    codeRef.current?.scrollTo(currentASMInstructionIdx);
+  }, [currentASMInstructionIdx]);
 
   return (
     <div className="panel-container">
@@ -92,6 +105,45 @@ export default function ASMPanel({
         >
           play
         </button>
+        <button
+          onClick={() => {
+            step_in(computer);
+            setProgramCounter(computer.cpu.pc);
+          }}
+        >
+          step in
+        </button>
+        <button
+          onClick={() => {
+            step_out(computer);
+            setProgramCounter(computer.cpu.pc);
+          }}
+        >
+          step out
+        </button>
+        <button
+          onClick={() => {
+            step_over(computer);
+            setProgramCounter(computer.cpu.pc);
+          }}
+        >
+          step over
+        </button>
+        <button
+          onClick={() => {
+            tick_to_frame_stack_depth(computer, 1);
+            setProgramCounter(computer.cpu.pc);
+          }}
+        >
+          tick to frame stack depth 1
+        </button>
+        <button
+          onClick={() => {
+            codeRef.current?.scrollTo(currentASMInstructionIdx);
+          }}
+        >
+          scroll to pc
+        </button>
       </fieldset>
       <CodePanel
         id={`${filename}`}
@@ -119,6 +171,7 @@ export default function ASMPanel({
             })
           );
         }}
+        ref={codeRef}
       />
       <code className="footer">
         <span className="footer-item" style={{ color: "#8be9fd" }}>

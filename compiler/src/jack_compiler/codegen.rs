@@ -679,11 +679,19 @@ impl CodeGenerator {
 
         commands.extend(self.compile_statements(&subroutine.body.node.statements));
 
+        let arg_count = if matches!(subroutine.subroutine_kind, SubroutineKind::Method) {
+            subroutine.parameters.len() + 1
+        } else {
+            subroutine.parameters.len()
+        };
+
         if let Some(ast_node) = subroutine.body.node.statements.last() {
             if matches!(*ast_node.node, Statement::Return(_)) {
                 return CompiledSubroutine {
                     name: subroutine_name,
                     commands,
+                    locals_count,
+                    arg_count,
                 };
             }
         }
@@ -691,6 +699,8 @@ impl CodeGenerator {
         CompiledSubroutine {
             name: subroutine_name,
             commands,
+            locals_count,
+            arg_count,
         }
     }
 
@@ -700,7 +710,7 @@ impl CodeGenerator {
         instance_size: usize,
     ) -> Vec<CompiledSubroutine> {
         subroutine_declarations
-            .into_iter()
+            .iter()
             .map(|subroutine| self.compile_subroutine(subroutine, instance_size))
             .collect()
     }
@@ -738,6 +748,8 @@ impl CodeGenerator {
 pub struct CompiledSubroutine {
     pub name: String,
     pub commands: Vec<SourcemappedCommand>,
+    pub locals_count: usize,
+    pub arg_count: usize,
 }
 
 #[derive(Debug, Serialize, TS)]

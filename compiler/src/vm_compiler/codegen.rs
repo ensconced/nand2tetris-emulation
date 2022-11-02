@@ -803,56 +803,46 @@ impl CodeGenerator {
         result
     }
 
-    fn compile_function_return(&mut self, pointers_to_restore: &HashMap<String, HashSet<Pointer>>) -> Vec<ASMInstruction> {
-        // This is carefully designed to not require tracking of the number of
-        // arguments or locals for the callee.
-
-        // Use R7 as a copy of ARG. We'll use this when placing the return
-        // value and restoring the stack pointer. We can't use ARG directly
-        // because it's going to be overwritten when restoring the caller state.
-        fn copy_arg_to_r7() -> Vec<ASMInstruction> {
+    fn compile_function_return(
+        &mut self,
+        pointers_to_restore: &HashMap<String, HashSet<Pointer>>,
+        locals_count: usize,
+        arg_count: usize,
+    ) -> Vec<ASMInstruction> {
+        fn stash_return_value_in_r7() -> Vec<ASMInstruction> {
             vec![
-                ASMInstruction::A(AValue::Symbolic("ARG".to_string())),
-                ASMInstruction::C {
-                    expr: "M".to_string(),
-                    dest: Some("D".to_string()),
-                    jump: None,
-                },
-                ASMInstruction::A(AValue::Symbolic("R7".to_string())),
-                ASMInstruction::C {
-                    expr: "D".to_string(),
-                    dest: Some("M".to_string()),
-                    jump: None,
-                },
+                pop_into_d_register("SP"),
+                vec![
+                    ASMInstruction::A(AValue::Symbolic("R7".to_string())),
+                    ASMInstruction::C {
+                        expr: "D".to_string(),
+                        dest: Some("M".to_string()),
+                        jump: None,
+                    },
+                ],
             ]
+            .into_iter()
+            .flatten()
+            .collect()
         }
 
-        // Use R8 as copy of LCL. We'll use this to pop all the caller state.
-        // We can't use LCL directly because LCL is one of the pieces of we're
-        // restoring, so we would end up overwriting our pointer part way
-        // through the process. (If LCL was the last thing to be restored we
-        // would be able to get away with this, but since we want to carry on to
-        // also pop the return address, it doesn't work.)
-        fn copy_lcl_to_r8() -> Vec<ASMInstruction> {
+        fn restore_caller_state(locals_count: usize) -> Vec<ASMInstruction> {
             vec![
-                ASMInstruction::A(AValue::Symbolic("LCL".to_string())),
-                ASMInstruction::C {
-                    expr: "M".to_string(),
-                    dest: Some("D".to_string()),
-                    jump: None,
-                },
-                ASMInstruction::A(AValue::Symbolic("R8".to_string())),
-                ASMInstruction::C {
-                    expr: "D".to_string(),
-                    dest: Some("M".to_string()),
-                    jump: None,
-                },
-            ]
-        }
-
-        fn restore_caller_state() -> Vec<ASMInstruction> {
-            vec![
-                pop_into_d_register("R8"),
+                vec![
+                    ASMInstruction::A(AValue::Numeric(locals_count.to_string())),
+                    ASMInstruction::C {
+                        expr: "A".to_string(),
+                        dest: Some("D".to_string()),
+                        jump: None,
+                    },
+                    ASMInstruction::A(AValue::Symbolic("SP".to_owned())),
+                    ASMInstruction::C {
+                        expr: "M-D".to_string(),
+                        dest: Some("M".to_string()),
+                        jump: None,
+                    },
+                ],
+                pop_into_d_register("SP"),
                 vec![
                     ASMInstruction::A(AValue::Symbolic("THAT".to_string())),
                     ASMInstruction::C {
@@ -861,7 +851,7 @@ impl CodeGenerator {
                         jump: None,
                     },
                 ],
-                pop_into_d_register("R8"),
+                pop_into_d_register("SP"),
                 vec![
                     ASMInstruction::A(AValue::Symbolic("THIS".to_string())),
                     ASMInstruction::C {
@@ -870,7 +860,7 @@ impl CodeGenerator {
                         jump: None,
                     },
                 ],
-                pop_into_d_register("R8"),
+                pop_into_d_register("SP"),
                 vec![
                     ASMInstruction::A(AValue::Symbolic("ARG".to_string())),
                     ASMInstruction::C {
@@ -879,7 +869,7 @@ impl CodeGenerator {
                         jump: None,
                     },
                 ],
-                pop_into_d_register("R8"),
+                pop_into_d_register("SP"),
                 vec![
                     ASMInstruction::A(AValue::Symbolic("LCL".to_string())),
                     ASMInstruction::C {
@@ -898,7 +888,7 @@ impl CodeGenerator {
         // the return address first.
         fn stash_return_address_in_r8() -> Vec<ASMInstruction> {
             vec![
-                pop_into_d_register("R8"),
+                pop_into_d_register("SP"),
                 vec![
                     ASMInstruction::A(AValue::Symbolic("R8".to_string())),
                     ASMInstruction::C {
@@ -913,43 +903,33 @@ impl CodeGenerator {
             .collect()
         }
 
-        fn place_return_value() -> Vec<ASMInstruction> {
+        fn place_return_value(arg_count: usize) -> Vec<ASMInstruction> {
             vec![
-                pop_into_d_register("SP"),
                 vec![
-                    ASMInstruction::A(AValue::Symbolic("R7".to_string())),
+                    ASMInstruction::A(AValue::Numeric(arg_count.to_string())),
                     ASMInstruction::C {
-                        expr: "M".to_string(),
-                        dest: Some("A".to_string()),
+                        expr: "A".to_string(),
+                        dest: Some("D".to_string()),
                         jump: None,
                     },
+                    ASMInstruction::A(AValue::Symbolic("SP".to_string())),
                     ASMInstruction::C {
-                        expr: "D".to_string(),
+                        expr: "M-D".to_string(),
                         dest: Some("M".to_string()),
                         jump: None,
                     },
+                    ASMInstruction::A(AValue::Symbolic("R7".to_string())),
+                    ASMInstruction::C {
+                        expr: "M".to_string(),
+                        dest: Some("D".to_string()),
+                        jump: None,
+                    },
                 ],
+                push_from_d_register(),
             ]
             .into_iter()
             .flatten()
             .collect()
-        }
-
-        fn restore_stack_pointer() -> Vec<ASMInstruction> {
-            vec![
-                ASMInstruction::A(AValue::Symbolic("R7".to_string())),
-                ASMInstruction::C {
-                    expr: "M".to_string(),
-                    dest: Some("D".to_string()),
-                    jump: None,
-                },
-                ASMInstruction::A(AValue::Symbolic("SP".to_string())),
-                ASMInstruction::C {
-                    expr: "D+1".to_string(),
-                    dest: Some("M".to_string()),
-                    jump: None,
-                },
-            ]
         }
 
         fn goto_return_address() -> Vec<ASMInstruction> {
@@ -969,12 +949,10 @@ impl CodeGenerator {
         }
 
         vec![
-            copy_arg_to_r7(),
-            copy_lcl_to_r8(),
-            restore_caller_state(),
+            stash_return_value_in_r7(),
+            restore_caller_state(locals_count),
             stash_return_address_in_r8(),
-            place_return_value(),
-            restore_stack_pointer(),
+            place_return_value(arg_count),
             goto_return_address(),
         ]
         .into_iter()
@@ -986,11 +964,13 @@ impl CodeGenerator {
         &mut self,
         function_command: &FunctionCommandVariant,
         pointers_to_restore: &HashMap<String, HashSet<Pointer>>,
+        locals_count: usize,
+        arg_count: usize,
     ) -> Vec<ASMInstruction> {
         match function_command {
             Call(function_name, arg_count) => self.compile_function_call(function_name, *arg_count, pointers_to_restore),
             Define(function_name, local_var_count) => self.compile_function_definition(function_name, *local_var_count),
-            ReturnFrom => self.compile_function_return(pointers_to_restore),
+            ReturnFrom => self.compile_function_return(pointers_to_restore, locals_count, arg_count),
         }
     }
 
@@ -1053,11 +1033,13 @@ impl CodeGenerator {
         command: &Command,
         filename: &Path,
         pointers_to_restore: &HashMap<String, HashSet<Pointer>>,
+        locals_count: usize,
+        arg_count: usize,
     ) -> Vec<ASMInstruction> {
         match command {
             Arithmetic(arithmetic_command) => self.compile_arithmetic_command(arithmetic_command),
             Memory(memory_command) => self.compile_memory_command(memory_command, filename),
-            Function(function_command) => self.compile_function_command(function_command, pointers_to_restore),
+            Function(function_command) => self.compile_function_command(function_command, pointers_to_restore, locals_count, arg_count),
             Flow(flow_command) => self.compile_flow_command(flow_command),
         }
     }
@@ -1090,10 +1072,16 @@ pub fn generate_asm(subroutines: &HashMap<PathBuf, Vec<CompiledSubroutine>>) -> 
 
     for (filename, file_subroutines) in subroutines {
         let mut vm_command_idx = 0;
-        for subroutine in file_subroutines.iter() {
-            for SourcemappedCommand { command, .. } in &subroutine.commands {
-                if live_subroutines.contains(&subroutine.name) {
-                    for asm_instruction in code_generator.compile_vm_command(command, filename, &pointers_to_restore) {
+        for CompiledSubroutine {
+            name,
+            commands,
+            locals_count,
+            arg_count,
+        } in file_subroutines.iter()
+        {
+            for SourcemappedCommand { command, .. } in commands {
+                if live_subroutines.contains(name) {
+                    for asm_instruction in code_generator.compile_vm_command(command, filename, &pointers_to_restore, *locals_count, *arg_count) {
                         sourcemap.record_asm_instruction(filename, vm_command_idx, instructions.len());
                         instructions.push(asm_instruction);
                     }

@@ -68,11 +68,6 @@ enum Commands {
         source_path: Option<String>,
         dest_path: Option<String>,
     },
-    /// Compile vm code to assembly
-    Compile {
-        source_path: Option<String>,
-        dest_path: Option<String>,
-    },
 }
 
 fn main() {
@@ -112,15 +107,6 @@ fn main() {
             let dest_path = dest_path_maybe.as_ref().expect("dest path is required");
             println!("assembling {} to {}", source_path, dest_path);
             assemble_file(Path::new(source_path), Path::new(dest_path), config::ROM_DEPTH);
-        }
-        Commands::Compile {
-            source_path: source_path_maybe,
-            dest_path: dest_path_maybe,
-        } => {
-            let source_path = source_path_maybe.as_ref().expect("source path is required");
-            let dest_path = dest_path_maybe.as_ref().expect("dest path is required");
-            println!("assembling {} to {}", source_path, dest_path);
-            vm_compiler::compile_files(Path::new(source_path), Path::new(dest_path)).unwrap();
         }
     }
 }

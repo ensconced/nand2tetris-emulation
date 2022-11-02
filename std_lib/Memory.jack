@@ -243,7 +243,7 @@ class Memory {
     while (true) {
         let free_buddy = findFreeBuddy(block);
         if (free_buddy) {
-          let block = mergeBuddies(block, free_buddy, block[1]);
+          let block = mergeBuddies(block, free_buddy);
         } else {
           let block[0] = true;
           do pushFreeBlock(block);

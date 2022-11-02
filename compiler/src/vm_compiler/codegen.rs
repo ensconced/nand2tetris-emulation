@@ -57,7 +57,7 @@ fn holding_pattern() -> Vec<ASMInstruction> {
     ]
 }
 
-fn init_call_stack() -> Vec<ASMInstruction> {
+fn init_call_stack(pointers_to_restore: &HashSet<Pointer>) -> Vec<ASMInstruction> {
     vec![
         // For each stack frame, ARG points to the base of the frame. This is the
         // first stack frame, so here ARG points to the base of the entire stack.
@@ -78,7 +78,7 @@ fn init_call_stack() -> Vec<ASMInstruction> {
         // ARG, THIS and THAT of the caller. This in addition to the return
         // address means the stack pointer will start 5 addresses above the base
         // of the stack.
-        ASMInstruction::A(AValue::Numeric("261".to_string())),
+        ASMInstruction::A(AValue::Numeric((256 + 1 + pointers_to_restore.len()).to_string())),
         ASMInstruction::C {
             expr: "A".to_string(),
             dest: Some("D".to_string()),
@@ -91,7 +91,7 @@ fn init_call_stack() -> Vec<ASMInstruction> {
             jump: None,
         },
         // LCL starts off pointing to the same address as the stack pointer.
-        ASMInstruction::A(AValue::Numeric("261".to_string())),
+        ASMInstruction::A(AValue::Numeric((256 + 1 + pointers_to_restore.len()).to_string())),
         ASMInstruction::C {
             expr: "A".to_string(),
             dest: Some("D".to_string()),
@@ -1117,7 +1117,10 @@ pub fn generate_asm(subroutines: &HashMap<PathBuf, Vec<CompiledSubroutine>>) -> 
         instructions.extend(glyphs_asm());
     }
 
-    instructions.extend(init_call_stack());
+    let pointers_to_restore_for_sys_init = pointers_to_restore
+        .get("Sys.init")
+        .unwrap_or_else(|| panic!("expected to find pointers to restore for Sys.init"));
+    instructions.extend(init_call_stack(pointers_to_restore_for_sys_init));
 
     for (filename, file_subroutines) in subroutines {
         let mut vm_command_idx = 0;

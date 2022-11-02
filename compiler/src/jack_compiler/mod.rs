@@ -779,6 +779,8 @@ mod tests {
 
                 function void init () {
                     do Memory.init();
+                    do Output.init();
+                    do Screen.init();
 
                     do setupString();
                     do removeChars(str);
@@ -787,16 +789,15 @@ mod tests {
             ",
         )]));
 
-        tick_until(&mut computer, &|computer| frame_stack_depth(computer) == 1);
-
-        step_over(&mut computer); // step over Memory.init();
-        step_over(&mut computer); // step over setupString
-        step_in(&mut computer); // step into removeChars
-        assert_eq!(string_from_pointer(&computer, top_frame_arg(&computer, 0)), "hello there");
-        step_over(&mut computer); // step over eraseLastChar()
-        assert_eq!(string_from_pointer(&computer, top_frame_arg(&computer, 0)), "hello ther");
-        step_over(&mut computer); // step over eraseLastChar()
-        assert_eq!(string_from_pointer(&computer, top_frame_arg(&computer, 0)), "hello the");
+        tick_until(&mut computer, &|computer| {
+            string_from_pointer(computer, peek_stack(computer)) == "hello there"
+        });
+        // tick_until(&mut computer, &|computer| {
+        //     string_from_pointer(computer, peek_stack(computer)) == "hello ther"
+        // });
+        // tick_until(&mut computer, &|computer| {
+        //     string_from_pointer(computer, peek_stack(computer)) == "hello the"
+        // });
     }
 
     #[test]

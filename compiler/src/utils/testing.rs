@@ -81,11 +81,6 @@ pub mod test_utils {
         ram[ram[1] as usize + local_idx]
     }
 
-    pub fn top_frame_arg(computer: &Computer, arg_idx: usize) -> u16 {
-        let ram = computer.ram.lock();
-        ram[ram[2] as usize + arg_idx]
-    }
-
     pub fn string_from_pointer(computer: &Computer, pointer: u16) -> String {
         let ram = computer.ram.lock();
         let str_length = ram[pointer as usize + 2] as usize;

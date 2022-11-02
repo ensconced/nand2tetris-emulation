@@ -5,9 +5,7 @@ class Sys {
     do Output.init();
     do Screen.init();
 
-    while (true) {
-      do Output.printInt(12345);
-    }
+    do StringDemo.runDemo();
   }
 
   function void halt() {}

@@ -79,7 +79,7 @@ class Math {
     // use binary search
     var int y, offset, with_offset;
     let y = 0;
-    let offset = 127;
+    let offset = 128;
 
     while (offset >= 1) {
       let with_offset = y + offset;

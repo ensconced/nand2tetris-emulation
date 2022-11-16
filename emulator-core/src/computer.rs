@@ -1,4 +1,5 @@
 use std::{
+    fs,
     num::Wrapping,
     sync::{Arc, Mutex, MutexGuard},
 };
@@ -143,11 +144,6 @@ pub fn tick_until(computer: &mut Computer, predicate: &dyn Fn(&Computer) -> bool
 }
 
 #[wasm_bindgen]
-pub fn tick_to_frame_stack_depth(computer: &mut Computer, depth: usize) {
-    tick_until(computer, &|comp| frame_stack_depth(comp) == depth)
-}
-
-#[wasm_bindgen]
 pub fn tick_to_breakpoint(computer: &mut Computer, breakpoint: u16) {
     tick_until(computer, &|comp| comp.cpu.pc == breakpoint)
 }
@@ -156,42 +152,6 @@ pub fn tick_to_breakpoint(computer: &mut Computer, breakpoint: u16) {
 pub fn tick_to_some_breakpoint(computer: &mut Computer, breakpoints: &[u16]) {
     tick(computer);
     tick_until(computer, &|comp| breakpoints.iter().any(|breakpoint| comp.cpu.pc == *breakpoint))
-}
-
-#[wasm_bindgen]
-pub fn frame_stack_depth(computer: &Computer) -> usize {
-    let mut result = 0;
-    let ram = computer.ram.lock();
-    let mut lcl_ptr = ram[1];
-    while lcl_ptr >= 256 {
-        lcl_ptr = ram[lcl_ptr as usize - 4];
-        result += 1;
-    }
-    result
-}
-
-#[wasm_bindgen]
-pub fn step_in(computer: &mut Computer) {
-    let start_frame_depth = frame_stack_depth(computer);
-    tick_until(computer, &|comp| {
-        let current_frame_depth = frame_stack_depth(comp);
-        if current_frame_depth < start_frame_depth {
-            panic!("returned from function without calling anything");
-        }
-        current_frame_depth == start_frame_depth + 1
-    })
-}
-
-#[wasm_bindgen]
-pub fn step_out(computer: &mut Computer) {
-    let start_frame_depth = frame_stack_depth(computer);
-    tick_until(computer, &|comp| frame_stack_depth(comp) == start_frame_depth - 1)
-}
-
-#[wasm_bindgen]
-pub fn step_over(computer: &mut Computer) {
-    step_in(computer);
-    step_out(computer);
 }
 
 impl Computer {
@@ -207,6 +167,21 @@ impl Computer {
                 memory_load: false,
             },
         }
+    }
+
+    pub fn export_screen_snapshot(&self) -> Result<(), std::io::Error> {
+        let height = 256;
+        let width = 512;
+        let mut bytes: Vec<_> = format!("P4\n{} {}\n", width, height).bytes().collect();
+        let screen = 18432;
+        let screen_memory = &self.ram.lock()[screen..=26623];
+        for word in screen_memory {
+            // pbm format is (usually) big-endian
+            let [msb, lsb] = word.to_be_bytes();
+            bytes.push(!msb);
+            bytes.push(!lsb);
+        }
+        fs::write("foo.pbm", bytes)
     }
 }
 

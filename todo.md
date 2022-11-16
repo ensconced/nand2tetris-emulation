@@ -1,6 +1,9 @@
+- export pbm images of screen snapshots
+- get tests passing
+- remove auto-initialisation of variables to zero...(I'm sure I'm relying on this somewhere though...l)
+
 # function return optimisation
 
-- get tests passing
 - further optimise call/return assembly:
 
   - in returns, sometimes decrementing SP is sufficient - don't need to actually restore anything if you USED it but it's not in the original pointers_to_restore?? - currently we take union of these, but should keep them separate in order to make this optimisation

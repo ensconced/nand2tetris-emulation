@@ -49,12 +49,6 @@ pub mod test_utils {
         count
     }
 
-    pub fn count_nonoverlapping_sequences_in_heap(computer: &Computer, needle: &[u16]) -> usize {
-        let ram = computer.ram.lock();
-        let heap = &ram[2048..18432];
-        count_nonoverlapping_sequences(heap, needle)
-    }
-
     pub fn heap_avail_list(computer: &Computer) -> HashMap<usize, Vec<u16>> {
         let mut result = HashMap::new();
 
@@ -74,11 +68,6 @@ pub mod test_utils {
 
     pub fn program_completed(computer: &Computer) -> bool {
         computer.cpu.pc == 2
-    }
-
-    pub fn top_frame_local(computer: &Computer, local_idx: usize) -> u16 {
-        let ram = computer.ram.lock();
-        ram[ram[1] as usize + local_idx]
     }
 
     pub fn string_from_pointer(computer: &Computer, pointer: u16) -> String {

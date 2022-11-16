@@ -79,8 +79,7 @@ pub fn compile_jack(user_code: HashMap<PathBuf, SourceModule>) -> JackCompilerRe
 #[cfg(test)]
 mod tests {
     use crate::utils::{source_modules::mock_from_sources, testing::test_utils::*};
-    use emulator_core::computer::{frame_stack_depth, step_in, step_over, tick_until};
-    use itertools::repeat_n;
+    use emulator_core::computer::tick_until;
 
     #[test]
     fn test_addition() {
@@ -598,169 +597,6 @@ mod tests {
     }
 
     #[test]
-    fn test_memory_alloc_small_array_stress_test() {
-        let mut computer = computer_from_jack_code(mock_from_sources(vec![(
-            "Sys.jack",
-            "
-            class Sys {
-                function void init () {
-                    var int i, j, ptr;
-
-                    do Memory.init();
-
-                    while (true) {
-                        let ptr = Memory.alloc(20);
-                        if (ptr) {
-                            let j = 0;
-                            while (j < 20) {
-                                let ptr[j] = 1234;
-                                let j = j + 1;
-                            }
-                        } else {
-                            return;
-                        }
-                        let i = i + 1;
-                    }
-                }
-            }
-            ",
-        )]));
-        // We should be able to allocate 511 arrays. This means the variable i should reach 511.
-        tick_until(&mut computer, &|computer| {
-            frame_stack_depth(computer) == 1 && top_frame_local(computer, 0) == 511
-        });
-        tick_until(&mut computer, &program_completed);
-    }
-
-    #[test]
-    fn test_memory_alloc_dealloc_small_array_stress_test() {
-        let mut computer = computer_from_jack_code(mock_from_sources(vec![(
-            "Sys.jack",
-            "
-            class Sys {
-                static int ptrs, ptr_count;
-
-                function void alloc_arrays(int fill_value) {
-                    var int i, j, ptr;
-
-                    let i = 0;
-                    while (i < ptr_count) {
-                        let ptr = Memory.alloc(20);
-                        let ptrs[i] = ptr;
-                        let j = 0;
-                        while (j < 20) {
-                            let ptr[j] = fill_value;
-                            let j = j + 1;
-                        }
-                        let i = i + 1;
-                    }
-                }
-
-                function void dealloc_arrays() {
-                    var int i;
-
-                    let i = 0;
-
-                    while (i < ptr_count) {
-                        do Memory.deAlloc(ptrs[i]);
-                        let i = i + 1;
-                    }
-                }
-
-                function void init () {
-                    var int ptr, i, rounds;
-
-                    let ptr_count = 495;
-                    do Memory.init();
-
-                    let ptrs = Memory.alloc(ptr_count);
-
-                    let rounds = 10;
-                    let i = 0;
-                    while (i < rounds) {
-                        do alloc_arrays(i);
-                        do dealloc_arrays();
-                        let i = i + 1;
-                    }
-
-                    do Memory.deAlloc(ptrs);
-                }
-            }
-            ",
-        )]));
-
-        // init stuff
-        tick_until(&mut computer, &|computer| frame_stack_depth(computer) == 1);
-
-        // step over Memory.init call
-        step_over(&mut computer);
-
-        // step over Memory.alloc call for ptrs
-        step_over(&mut computer);
-
-        for _ in 0..9 {
-            // step over alloc_arrays call
-            step_over(&mut computer);
-            // step over dealloc_arrays call
-            step_over(&mut computer);
-        }
-
-        // step over final alloc_arrays call
-        step_over(&mut computer);
-
-        // check arrays were properly allocated
-        let sequence: Vec<_> = repeat_n(9, 20).collect();
-        assert_eq!(count_nonoverlapping_sequences_in_heap(&computer, &sequence), 495);
-
-        // The heap should be completely full, apart from one remaining 16-word
-        // block which we don't have any use for.
-        assert_eq!(
-            heap_avail_list(&computer),
-            vec![
-                (4, vec![]),
-                (8, vec![]),
-                (16, vec![2064]),
-                (32, vec![]),
-                (64, vec![]),
-                (128, vec![]),
-                (256, vec![]),
-                (512, vec![]),
-                (1024, vec![]),
-                (2048, vec![]),
-                (4096, vec![]),
-                (8192, vec![]),
-                (16384, vec![]),
-            ]
-            .into_iter()
-            .collect()
-        );
-
-        tick_until(&mut computer, &program_completed);
-
-        // heap should be back to how it was after the initial Memory.init
-        assert_eq!(
-            heap_avail_list(&computer),
-            vec![
-                (4, vec![]),
-                (8, vec![]),
-                (16, vec![2064]),
-                (32, vec![2080]),
-                (64, vec![2112]),
-                (128, vec![2176]),
-                (256, vec![2304]),
-                (512, vec![2560]),
-                (1024, vec![3072]),
-                (2048, vec![4096]),
-                (4096, vec![6144]),
-                (8192, vec![10240]),
-                (16384, vec![]),
-            ]
-            .into_iter()
-            .collect()
-        );
-    }
-
-    #[test]
     fn test_string_erase_last_char() {
         let mut computer = computer_from_jack_code(mock_from_sources(vec![(
             "Sys.jack",
@@ -779,55 +615,19 @@ mod tests {
 
                 function void init () {
                     do Memory.init();
+                    do Math.init();
                     do Output.init();
                     do Screen.init();
 
                     do setupString();
                     do removeChars(str);
+                    do Output.printString(str);
                 }
             }
             ",
         )]));
 
-        tick_until(&mut computer, &|computer| {
-            string_from_pointer(computer, peek_stack(computer)) == "hello there"
-        });
-        // tick_until(&mut computer, &|computer| {
-        //     string_from_pointer(computer, peek_stack(computer)) == "hello ther"
-        // });
-        // tick_until(&mut computer, &|computer| {
-        //     string_from_pointer(computer, peek_stack(computer)) == "hello the"
-        // });
-    }
-
-    #[test]
-    fn test_string_int_value() {
-        let mut computer = computer_from_jack_code(mock_from_sources(vec![(
-            "Sys.jack",
-            "
-            class Sys {
-                static String str;
-
-                function void setupString() {
-                    let str = \"1234\";
-                }
-
-                function void init () {
-                    var int i;
-
-                    do Memory.init();
-                    do setupString();
-                    let i = str.intValue();
-                }
-            }
-            ",
-        )]));
-
-        tick_until(&mut computer, &|computer| frame_stack_depth(computer) == 1);
-
-        step_over(&mut computer); // step over Memory.init();
-        step_over(&mut computer); // step over setupString
-        step_over(&mut computer); // step over str.intValue();
-        tick_until(&mut computer, &|computer| peek_stack(computer) == 1234);
+        tick_until(&mut computer, &program_completed);
+        computer.export_screen_snapshot();
     }
 }

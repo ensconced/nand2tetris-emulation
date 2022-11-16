@@ -5,12 +5,6 @@ class Sys {
     do Output.init();
     do Screen.init();
 
-    do StringDemo.runDemo();
+    do MathTest.runTest();
   }
-
-  function void halt() {}
-
-  function void error() {}
-
-  function void wait() {}
 }

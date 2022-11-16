@@ -22,10 +22,6 @@ import computer from "./computer-setup";
 import {
   tick,
   tick_to_some_breakpoint,
-  step_in,
-  step_out,
-  step_over,
-  tick_to_frame_stack_depth,
 } from "../../web-emulator/pkg/web_emulator";
 
 interface Props {
@@ -104,38 +100,6 @@ export default function ASMPanel({
           }}
         >
           play
-        </button>
-        <button
-          onClick={() => {
-            step_in(computer);
-            setProgramCounter(computer.cpu.pc);
-          }}
-        >
-          step in
-        </button>
-        <button
-          onClick={() => {
-            step_out(computer);
-            setProgramCounter(computer.cpu.pc);
-          }}
-        >
-          step out
-        </button>
-        <button
-          onClick={() => {
-            step_over(computer);
-            setProgramCounter(computer.cpu.pc);
-          }}
-        >
-          step over
-        </button>
-        <button
-          onClick={() => {
-            tick_to_frame_stack_depth(computer, 1);
-            setProgramCounter(computer.cpu.pc);
-          }}
-        >
-          tick to frame stack depth 1
         </button>
         <button
           onClick={() => {

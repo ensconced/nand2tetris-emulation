@@ -1,5 +1,10 @@
-- export pbm images of screen snapshots
-- get tests passing
+create snapshots test dir
+each subdir contains a Main.jack file and a pbm
+write test to read every subdir, execute Main.jack to completion, then check screen against pbm
+if no snapshot is present, should write snapshot pbm file
+write a load of such tests
+remove the other failing tests
+
 - remove auto-initialisation of variables to zero...(I'm sure I'm relying on this somewhere though...l)
 
 # function return optimisation

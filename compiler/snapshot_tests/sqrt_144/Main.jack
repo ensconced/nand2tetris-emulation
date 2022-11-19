@@ -1,0 +1,18 @@
+class Main {
+    static String str;
+
+    function void setupString() {
+        let str = "hello there";
+    }
+
+    function void removeChars(String str_ptr) {
+      do str_ptr.eraseLastChar();
+      do str_ptr.eraseLastChar();
+    }
+
+    function void main () {
+        do setupString();
+        do removeChars(str);
+        do Output.printString(str);
+    }
+}

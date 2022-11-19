@@ -5,6 +5,6 @@ class Sys {
     do Output.init();
     do Screen.init();
 
-    do MathTest.runTest();
+    do Main.main();
   }
 }

@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use serde::Serialize;
 use std::{
     collections::HashMap,
@@ -78,8 +79,11 @@ pub fn compile_jack(user_code: HashMap<PathBuf, SourceModule>) -> JackCompilerRe
 
 #[cfg(test)]
 mod tests {
+    use std::{ffi::OsString, fs, path::Path};
+
     use crate::utils::{source_modules::mock_from_sources, testing::test_utils::*};
     use emulator_core::computer::tick_until;
+    use itertools::Itertools;
 
     #[test]
     fn test_addition() {
@@ -597,37 +601,52 @@ mod tests {
     }
 
     #[test]
-    fn test_string_erase_last_char() {
-        let mut computer = computer_from_jack_code(mock_from_sources(vec![(
-            "Sys.jack",
-            "
-            class Sys {
-                static String str;
+    fn snapshot_tests() {
+        let snapshots_dir_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("snapshot_tests");
+        let snapshots_dir = fs::read_dir(snapshots_dir_path).unwrap_or_else(|_| panic!("failed to read snapshots dir"));
+        for dir_entry_result in snapshots_dir {
+            let dir_entry = dir_entry_result.unwrap_or_else(|_| panic!("failed to get dir entry"));
+            let snapshot_path = dir_entry.path();
+            let snapshot_dir = fs::read_dir(&snapshot_path).unwrap_or_else(|_| panic!("failed to read snapshot path {}", snapshot_path.display()));
+            let snapshot_files_by_extension = snapshot_dir
+                .map(|maybe_dir_entry| maybe_dir_entry.unwrap_or_else(|_| panic!("failed to read file")))
+                .into_group_map_by(|dir_entry| dir_entry.path().extension().unwrap().to_owned());
 
-                function void setupString() {
-                    let str = \"hello there\";
-                }
+            let jack_files = snapshot_files_by_extension
+                .get(&OsString::from("jack"))
+                .unwrap_or_else(|| panic!("no jack files"));
+            let image_files = snapshot_files_by_extension
+                .get(&OsString::from("pbm"))
+                .unwrap_or_else(|| panic!("no pbm files"));
 
-                function void removeChars(String str_ptr) {
-                  do str_ptr.eraseLastChar();
-                  do str_ptr.eraseLastChar();
-                }
+            let jack_sources: Vec<_> = jack_files
+                .iter()
+                .map(|file| {
+                    let filename = file.file_name();
+                    let file_contents = fs::read_to_string(file.path()).unwrap_or_else(|_| panic!("failed to read jack file"));
+                    (filename, file_contents)
+                })
+                .collect();
 
-                function void init () {
-                    do Memory.init();
-                    do Math.init();
-                    do Output.init();
-                    do Screen.init();
+            let jack_source_refs: Vec<_> = jack_sources
+                .iter()
+                .map(|(filename, file_contents)| {
+                    (
+                        filename.to_str().unwrap_or_else(|| panic!("failed to read filename as string")),
+                        file_contents.as_str(),
+                    )
+                })
+                .collect();
 
-                    do setupString();
-                    do removeChars(str);
-                    do Output.printString(str);
-                }
+            let mut computer = computer_from_jack_code(mock_from_sources(jack_source_refs));
+            tick_until(&mut computer, &program_completed);
+            let screen_bytes = computer.screen_snapshot();
+            if let Some(image_file) = image_files.get(0) {
+                let expected_bytes = fs::read(image_file.path()).unwrap_or_else(|_| panic!("failed to read pbm snapshot"));
+                assert_eq!(screen_bytes, expected_bytes);
+            } else {
+                // TODO - write snapshot
             }
-            ",
-        )]));
-
-        tick_until(&mut computer, &program_completed);
-        computer.export_screen_snapshot();
+        }
     }
 }

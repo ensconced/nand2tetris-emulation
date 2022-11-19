@@ -1,6 +1,6 @@
 use std::{
-    fs,
     num::Wrapping,
+    path::Path,
     sync::{Arc, Mutex, MutexGuard},
 };
 
@@ -169,7 +169,7 @@ impl Computer {
         }
     }
 
-    pub fn export_screen_snapshot(&self) -> Result<(), std::io::Error> {
+    pub fn screen_snapshot(&self) -> Vec<u8> {
         let height = 256;
         let width = 512;
         let mut bytes: Vec<_> = format!("P4\n{} {}\n", width, height).bytes().collect();
@@ -181,7 +181,7 @@ impl Computer {
             bytes.push(!msb);
             bytes.push(!lsb);
         }
-        fs::write("foo.pbm", bytes)
+        bytes
     }
 }
 

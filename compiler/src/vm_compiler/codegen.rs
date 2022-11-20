@@ -410,41 +410,21 @@ fn load_avalue_into_register(avalue: AValue, register: &str) -> Vec<ASMInstructi
     ]
 }
 
-fn initialize_locals(local_var_count: usize) -> Vec<ASMInstruction> {
-    if local_var_count > 2 {
-        // In this case, we can take fewer instructions by only updating SP once, after pushing all
-        // the locals.
-        vec![
-            ASMInstruction::A(AValue::Symbolic("SP".to_string())),
-            ASMInstruction::C {
-                expr: "M".to_string(),
-                dest: Some("A".to_string()),
-                jump: None,
-            },
-            ASMInstruction::C {
-                expr: "0".to_string(),
-                dest: Some("M".to_string()),
-                jump: None,
-            },
-            ASMInstruction::A(AValue::Numeric(local_var_count.to_string())),
-            ASMInstruction::C {
-                expr: "A".to_string(),
-                dest: Some("D".to_string()),
-                jump: None,
-            },
-            ASMInstruction::A(AValue::Symbolic("SP".to_string())),
-            ASMInstruction::C {
-                expr: "M+D".to_string(),
-                dest: Some("M".to_string()),
-                jump: None,
-            },
-        ]
-    } else {
-        iter::repeat_with(|| push_from_constant(0).into_iter())
-            .take(local_var_count)
-            .flatten()
-            .collect()
-    }
+fn make_space_for_locals(local_var_count: usize) -> Vec<ASMInstruction> {
+    vec![
+        ASMInstruction::A(AValue::Numeric(local_var_count.to_string())),
+        ASMInstruction::C {
+            expr: "A".to_string(),
+            dest: Some("D".to_string()),
+            jump: None,
+        },
+        ASMInstruction::A(AValue::Symbolic("SP".to_string())),
+        ASMInstruction::C {
+            expr: "M+D".to_string(),
+            dest: Some("M".to_string()),
+            jump: None,
+        },
+    ]
 }
 
 #[derive(Default)]
@@ -785,7 +765,7 @@ impl CodeGenerator {
         let result = iter::once(ASMInstruction::L {
             identifier: format!("$entry_{}", &function_name),
         })
-        .chain(initialize_locals(local_var_count as usize))
+        .chain(make_space_for_locals(local_var_count as usize))
         .collect();
 
         self.current_function = Some(function_name.to_string());

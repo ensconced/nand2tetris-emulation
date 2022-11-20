@@ -404,7 +404,7 @@ mod tests {
             let screen_bytes = computer.screen_snapshot();
             if let Some(image_file) = image_files.get(0) {
                 let expected_bytes = fs::read(image_file.path()).unwrap_or_else(|_| panic!("failed to read pbm snapshot"));
-                assert_eq!(screen_bytes, expected_bytes);
+                assert_eq!(screen_bytes, expected_bytes, "assertion failed for {}", snapshot_path.display());
             } else {
                 // image file doesn't exist - write one
                 fs::write(Path::join(&snapshot_path, "screen.pbm"), screen_bytes).unwrap_or_else(|_| panic!("failed to write screen snapshot"));

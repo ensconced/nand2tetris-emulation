@@ -24,9 +24,11 @@ class Output {
   function int getMsb(int word) {
     var int result, mask, i, bit;
 
+    let result = 0;
     let mask = 256;
     let bit = 1;
     let i = 0;
+
     while (i < 8) {
       if (word & mask) {
         let result = result + bit;

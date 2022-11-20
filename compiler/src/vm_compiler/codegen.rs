@@ -426,28 +426,6 @@ fn initialize_locals(local_var_count: usize) -> Vec<ASMInstruction> {
                 dest: Some("M".to_string()),
                 jump: None,
             },
-        ]
-        .into_iter()
-        .chain(
-            iter::repeat_with(|| {
-                vec![
-                    ASMInstruction::C {
-                        expr: "A+1".to_string(),
-                        dest: Some("A".to_string()),
-                        jump: None,
-                    },
-                    ASMInstruction::C {
-                        expr: "0".to_string(),
-                        dest: Some("M".to_string()),
-                        jump: None,
-                    },
-                ]
-                .into_iter()
-            })
-            .take(local_var_count - 1)
-            .flatten(),
-        )
-        .chain(vec![
             ASMInstruction::A(AValue::Numeric(local_var_count.to_string())),
             ASMInstruction::C {
                 expr: "A".to_string(),
@@ -460,8 +438,7 @@ fn initialize_locals(local_var_count: usize) -> Vec<ASMInstruction> {
                 dest: Some("M".to_string()),
                 jump: None,
             },
-        ])
-        .collect()
+        ]
     } else {
         iter::repeat_with(|| push_from_constant(0).into_iter())
             .take(local_var_count)

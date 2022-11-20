@@ -150,52 +150,6 @@ mod tests {
     }
 
     #[test]
-    fn test_sum_even_fibonaccis() {
-        let mut computer = computer_from_jack_code(mock_from_sources(vec![(
-            "Sys.jack",
-            "
-            class Sys {
-                function void init () {
-                    do sum_even_fibonacci_numbers();
-                }
-
-                function void sum_even_fibonacci_numbers () {
-                    var int sum, i, fib;
-                    let sum = 0;
-                    let i = 0;
-
-                    while (i < 20) {
-                        let fib = fibonacci(i);
-                        if (is_even(fib)) {
-                            let sum = sum + fib;
-                        }
-                        let i = i + 1;
-                    }
-
-                    return sum;
-                }
-
-                function int fibonacci(int n) {
-                    if (n = 0) {
-                        return 0;
-                    }
-                    if (n = 1) {
-                        return 1;
-                    }
-                    return fibonacci(n - 1) + fibonacci(n - 2);
-                }
-
-                function bool is_even(int n) {
-                    return (n & 1) = 0;
-                }
-            }
-        ",
-        )]));
-        tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        tick_until(&mut computer, &|computer| peek_stack(computer) == 3382);
-    }
-
-    #[test]
     fn test_class_methods() {
         let mut computer = computer_from_jack_code(mock_from_sources(vec![
             (
@@ -238,47 +192,6 @@ mod tests {
     }
 
     #[test]
-    fn test_multiplication() {
-        let mut computer = computer_from_jack_code(mock_from_sources(vec![(
-            "Sys.jack",
-            "
-            class Sys {
-                function void init () {
-                    var int a, b, c, d;
-                    let a = 333 * 83;
-                    let b = 10 * -2;
-                    let c = 3 * -3;
-                    let c = -123 * -123;
-                }
-            }
-        ",
-        )]));
-        tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        tick_until(&mut computer, &|computer| peek_stack(computer) == 333 * 83);
-        tick_until(&mut computer, &|computer| peek_stack(computer) == (10 * -2_i16) as u16);
-        tick_until(&mut computer, &|computer| peek_stack(computer) == (-123_i16 * -123_i16) as u16);
-    }
-
-    #[test]
-    fn test_abs() {
-        let mut computer = computer_from_jack_code(mock_from_sources(vec![(
-            "Sys.jack",
-            "
-            class Sys {
-                function void init () {
-                    var int a, b, c, d;
-                    let a = Math.abs(1234) + Math.abs(-1234);
-                    let b = Math.abs(-999) + Math.abs(999);
-                }
-            }
-        ",
-        )]));
-        tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        tick_until(&mut computer, &|computer| peek_stack(computer) == 1234 + 1234);
-        tick_until(&mut computer, &|computer| peek_stack(computer) == 999 + 999);
-    }
-
-    #[test]
     fn test_division() {
         let mut computer = computer_from_jack_code(mock_from_sources(vec![(
             "Sys.jack",
@@ -300,29 +213,6 @@ mod tests {
         tick_until(&mut computer, &|computer| peek_stack(computer) == 1234 / 123);
         tick_until(&mut computer, &|computer| peek_stack(computer) == (-5198_i16 / 182) as u16);
         tick_until(&mut computer, &|computer| peek_stack(computer) == 9099 / 33);
-    }
-
-    #[test]
-    fn test_sqrt() {
-        let mut computer = computer_from_jack_code(mock_from_sources(vec![(
-            "Sys.jack",
-            "
-            class Sys {
-                function void init () {
-                    var int a, b, c, d;
-                    let a = Math.sqrt(144);
-                    let b = Math.sqrt(100);
-                    let c = Math.sqrt(10000);
-                    let d = Math.sqrt(14641);
-                }
-            }
-        ",
-        )]));
-        tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        tick_until(&mut computer, &|computer| peek_stack(computer) == 12);
-        tick_until(&mut computer, &|computer| peek_stack(computer) == 10);
-        tick_until(&mut computer, &|computer| peek_stack(computer) == 100);
-        tick_until(&mut computer, &|computer| peek_stack(computer) == 121);
     }
 
     #[test]
@@ -612,12 +502,11 @@ mod tests {
                 .map(|maybe_dir_entry| maybe_dir_entry.unwrap_or_else(|_| panic!("failed to read file")))
                 .into_group_map_by(|dir_entry| dir_entry.path().extension().unwrap().to_owned());
 
+            let empty_vec = vec![];
             let jack_files = snapshot_files_by_extension
                 .get(&OsString::from("jack"))
                 .unwrap_or_else(|| panic!("no jack files"));
-            let image_files = snapshot_files_by_extension
-                .get(&OsString::from("pbm"))
-                .unwrap_or_else(|| panic!("no pbm files"));
+            let image_files = snapshot_files_by_extension.get(&OsString::from("pbm")).unwrap_or(&empty_vec);
 
             let jack_sources: Vec<_> = jack_files
                 .iter()
@@ -645,7 +534,8 @@ mod tests {
                 let expected_bytes = fs::read(image_file.path()).unwrap_or_else(|_| panic!("failed to read pbm snapshot"));
                 assert_eq!(screen_bytes, expected_bytes);
             } else {
-                // TODO - write snapshot
+                // image file doesn't exist - write one
+                fs::write(Path::join(&snapshot_path, "screen.pbm"), screen_bytes).unwrap_or_else(|_| panic!("failed to write screen snapshot"));
             }
         }
     }

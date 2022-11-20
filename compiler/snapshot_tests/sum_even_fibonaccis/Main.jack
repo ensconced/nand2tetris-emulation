@@ -1,0 +1,37 @@
+class Main {
+  function void main() {
+    do Output.printString("The sum of the first 20 fibonacci numbers is: ");
+    do Output.printInt(sum_even_fibonaccis());
+  }
+
+  function int sum_even_fibonaccis () {
+    var int sum, i, fib;
+    let sum = 0;
+    let i = 0;
+
+    while (i < 20) {
+      let fib = fibonacci(i);
+      if (is_even(fib)) {
+        let sum = sum + fib;
+      }
+      let i = i + 1;
+    }
+
+    return sum;
+  }
+
+  function int fibonacci(int n) {
+    if (n = 0) {
+      return 0;
+    }
+    if (n = 1) {
+      return 1;
+    }
+    return fibonacci(n - 1) + fibonacci(n - 2);
+  }
+
+  function bool is_even(int n) {
+    return (n & 1) = 0;
+  }
+}
+

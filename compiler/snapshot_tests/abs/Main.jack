@@ -1,0 +1,15 @@
+class Main {
+    function void main () {
+        do Output.printString("The absolute value of -1234 is ");
+        do Output.printInt(Math.abs(-1234));
+        do Output.println();
+
+        do Output.printString("The absolute value of 1234 is ");
+        do Output.printInt(Math.abs(1234));
+        do Output.println();
+
+        do Output.printString("The absolute value of 0 is ");
+        do Output.printInt(Math.abs(0));
+        do Output.println();
+    }
+}

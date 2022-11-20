@@ -1,0 +1,19 @@
+class Main {
+    function void main () {
+        do Output.printString("The square root of 144 is ");
+        do Output.printInt(Math.sqrt(144)); // expect 12
+        do Output.println();
+
+        do Output.printString("The square root of 100 is ");
+        do Output.printInt(Math.sqrt(100)); // expect 10
+        do Output.println();
+
+        do Output.printString("The square root of 10000 is ");
+        do Output.printInt(Math.sqrt(10000)); // expect 100
+        do Output.println();
+
+        do Output.printString("The square root of 14641 is ");
+        do Output.printInt(Math.sqrt(14641)); // expect 121
+        do Output.println();
+    }
+}

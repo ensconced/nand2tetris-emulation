@@ -1,6 +1,5 @@
 use std::{
     num::Wrapping,
-    path::Path,
     sync::{Arc, Mutex, MutexGuard},
 };
 

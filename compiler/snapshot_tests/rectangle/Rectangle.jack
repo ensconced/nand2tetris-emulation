@@ -1,0 +1,13 @@
+class Rectangle {
+  field int width, height;
+
+  constructor Rectangle new(int w, int h) {
+    let width = w;
+    let height = h;
+    return this;
+  }
+
+  method int perimeter() {
+    return width + width + height + height;
+  }
+}

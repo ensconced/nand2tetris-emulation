@@ -1,6 +1,6 @@
 class Main {
   function void main() {
-    do Output.printString("The sum of the first 20 fibonacci numbers is: ");
+    do Output.printString("The sum of the even fibonacci numbers where n < 20 is: ");
     do Output.printInt(sum_even_fibonaccis());
   }
 

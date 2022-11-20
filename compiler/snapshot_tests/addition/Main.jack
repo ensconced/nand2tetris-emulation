@@ -1,0 +1,8 @@
+class Main {
+  function void main () {
+    var int a;
+    let a = 1000 + 1000 + 1000;
+    do Output.printString("1000 + 1000 + 1000 is: ");
+    do Output.printInt(a);
+  }
+}

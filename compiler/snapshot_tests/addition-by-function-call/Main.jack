@@ -1,0 +1,9 @@
+class Main {
+  function void main () {
+    do Output.printInt(add(1000, 1000) + 3);
+  }
+
+  function int add(int a, int b) {
+    return a + b;
+  }
+}

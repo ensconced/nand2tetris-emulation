@@ -91,20 +91,39 @@ class String {
   }
 
   method void setInt(int j) {
+    var bool negative;
     var int remainder, divided;
     var String foo;
+
+    let negative = false;
 
     // TODO - this is pretty awkward, but the current syntactical
     // rules don't allow calling a method on this directly.
     let foo = this;
 
     let length = 0;
+
+    if (j = 0) {
+      do foo.appendChar(48); // "0"
+      return;
+    }
+
+    if (j < 0) {
+      let negative = true;
+      let j = -j;
+    }
+
     while (j > 0) {
       let divided = j / 10;
       let remainder = j - divided * 10;
       let j = divided;
       do foo.appendChar(remainder + 48);
     }
+
+    if (negative) {
+      do foo.appendChar(45); // "-"
+    }
+
     do foo.reverse();
   }
 

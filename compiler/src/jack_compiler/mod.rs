@@ -495,12 +495,15 @@ mod tests {
         let snapshots_dir_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("snapshot_tests");
         let snapshots_dir = fs::read_dir(snapshots_dir_path).unwrap_or_else(|_| panic!("failed to read snapshots dir"));
         for dir_entry_result in snapshots_dir {
-            let dir_entry = dir_entry_result.unwrap_or_else(|_| panic!("failed to get dir entry"));
+            let dir_entry = dir_entry_result.unwrap();
+            if !dir_entry.metadata().unwrap().is_dir() {
+                continue;
+            }
             let snapshot_path = dir_entry.path();
             let snapshot_dir = fs::read_dir(&snapshot_path).unwrap_or_else(|_| panic!("failed to read snapshot path {}", snapshot_path.display()));
             let snapshot_files_by_extension = snapshot_dir
                 .map(|maybe_dir_entry| maybe_dir_entry.unwrap_or_else(|_| panic!("failed to read file")))
-                .into_group_map_by(|dir_entry| dir_entry.path().extension().unwrap().to_owned());
+                .into_group_map_by(|dir_entry| dir_entry.path().extension().unwrap_or_default().to_owned());
 
             let empty_vec = vec![];
             let jack_files = snapshot_files_by_extension

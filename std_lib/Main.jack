@@ -1,5 +1,6 @@
 class Main {
   function void main() {
-    do MathTest.runTest();
+    var int a;
+    let a = 333 * 83;
   }
 }

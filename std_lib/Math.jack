@@ -48,6 +48,9 @@ class Math {
     if (y > x) {
       return 0;
     }
+    if (y > 16383) {
+      do Sys.overflowError();
+    }
     let double_divisor = 2 * y;
     let quotient_for_double_divisor = divide(x, double_divisor);
     let remainder = x - quotient_for_double_divisor * double_divisor;

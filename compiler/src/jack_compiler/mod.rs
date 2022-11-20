@@ -192,30 +192,6 @@ mod tests {
     }
 
     #[test]
-    fn test_division() {
-        let mut computer = computer_from_jack_code(mock_from_sources(vec![(
-            "Sys.jack",
-            "
-            class Sys {
-                function void init () {
-                    var int a;
-
-                    let a = 4191 / -3;
-                    let a = 1234 / 123;
-                    let a = -5198 / 182;
-                    let a = 9099 / 33;
-                }
-            }
-        ",
-        )]));
-        tick_until(&mut computer, &|computer| stack_pointer(computer) == INITIAL_STACK_POINTER_ADDRESS);
-        tick_until(&mut computer, &|computer| peek_stack(computer) == (4191 / -3_i16) as u16);
-        tick_until(&mut computer, &|computer| peek_stack(computer) == 1234 / 123);
-        tick_until(&mut computer, &|computer| peek_stack(computer) == (-5198_i16 / 182) as u16);
-        tick_until(&mut computer, &|computer| peek_stack(computer) == 9099 / 33);
-    }
-
-    #[test]
     fn test_string_alloc() {
         let mut computer = computer_from_jack_code(mock_from_sources(vec![(
             "Sys.jack",

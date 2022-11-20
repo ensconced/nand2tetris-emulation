@@ -1,0 +1,25 @@
+class Main {
+  function void main () {
+    var int a;
+
+    let a = 4191 / -3;
+    do Output.printString("4191 / -3 = ");
+    do Output.printInt(a);
+    do Output.println();
+
+    let a = 1234 / 123;
+    do Output.printString("1234 / 123 = ");
+    do Output.printInt(a);
+    do Output.println();
+
+    let a = -5198 / 182;
+    do Output.printString("-5198 / 182 = ");
+    do Output.printInt(a);
+    do Output.println();
+
+    let a = 9099 / 33;
+    do Output.printString("9099 / 33 = ");
+    do Output.printInt(a);
+    do Output.println();
+  }
+}

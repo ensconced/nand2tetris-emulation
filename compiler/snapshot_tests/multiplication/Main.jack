@@ -2,9 +2,9 @@ class Main {
   function void main () {
     var int a, b, c, d;
 
-    let a = 333 * 83;
-    do Output.printString("333 * 83 = ");
-    do Output.printInt(333 * 83);
+    let a = 33 * 83;
+    do Output.printString("33 * 83 = ");
+    do Output.printInt(33 * 83);
     do Output.println();
 
     let b = 10 * -2;

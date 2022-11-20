@@ -1,4 +1,9 @@
 class Sys {
+  function void overflowError() {
+    do Output.printString("OVERFLOW");
+    while (true) {}
+  }
+
   function void init() {
     do Memory.init();
     do Math.init();

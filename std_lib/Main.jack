@@ -2,5 +2,6 @@ class Main {
   function void main() {
     var int a;
     let a = 333 * 83;
+    do Output.printInt(a);
   }
 }

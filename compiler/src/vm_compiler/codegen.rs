@@ -1063,7 +1063,7 @@ pub struct VMCompilerResult {
 pub fn generate_asm(subroutines: &HashMap<PathBuf, Vec<CompiledSubroutine>>) -> VMCompilerResult {
     let CallGraphAnalysis {
         live_subroutines,
-        pointers_to_restore,
+        pointer_usage_by_function_name: pointers_to_restore,
     } = analyse_call_graph(subroutines);
 
     let mut sourcemap = SourceMap::new();

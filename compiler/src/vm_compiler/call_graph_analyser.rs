@@ -25,9 +25,11 @@ pub struct SubroutineInfo {
     pointers_to_restore: HashSet<Pointer>,
 }
 
+type PointerUsage = HashSet<Pointer>;
+
 pub struct CallGraphAnalysis {
     pub live_subroutines: HashSet<String>,
-    pub pointers_to_restore: HashMap<String, HashSet<Pointer>>,
+    pub pointer_usage_by_function_name: HashMap<String, PointerUsage>,
 }
 
 type CallGraph = HashMap<String, SubroutineInfo>;
@@ -163,6 +165,6 @@ pub fn analyse_call_graph(subroutines: &HashMap<PathBuf, Vec<CompiledSubroutine>
 
     CallGraphAnalysis {
         live_subroutines: live_subroutines.clone(),
-        pointers_to_restore,
+        pointer_usage_by_function_name: pointers_to_restore,
     }
 }

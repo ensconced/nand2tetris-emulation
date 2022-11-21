@@ -7,22 +7,14 @@ use crate::jack_compiler::codegen::{CompiledSubroutine, SourcemappedCommand};
 
 use super::parser::{Command, FunctionCommandVariant, MemoryCommandVariant, MemorySegmentVariant, OffsetSegmentVariant, PointerSegmentVariant};
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum Pointer {
-    Lcl,
-    Arg,
-    This,
-    That,
-}
-
 #[derive(Clone, Debug, Default)]
 pub struct SubroutineInfo {
     pub calls: HashSet<String>,
     pub callers: HashSet<String>,
     pub reachable_subroutines: HashSet<String>,
-    pub pointers_used_directly: HashSet<Pointer>,
-    pub pointers_used: HashSet<Pointer>,
-    pub pointers_to_restore: HashSet<Pointer>,
+    pub pointers_used_directly: HashSet<PointerSegmentVariant>,
+    pub pointers_used: HashSet<PointerSegmentVariant>,
+    pub pointers_to_restore: HashSet<PointerSegmentVariant>,
 }
 
 pub struct CallGraphAnalysis {
@@ -48,22 +40,16 @@ fn record_directly_used_pointers(command: &Command, subroutine_name: &str, call_
         match memory_segment {
             MemorySegmentVariant::OffsetSegment(OffsetSegmentVariant::Pointer) => {
                 let pointer = if *offset == 0 {
-                    Pointer::This
+                    PointerSegmentVariant::This
                 } else if *offset == 1 {
-                    Pointer::That
+                    PointerSegmentVariant::That
                 } else {
                     panic!("expected offset for pointer to be either 0 or 1")
                 };
                 subroutine_info.pointers_used_directly.insert(pointer);
             }
             MemorySegmentVariant::PointerSegment(segment) => {
-                let pointer = match segment {
-                    PointerSegmentVariant::Argument => Pointer::Arg,
-                    PointerSegmentVariant::Local => Pointer::Lcl,
-                    PointerSegmentVariant::This => Pointer::This,
-                    PointerSegmentVariant::That => Pointer::That,
-                };
-                subroutine_info.pointers_used_directly.insert(pointer);
+                subroutine_info.pointers_used_directly.insert(segment.clone());
             }
             _ => {}
         }
@@ -122,7 +108,7 @@ fn get_call_graph(subroutines: &HashMap<PathBuf, Vec<CompiledSubroutine>>) -> Ca
     call_graph
 }
 
-fn pointers_used_directly_by_subroutines(subroutines: &HashSet<String>, call_graph: &CallGraph) -> HashSet<Pointer> {
+fn pointers_used_directly_by_subroutines(subroutines: &HashSet<String>, call_graph: &CallGraph) -> HashSet<PointerSegmentVariant> {
     subroutines
         .iter()
         .flat_map(|reachable_subroutine| {

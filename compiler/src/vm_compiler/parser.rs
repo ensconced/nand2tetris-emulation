@@ -83,7 +83,7 @@ impl Display for MemoryCommandVariant {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub enum PointerSegmentVariant {
     Argument,
     Local,

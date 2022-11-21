@@ -14,7 +14,7 @@ use crate::{
 };
 
 use super::{
-    call_graph_analyser::{analyse_call_graph, CallGraphAnalysis, Pointer, SubroutineInfo},
+    call_graph_analyser::{analyse_call_graph, CallGraphAnalysis, SubroutineInfo},
     parser::{
         ArithmeticCommandVariant::{self, *},
         BinaryArithmeticCommandVariant::*,
@@ -57,7 +57,7 @@ fn holding_pattern() -> Vec<ASMInstruction> {
     ]
 }
 
-fn init_call_stack(pointers_to_restore: &HashSet<Pointer>) -> Vec<ASMInstruction> {
+fn init_call_stack(pointers_to_restore: &HashSet<PointerSegmentVariant>) -> Vec<ASMInstruction> {
     vec![
         // For each stack frame, ARG points to the base of the frame. This is the
         // first stack frame, so here ARG points to the base of the entire stack.
@@ -685,7 +685,7 @@ impl CodeGenerator {
             .get(function_name)
             .unwrap_or_else(|| panic!("expected to find pointers to restore when calling {}", function_name));
 
-        let pointers: HashSet<Pointer> = subroutine_info
+        let pointers: HashSet<PointerSegmentVariant> = subroutine_info
             .pointers_used_directly
             .union(&subroutine_info.pointers_to_restore)
             .cloned()
@@ -707,10 +707,10 @@ impl CodeGenerator {
                 .into_iter()
                 .filter(|pointer_str| {
                     let pointer = match *pointer_str {
-                        "LCL" => Pointer::Lcl,
-                        "ARG" => Pointer::Arg,
-                        "THIS" => Pointer::This,
-                        "THAT" => Pointer::That,
+                        "LCL" => PointerSegmentVariant::Local,
+                        "ARG" => PointerSegmentVariant::Argument,
+                        "THIS" => PointerSegmentVariant::This,
+                        "THAT" => PointerSegmentVariant::That,
                         _ => panic!("unexpected pointer"),
                     };
                     pointers.contains(&pointer)
@@ -756,7 +756,7 @@ impl CodeGenerator {
         .flatten()
         .collect();
 
-        if pointers.contains(&Pointer::Lcl) {
+        if pointers.contains(&PointerSegmentVariant::Local) {
             // set lcl pointer
             instructions.extend(vec![
                 ASMInstruction::A(AValue::Symbolic("SP".to_string())),
@@ -905,7 +905,7 @@ impl CodeGenerator {
             .collect();
 
         // TODO - DRY up
-        if subroutine_info.pointers_to_restore.contains(&Pointer::That) {
+        if subroutine_info.pointers_to_restore.contains(&PointerSegmentVariant::That) {
             instructions.extend(
                 vec![
                     pop_into_d_register("SP"),
@@ -921,11 +921,11 @@ impl CodeGenerator {
                 .into_iter()
                 .flatten(),
             )
-        } else if subroutine_info.pointers_used_directly.contains(&Pointer::That) {
+        } else if subroutine_info.pointers_used_directly.contains(&PointerSegmentVariant::That) {
             instructions.extend(pop_to_nowhere("SP"))
         }
 
-        if subroutine_info.pointers_to_restore.contains(&Pointer::This) {
+        if subroutine_info.pointers_to_restore.contains(&PointerSegmentVariant::This) {
             instructions.extend(
                 vec![
                     pop_into_d_register("SP"),
@@ -941,11 +941,11 @@ impl CodeGenerator {
                 .into_iter()
                 .flatten(),
             )
-        } else if subroutine_info.pointers_used_directly.contains(&Pointer::This) {
+        } else if subroutine_info.pointers_used_directly.contains(&PointerSegmentVariant::This) {
             instructions.extend(pop_to_nowhere("SP"))
         }
 
-        if subroutine_info.pointers_to_restore.contains(&Pointer::Arg) {
+        if subroutine_info.pointers_to_restore.contains(&PointerSegmentVariant::Argument) {
             instructions.extend(
                 vec![
                     pop_into_d_register("SP"),
@@ -961,11 +961,11 @@ impl CodeGenerator {
                 .into_iter()
                 .flatten(),
             )
-        } else if subroutine_info.pointers_used_directly.contains(&Pointer::Arg) {
+        } else if subroutine_info.pointers_used_directly.contains(&PointerSegmentVariant::Argument) {
             instructions.extend(pop_to_nowhere("SP"))
         }
 
-        if subroutine_info.pointers_to_restore.contains(&Pointer::Lcl) {
+        if subroutine_info.pointers_to_restore.contains(&PointerSegmentVariant::Local) {
             instructions.extend(
                 vec![
                     pop_into_d_register("SP"),
@@ -981,7 +981,7 @@ impl CodeGenerator {
                 .into_iter()
                 .flatten(),
             )
-        } else if subroutine_info.pointers_used_directly.contains(&Pointer::Lcl) {
+        } else if subroutine_info.pointers_used_directly.contains(&PointerSegmentVariant::Local) {
             instructions.extend(pop_to_nowhere("SP"))
         }
 
@@ -1108,7 +1108,7 @@ pub fn generate_asm(subroutines: &HashMap<PathBuf, Vec<CompiledSubroutine>>) -> 
         .unwrap_or_else(|| panic!("expected to find subroutine info for Sys.init"));
 
     // TODO - we probably don't need to restore all of these?
-    let pointers_to_restore_for_sys_init: HashSet<Pointer> = subroutine_info_for_sys_init
+    let pointers_to_restore_for_sys_init: HashSet<PointerSegmentVariant> = subroutine_info_for_sys_init
         .pointers_to_restore
         .union(&subroutine_info_for_sys_init.pointers_used_directly)
         .cloned()

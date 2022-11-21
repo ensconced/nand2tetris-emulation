@@ -159,15 +159,34 @@ fn push_from_d_register() -> Vec<ASMInstruction> {
     ]
 }
 
-fn pop_to_nowhere() -> Vec<ASMInstruction> {
-    vec![
-        ASMInstruction::A(AValue::Symbolic("SP".to_string())),
-        ASMInstruction::C {
-            expr: "M-1".to_string(),
-            dest: Some("M".to_string()),
-            jump: None,
-        },
-    ]
+fn decrement_sp(n: u32) -> Vec<ASMInstruction> {
+    if n == 0 {
+        vec![]
+    } else if n == 1 {
+        vec![
+            ASMInstruction::A(AValue::Symbolic("SP".to_string())),
+            ASMInstruction::C {
+                expr: "M-1".to_string(),
+                dest: Some("M".to_string()),
+                jump: None,
+            },
+        ]
+    } else {
+        vec![
+            ASMInstruction::A(AValue::Numeric(n.to_string())),
+            ASMInstruction::C {
+                expr: "A".to_string(),
+                dest: Some("D".to_string()),
+                jump: None,
+            },
+            ASMInstruction::A(AValue::Symbolic("SP".to_string())),
+            ASMInstruction::C {
+                expr: "M-D".to_string(),
+                dest: Some("M".to_string()),
+                jump: None,
+            },
+        ]
+    }
 }
 
 fn pop_into_d_register() -> Vec<ASMInstruction> {
@@ -481,7 +500,7 @@ impl CodeGenerator {
                 // popping into a constant doesn't make much sense - I guess it just
                 // means decrement the SP but don't do anything with the popped
                 // value
-                pop_to_nowhere()
+                decrement_sp(1)
             }
         }
     }
@@ -876,86 +895,38 @@ impl CodeGenerator {
             ])
             .collect();
 
-        // TODO - DRY up
-        if subroutine_info.pointers_to_restore.contains(&PointerSegmentVariant::That) {
-            instructions.extend(
-                vec![
-                    pop_into_d_register(),
-                    vec![
-                        ASMInstruction::A(AValue::Pointer(PointerSegmentVariant::That)),
-                        ASMInstruction::C {
-                            expr: "D".to_string(),
-                            dest: Some("M".to_string()),
-                            jump: None,
-                        },
-                    ],
-                ]
-                .into_iter()
-                .flatten(),
-            )
-        } else if subroutine_info.pointers_used_directly.contains(&PointerSegmentVariant::That) {
-            instructions.extend(pop_to_nowhere())
-        }
+        let pointers = vec![
+            PointerSegmentVariant::That,
+            PointerSegmentVariant::This,
+            PointerSegmentVariant::Argument,
+            PointerSegmentVariant::Local,
+        ];
 
-        if subroutine_info.pointers_to_restore.contains(&PointerSegmentVariant::This) {
-            instructions.extend(
-                vec![
-                    pop_into_d_register(),
+        let mut pointers_to_discard = 0;
+        for pointer in pointers {
+            if subroutine_info.pointers_to_restore.contains(&pointer) {
+                instructions.extend(decrement_sp(pointers_to_discard));
+                pointers_to_discard = 0;
+                instructions.extend(
                     vec![
-                        ASMInstruction::A(AValue::Pointer(PointerSegmentVariant::This)),
-                        ASMInstruction::C {
-                            expr: "D".to_string(),
-                            dest: Some("M".to_string()),
-                            jump: None,
-                        },
-                    ],
-                ]
-                .into_iter()
-                .flatten(),
-            )
-        } else if subroutine_info.pointers_used_directly.contains(&PointerSegmentVariant::This) {
-            instructions.extend(pop_to_nowhere())
+                        pop_into_d_register(),
+                        vec![
+                            ASMInstruction::A(AValue::Pointer(pointer)),
+                            ASMInstruction::C {
+                                expr: "D".to_string(),
+                                dest: Some("M".to_string()),
+                                jump: None,
+                            },
+                        ],
+                    ]
+                    .into_iter()
+                    .flatten(),
+                )
+            } else if subroutine_info.pointers_used_directly.contains(&pointer) {
+                pointers_to_discard += 1;
+            }
         }
-
-        if subroutine_info.pointers_to_restore.contains(&PointerSegmentVariant::Argument) {
-            instructions.extend(
-                vec![
-                    pop_into_d_register(),
-                    vec![
-                        ASMInstruction::A(AValue::Pointer(PointerSegmentVariant::Argument)),
-                        ASMInstruction::C {
-                            expr: "D".to_string(),
-                            dest: Some("M".to_string()),
-                            jump: None,
-                        },
-                    ],
-                ]
-                .into_iter()
-                .flatten(),
-            )
-        } else if subroutine_info.pointers_used_directly.contains(&PointerSegmentVariant::Argument) {
-            instructions.extend(pop_to_nowhere())
-        }
-
-        if subroutine_info.pointers_to_restore.contains(&PointerSegmentVariant::Local) {
-            instructions.extend(
-                vec![
-                    pop_into_d_register(),
-                    vec![
-                        ASMInstruction::A(AValue::Pointer(PointerSegmentVariant::Local)),
-                        ASMInstruction::C {
-                            expr: "D".to_string(),
-                            dest: Some("M".to_string()),
-                            jump: None,
-                        },
-                    ],
-                ]
-                .into_iter()
-                .flatten(),
-            )
-        } else if subroutine_info.pointers_used_directly.contains(&PointerSegmentVariant::Local) {
-            instructions.extend(pop_to_nowhere())
-        }
+        instructions.extend(decrement_sp(pointers_to_discard));
 
         instructions
             .into_iter()

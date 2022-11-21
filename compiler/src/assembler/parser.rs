@@ -6,15 +6,19 @@ use super::tokenizer::{
     token_defs,
     TokenKind::{self, *},
 };
-use crate::utils::{
-    parser_utils::{maybe_take, PeekableTokens},
-    tokenizer::{Token, Tokenizer},
+use crate::{
+    utils::{
+        parser_utils::{maybe_take, PeekableTokens},
+        tokenizer::{Token, Tokenizer},
+    },
+    vm_compiler::parser::PointerSegmentVariant,
 };
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum AValue {
     Numeric(String),
     Symbolic(String),
+    Pointer(PointerSegmentVariant),
 }
 
 impl Display for AValue {
@@ -22,6 +26,12 @@ impl Display for AValue {
         let s = match self {
             AValue::Numeric(string) => string,
             AValue::Symbolic(string) => string,
+            AValue::Pointer(pointer) => match pointer {
+                PointerSegmentVariant::Argument => "arg",
+                PointerSegmentVariant::Local => "lcl",
+                PointerSegmentVariant::This => "this",
+                PointerSegmentVariant::That => "that",
+            },
         };
         write!(f, "{}", s)
     }

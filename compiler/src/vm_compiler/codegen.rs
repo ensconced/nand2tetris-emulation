@@ -23,8 +23,7 @@ use super::{
         FunctionCommandVariant::{self, *},
         MemoryCommandVariant::{self, *},
         MemorySegmentVariant::{self, *},
-        OffsetSegmentVariant,
-        PointerSegmentVariant::{self, *},
+        OffsetSegmentVariant, PointerSegmentVariant,
         UnaryArithmeticCommandVariant::*,
     },
     sourcemap::SourceMap,
@@ -67,7 +66,7 @@ fn init_call_stack(pointers_to_restore: &HashSet<PointerSegmentVariant>) -> Vec<
             dest: Some("D".to_string()),
             jump: None,
         },
-        ASMInstruction::A(AValue::Symbolic("ARG".to_string())),
+        ASMInstruction::A(AValue::Pointer(PointerSegmentVariant::Argument)),
         ASMInstruction::C {
             expr: "D".to_string(),
             dest: Some("M".to_string()),
@@ -97,7 +96,7 @@ fn init_call_stack(pointers_to_restore: &HashSet<PointerSegmentVariant>) -> Vec<
             dest: Some("D".to_string()),
             jump: None,
         },
-        ASMInstruction::A(AValue::Symbolic("LCL".to_string())),
+        ASMInstruction::A(AValue::Pointer(PointerSegmentVariant::Local)),
         ASMInstruction::C {
             expr: "D".to_string(),
             dest: Some("M".to_string()),
@@ -160,9 +159,9 @@ fn push_from_d_register() -> Vec<ASMInstruction> {
     ]
 }
 
-fn pop_to_nowhere(pointer: &str) -> Vec<ASMInstruction> {
+fn pop_to_nowhere() -> Vec<ASMInstruction> {
     vec![
-        ASMInstruction::A(AValue::Symbolic(pointer.to_string())),
+        ASMInstruction::A(AValue::Symbolic("SP".to_string())),
         ASMInstruction::C {
             expr: "M-1".to_string(),
             dest: Some("M".to_string()),
@@ -171,11 +170,9 @@ fn pop_to_nowhere(pointer: &str) -> Vec<ASMInstruction> {
     ]
 }
 
-fn pop_into_d_register(pointer: &str) -> Vec<ASMInstruction> {
-    // pointer is usually going to be SP but occasionally we want to use a
-    // different pointer to perform a pop-like operation
+fn pop_into_d_register() -> Vec<ASMInstruction> {
     vec![
-        ASMInstruction::A(AValue::Symbolic(pointer.to_string())),
+        ASMInstruction::A(AValue::Symbolic("SP".to_string())),
         ASMInstruction::C {
             expr: "M-1".to_string(),
             dest: Some("MA".to_string()),
@@ -208,7 +205,7 @@ fn push_from_offset_memory_segment(segment: &OffsetSegmentVariant, index: u16) -
 
 fn pop_into_offset_memory_segment(segment: &OffsetSegmentVariant, index: u16) -> Vec<ASMInstruction> {
     vec![
-        pop_into_d_register("SP"),
+        pop_into_d_register(),
         vec![
             ASMInstruction::A(AValue::Numeric(offset_address(segment, index).to_string())),
             ASMInstruction::C {
@@ -223,10 +220,10 @@ fn pop_into_offset_memory_segment(segment: &OffsetSegmentVariant, index: u16) ->
     .collect()
 }
 
-fn load_pointer_value_into_a(pointer_address: &str, index: u16) -> Vec<ASMInstruction> {
+fn load_pointer_value_into_a(segment: &PointerSegmentVariant, index: u16) -> Vec<ASMInstruction> {
     if index == 0 {
         vec![
-            ASMInstruction::A(AValue::Symbolic(pointer_address.to_string())),
+            ASMInstruction::A(AValue::Pointer(segment.clone())),
             ASMInstruction::C {
                 expr: "M".to_string(),
                 dest: Some("A".to_string()),
@@ -235,7 +232,7 @@ fn load_pointer_value_into_a(pointer_address: &str, index: u16) -> Vec<ASMInstru
         ]
     } else if index == 1 {
         vec![
-            ASMInstruction::A(AValue::Symbolic(pointer_address.to_string())),
+            ASMInstruction::A(AValue::Pointer(segment.clone())),
             ASMInstruction::C {
                 expr: "M+1".to_string(),
                 dest: Some("A".to_string()),
@@ -246,7 +243,7 @@ fn load_pointer_value_into_a(pointer_address: &str, index: u16) -> Vec<ASMInstru
         vec![
             load_constant_into_d(index),
             vec![
-                ASMInstruction::A(AValue::Symbolic(pointer_address.to_string())),
+                ASMInstruction::A(AValue::Pointer(segment.clone())),
                 ASMInstruction::C {
                     expr: "M+D".to_string(),
                     dest: Some("A".to_string()),
@@ -261,15 +258,8 @@ fn load_pointer_value_into_a(pointer_address: &str, index: u16) -> Vec<ASMInstru
 }
 
 fn push_from_pointer_memory_segment(segment: &PointerSegmentVariant, index: u16) -> Vec<ASMInstruction> {
-    let pointer_address = match segment {
-        Argument => "ARG",
-        Local => "LCL",
-        This => "THIS",
-        That => "THAT",
-    };
-
     vec![
-        load_pointer_value_into_a(pointer_address, index),
+        load_pointer_value_into_a(segment, index),
         vec![ASMInstruction::C {
             expr: "M".to_string(),
             dest: Some("D".to_string()),
@@ -283,16 +273,9 @@ fn push_from_pointer_memory_segment(segment: &PointerSegmentVariant, index: u16)
 }
 
 fn pop_into_pointer_memory_segment(segment: &PointerSegmentVariant, index: u16) -> Vec<ASMInstruction> {
-    let pointer_address = match segment {
-        Argument => "ARG",
-        Local => "LCL",
-        This => "THIS",
-        That => "THAT",
-    };
-
     let instructions = if index == 0 {
         vec![
-            ASMInstruction::A(AValue::Symbolic(pointer_address.to_string())),
+            ASMInstruction::A(AValue::Pointer(segment.clone())),
             ASMInstruction::C {
                 expr: "M".to_string(),
                 dest: Some("A".to_string()),
@@ -306,7 +289,7 @@ fn pop_into_pointer_memory_segment(segment: &PointerSegmentVariant, index: u16) 
         ]
     } else {
         return vec![
-            ASMInstruction::A(AValue::Symbolic(pointer_address.to_string())),
+            ASMInstruction::A(AValue::Pointer(segment.clone())),
             ASMInstruction::C {
                 expr: "M".to_string(),
                 dest: Some("D".to_string()),
@@ -349,7 +332,7 @@ fn pop_into_pointer_memory_segment(segment: &PointerSegmentVariant, index: u16) 
         ];
     };
 
-    vec![pop_into_d_register("SP"), instructions].into_iter().flatten().collect()
+    vec![pop_into_d_register(), instructions].into_iter().flatten().collect()
 }
 
 fn load_constant_into_d(constant: u16) -> Vec<ASMInstruction> {
@@ -448,7 +431,7 @@ struct CodeGenerator {
 impl CodeGenerator {
     fn pop_into_static_memory_segment(&self, index: u16, filename: &Path) -> Vec<ASMInstruction> {
         vec![
-            pop_into_d_register("SP"),
+            pop_into_d_register(),
             vec![
                 ASMInstruction::A(AValue::Symbolic(format!("{}.{}", filename.to_str().unwrap(), index))),
                 ASMInstruction::C {
@@ -498,14 +481,7 @@ impl CodeGenerator {
                 // popping into a constant doesn't make much sense - I guess it just
                 // means decrement the SP but don't do anything with the popped
                 // value
-                vec![
-                    ASMInstruction::A(AValue::Symbolic("SP".to_string())),
-                    ASMInstruction::C {
-                        expr: "M-1".to_string(),
-                        dest: Some("M".to_string()),
-                        jump: None,
-                    },
-                ]
+                pop_to_nowhere()
             }
         }
     }
@@ -703,31 +679,27 @@ impl CodeGenerator {
                 },
             ],
             push_from_d_register(),
-            vec!["LCL", "ARG", "THIS", "THAT"]
+            vec![
+                PointerSegmentVariant::Local,
+                PointerSegmentVariant::Argument,
+                PointerSegmentVariant::This,
+                PointerSegmentVariant::That,
+            ]
+            .into_iter()
+            .filter(|pointer| pointers.contains(pointer))
+            .flat_map(|pointer| {
+                vec![
+                    ASMInstruction::A(AValue::Pointer(pointer)),
+                    ASMInstruction::C {
+                        expr: "M".to_string(),
+                        dest: Some("D".to_string()),
+                        jump: None,
+                    },
+                ]
                 .into_iter()
-                .filter(|pointer_str| {
-                    let pointer = match *pointer_str {
-                        "LCL" => PointerSegmentVariant::Local,
-                        "ARG" => PointerSegmentVariant::Argument,
-                        "THIS" => PointerSegmentVariant::This,
-                        "THAT" => PointerSegmentVariant::That,
-                        _ => panic!("unexpected pointer"),
-                    };
-                    pointers.contains(&pointer)
-                })
-                .flat_map(|pointer| {
-                    vec![
-                        ASMInstruction::A(AValue::Symbolic(pointer.to_string())),
-                        ASMInstruction::C {
-                            expr: "M".to_string(),
-                            dest: Some("D".to_string()),
-                            jump: None,
-                        },
-                    ]
-                    .into_iter()
-                    .chain(push_from_d_register())
-                })
-                .collect(),
+                .chain(push_from_d_register())
+            })
+            .collect(),
             // Set arg pointer - at this point, all the arguments have been pushed to the stack,
             // plus the return address, plus the saved caller pointers.
             // So to find the correct position for ARG, we can count back from the stack pointer.
@@ -744,7 +716,7 @@ impl CodeGenerator {
                     dest: Some("D".to_string()),
                     jump: None,
                 },
-                ASMInstruction::A(AValue::Symbolic("ARG".to_string())),
+                ASMInstruction::A(AValue::Pointer(PointerSegmentVariant::Argument)),
                 ASMInstruction::C {
                     expr: "D".to_string(),
                     dest: Some("M".to_string()),
@@ -765,7 +737,7 @@ impl CodeGenerator {
                     dest: Some("D".to_string()),
                     jump: None,
                 },
-                ASMInstruction::A(AValue::Symbolic("LCL".to_string())),
+                ASMInstruction::A(AValue::Pointer(PointerSegmentVariant::Local)),
                 ASMInstruction::C {
                     expr: "D".to_string(),
                     dest: Some("M".to_string()),
@@ -798,7 +770,7 @@ impl CodeGenerator {
     ) -> Vec<ASMInstruction> {
         fn stash_return_value_in_r7() -> Vec<ASMInstruction> {
             vec![
-                pop_into_d_register("SP"),
+                pop_into_d_register(),
                 vec![
                     ASMInstruction::A(AValue::Symbolic("R7".to_string())),
                     ASMInstruction::C {
@@ -817,7 +789,7 @@ impl CodeGenerator {
         // the return address first.
         fn stash_return_address_in_r8() -> Vec<ASMInstruction> {
             vec![
-                pop_into_d_register("SP"),
+                pop_into_d_register(),
                 vec![
                     ASMInstruction::A(AValue::Symbolic("R8".to_string())),
                     ASMInstruction::C {
@@ -908,9 +880,9 @@ impl CodeGenerator {
         if subroutine_info.pointers_to_restore.contains(&PointerSegmentVariant::That) {
             instructions.extend(
                 vec![
-                    pop_into_d_register("SP"),
+                    pop_into_d_register(),
                     vec![
-                        ASMInstruction::A(AValue::Symbolic("THAT".to_string())),
+                        ASMInstruction::A(AValue::Pointer(PointerSegmentVariant::That)),
                         ASMInstruction::C {
                             expr: "D".to_string(),
                             dest: Some("M".to_string()),
@@ -922,15 +894,15 @@ impl CodeGenerator {
                 .flatten(),
             )
         } else if subroutine_info.pointers_used_directly.contains(&PointerSegmentVariant::That) {
-            instructions.extend(pop_to_nowhere("SP"))
+            instructions.extend(pop_to_nowhere())
         }
 
         if subroutine_info.pointers_to_restore.contains(&PointerSegmentVariant::This) {
             instructions.extend(
                 vec![
-                    pop_into_d_register("SP"),
+                    pop_into_d_register(),
                     vec![
-                        ASMInstruction::A(AValue::Symbolic("THIS".to_string())),
+                        ASMInstruction::A(AValue::Pointer(PointerSegmentVariant::This)),
                         ASMInstruction::C {
                             expr: "D".to_string(),
                             dest: Some("M".to_string()),
@@ -942,15 +914,15 @@ impl CodeGenerator {
                 .flatten(),
             )
         } else if subroutine_info.pointers_used_directly.contains(&PointerSegmentVariant::This) {
-            instructions.extend(pop_to_nowhere("SP"))
+            instructions.extend(pop_to_nowhere())
         }
 
         if subroutine_info.pointers_to_restore.contains(&PointerSegmentVariant::Argument) {
             instructions.extend(
                 vec![
-                    pop_into_d_register("SP"),
+                    pop_into_d_register(),
                     vec![
-                        ASMInstruction::A(AValue::Symbolic("ARG".to_string())),
+                        ASMInstruction::A(AValue::Pointer(PointerSegmentVariant::Argument)),
                         ASMInstruction::C {
                             expr: "D".to_string(),
                             dest: Some("M".to_string()),
@@ -962,15 +934,15 @@ impl CodeGenerator {
                 .flatten(),
             )
         } else if subroutine_info.pointers_used_directly.contains(&PointerSegmentVariant::Argument) {
-            instructions.extend(pop_to_nowhere("SP"))
+            instructions.extend(pop_to_nowhere())
         }
 
         if subroutine_info.pointers_to_restore.contains(&PointerSegmentVariant::Local) {
             instructions.extend(
                 vec![
-                    pop_into_d_register("SP"),
+                    pop_into_d_register(),
                     vec![
-                        ASMInstruction::A(AValue::Symbolic("LCL".to_string())),
+                        ASMInstruction::A(AValue::Pointer(PointerSegmentVariant::Local)),
                         ASMInstruction::C {
                             expr: "D".to_string(),
                             dest: Some("M".to_string()),
@@ -982,7 +954,7 @@ impl CodeGenerator {
                 .flatten(),
             )
         } else if subroutine_info.pointers_used_directly.contains(&PointerSegmentVariant::Local) {
-            instructions.extend(pop_to_nowhere("SP"))
+            instructions.extend(pop_to_nowhere())
         }
 
         instructions
@@ -1037,7 +1009,7 @@ impl CodeGenerator {
     fn compile_ifgoto(&self, label: &str) -> Vec<ASMInstruction> {
         if let Some(current_function) = &self.current_function {
             vec![
-                pop_into_d_register("SP"),
+                pop_into_d_register(),
                 vec![
                     ASMInstruction::A(AValue::Symbolic(format!("{}${}", current_function, label))),
                     ASMInstruction::C {

@@ -1,6 +1,8 @@
 use serde::Serialize;
 use ts_rs::TS;
 
+use crate::vm_compiler::parser::PointerSegmentVariant;
+
 use super::first_pass::FirstPassResult;
 use super::parser::{
     ASMInstruction::{self, *},
@@ -11,10 +13,6 @@ use std::collections::HashMap;
 fn predefined_symbol_code(sym: &str) -> Option<u16> {
     match sym {
         "SP" => Some(0),
-        "LCL" => Some(1),
-        "ARG" => Some(2),
-        "THIS" => Some(3),
-        "THAT" => Some(4),
         "R0" => Some(0),
         "R1" => Some(1),
         "R2" => Some(2),
@@ -167,6 +165,12 @@ impl<'a> CodeGenerator<'a> {
         match command {
             C { expr, dest, jump } => Some(c_command_code(expr, dest.as_ref(), jump.as_ref())),
             A(Numeric(num)) => Some(numeric_a_command_code(num)),
+            A(Pointer(pointer)) => match pointer {
+                PointerSegmentVariant::Local => Some(1),
+                PointerSegmentVariant::Argument => Some(2),
+                PointerSegmentVariant::This => Some(3),
+                PointerSegmentVariant::That => Some(4),
+            },
             A(Symbolic(sym)) => {
                 let index = predefined_symbol_code(sym)
                     .or_else(|| self.resolved_symbols.get(sym.as_str()).copied())

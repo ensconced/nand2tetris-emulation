@@ -742,7 +742,7 @@ impl CodeGenerator {
     }
 }
 
-#[derive(Debug, Serialize, TS)]
+#[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "../web/bindings/")]
 pub struct CompiledSubroutine {
@@ -752,7 +752,7 @@ pub struct CompiledSubroutine {
     pub arg_count: usize,
 }
 
-#[derive(Debug, Serialize, TS)]
+#[derive(Clone, Debug, Serialize, TS)]
 #[ts(export)]
 #[ts(export_to = "../web/bindings/")]
 pub struct SourcemappedCommand {

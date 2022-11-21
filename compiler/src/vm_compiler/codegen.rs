@@ -14,7 +14,7 @@ use crate::{
 };
 
 use super::{
-    call_graph_analyser::{analyse_call_graph, CallGraphAnalysis, Pointer},
+    call_graph_analyser::{analyse_call_graph, CallGraphAnalysis, Pointer, SubroutineInfo},
     parser::{
         ArithmeticCommandVariant::{self, *},
         BinaryArithmeticCommandVariant::*,
@@ -649,7 +649,7 @@ impl CodeGenerator {
         &mut self,
         function_name: &str,
         arg_count: u16,
-        pointers_to_restore: &HashMap<String, HashSet<Pointer>>,
+        subroutine_info_by_name: &HashMap<String, SubroutineInfo>,
     ) -> Vec<ASMInstruction> {
         fn jump(function_name: &str, return_address_label: &str) -> Vec<ASMInstruction> {
             vec![
@@ -670,9 +670,15 @@ impl CodeGenerator {
         let return_address_label = format!("$return_point_{}", self.return_address_count);
         self.return_address_count += 1;
 
-        let pointers = pointers_to_restore
+        let subroutine_info = subroutine_info_by_name
             .get(function_name)
             .unwrap_or_else(|| panic!("expected to find pointers to restore when calling {}", function_name));
+
+        let pointers: HashSet<Pointer> = subroutine_info
+            .pointers_used_directly
+            .union(&subroutine_info.pointers_to_restore)
+            .cloned()
+            .collect();
 
         let mut instructions: Vec<_> = vec![
             load_avalue_into_register(AValue::Symbolic(return_address_label.to_string()), "R8"),
@@ -775,7 +781,7 @@ impl CodeGenerator {
 
     fn compile_function_return(
         &mut self,
-        pointers_to_restore: &HashMap<String, HashSet<Pointer>>,
+        subroutine_info_by_name: &HashMap<String, SubroutineInfo>,
         locals_count: usize,
         arg_count: usize,
     ) -> Vec<ASMInstruction> {
@@ -865,9 +871,16 @@ impl CodeGenerator {
             .as_ref()
             .unwrap_or_else(|| panic!("expected current function to be set when compiling return"));
 
-        let pointers = pointers_to_restore
+        let subroutine_info = subroutine_info_by_name
             .get(current_function)
             .unwrap_or_else(|| panic!("expected to find pointers to restore when returning from {}", current_function));
+
+        // TODO
+        let pointers: HashSet<Pointer> = subroutine_info
+            .pointers_used_directly
+            .union(&subroutine_info.pointers_to_restore)
+            .cloned()
+            .collect();
 
         let mut instructions: Vec<_> = stash_return_value_in_r7()
             .into_iter()
@@ -969,14 +982,14 @@ impl CodeGenerator {
     fn compile_function_command(
         &mut self,
         function_command: &FunctionCommandVariant,
-        pointers_to_restore: &HashMap<String, HashSet<Pointer>>,
+        subroutine_info_by_name: &HashMap<String, SubroutineInfo>,
         locals_count: usize,
         arg_count: usize,
     ) -> Vec<ASMInstruction> {
         match function_command {
-            Call(function_name, arg_count) => self.compile_function_call(function_name, *arg_count, pointers_to_restore),
+            Call(function_name, arg_count) => self.compile_function_call(function_name, *arg_count, subroutine_info_by_name),
             Define(function_name, local_var_count) => self.compile_function_definition(function_name, *local_var_count),
-            ReturnFrom => self.compile_function_return(pointers_to_restore, locals_count, arg_count),
+            ReturnFrom => self.compile_function_return(subroutine_info_by_name, locals_count, arg_count),
         }
     }
 
@@ -1038,14 +1051,14 @@ impl CodeGenerator {
         &mut self,
         command: &Command,
         filename: &Path,
-        pointers_to_restore: &HashMap<String, HashSet<Pointer>>,
+        subroutine_info_by_name: &HashMap<String, SubroutineInfo>,
         locals_count: usize,
         arg_count: usize,
     ) -> Vec<ASMInstruction> {
         match command {
             Arithmetic(arithmetic_command) => self.compile_arithmetic_command(arithmetic_command),
             Memory(memory_command) => self.compile_memory_command(memory_command, filename),
-            Function(function_command) => self.compile_function_command(function_command, pointers_to_restore, locals_count, arg_count),
+            Function(function_command) => self.compile_function_command(function_command, subroutine_info_by_name, locals_count, arg_count),
             Flow(flow_command) => self.compile_flow_command(flow_command),
         }
     }
@@ -1063,7 +1076,7 @@ pub struct VMCompilerResult {
 pub fn generate_asm(subroutines: &HashMap<PathBuf, Vec<CompiledSubroutine>>) -> VMCompilerResult {
     let CallGraphAnalysis {
         live_subroutines,
-        pointer_usage_by_function_name: pointers_to_restore,
+        subroutine_info_by_name,
     } = analyse_call_graph(subroutines);
 
     let mut sourcemap = SourceMap::new();
@@ -1074,10 +1087,18 @@ pub fn generate_asm(subroutines: &HashMap<PathBuf, Vec<CompiledSubroutine>>) -> 
         instructions.extend(glyphs_asm());
     }
 
-    let pointers_to_restore_for_sys_init = pointers_to_restore
+    let subroutine_info_for_sys_init = subroutine_info_by_name
         .get("Sys.init")
-        .unwrap_or_else(|| panic!("expected to find pointers to restore for Sys.init"));
-    instructions.extend(init_call_stack(pointers_to_restore_for_sys_init));
+        .unwrap_or_else(|| panic!("expected to find subroutine info for Sys.init"));
+
+    // TODO - we probably don't need to restore all of these?
+    let pointers_to_restore_for_sys_init: HashSet<Pointer> = subroutine_info_for_sys_init
+        .pointers_to_restore
+        .union(&subroutine_info_for_sys_init.pointers_used_directly)
+        .cloned()
+        .collect();
+
+    instructions.extend(init_call_stack(&pointers_to_restore_for_sys_init));
 
     for (filename, file_subroutines) in subroutines {
         let mut vm_command_idx = 0;
@@ -1090,7 +1111,7 @@ pub fn generate_asm(subroutines: &HashMap<PathBuf, Vec<CompiledSubroutine>>) -> 
         {
             for SourcemappedCommand { command, .. } in commands {
                 if live_subroutines.contains(name) {
-                    for asm_instruction in code_generator.compile_vm_command(command, filename, &pointers_to_restore, *locals_count, *arg_count) {
+                    for asm_instruction in code_generator.compile_vm_command(command, filename, &subroutine_info_by_name, *locals_count, *arg_count) {
                         sourcemap.record_asm_instruction(filename, vm_command_idx, instructions.len());
                         instructions.push(asm_instruction);
                     }

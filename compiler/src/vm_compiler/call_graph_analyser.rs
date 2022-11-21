@@ -87,10 +87,10 @@ fn analyse_pointer_usage(call_graph: &mut CallGraph, subroutines: &HashMap<PathB
             .get(&subroutine.name)
             .unwrap_or_else(|| panic!("expected to find subroutine info for {}", subroutine.name));
 
-        let reachable_subroutines = subroutines_reachable_from(&subroutine.name, &call_graph);
+        let reachable_subroutines = subroutines_reachable_from(&subroutine.name, call_graph);
 
-        let pointers_used = pointers_used_directly_by_subroutines(&reachable_subroutines, &call_graph);
-        let pointers_used_directly_by_callers = pointers_used_directly_by_subroutines(&subroutine_info.callers, &call_graph);
+        let pointers_used = pointers_used_directly_by_subroutines(&reachable_subroutines, call_graph);
+        let pointers_used_directly_by_callers = pointers_used_directly_by_subroutines(&subroutine_info.callers, call_graph);
         let pointers_to_restore = pointers_used.intersection(&pointers_used_directly_by_callers).cloned().collect();
 
         let subroutine_info = call_graph

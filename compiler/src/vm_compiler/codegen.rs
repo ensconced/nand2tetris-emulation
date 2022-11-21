@@ -875,7 +875,6 @@ impl CodeGenerator {
             .get(current_function)
             .unwrap_or_else(|| panic!("expected to find pointers to restore when returning from {}", current_function));
 
-        // TODO
         let pointers: HashSet<Pointer> = subroutine_info
             .pointers_used_directly
             .union(&subroutine_info.pointers_to_restore)
@@ -900,6 +899,7 @@ impl CodeGenerator {
             ])
             .collect();
 
+        // TODO - DRY up
         if pointers.contains(&Pointer::That) {
             instructions.extend(
                 vec![

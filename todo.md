@@ -1,10 +1,7 @@
 # optimisations
 
-- remind yourself how pointer restoration optimisation works currently...
-- in returns, sometimes decrementing SP is sufficient - don't need to actually restore anything if you USED it but it's not in the original pointers_to_restore?? - currently we take union of these, but should keep them separate in order to make this optimisation
 - don't waste an instruction on zeroes and ones
 - I think I'm shuffling stuff around r7 or r8 unnecessarily sometimes
-
 - eliminate unnecessary pushing/popping of return values
 
 - drawRectangle

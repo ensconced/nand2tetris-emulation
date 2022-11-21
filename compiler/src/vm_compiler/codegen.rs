@@ -160,6 +160,17 @@ fn push_from_d_register() -> Vec<ASMInstruction> {
     ]
 }
 
+fn pop_to_nowhere(pointer: &str) -> Vec<ASMInstruction> {
+    vec![
+        ASMInstruction::A(AValue::Symbolic(pointer.to_string())),
+        ASMInstruction::C {
+            expr: "M-1".to_string(),
+            dest: Some("M".to_string()),
+            jump: None,
+        },
+    ]
+}
+
 fn pop_into_d_register(pointer: &str) -> Vec<ASMInstruction> {
     // pointer is usually going to be SP but occasionally we want to use a
     // different pointer to perform a pop-like operation
@@ -875,12 +886,6 @@ impl CodeGenerator {
             .get(current_function)
             .unwrap_or_else(|| panic!("expected to find pointers to restore when returning from {}", current_function));
 
-        let pointers: HashSet<Pointer> = subroutine_info
-            .pointers_used_directly
-            .union(&subroutine_info.pointers_to_restore)
-            .cloned()
-            .collect();
-
         let mut instructions: Vec<_> = stash_return_value_in_r7()
             .into_iter()
             .chain(vec![
@@ -900,7 +905,7 @@ impl CodeGenerator {
             .collect();
 
         // TODO - DRY up
-        if pointers.contains(&Pointer::That) {
+        if subroutine_info.pointers_to_restore.contains(&Pointer::That) {
             instructions.extend(
                 vec![
                     pop_into_d_register("SP"),
@@ -916,8 +921,11 @@ impl CodeGenerator {
                 .into_iter()
                 .flatten(),
             )
+        } else if subroutine_info.pointers_used_directly.contains(&Pointer::That) {
+            instructions.extend(pop_to_nowhere("SP"))
         }
-        if pointers.contains(&Pointer::This) {
+
+        if subroutine_info.pointers_to_restore.contains(&Pointer::This) {
             instructions.extend(
                 vec![
                     pop_into_d_register("SP"),
@@ -933,8 +941,11 @@ impl CodeGenerator {
                 .into_iter()
                 .flatten(),
             )
+        } else if subroutine_info.pointers_used_directly.contains(&Pointer::This) {
+            instructions.extend(pop_to_nowhere("SP"))
         }
-        if pointers.contains(&Pointer::Arg) {
+
+        if subroutine_info.pointers_to_restore.contains(&Pointer::Arg) {
             instructions.extend(
                 vec![
                     pop_into_d_register("SP"),
@@ -950,8 +961,11 @@ impl CodeGenerator {
                 .into_iter()
                 .flatten(),
             )
+        } else if subroutine_info.pointers_used_directly.contains(&Pointer::Arg) {
+            instructions.extend(pop_to_nowhere("SP"))
         }
-        if pointers.contains(&Pointer::Lcl) {
+
+        if subroutine_info.pointers_to_restore.contains(&Pointer::Lcl) {
             instructions.extend(
                 vec![
                     pop_into_d_register("SP"),
@@ -967,6 +981,8 @@ impl CodeGenerator {
                 .into_iter()
                 .flatten(),
             )
+        } else if subroutine_info.pointers_used_directly.contains(&Pointer::Lcl) {
+            instructions.extend(pop_to_nowhere("SP"))
         }
 
         instructions

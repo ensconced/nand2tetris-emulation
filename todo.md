@@ -1,7 +1,8 @@
 # optimisations
 
-- don't waste an instruction on zeroes and ones
-- I think I'm shuffling stuff around r7 or r8 unnecessarily sometimes
+- don't waste an instruction on zeroes and ones - add new VM command `set` e.g. `set local 1 0`, where the first argument is the offset, as usual, and the second arg is the value, which is restricted to 1, 0 or -1, so that it can be set in a single instruction without needing any pushes or pops
+- use `set` instruction whereever possible, e.g. for `let i = 0`
+- I think I'm shuffling stuff around r7 or r8 unnecessarily sometimes?
 - eliminate unnecessary pushing/popping of return values
 
 - drawRectangle
@@ -12,11 +13,11 @@
 - "realtime play" - wil require windowing code-panels to improve perf
 - show contextual jack node
 - include linting and tsc in test suite
+- void return values - don't push zero just to pop it again
 
 ## perf/code-size optimisations
 
 - identidcal code folding - automatic extraction of subroutines
-- don't unnecessarily zero-out locals in jack code
 - use an even smaller font e.g. this 5x5 px one https://www.dafont.com/5x5.font (and caps only?)
 - peephole optimisation of vm code
 

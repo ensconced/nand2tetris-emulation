@@ -94,10 +94,10 @@ pub enum PointerSegmentVariant {
 impl Display for PointerSegmentVariant {
     fn fmt(&self, f: &mut Formatter) -> Result<(), std::fmt::Error> {
         match self {
-            PointerSegmentVariant::Argument => write!(f, "argument"),
-            PointerSegmentVariant::Local => write!(f, "local"),
-            PointerSegmentVariant::This => write!(f, "this"),
-            PointerSegmentVariant::That => write!(f, "that"),
+            PointerSegmentVariant::Argument => write!(f, "ARG"),
+            PointerSegmentVariant::Local => write!(f, "LCL"),
+            PointerSegmentVariant::This => write!(f, "THIS"),
+            PointerSegmentVariant::That => write!(f, "THAT"),
         }
     }
 }

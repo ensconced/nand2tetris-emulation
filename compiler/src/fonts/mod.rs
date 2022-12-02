@@ -18,7 +18,7 @@ struct GlyphUnicodeInfo {
     codepoint_sequences: Vec<Vec<u16>>,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Eq)]
 pub struct Glyph {
     bitmap: [u8; 9],
     individual_codepoints: Vec<u16>,
@@ -166,6 +166,8 @@ pub fn glyphs_asm() -> Vec<ASMInstruction> {
             // glyphs that I'm using. This means I can ignore the remainder here
             // when converting the bytes into 16-bit chunks.
             let sixteen_bit_chunks = bitmap.chunks_exact(2);
+
+            #[allow(clippy::needless_collect)] // clippy is wrong - this collect isn't needless
             let words: Vec<_> = sixteen_bit_chunks
                 .map(|chunk| i16::from_be_bytes(<[u8; 2]>::try_from(chunk).unwrap()))
                 .collect();

@@ -530,7 +530,7 @@ impl CodeGenerator {
     }
 
     fn compile_statements(&mut self, statements: &[ASTNode<Statement>]) -> Vec<SourcemappedCommand> {
-        statements.into_iter().flat_map(|statement| self.compile_statement(statement)).collect()
+        statements.iter().flat_map(|statement| self.compile_statement(statement)).collect()
     }
 
     fn compile_while_statement(

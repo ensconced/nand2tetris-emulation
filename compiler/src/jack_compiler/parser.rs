@@ -48,20 +48,17 @@ pub struct JackParserResult {
 }
 
 pub fn parse(tokens: &[Token<TokenKind>]) -> JackParserResult {
-    let tokens_without_whitespace: Vec<_> = tokens
-        .iter()
-        .filter(|token| {
-            !matches!(
-                token,
-                Token {
-                    kind: TokenKind::Whitespace | TokenKind::MultiLineComment | TokenKind::SingleLineComment,
-                    ..
-                }
-            )
-        })
-        .collect();
+    let tokens_without_whitespace = tokens.iter().filter(|token| {
+        !matches!(
+            token,
+            Token {
+                kind: TokenKind::Whitespace | TokenKind::MultiLineComment | TokenKind::SingleLineComment,
+                ..
+            }
+        )
+    });
 
-    let cloned_tokens_without_whitespace: Vec<_> = tokens_without_whitespace.into_iter().cloned().collect();
+    let cloned_tokens_without_whitespace: Vec<_> = tokens_without_whitespace.cloned().collect();
 
     let mut sourcemap = JackParserSourceMap::new();
 

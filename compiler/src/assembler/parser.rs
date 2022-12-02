@@ -27,10 +27,10 @@ impl Display for AValue {
             AValue::Numeric(string) => string,
             AValue::Symbolic(string) => string,
             AValue::Pointer(pointer) => match pointer {
-                PointerSegmentVariant::Argument => "arg",
-                PointerSegmentVariant::Local => "lcl",
-                PointerSegmentVariant::This => "this",
-                PointerSegmentVariant::That => "that",
+                PointerSegmentVariant::Argument => "ARG",
+                PointerSegmentVariant::Local => "LCL",
+                PointerSegmentVariant::This => "THIS",
+                PointerSegmentVariant::That => "THAT",
             },
         };
         write!(f, "{}", s)

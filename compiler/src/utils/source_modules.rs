@@ -16,22 +16,6 @@ impl SourceModule {
     }
 }
 
-// TODO - move this into test module
-pub fn mock_from_sources(sources: Vec<(&str, &str)>) -> HashMap<PathBuf, SourceModule> {
-    sources
-        .into_iter()
-        .map(|(filename, source)| {
-            (
-                filename.into(),
-                SourceModule {
-                    filename: filename.into(),
-                    source: source.to_owned(),
-                },
-            )
-        })
-        .collect()
-}
-
 pub fn get_source_modules(src_path: &Path) -> Result<HashMap<PathBuf, SourceModule>, io::Error> {
     let metadata = fs::metadata(src_path)?;
     let source_modules = if metadata.is_dir() {

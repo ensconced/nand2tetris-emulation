@@ -78,11 +78,31 @@ pub fn compile_jack(user_code: HashMap<PathBuf, SourceModule>) -> JackCompilerRe
 
 #[cfg(test)]
 mod tests {
-    use std::{ffi::OsString, fs, path::Path};
+    use std::{
+        collections::HashMap,
+        ffi::OsString,
+        fs,
+        path::{Path, PathBuf},
+    };
 
-    use crate::utils::{source_modules::mock_from_sources, testing::test_utils::*};
+    use crate::utils::{source_modules::SourceModule, testing::test_utils::*};
     use emulator_core::computer::tick_until;
     use itertools::Itertools;
+
+    fn mock_from_sources(sources: Vec<(&str, &str)>) -> HashMap<PathBuf, SourceModule> {
+        sources
+            .into_iter()
+            .map(|(filename, source)| {
+                (
+                    filename.into(),
+                    SourceModule {
+                        filename: filename.into(),
+                        source: source.to_owned(),
+                    },
+                )
+            })
+            .collect()
+    }
 
     #[test]
     fn test_string_alloc() {

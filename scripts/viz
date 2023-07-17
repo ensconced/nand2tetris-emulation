@@ -3,7 +3,6 @@
 set -eu
 
 rm -f ./web/bindings/*
-# cargo test || true
 cargo run --package compiler -- debug-compile /dev/null ./web/debug-output.json
 cd web
 npm start

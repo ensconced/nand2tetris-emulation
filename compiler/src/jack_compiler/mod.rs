@@ -89,7 +89,7 @@ mod tests {
     use emulator_core::computer::tick_until;
     use itertools::Itertools;
 
-    fn mock_from_sources(sources: Vec<(&str, &str)>) -> HashMap<PathBuf, SourceModule> {
+    fn mock_source_directory(sources: Vec<(&str, &str)>) -> HashMap<PathBuf, SourceModule> {
         sources
             .into_iter()
             .map(|(filename, source)| {
@@ -106,7 +106,7 @@ mod tests {
 
     #[test]
     fn test_string_alloc() {
-        let mut computer = computer_from_jack_code(mock_from_sources(vec![(
+        let mut computer = computer_from_jack_code(mock_source_directory(vec![(
             "Sys.jack",
             "
             class Sys {
@@ -130,7 +130,7 @@ mod tests {
 
     #[test]
     fn test_alloc_many_small_arrays() {
-        let mut computer = computer_from_jack_code(mock_from_sources(vec![(
+        let mut computer = computer_from_jack_code(mock_source_directory(vec![(
             "Sys.jack",
             "
             class Sys {
@@ -170,7 +170,7 @@ mod tests {
 
     #[test]
     fn test_memory_init() {
-        let mut computer = computer_from_jack_code(mock_from_sources(vec![(
+        let mut computer = computer_from_jack_code(mock_source_directory(vec![(
             "Sys.jack",
             "
             class Sys {
@@ -206,7 +206,7 @@ mod tests {
 
     #[test]
     fn test_memory_alloc_4_word_block() {
-        let mut computer = computer_from_jack_code(mock_from_sources(vec![(
+        let mut computer = computer_from_jack_code(mock_source_directory(vec![(
             "Sys.jack",
             "
             class Sys {
@@ -250,7 +250,7 @@ mod tests {
 
     #[test]
     fn test_memory_alloc_dealloc_without_merge() {
-        let mut computer = computer_from_jack_code(mock_from_sources(vec![(
+        let mut computer = computer_from_jack_code(mock_source_directory(vec![(
             "Sys.jack",
             "
             class Sys {
@@ -292,7 +292,7 @@ mod tests {
 
     #[test]
     fn test_memory_alloc_dealloc_with_single_merge() {
-        let mut computer = computer_from_jack_code(mock_from_sources(vec![(
+        let mut computer = computer_from_jack_code(mock_source_directory(vec![(
             "Sys.jack",
             "
             class Sys {
@@ -334,7 +334,7 @@ mod tests {
 
     #[test]
     fn test_memory_alloc_dealloc_with_multiple_merges() {
-        let mut computer = computer_from_jack_code(mock_from_sources(vec![(
+        let mut computer = computer_from_jack_code(mock_source_directory(vec![(
             "Sys.jack",
             "
             class Sys {
@@ -419,7 +419,7 @@ mod tests {
                 })
                 .collect();
 
-            let mut computer = computer_from_jack_code(mock_from_sources(jack_source_refs));
+            let mut computer = computer_from_jack_code(mock_source_directory(jack_source_refs));
             tick_until(&mut computer, &program_completed);
             let screen_bytes = computer.screen_snapshot();
             if let Some(image_file) = image_files.get(0) {

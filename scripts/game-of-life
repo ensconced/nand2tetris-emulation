@@ -2,6 +2,6 @@
 
 set -eu
 
-cargo run --package compiler -- compile "./programs/vm-code/game_of_life" "./programs/asm/game_of_life.asm"
-cargo run --package compiler -- assemble "./programs/asm/game_of_life.asm" "./programs/machine-code/game_of_life"
-cargo run --package desktop_emulator -- run "./programs/machine-code/game_of_life"
+# cargo run --package compiler -- compile "./programs/vm-code/game_of_life" "./programs/asm/game_of_life.asm"
+# cargo run --package compiler -- assemble "./programs/asm/game_of_life.asm" "./programs/machine-code/game_of_life"
+# cargo run --package desktop_emulator -- run "./programs/machine-code/game_of_life"

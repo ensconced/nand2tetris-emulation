@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+set -eu
+
+cargo run --package compiler -- debug-compile "./programs/jack/$1" "./programs/machine_code/$1" /tmp/debug-output
+cargo run --package desktop_emulator -- run "./programs/machine_code/$1"

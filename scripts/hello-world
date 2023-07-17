@@ -1,6 +1,0 @@
-#!/usr/bin/env bash
-
-set -eu
-
-cargo run --package compiler -- debug-compile ./programs/machine-code/hello-world /tmp/debug-output
-cargo run --package desktop_emulator -- run ./programs/machine-code/hello-world

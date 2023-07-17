@@ -1,4 +1,3 @@
-mod asm_compressor;
 mod assembler;
 mod config;
 mod fonts;
@@ -17,7 +16,7 @@ use std::{
     path::{Path, PathBuf},
 };
 use ts_rs::TS;
-use utils::source_modules::SourceModule;
+use utils::source_modules::{get_source_modules, SourceModule};
 use vm_compiler::codegen::VMCompilerResult;
 use {
     assembler::{assemble, assemble_file},
@@ -60,6 +59,7 @@ struct Args {
 enum Commands {
     /// Compile jack code, generating JSON output including a sourcemap
     DebugCompile {
+        source_dir_path: Option<String>,
         dest_path: Option<String>,
         debug_output_path: Option<String>,
     },
@@ -75,13 +75,14 @@ fn main() {
 
     match &args.command {
         Commands::DebugCompile {
+            source_dir_path,
             dest_path: dest_path_maybe,
             debug_output_path: debug_output_path_maybe,
         } => {
             let debug_output_path = debug_output_path_maybe.as_ref().expect("debug output path is required");
             let dest_path = dest_path_maybe.as_ref().expect("dest path is required");
-
-            let jack_compiler_result = compile_jack(HashMap::default());
+            let user_code = get_source_modules(Path::new(source_dir_path.as_ref().unwrap())).unwrap();
+            let jack_compiler_result = compile_jack(user_code);
             let vm_compiler_result = generate_asm(&jack_compiler_result.subroutines);
             let assembly_result = assemble(&vm_compiler_result.instructions, ROM_DEPTH);
             let compiler_result = CompilerResult {

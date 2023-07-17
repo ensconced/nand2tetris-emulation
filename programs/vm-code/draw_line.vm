@@ -1,7 +1,0 @@
-function Sys.init 0
-push constant 18432 // screen
-pop pointer 0
-push constant 0
-not
-pop this 0
-return

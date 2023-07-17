@@ -1,0 +1,28 @@
+function Sys.init 0
+// THIS is screen
+push constant 18432
+pop pointer 0
+
+// THAT is keyboard
+push constant 26624
+pop pointer 1
+
+label startloop
+  push that 0
+  push constant 65
+  eq
+  if-goto showline
+  goto hideline
+label endloop
+
+label hideline
+  push constant 0
+  pop this 0
+goto start
+
+
+label showline
+  push constant 0
+  not
+  pop this 0
+goto start

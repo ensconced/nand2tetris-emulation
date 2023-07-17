@@ -1,9 +1,0 @@
-class MathTest {
-  function void runTest() {
-    var String str;
-
-    let str = "The square root of 144 is ";
-    do Output.printString(str);
-    do Output.printInt(Math.sqrt(144));
-  }
-}

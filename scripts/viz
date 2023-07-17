@@ -3,6 +3,6 @@
 set -eu
 
 rm -f ./web/bindings/*
-cargo run --package compiler -- debug-compile /dev/null ./web/debug-output.json
+cargo run --package compiler -- debug-compile "./programs/jack/$1" /dev/null ./web/debug-output.json
 cd web
 npm start

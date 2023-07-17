@@ -1,0 +1,180 @@
+// GAME OF LIFE
+
+// mash the keyboard to provide random initialisation
+
+function Sys.init 0
+  push constant 2048
+  pop pointer 0
+  push constant 2
+  pop this 0
+  push constant 1
+  pop this 2
+  push constant 7
+  pop this 4
+
+
+  label start
+    call increment_timer 0
+    pop constant 0 // discard return value
+    call handle_frame 0
+    pop constant 0
+
+    call key_changed 0
+    if-goto call_handle_key_change
+    goto start
+
+    label call_handle_key_change
+    call handle_key_change 0
+    pop constant 0
+    goto start
+
+function handle_frame 4
+  // point THAT to next frame buffer
+  push constant 2080
+  pop pointer 1
+
+  push constant 0
+  pop local 0 // wordidx
+
+  label start_loop
+    push local 0 // wordidx
+    push constant 32
+    eq
+    if-goto end_loop
+
+    push constant 0
+    pop local 1 // bitidx
+
+    push constant 0
+    pop local 2 // word
+
+    push constant 1
+    pop local 3 // mask
+
+    label start_inner_loop
+      push local 1 // bitidx
+      push constant 16
+      eq
+      if-goto end_inner_loop
+
+      push local 0 // wordidx
+      push local 1 // bitidx
+      call get_next_state 2
+      push local 3 // mask
+      and
+      push local 2 // word
+      or
+      pop local 2 // word
+
+      // shift mask
+      push local 3
+      push local 3
+      add
+      pop local 3
+
+      // bitidx++
+      push local 1
+      push constant 1
+      add
+      pop local 1
+      goto start_inner_loop
+      label end_inner_loop
+
+    push local 2 // word
+    pop that 0
+
+    push pointer 1
+    push constant 1
+    add
+    pop pointer 1
+
+    push local 0 // wordidx
+    push constant 1
+    add
+    pop local 0
+    goto start_loop
+    label end_loop
+
+  call copy_next_buffer 0
+  pop constant 0
+
+  call draw_from_compact_representation 0
+  return
+
+function read_value 2
+  // generate mask
+  push constant 1
+  pop local 0 // mask
+
+  push constant 0
+  pop local 1 // counter
+  label start_loop
+    push argument 1 // bitidx
+    push local 1
+    eq
+    if-goto end_loop
+
+    push local 0
+    push local 0
+    add
+    pop local 0
+
+    push local 1
+    push constant 1
+    add
+    pop local 1
+
+    goto start_loop
+    label end_loop
+
+  push constant 2048
+  push argument 0
+  add
+  pop pointer 0
+  push this 0 // value
+  push local 0 // mask
+  and
+  push local 0
+  eq
+  return
+
+function get_next_state 1
+  // Any live cell with two or three live neighbours survives.
+  // Any dead cell with three live neighbours becomes a live cell.
+  // All other live cells die in the next generation. Similarly, all other dead cells stay dead.
+  push argument 0
+  push argument 1
+  call live_neighbour_count 2
+  pop local 0 // alive_neighbours
+
+  push argument 0
+  push argument 1
+  call read_value 2
+  if-goto handle_live_cell
+  goto handle_dead_cell
+  label handle_live_cell
+    push local 0
+    push constant 2
+    eq
+    if-goto live
+    push local 0
+    push constant 3
+    eq
+    if-goto live
+    goto die
+
+  label handle_dead_cell
+    push local 0
+    push constant 3
+    eq
+    if-goto live
+    goto die
+
+  label die
+    push constant 0
+    return
+
+  label live
+    push constant 0
+    not
+    return

@@ -2,16 +2,34 @@
 
 // mash the keyboard to provide random initialisation
 
+// the screen is 128 * 64 pixels
+// using 4x4 squares, this means we have:
+// 32 x 16 = 512 squares
+// to represent each frame we therefore need 512 bits
+// which is 512 / 16 = 32 words
+
+// frame buffers 32 words each
+// 2048 - 2080
+// 2080 - 2112
+
+// glider
+// 0000000000000010 0000000000000000
+// 0000000000000001 0000000000000000
+// 0000000000001110 0000000000000000
+
 function Sys.init 0
+  // point `this` to base of heap
   push constant 2048
   pop pointer 0
+
+  // put [2, - , 1, - , 7] in heap
+  // this must be to initialise a glider
   push constant 2
   pop this 0
   push constant 1
   pop this 2
   push constant 7
   pop this 4
-
 
   label start
     call increment_timer 0
@@ -27,6 +45,16 @@ function Sys.init 0
     call handle_key_change 0
     pop constant 0
     goto start
+
+// for (let wordIdx = 0; wordIdx < 32; wordIdx++) {
+//   let word = 0;
+//   let mask = 1;
+//   for (let bitIdx = 0; bitIdx < 16; bitIdx++) {
+//     word = word | (get_next_state(wordIdx, bitIdx) & mask);
+//     mask = mask + mask;
+//     bitIdx++;
+//   }
+// }
 
 function handle_frame 4
   // point THAT to next frame buffer

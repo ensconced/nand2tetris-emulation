@@ -1,18 +1,6 @@
 # Notes Jul '23
 
-I think there is currently no way of compiling textual vm code.
-This is by design - I removed all the parsing etc code for vm code.
-Instead vm code is really now just an IR without a corresponding textual representation.
-
-This is a bit annoying though because the game of life stuff is written in vm code directly.
-Which is actually pretty cool.
-But maybe I should rewrite it in jack.
-
-I want to be able to create a program from any of:
-
-- a directory of source files, combined with the stdlib
-- a "mock directory" i.e. some "source files" whose filenames and contents are actually described inline in the code, or tests etc
-- ... I think that's all I need?
+Translate game of life into jack code
 
 # optimisations
 

@@ -1,0 +1,43 @@
+class Main {
+    function void main () {
+      var int current_frame_buffer, next_frame_buffer;
+
+      let current_frame_buffer = Memory.alloc(32);
+      let next_frame_buffer = Memory.alloc(32);
+
+      // initialise glider
+      let current_frame_buffer[0] = 2;
+      let current_frame_buffer[2] = 1;
+      let current_frame_buffer[4] = 7;
+
+      while (true) {
+        do handle_frame(current_frame_buffer, next_frame_buffer);
+      }
+    }
+
+    function void handle_frame(int current_frame_buffer, int next_frame_buffer) {
+      var int word_idx, bit_idx, word, mask;
+
+      let word_idx = 0;
+      while (word_idx < 32) {
+        let bit_idx = 0;
+        let word = 0;
+        let mask = 1;
+
+        while (bit_idx < 16) {
+          let word = word | (get_next_state(word_idx, bit_idx) & mask);
+          let mask = mask + mask;
+          let bit_idx = bit_idx + 1;
+        }
+
+        // TODO - why is next_frame_buffer corrupted here??
+        // let next_frame_buffer[word_idx] = word;
+        let word_idx = word_idx + 1;
+      }
+    }
+
+    function int get_next_state(int word_idx, int bit_idx) {
+       // TODO
+      return 0;
+    }
+}

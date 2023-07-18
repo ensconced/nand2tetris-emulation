@@ -1,8 +1,8 @@
 // static 0 is screen pointer
 
 function draw_from_compact_representation 1
-  push constant 18432
-  push constant 15
+  push constant  // screen base
+  push constant 15 // ?
   add
   pop static 0
 

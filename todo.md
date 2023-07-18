@@ -1,6 +1,6 @@
-# Notes Jul '23
+# TODO
 
-Translate game of life into jack code
+- fix bug in call graph analysis to unblock game of life
 
 # optimisations
 

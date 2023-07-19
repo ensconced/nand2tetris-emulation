@@ -76,8 +76,8 @@ impl Display for MemoryCommandVariant {
 
 #[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub enum PointerSegmentVariant {
-    Argument,
     Local,
+    Argument,
     This,
     That,
 }
@@ -85,8 +85,8 @@ pub enum PointerSegmentVariant {
 impl Display for PointerSegmentVariant {
     fn fmt(&self, f: &mut Formatter) -> Result<(), std::fmt::Error> {
         match self {
-            PointerSegmentVariant::Argument => write!(f, "ARG"),
             PointerSegmentVariant::Local => write!(f, "LCL"),
+            PointerSegmentVariant::Argument => write!(f, "ARG"),
             PointerSegmentVariant::This => write!(f, "THIS"),
             PointerSegmentVariant::That => write!(f, "THAT"),
         }

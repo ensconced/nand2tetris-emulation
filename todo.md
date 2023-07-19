@@ -2,6 +2,10 @@
 
 - fix bug in call graph analysis to unblock game of life
 
+get_next_state itself doesn't use the ARG pointer...
+so we think we're safe in not restoring it when we return from get_next_state.
+but we DO set the ARG pointer when CALLING get_next_state. so we need to take this into account?
+
 # optimisations
 
 - don't waste an instruction on zeroes and ones - add new VM command `set` e.g. `set local 1 0`, where the first argument is the offset, as usual, and the second arg is the value, which is restricted to 1, 0 or -1, so that it can be set in a single instruction without needing any pushes or pops

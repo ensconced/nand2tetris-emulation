@@ -26,8 +26,8 @@ A function is considered to have directly used THAT if any command pushes or pop
 - push the arguments
 - push return address
 - push the pointers from the current frame that need saving
-- set ARG pointer (always)
-- set LCL pointer (if necessary)
+- set ARG pointer (if in "pointers"...)
+- set LCL pointer (if in "pointers"...)
 - jump to subroutine address
 
 ("pointers" is pointers used directly by the function, plus the ones that we'll need to restore when returning from the function?)

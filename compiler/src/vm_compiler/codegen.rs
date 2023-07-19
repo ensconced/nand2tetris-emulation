@@ -402,23 +402,6 @@ fn push_from_constant(constant: u16) -> Vec<ASMInstruction> {
     }
 }
 
-fn load_avalue_into_register(avalue: AValue, register: &str) -> Vec<ASMInstruction> {
-    vec![
-        ASMInstruction::A(avalue),
-        ASMInstruction::C {
-            expr: "A".to_string(),
-            dest: Some("D".to_string()),
-            jump: None,
-        },
-        ASMInstruction::A(AValue::Symbolic(register.to_string())),
-        ASMInstruction::C {
-            expr: "D".to_string(),
-            dest: Some("M".to_string()),
-            jump: None,
-        },
-    ]
-}
-
 fn make_space_for_locals(local_var_count: usize) -> Vec<ASMInstruction> {
     vec![
         ASMInstruction::A(AValue::Numeric(local_var_count.to_string())),
@@ -674,8 +657,9 @@ impl CodeGenerator {
 
         let subroutine_info = subroutine_info_by_name
             .get(function_name)
-            .unwrap_or_else(|| panic!("expected to find pointers to restore when calling {}", function_name));
+            .unwrap_or_else(|| panic!("expected to find subroutine info when calling {}", function_name));
 
+        // TODO - this might need some explanation...
         let pointers: HashSet<PointerSegmentVariant> = subroutine_info
             .pointers_used_directly
             .union(&subroutine_info.pointers_to_restore)
@@ -683,12 +667,10 @@ impl CodeGenerator {
             .collect();
 
         let mut instructions: Vec<_> = vec![
-            load_avalue_into_register(AValue::Symbolic(return_address_label.to_string()), "R8"),
-            load_avalue_into_register(AValue::Numeric((pointers.len() + 1 + arg_count as usize).to_string()), "R9"),
             vec![
-                ASMInstruction::A(AValue::Symbolic("R8".to_string())),
+                ASMInstruction::A(AValue::Symbolic(return_address_label.to_string())),
                 ASMInstruction::C {
-                    expr: "M".to_string(),
+                    expr: "A".to_string(),
                     dest: Some("D".to_string()),
                     jump: None,
                 },
@@ -715,13 +697,19 @@ impl CodeGenerator {
                 .chain(push_from_d_register())
             })
             .collect(),
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
+
+        if pointers.contains(&PointerSegmentVariant::Argument) {
             // Set arg pointer - at this point, all the arguments have been pushed to the stack,
             // plus the return address, plus the saved caller pointers.
             // So to find the correct position for ARG, we can count back from the stack pointer.
-            vec![
-                ASMInstruction::A(AValue::Symbolic("R9".to_string())),
+            instructions.extend(vec![
+                ASMInstruction::A(AValue::Numeric((pointers.len() + 1 + arg_count as usize).to_string())),
                 ASMInstruction::C {
-                    expr: "M".to_string(),
+                    expr: "A".to_string(),
                     dest: Some("D".to_string()),
                     jump: None,
                 },
@@ -737,11 +725,8 @@ impl CodeGenerator {
                     dest: Some("M".to_string()),
                     jump: None,
                 },
-            ],
-        ]
-        .into_iter()
-        .flatten()
-        .collect();
+            ])
+        }
 
         if pointers.contains(&PointerSegmentVariant::Local) {
             // set lcl pointer

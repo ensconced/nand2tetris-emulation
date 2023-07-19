@@ -12,7 +12,7 @@ To run the compiled machine code on the emulator:
 cargo run -- run blinky
 ```
 
-### memory layout
+### Memory Layout
 
 NB this differs slightly from the layout described in the book - the heap has been expanded to 16k words. This makes the implementation of the buddy heap allocation algorithm much simpler.
 
@@ -34,3 +34,11 @@ Also, my TEMP segment is smaller, and I have more virtual registers.
 | 26624         | KBD                       |
 | 26625-30424   | GLYPHS                    |
 | 30425-32767   | FREE FOR FUTURE USE       |
+
+### Stack Frame Layout
+
+ARGUMENTS
+RETURN ADDRESS
+SAVED CALLER POINTERS
+LOCALS
+TEMPORARY VALUES / RETURN VALUE

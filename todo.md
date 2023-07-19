@@ -1,3 +1,25 @@
+How call graph / pointer usage analysis works
+
+How calling a function works
+
+- push the arguments
+- push return address
+- push the pointers from the current frame that need saving
+- set ARG pointer (always)
+- set LCL pointer (if necessary)
+- jump to subroutine address
+
+("pointers" is pointers used directly by the function, plus the ones that we'll need to restore when returning from the function?)
+
+How returning from a function works
+
+- stash return value into R7
+- pop locals
+- work through saved caller pointers on stack frame, check whether they can simply be popped, or whether we need to restore them
+- stash return address in R8
+- place return value from R7
+- jump to return address
+
 # TODO
 
 - fix bug in call graph analysis to unblock game of life

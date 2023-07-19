@@ -1,6 +1,27 @@
-How call graph / pointer usage analysis works
+### How call graph / pointer usage analysis works
 
-How calling a function works
+Besides SP which is different because it's kind of global across all stack frames, there are 4 pointers that can be used by any stack frame:
+
+LCL
+ARG
+THIS
+THAT
+
+Conceptually, each stack frame has its own version of each of these. For the current stack frame, these are stored at memory addresses 2-5. When calling a function, the values for the current frame are saved on the stack, and then restored again when the callee returns.
+
+However, we make some optimisations to avoid unnecessary work here. We record which pointers are used by which functions. This analysis is done at the level of the vm code.
+
+A function is considered to have directly used the LCL pointer if it contains any commands involving pushing or popping locals.
+
+Similarly, a function is considered to have directly used the ARG pointer if it contains any commands involving pushing or popping arguments.
+
+(TODO - is this flawed? Since there may be other commands also which involve ARG...namely the `call` command?? Or is that OK, since it only writes to ARG, and never reads?? Do we need to add some notion of reading vs writing to our pointer usage analysis? Even if the current approach is sound, this may allow for further optimisations in terms of program size.)
+
+A function is considered to have directly used THIS if any command pushes or pops to POINTER 0, or to THIS.
+
+A function is considered to have directly used THAT if any command pushes or pops to POINTER 1, or to THAT.
+
+### How calling a function works
 
 - push the arguments
 - push return address
@@ -11,7 +32,7 @@ How calling a function works
 
 ("pointers" is pointers used directly by the function, plus the ones that we'll need to restore when returning from the function?)
 
-How returning from a function works
+### How returning from a function works
 
 - stash return value into R7
 - pop locals

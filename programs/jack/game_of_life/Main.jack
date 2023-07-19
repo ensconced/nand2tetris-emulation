@@ -25,10 +25,6 @@ class Main {
         let mask = 1;
 
         while (bit_idx < 16) {
-          // TODO - why is the call to get_next_state here
-          // corrupting the ARG pointer? It's like it doesn't get reset
-          // properly when we return from the function call...
-          // ...presumably it's a bug in the call graph analysis?
           let word = word | (get_next_state(word_idx, bit_idx) & mask);
           let mask = mask + mask;
           let bit_idx = bit_idx + 1;

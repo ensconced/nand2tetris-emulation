@@ -667,11 +667,11 @@ impl CodeGenerator {
             .unwrap_or_else(|| panic!("expected to find subroutine info when calling {}", function_name));
 
         // TODO - this might need some explanation...
-        let pointers: HashSet<PointerSegmentVariant> = subroutine_info
-            .pointers_used_directly
-            .union(&subroutine_info.pointers_to_restore)
-            .cloned()
-            .collect();
+        // let pointers: HashSet<PointerSegmentVariant> = subroutine_info
+        //     .pointers_used_directly
+        //     .union(&subroutine_info.pointers_to_restore)
+        //     .cloned()
+        //     .collect();
 
         let mut instructions: Vec<_> = vec![
             vec![
@@ -685,7 +685,7 @@ impl CodeGenerator {
             push_from_d_register(),
             SAVED_CALLER_POINTER_ORDER
                 .into_iter()
-                .filter(|pointer| pointers.contains(pointer))
+                .filter(|pointer| subroutine_info.pointers_to_restore.contains(pointer))
                 .flat_map(|pointer| {
                     vec![
                         ASMInstruction::A(AValue::Pointer(pointer)),
@@ -709,7 +709,9 @@ impl CodeGenerator {
             // plus the return address, plus the saved caller pointers.
             // So to find the correct position for ARG, we can count back from the stack pointer.
             instructions.extend(vec![
-                ASMInstruction::A(AValue::Numeric((pointers.len() + 1 + arg_count as usize).to_string())),
+                ASMInstruction::A(AValue::Numeric(
+                    (subroutine_info.pointers_to_restore.len() + 1 + arg_count as usize).to_string(),
+                )),
                 ASMInstruction::C {
                     expr: "A".to_string(),
                     dest: Some("D".to_string()),

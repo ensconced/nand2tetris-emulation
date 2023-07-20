@@ -1,3 +1,8 @@
+### Debugging notes
+
+All the snapshots are actually passing right now, but some of the Memory.alloc tests are failing.
+Need to investigate these. Once that is understood, and fixed, should make sure I fully understand the pointer usage pruning code, possibly add some more (snapshot) tests, and then explain it all in the a big comment in the code. And possibly apply some more optimisations as described below.
+
 ### How call graph / pointer usage analysis works
 
 Besides SP which is different because it's kind of global across all stack frames, there are 4 pointers that can be used by any stack frame:

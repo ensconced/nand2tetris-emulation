@@ -666,13 +666,6 @@ impl CodeGenerator {
             .get(function_name)
             .unwrap_or_else(|| panic!("expected to find subroutine info when calling {}", function_name));
 
-        // TODO - this might need some explanation...
-        // let pointers: HashSet<PointerSegmentVariant> = subroutine_info
-        //     .pointers_used_directly
-        //     .union(&subroutine_info.pointers_to_restore)
-        //     .cloned()
-        //     .collect();
-
         let mut instructions: Vec<_> = vec![
             vec![
                 ASMInstruction::A(AValue::Symbolic(return_address_label.to_string())),
@@ -880,11 +873,8 @@ impl CodeGenerator {
             ])
             .collect();
 
-        let mut pointers_to_discard = 0;
         for pointer in SAVED_CALLER_POINTER_ORDER.iter().rev() {
             if subroutine_info.pointers_to_restore.contains(pointer) {
-                instructions.extend(decrement_sp(pointers_to_discard));
-                pointers_to_discard = 0;
                 instructions.extend(
                     vec![
                         pop_into_d_register(),
@@ -900,11 +890,8 @@ impl CodeGenerator {
                     .into_iter()
                     .flatten(),
                 )
-            } else if subroutine_info.pointers_used_directly.contains(pointer) {
-                pointers_to_discard += 1;
             }
         }
-        instructions.extend(decrement_sp(pointers_to_discard));
 
         instructions
             .into_iter()

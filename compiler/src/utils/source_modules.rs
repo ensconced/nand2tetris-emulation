@@ -21,9 +21,12 @@ pub fn get_source_modules(src_path: &Path) -> Result<HashMap<PathBuf, SourceModu
     let source_modules = if metadata.is_dir() {
         fs::read_dir(src_path)?
             .flatten()
-            .map(|entry| {
+            .filter_map(|entry| {
                 let filename: PathBuf = entry.path().file_name().unwrap().into();
-                (filename, SourceModule::new(entry.path()))
+                filename
+                    .extension()
+                    .map(|ext| ext.to_owned())
+                    .and_then(|ext| (ext == "jack").then(|| (filename, SourceModule::new(entry.path()))))
             })
             .collect()
     } else {

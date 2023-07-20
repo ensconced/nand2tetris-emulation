@@ -29,6 +29,13 @@ use super::{
     sourcemap::SourceMap,
 };
 
+const SAVED_CALLER_POINTER_ORDER: [PointerSegmentVariant; 4] = [
+    PointerSegmentVariant::Local,
+    PointerSegmentVariant::Argument,
+    PointerSegmentVariant::This,
+    PointerSegmentVariant::That,
+];
+
 fn holding_pattern() -> Vec<ASMInstruction> {
     vec![
         // This will be the very first instruction in the computer's ROM.
@@ -676,33 +683,28 @@ impl CodeGenerator {
                 },
             ],
             push_from_d_register(),
-            vec![
-                PointerSegmentVariant::Local,
-                PointerSegmentVariant::Argument,
-                PointerSegmentVariant::This,
-                PointerSegmentVariant::That,
-            ]
-            .into_iter()
-            .filter(|pointer| pointers.contains(pointer))
-            .flat_map(|pointer| {
-                vec![
-                    ASMInstruction::A(AValue::Pointer(pointer)),
-                    ASMInstruction::C {
-                        expr: "M".to_string(),
-                        dest: Some("D".to_string()),
-                        jump: None,
-                    },
-                ]
+            SAVED_CALLER_POINTER_ORDER
                 .into_iter()
-                .chain(push_from_d_register())
-            })
-            .collect(),
+                .filter(|pointer| pointers.contains(pointer))
+                .flat_map(|pointer| {
+                    vec![
+                        ASMInstruction::A(AValue::Pointer(pointer)),
+                        ASMInstruction::C {
+                            expr: "M".to_string(),
+                            dest: Some("D".to_string()),
+                            jump: None,
+                        },
+                    ]
+                    .into_iter()
+                    .chain(push_from_d_register())
+                })
+                .collect(),
         ]
         .into_iter()
         .flatten()
         .collect();
 
-        if pointers.contains(&PointerSegmentVariant::Argument) {
+        if subroutine_info.pointers_used.contains(&PointerSegmentVariant::Argument) {
             // Set arg pointer - at this point, all the arguments have been pushed to the stack,
             // plus the return address, plus the saved caller pointers.
             // So to find the correct position for ARG, we can count back from the stack pointer.
@@ -728,7 +730,7 @@ impl CodeGenerator {
             ])
         }
 
-        if pointers.contains(&PointerSegmentVariant::Local) {
+        if subroutine_info.pointers_used.contains(&PointerSegmentVariant::Local) {
             // set lcl pointer
             instructions.extend(vec![
                 ASMInstruction::A(AValue::Symbolic("SP".to_string())),
@@ -876,23 +878,16 @@ impl CodeGenerator {
             ])
             .collect();
 
-        let pointers = vec![
-            PointerSegmentVariant::That,
-            PointerSegmentVariant::This,
-            PointerSegmentVariant::Argument,
-            PointerSegmentVariant::Local,
-        ];
-
         let mut pointers_to_discard = 0;
-        for pointer in pointers {
-            if subroutine_info.pointers_to_restore.contains(&pointer) {
+        for pointer in SAVED_CALLER_POINTER_ORDER.iter().rev() {
+            if subroutine_info.pointers_to_restore.contains(pointer) {
                 instructions.extend(decrement_sp(pointers_to_discard));
                 pointers_to_discard = 0;
                 instructions.extend(
                     vec![
                         pop_into_d_register(),
                         vec![
-                            ASMInstruction::A(AValue::Pointer(pointer)),
+                            ASMInstruction::A(AValue::Pointer(pointer.clone())),
                             ASMInstruction::C {
                                 expr: "D".to_string(),
                                 dest: Some("M".to_string()),
@@ -903,7 +898,7 @@ impl CodeGenerator {
                     .into_iter()
                     .flatten(),
                 )
-            } else if subroutine_info.pointers_used_directly.contains(&pointer) {
+            } else if subroutine_info.pointers_used_directly.contains(pointer) {
                 pointers_to_discard += 1;
             }
         }

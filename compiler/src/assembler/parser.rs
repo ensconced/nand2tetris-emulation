@@ -27,8 +27,8 @@ impl Display for AValue {
             AValue::Numeric(string) => string,
             AValue::Symbolic(string) => string,
             AValue::Pointer(pointer) => match pointer {
-                PointerSegmentVariant::Argument => "ARG",
                 PointerSegmentVariant::Local => "LCL",
+                PointerSegmentVariant::Argument => "ARG",
                 PointerSegmentVariant::This => "THIS",
                 PointerSegmentVariant::That => "THAT",
             },

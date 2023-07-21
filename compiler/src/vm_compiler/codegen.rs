@@ -80,7 +80,7 @@ fn init_call_stack(pointers_used: &HashSet<PointerSegmentVariant>) -> Vec<ASMIns
             jump: None,
         },
         // Initialize the stack pointer.
-        ASMInstruction::A(AValue::Numeric((256 + 1 + pointers_used.len()).to_string())),
+        ASMInstruction::A(AValue::Numeric((256 + 1).to_string())),
         ASMInstruction::C {
             expr: "A".to_string(),
             dest: Some("D".to_string()),
@@ -93,7 +93,7 @@ fn init_call_stack(pointers_used: &HashSet<PointerSegmentVariant>) -> Vec<ASMIns
             jump: None,
         },
         // LCL starts off pointing to the same address as the stack pointer.
-        ASMInstruction::A(AValue::Numeric((256 + 1 + pointers_used.len()).to_string())),
+        ASMInstruction::A(AValue::Numeric((256 + 1).to_string())),
         ASMInstruction::C {
             expr: "A".to_string(),
             dest: Some("D".to_string()),
@@ -855,23 +855,7 @@ impl CodeGenerator {
             .get(current_function)
             .unwrap_or_else(|| panic!("expected to find pointers to restore when returning from {}", current_function));
 
-        let mut instructions: Vec<_> = stash_return_value_in_r7()
-            .into_iter()
-            .chain(vec![
-                ASMInstruction::A(AValue::Numeric(locals_count.to_string())),
-                ASMInstruction::C {
-                    expr: "A".to_string(),
-                    dest: Some("D".to_string()),
-                    jump: None,
-                },
-                ASMInstruction::A(AValue::Symbolic("SP".to_owned())),
-                ASMInstruction::C {
-                    expr: "M-D".to_string(),
-                    dest: Some("M".to_string()),
-                    jump: None,
-                },
-            ])
-            .collect();
+        let mut instructions: Vec<_> = stash_return_value_in_r7().into_iter().chain(decrement_sp(locals_count as u32)).collect();
 
         for pointer in SAVED_CALLER_POINTER_ORDER.iter().rev() {
             if subroutine_info.pointers_to_restore.contains(pointer) {

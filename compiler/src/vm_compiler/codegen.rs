@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     iter,
     path::{Path, PathBuf},
 };
@@ -63,7 +63,7 @@ fn holding_pattern() -> Vec<ASMInstruction> {
     ]
 }
 
-fn init_call_stack(pointers_used: &HashSet<PointerSegmentVariant>) -> Vec<ASMInstruction> {
+fn init_call_stack() -> Vec<ASMInstruction> {
     vec![
         // For each stack frame, ARG points to the base of the frame. This is the
         // first stack frame, so here ARG points to the base of the entire stack.
@@ -801,21 +801,9 @@ impl CodeGenerator {
             .collect()
         }
 
-        fn place_return_value(arg_count: usize) -> Vec<ASMInstruction> {
+        fn place_value_from_r7() -> Vec<ASMInstruction> {
             vec![
                 vec![
-                    ASMInstruction::A(AValue::Numeric(arg_count.to_string())),
-                    ASMInstruction::C {
-                        expr: "A".to_string(),
-                        dest: Some("D".to_string()),
-                        jump: None,
-                    },
-                    ASMInstruction::A(AValue::Symbolic("SP".to_string())),
-                    ASMInstruction::C {
-                        expr: "M-D".to_string(),
-                        dest: Some("M".to_string()),
-                        jump: None,
-                    },
                     ASMInstruction::A(AValue::Symbolic("R7".to_string())),
                     ASMInstruction::C {
                         expr: "M".to_string(),
@@ -830,7 +818,7 @@ impl CodeGenerator {
             .collect()
         }
 
-        fn goto_return_address() -> Vec<ASMInstruction> {
+        fn goto_address_from_r8() -> Vec<ASMInstruction> {
             vec![
                 ASMInstruction::A(AValue::Symbolic("R8".to_string())),
                 ASMInstruction::C {
@@ -846,20 +834,16 @@ impl CodeGenerator {
             ]
         }
 
-        let current_function = self
-            .current_function
-            .as_ref()
-            .unwrap_or_else(|| panic!("expected current function to be set when compiling return"));
+        fn restore_saved_caller_pointers(subroutine_info_by_name: &HashMap<String, SubroutineInfo>, current_function: &str) -> Vec<ASMInstruction> {
+            let subroutine_info = subroutine_info_by_name
+                .get(current_function)
+                .unwrap_or_else(|| panic!("expected to find pointers to restore when returning from {}", current_function));
 
-        let subroutine_info = subroutine_info_by_name
-            .get(current_function)
-            .unwrap_or_else(|| panic!("expected to find pointers to restore when returning from {}", current_function));
-
-        let mut instructions: Vec<_> = stash_return_value_in_r7().into_iter().chain(decrement_sp(locals_count as u32)).collect();
-
-        for pointer in SAVED_CALLER_POINTER_ORDER.iter().rev() {
-            if subroutine_info.pointers_to_restore.contains(pointer) {
-                instructions.extend(
+            SAVED_CALLER_POINTER_ORDER
+                .iter()
+                .rev()
+                .filter(|pointer| subroutine_info.pointers_to_restore.contains(pointer))
+                .flat_map(|pointer| {
                     vec![
                         pop_into_d_register(),
                         vec![
@@ -872,17 +856,29 @@ impl CodeGenerator {
                         ],
                     ]
                     .into_iter()
-                    .flatten(),
-                )
-            }
+                    .flatten()
+                })
+                .collect()
         }
 
-        instructions
+        let current_function = self
+            .current_function
+            .as_ref()
+            .unwrap_or_else(|| panic!("expected current function to be set when compiling return"));
+
+        stash_return_value_in_r7()
             .into_iter()
             .chain(
-                vec![stash_return_address_in_r8(), place_return_value(arg_count), goto_return_address()]
-                    .into_iter()
-                    .flatten(),
+                vec![
+                    decrement_sp(locals_count as u32),
+                    restore_saved_caller_pointers(subroutine_info_by_name, current_function),
+                    stash_return_address_in_r8(),
+                    decrement_sp(arg_count as u32),
+                    place_value_from_r7(),
+                    goto_address_from_r8(),
+                ]
+                .into_iter()
+                .flatten(),
             )
             .collect()
     }
@@ -995,11 +991,7 @@ pub fn generate_asm(subroutines: &HashMap<PathBuf, Vec<CompiledSubroutine>>) -> 
         instructions.extend(glyphs_asm());
     }
 
-    let subroutine_info_for_sys_init = subroutine_info_by_name
-        .get("Sys.init")
-        .unwrap_or_else(|| panic!("expected to find subroutine info for Sys.init"));
-
-    instructions.extend(init_call_stack(&subroutine_info_for_sys_init.pointers_used_directly));
+    instructions.extend(init_call_stack());
 
     for (filename, file_subroutines) in subroutines {
         let mut vm_command_idx = 0;

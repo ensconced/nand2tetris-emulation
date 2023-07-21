@@ -1,12 +1,4 @@
-### Debugging notes
-
-All the snapshots are actually passing right now, but some of the Memory.alloc tests are failing.
-Need to investigate these.
-
-To debug, run ./scripts/viz game_of_life (Sys.jack is currently replaced with the repro code...).
-It seems that Sys.init is not properly returning. I think the return address is wrong - it goes back to memory address 0 whereas it should be 2, to take it into the holding pattern.
-
-Once that is understood, and fixed, should make sure I fully understand the pointer usage pruning code, possibly add some more (snapshot) tests, and then explain it all in the a big comment in the code. And possibly apply some more optimisations as described below.
+- review possible optimisations of pointer usage / pruning stuff
 
 ### How call graph / pointer usage analysis works
 

@@ -1,6 +1,8 @@
 class Main {
+    static int current_frame_buffer, next_frame_buffer;
+
     function void main () {
-      var int current_frame_buffer, next_frame_buffer;
+      do Neighbours.init();
 
       let current_frame_buffer = Memory.alloc(32);
       let next_frame_buffer = Memory.alloc(32);
@@ -15,7 +17,7 @@ class Main {
       }
     }
 
-    function void handle_frame(int current_frame_buffer, int next_frame_buffer) {
+    function void handle_frame() {
       var int word_idx, bit_idx, word, mask;
 
       let word_idx = 0;
@@ -35,8 +37,33 @@ class Main {
       }
     }
 
-    function int get_next_state(int word_idx, int bit_idx) {
-       // TODO
-      return 0;
+    function bool read_value(int word_idx, int bit_idx) {
+      var int mask, counter;
+
+      let mask = 1;
+      let counter = 0;
+
+      // generate mask
+      while (counter != bit_idx) {
+        let mask = mask + mask;
+        let counter = counter + 1;
+      }
+
+      return (current_frame_buffer[word_idx] & mask) == mask;
+    }
+
+    function bool get_next_state(int word_idx, int bit_idx) {
+      // Any live cell with two or three live neighbours survives.
+      // Any dead cell with three live neighbours becomes a live cell.
+      // All other live cells die in the next generation. Similarly, all other dead cells stay dead.
+      var int live_neighbours;
+
+      let live_neighbours = Neighbours.live_neighbour_count(word_idx, bit_idx);
+
+      if (read_value(word_idx, bit_idx)) {
+        return live_neighbours == 2 || live_neighbours == 3;
+      } else {
+        return live_neighbours == 3;
+      }
     }
 }

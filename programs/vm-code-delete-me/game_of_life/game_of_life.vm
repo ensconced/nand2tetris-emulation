@@ -46,16 +46,6 @@ function Sys.init 0
     pop constant 0
     goto start
 
-// for (let wordIdx = 0; wordIdx < 32; wordIdx++) {
-//   let word = 0;
-//   let mask = 1;
-//   for (let bitIdx = 0; bitIdx < 16; bitIdx++) {
-//     word = word | (get_next_state(wordIdx, bitIdx) & mask);
-//     mask = mask + mask;
-//     bitIdx++;
-//   }
-// }
-
 function handle_frame 4
   // point THAT to next frame buffer
   push constant 2080

@@ -1,0 +1,29 @@
+class Neighbours {
+  static int current_word_idx, current_bit_idx, positions_buffer;
+
+  function void init() {
+    let x =
+    let positions_buffer = Memory.alloc(16);
+  }
+
+  function void populate_buffer_with_neighbour_positions(int word_idx, int bit_idx) {
+    let up_position = up(word_idx, bit_idx);
+    let positions_buffer[0] = up_position[0];
+    let positions_buffer[1] = up_position[1];
+
+    let right_position = right(word_idx, bit_idx);
+    let positions_buffer[2] = right_position[0];
+    let positions_buffer[3] = right_position[1];
+
+    let right_position = right(word_idx, bit_idx);
+    let positions_buffer[2] = right_position[0];
+    let positions_buffer[3] = right_position[1];
+
+  }
+
+  function int live_neighbour_count(int word_idx, int bit_idx) {
+    // TODO
+    return 0;
+  }
+}
+

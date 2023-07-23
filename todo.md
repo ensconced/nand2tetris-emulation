@@ -1,3 +1,8 @@
+### game of life bug
+
+- seem to never be returning from handle_frame?
+- also presumably I will need to put in a delay somewhere?
+
 - review possible optimisations of pointer usage / pruning stuff
 
 ### How call graph / pointer usage analysis works

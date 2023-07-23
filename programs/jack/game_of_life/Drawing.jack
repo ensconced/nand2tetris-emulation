@@ -1,0 +1,51 @@
+class Drawing {
+  static int screen_cursor;
+
+  function void draw_square(bool alive) {
+    var int i, square_cursor;
+
+    let i = 0;
+    let square_cursor = screen_cursor;
+
+    while (i < 16) {
+      let square_cursor[i] = alive;
+      let square_cursor = square_cursor + 32;
+      let i = i + 1;
+    }
+  }
+
+  function void draw_half_row(int word_idx, int compact_representation_buffer) {
+    var int half_row_cursor, mask;
+
+    let half_row_cursor = screen_cursor;
+    let mask = 1;
+
+    while (~(mask = 0)) {
+      do draw_square(compact_representation_buffer[word_idx] & mask = mask);
+      let screen_cursor = screen_cursor - 1;
+      let mask = mask + mask;
+    }
+  }
+
+  function void draw_row_from_compact_representation(int word_idx, int compact_representation_buffer) {
+    var int stashed_screen_cursor;
+
+    let stashed_screen_cursor = screen_cursor;
+    do draw_half_row(word_idx, compact_representation_buffer);
+    let screen_cursor = screen_cursor + 16;
+    do draw_half_row(word_idx + 1, compact_representation_buffer);
+    let screen_cursor = stashed_screen_cursor;
+  }
+
+  function void draw_from_compact_representation(int buffer) {
+    var int i;
+
+    let screen_cursor = 18432;
+
+    while (i < 32) {
+      do draw_row_from_compact_representation(i, buffer);
+      let screen_cursor = screen_cursor + 512;
+      let i = i + 2;
+    }
+  }
+}

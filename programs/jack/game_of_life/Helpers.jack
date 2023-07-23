@@ -1,0 +1,5 @@
+class Helpers {
+  function bool is_even(int x) {
+    return ~(x & 1 = 1);
+  }
+}

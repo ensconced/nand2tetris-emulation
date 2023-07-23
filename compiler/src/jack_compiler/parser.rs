@@ -190,7 +190,7 @@ impl<'a> Parser<'a> {
             let op_token_idx = *idx;
             let op = op.clone();
             self.token_iter.next();
-            let right_binding_power = prefix_precedence(op.clone()).expect("invalid prefix operator");
+            let right_binding_power = prefix_precedence(op.clone()).unwrap_or_else(|| panic!("invalid prefix operator {:?}", op.clone()));
             let operand = self
                 .maybe_take_expression_with_binding_power(right_binding_power)
                 .expect("unary operator has no operand");

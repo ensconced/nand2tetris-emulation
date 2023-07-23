@@ -2,28 +2,94 @@ class Neighbours {
   static int current_word_idx, current_bit_idx, positions_buffer;
 
   function void init() {
-    let x =
     let positions_buffer = Memory.alloc(16);
   }
 
+  function void up() {
+    let current_word_idx = (current_word_idx + 30) & 31;
+  }
+
+  function void down() {
+    let current_word_idx = (current_word_idx + 2) & 31;
+  }
+
+  function void left() {
+    if (current_bit_idx = 15) {
+      let current_bit_idx = 0;
+      if (Helpers.is_even(current_word_idx)) {
+        let current_word_idx = current_word_idx + 1;
+      } else {
+        let current_word_idx = current_word_idx - 1;
+      }
+    } else {
+      let current_bit_idx = current_bit_idx + 1;
+    }
+  }
+
+  function void right() {
+    if (current_bit_idx = 0) {
+      let current_bit_idx = 15;
+      if (Helpers.is_even(current_word_idx)) {
+        let current_word_idx = current_word_idx + 1;
+      } else {
+        let current_word_idx = current_word_idx - 1;
+      }
+    } else {
+      let current_bit_idx = current_bit_idx - 1;
+    }
+  }
+
   function void populate_buffer_with_neighbour_positions(int word_idx, int bit_idx) {
-    let up_position = up(word_idx, bit_idx);
-    let positions_buffer[0] = up_position[0];
-    let positions_buffer[1] = up_position[1];
+    let current_word_idx = word_idx;
+    let current_bit_idx = bit_idx;
 
-    let right_position = right(word_idx, bit_idx);
-    let positions_buffer[2] = right_position[0];
-    let positions_buffer[3] = right_position[1];
+    do up();
+    let positions_buffer[0] = current_word_idx;
+    let positions_buffer[1] = current_bit_idx;
 
-    let right_position = right(word_idx, bit_idx);
-    let positions_buffer[2] = right_position[0];
-    let positions_buffer[3] = right_position[1];
+    do right();
+    let positions_buffer[2] = current_word_idx;
+    let positions_buffer[3] = current_bit_idx;
 
+    do down();
+    let positions_buffer[4] = current_word_idx;
+    let positions_buffer[5] = current_bit_idx;
+
+    do down();
+    let positions_buffer[6] = current_word_idx;
+    let positions_buffer[7] = current_bit_idx;
+
+    do left();
+    let positions_buffer[8] = current_word_idx;
+    let positions_buffer[9] = current_bit_idx;
+
+    do left();
+    let positions_buffer[10] = current_word_idx;
+    let positions_buffer[11] = current_bit_idx;
+
+    do up();
+    let positions_buffer[12] = current_word_idx;
+    let positions_buffer[13] = current_bit_idx;
+
+    do up();
+    let positions_buffer[14] = current_word_idx;
+    let positions_buffer[15] = current_bit_idx;
   }
 
   function int live_neighbour_count(int word_idx, int bit_idx) {
-    // TODO
-    return 0;
+    var int sum, i;
+
+    do populate_buffer_with_neighbour_positions();
+
+    let sum = 0;
+    let i = 0;
+    while (i < 16) {
+      if (Main.read_value(positions_buffer[i], positions_buffer[i + 1])) {
+        let sum = sum + 1;
+      }
+      let i = i + 2;
+    }
+    return sum;
   }
 }
 

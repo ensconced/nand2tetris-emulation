@@ -146,7 +146,7 @@ mod tests {
 
 
                     while (outer_idx < count) {
-                        let arr = Memory.alloc(arr_length);
+                        let arr = Memory.malloc(arr_length);
                         let inner_idx = 0;
                         while (inner_idx < arr_length) {
                             let arr[inner_idx] = val;
@@ -216,7 +216,7 @@ mod tests {
                     do Memory.init();
 
                     // This should use a 4-word block.
-                    let ptr = Memory.alloc(2);
+                    let ptr = Memory.malloc(2);
                 }
             }
             ",
@@ -260,7 +260,7 @@ mod tests {
                     do Memory.init();
 
                     // This should use an existing 16-word block.
-                    let ptr = Memory.alloc(12);
+                    let ptr = Memory.malloc(12);
                     do Memory.deAlloc(ptr);
                 }
             }
@@ -302,7 +302,7 @@ mod tests {
                     do Memory.init();
 
                     // This should cause a 16-word block to be split into 2 8-word blocks.
-                    let ptr = Memory.alloc(5);
+                    let ptr = Memory.malloc(5);
                     do Memory.deAlloc(ptr);
                 }
             }
@@ -346,7 +346,7 @@ mod tests {
                     // This should cause a 4-word block to be formed by
                     // splitting a 16-word block into 8-word blocks, then
                     // splitting again.
-                    let ptr = Memory.alloc(2);
+                    let ptr = Memory.malloc(2);
 
                     // On deAlloc, the 4-word blocks should merge together, and
                     // then the 8-word blocks should merge back together too.

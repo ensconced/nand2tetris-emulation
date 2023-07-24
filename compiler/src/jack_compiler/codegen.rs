@@ -661,7 +661,7 @@ impl CodeGenerator {
             SubroutineKind::Constructor => vec![
                 Command::Function(FunctionCommandVariant::Define(subroutine_name.clone(), locals_count as u16)),
                 Command::Memory(MemoryCommandVariant::Push(MemorySegmentVariant::Constant, instance_size as u16)),
-                Command::Function(FunctionCommandVariant::Call("Memory.alloc".to_string(), 1)),
+                Command::Function(FunctionCommandVariant::Call("Memory.malloc".to_string(), 1)),
                 Command::Memory(MemoryCommandVariant::Pop(
                     MemorySegmentVariant::OffsetSegment(OffsetSegmentVariant::Pointer),
                     0,

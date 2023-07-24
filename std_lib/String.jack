@@ -3,7 +3,7 @@ class String {
 
   constructor String new(int max_length) {
     let buffer_length = max_length;
-    let buffer = Memory.alloc(buffer_length);
+    let buffer = Memory.malloc(buffer_length);
     let length = 0;
     return this;
   }
@@ -35,7 +35,7 @@ class String {
         let new_buffer_length = buffer_length * 2;
       }
 
-      let new_buffer = Memory.alloc(new_buffer_length);
+      let new_buffer = Memory.malloc(new_buffer_length);
 
       let i = 0;
       while (i < length) {

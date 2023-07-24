@@ -2,7 +2,7 @@ class Neighbours {
   static int current_word_idx, current_bit_idx, positions_buffer;
 
   function void init() {
-    let positions_buffer = Memory.alloc(16);
+    let positions_buffer = Memory.calloc(16);
   }
 
   function void up() {
@@ -79,7 +79,7 @@ class Neighbours {
   function int live_neighbour_count(int word_idx, int bit_idx) {
     var int sum, i;
 
-    do populate_buffer_with_neighbour_positions();
+    do populate_buffer_with_neighbour_positions(word_idx, bit_idx);
 
     let sum = 0;
     let i = 0;

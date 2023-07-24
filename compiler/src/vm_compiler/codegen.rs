@@ -162,14 +162,38 @@ fn push_from_d_register() -> Vec<ASMInstruction> {
     ]
 }
 
-fn decrement_sp(n: u32) -> Vec<ASMInstruction> {
+fn adjust_sp(n: i32) -> Vec<ASMInstruction> {
     if n == 0 {
         vec![]
     } else if n == 1 {
         vec![
             ASMInstruction::A(AValue::Symbolic("SP".to_string())),
             ASMInstruction::C {
+                expr: "M+1".to_string(),
+                dest: Some("M".to_string()),
+                jump: None,
+            },
+        ]
+    } else if n == -1 {
+        vec![
+            ASMInstruction::A(AValue::Symbolic("SP".to_string())),
+            ASMInstruction::C {
                 expr: "M-1".to_string(),
+                dest: Some("M".to_string()),
+                jump: None,
+            },
+        ]
+    } else if n < 0 {
+        vec![
+            ASMInstruction::A(AValue::Numeric((-n).to_string())),
+            ASMInstruction::C {
+                expr: "A".to_string(),
+                dest: Some("D".to_string()),
+                jump: None,
+            },
+            ASMInstruction::A(AValue::Symbolic("SP".to_string())),
+            ASMInstruction::C {
+                expr: "M-D".to_string(),
                 dest: Some("M".to_string()),
                 jump: None,
             },
@@ -184,7 +208,7 @@ fn decrement_sp(n: u32) -> Vec<ASMInstruction> {
             },
             ASMInstruction::A(AValue::Symbolic("SP".to_string())),
             ASMInstruction::C {
-                expr: "M-D".to_string(),
+                expr: "M+D".to_string(),
                 dest: Some("M".to_string()),
                 jump: None,
             },
@@ -486,7 +510,7 @@ impl CodeGenerator {
                 // popping into a constant doesn't make much sense - I guess it just
                 // means decrement the SP but don't do anything with the popped
                 // value
-                decrement_sp(1)
+                adjust_sp(-1)
             }
         }
     }
@@ -870,10 +894,10 @@ impl CodeGenerator {
             .into_iter()
             .chain(
                 vec![
-                    decrement_sp(locals_count as u32),
+                    adjust_sp(-(locals_count as i32)),
                     restore_saved_caller_pointers(subroutine_info_by_name, current_function),
                     stash_return_address_in_r8(),
-                    decrement_sp(arg_count as u32),
+                    adjust_sp(-(arg_count as i32)),
                     place_value_from_r7(),
                     goto_address_from_r8(),
                 ]

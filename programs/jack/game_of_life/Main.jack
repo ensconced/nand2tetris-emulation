@@ -2,18 +2,27 @@ class Main {
     static int current_frame_buffer, next_frame_buffer;
 
     function void main () {
+      var int i;
+
       do Neighbours.init();
 
-      let current_frame_buffer = Memory.alloc(32);
-      let next_frame_buffer = Memory.alloc(32);
+      let current_frame_buffer = Memory.calloc(32);
+      let next_frame_buffer = Memory.calloc(32);
 
       // initialise glider
+      let i = 0;
+      while (i < 32) {
+        let current_frame_buffer[i] = 0;
+        let i = i + 1;
+      }
       let current_frame_buffer[0] = 2;
       let current_frame_buffer[2] = 1;
       let current_frame_buffer[4] = 7;
 
+      do Drawing.draw_from_compact_representation(current_frame_buffer);
+
       while (true) {
-        do handle_frame(current_frame_buffer, next_frame_buffer);
+        do handle_frame();
       }
     }
 
@@ -22,7 +31,7 @@ class Main {
 
       let i = 0;
       while (i < 32) {
-        let next_frame_buffer[i] = current_frame_buffer[i];
+        let current_frame_buffer[i] = next_frame_buffer[i];
         let i = i + 1;
       }
     }
@@ -47,7 +56,7 @@ class Main {
       }
 
       do copy_next_buffer();
-      do Drawing.draw_from_compact_representation();
+      do Drawing.draw_from_compact_representation(current_frame_buffer);
     }
 
     function bool read_value(int word_idx, int bit_idx) {
@@ -74,7 +83,7 @@ class Main {
       let live_neighbours = Neighbours.live_neighbour_count(word_idx, bit_idx);
 
       if (read_value(word_idx, bit_idx)) {
-        return live_neighbours = 2 | live_neighbours = 3;
+        return (live_neighbours = 2) | (live_neighbours = 3);
       } else {
         return live_neighbours = 3;
       }

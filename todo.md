@@ -1,6 +1,18 @@
 ### game of life bug
 
-- seem to never be returning from handle_frame?
+- seem to never be exiting from while loop in live_neighbours_count
+
+the `push constant 16` as part of `i < 16` is meant to push `16` to the stack but it looks like it's actually overwriting the `i` local...
+
+we have
+
+SP 278
+LCL 278
+
+This seems wrong. SP should point above the locals...
+
+it actually does originally - at the start of live_neighbours_count we do shift SP into the correct position. But it's in the wrong place after calling populate_buffer_with_neighbour_positions...PROBABLY BECAUSE WE ARENT PASSING ANY ARGS AND APPARENTLY WE DON"T GIVE A PROPER ERROR FOR THAT???
+
 - also presumably I will need to put in a delay somewhere?
 
 - review possible optimisations of pointer usage / pruning stuff
@@ -106,7 +118,7 @@ but we DO set the ARG pointer when CALLING get_next_state. so we need to take th
 
 - for loops
 - pointers
-- rudimentary typechecking? might be tricky...would need to allow some coercions - e.g. obj to int for Memory.dealloc, array to obj for constructors.
+- rudimentary typechecking, arity checking etc? might be tricky...would need to allow some coercions - e.g. obj to int for Memory.dealloc, array to obj for constructors.
 - break/continue
 
 ### programs

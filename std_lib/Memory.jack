@@ -74,7 +74,7 @@ class Memory {
 
     // We're all initialized, so now we can use alloc to get some heap memory
     // to use for the overheads required by the allocation algorithm itself.
-    let new_avail = alloc(13);
+    let new_avail = malloc(13);
     do copy(new_avail, screen, 13);
     let avail = new_avail;
 
@@ -171,7 +171,7 @@ class Memory {
     return order;
   }
 
-  function int alloc(int requested_size) {
+  function int malloc(int requested_size) {
     var int free_block, block_order;
 
     let block_order = get_order(requested_size + 2);
@@ -184,7 +184,20 @@ class Memory {
     return 0;
   }
 
-  function int findFreeBuddy(int block) {
+  function int calloc(int requested_size) {
+    var int i, ptr;
+
+    let ptr = malloc(requested_size);
+    let i = 0;
+    while (i < requested_size) {
+      let ptr[i] = 0;
+      let i = i + 1;
+    }
+
+    return ptr;
+  }
+
+  function int find_free_buddy(int block) {
     var int offset_block, block_size, offset_buddy, buddy, block_order;
 
     let block_order = block[1];
@@ -241,7 +254,7 @@ class Memory {
 
     let block = ptr - 2;
     while (true) {
-        let free_buddy = findFreeBuddy(block);
+        let free_buddy = find_free_buddy(block);
         if (free_buddy) {
           let block = mergeBuddies(block, free_buddy);
         } else {

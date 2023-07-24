@@ -51,7 +51,7 @@ class Output {
 
     let glyph_base = 26625 + (c - 32) * 4;
 
-    let result = Memory.alloc(8);
+    let result = Memory.malloc(8);
     let i = 0;
     while (i < 4) {
       let line_pair = glyph_base[i];

@@ -1,15 +1,32 @@
 class Drawing {
   function void draw_from_compact_representation(int buffer) {
-    var int screen, word_idx, offset;
+    var int word_idx, x1, y1;
 
-    let screen = 18432;
+    do Screen.setColor(true);
+    do Screen.clearScreen();
+
     let word_idx = 0;
-    let offset = 0;
-    while (word_idx < 32) {
-      let screen[offset] = buffer[word_idx];
-      let screen[offset + 1] = buffer[word_idx + 1];
-      let word_idx = word_idx + 2;
-      let offset = offset + 32;
+    let y1 = 0;
+    while (y1 < 256) {
+      do draw_half_row(buffer[word_idx], 0, y1);
+      let word_idx = word_idx + 1;
+      do draw_half_row(buffer[word_idx], 256, y1);
+      let word_idx = word_idx + 1;
+      let y1 = y1 + 16;
+    }
+  }
+
+  function void draw_half_row(int word, int x1, int y1) {
+    var int bit_idx;
+
+    let bit_idx = 15;
+    while (bit_idx >= 0) {
+      if (Number.bit_is_set(word, bit_idx)) {
+        do Screen.drawRectangle(x1, y1, x1 + 16, y1 + 16);
+      }
+
+      let bit_idx = bit_idx - 1;
+      let x1 = x1 + 16;
     }
   }
 }

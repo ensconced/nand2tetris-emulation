@@ -10,11 +10,6 @@ class Main {
       let next_frame_buffer = Memory.calloc(32);
 
       // initialise glider
-      let i = 0;
-      while (i < 32) {
-        let current_frame_buffer[i] = 0;
-        let i = i + 1;
-      }
       let current_frame_buffer[0] = 2;
       let current_frame_buffer[2] = 1;
       let current_frame_buffer[4] = 7;
@@ -60,18 +55,7 @@ class Main {
     }
 
     function bool read_value(int word_idx, int bit_idx) {
-      var int mask, counter;
-
-      let mask = 1;
-      let counter = 0;
-
-      // generate mask
-      while (~(counter = bit_idx)) {
-        let mask = mask + mask;
-        let counter = counter + 1;
-      }
-
-      return (current_frame_buffer[word_idx] & mask) = mask;
+      return Number.bit_is_set(current_frame_buffer[word_idx], bit_idx);
     }
 
     function bool get_next_state(int word_idx, int bit_idx) {
@@ -82,7 +66,7 @@ class Main {
 
       let live_neighbours = Neighbours.live_neighbour_count(word_idx, bit_idx);
 
-      if (read_value(word_idx, bit_idx)) {
+      if (Number.bit_is_set(current_frame_buffer[word_idx], bit_idx)) {
         return (live_neighbours = 2) | (live_neighbours = 3);
       } else {
         return live_neighbours = 3;

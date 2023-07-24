@@ -1,0 +1,12 @@
+class Number {
+  function bool bit_is_set(int x, int bit_idx) {
+    var int mask, counter;
+    let mask = 1;
+    let counter = 0;
+    while (counter < bit_idx) {
+      let mask = mask + mask;
+      let counter = counter + 1;
+    }
+    return (x & mask) = mask;
+  }
+}

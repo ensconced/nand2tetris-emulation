@@ -1,11 +1,41 @@
 class Keyboard {
-  function int read_key() {
-    var int kbd;
+  // TODO - this is a bit annoying because we already have
+  // the KBD keyword in the VM code - it would be nice to be
+  // able to drop into VM code somehow and just use that directly...
+  static int kbd, latest_key, modifiers_mask;
 
-    // TODO - this is a bit annoying because we already have
-    // the KBD keyword in the VM code - it would be nice to be
-    // able to drop into VM code somehow and just use that directly...
+  function void init() {
+    let latest_key = 0;
     let kbd = 26624;
-    return kbd[0];
+    let modifiers_mask = -4096;  // 1111_0000_0000_0000
+  }
+
+  // gets the new non-modifier keys that were pressed since we last checked, or returns zero if no
+  // non-modifier keys were pressed.
+  function int get_new_pressed_key() {
+    var int prev_key;
+
+    let prev_key = latest_key;
+    let latest_key = kbd[0] & ~modifiers_mask;
+    if (latest_key = prev_key) {
+      return 0;
+    }
+    return latest_key;
+  }
+
+  function bool is_shift_down() {
+    return kbd[0] & 4096;
+  }
+
+  function bool is_super_down() {
+    return kbd[0] & 8192;
+  }
+
+  function bool is_alt_down() {
+    return kbd[0] & 16384;
+  }
+
+  function bool is_ctrl_down() {
+    return kbd[0] & ~32767;
   }
 }

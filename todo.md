@@ -1,6 +1,10 @@
 ### The Grand Plan
 
 - the worlds worst text editor
+- allow binary literals e.g. `0b1111111100000000` in jack code
+- allow `else if`
+- allow `break;` in loop
+- allow `continue;` in loop
 - add keyboard initialisation to jack version of GOL.
 - implement other games
 

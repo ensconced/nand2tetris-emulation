@@ -1,5 +1,9 @@
 # nand2tetris project
 
+TODO - add proper intro
+
+If using vscode, you should install the extensions recommended in `.vscode/extensions.json`.
+
 To assemble a program:
 
 ```

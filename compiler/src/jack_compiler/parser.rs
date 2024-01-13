@@ -11,11 +11,6 @@ use super::{
 };
 use crate::utils::{parser_utils::PeekableTokens, tokenizer::Token};
 
-// A version of this should doon be present in the std lib https://github.com/rust-lang/rust/issues/87800
-fn unzip<T, S>(tuple_opt: Option<(T, S)>) -> (Option<T>, Option<S>) {
-    tuple_opt.map_or_else(|| (None, None), |(t, s)| (Some(t), Some(s)))
-}
-
 fn prefix_precedence(operator: OperatorVariant) -> Option<u8> {
     match operator {
         Tilde => Some(20),
@@ -452,7 +447,7 @@ impl<'a> Parser<'a> {
         let condition = self.take_expression();
         self.take_token(TokenKind::RParen);
         let (if_statements, if_statements_token_range) = self.take_statement_block();
-        let (else_statements, else_block_token_range) = unzip(self.maybe_take_else_block());
+        let (else_statements, else_block_token_range) = self.maybe_take_else_block().unzip();
         let mut child_node_idxs = vec![condition.node_idx];
         child_node_idxs.extend(if_statements.iter().map(|stmt| stmt.node_idx));
         if let Some(else_stmts) = &else_statements {

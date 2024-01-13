@@ -1,6 +1,9 @@
 ### The Grand Plan
 
 - the worlds worst text editor
+  - add inverting blinking cursor
+  - enable arrow keys
+  - enable backspace
 - allow binary literals e.g. `0b1111111100000000` in jack code
 - allow `else if`
 - allow `break;` in loop

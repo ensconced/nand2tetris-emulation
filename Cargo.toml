@@ -5,9 +5,5 @@ opt-level = 3
 opt-level = 3
 
 [workspace]
-members = [
-    "compiler",
-    "emulator-core",
-    "desktop-emulator",
-    "web-emulator",
-]
+members = ["compiler", "emulator-core", "desktop-emulator", "web-emulator"]
+resolver = "2"

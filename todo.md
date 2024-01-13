@@ -1,5 +1,6 @@
 ### The Grand Plan
 
+- the worlds worst text editor
 - add keyboard initialisation to jack version of GOL.
 - implement other games
 

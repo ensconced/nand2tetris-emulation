@@ -1,0 +1,17 @@
+class Main {
+  static int current_key;
+
+  function void main () {
+    var int key;
+
+    while (true) {
+      let key = Keyboard.read_key();
+      if (~(key = current_key)) {
+        let current_key = key;
+        if (~(current_key = 0)) {
+          do Output.printChar(key);
+        }
+      }
+    }
+  }
+}

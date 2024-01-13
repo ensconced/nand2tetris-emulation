@@ -1,0 +1,11 @@
+class Keyboard {
+  function int read_key() {
+    var int kbd;
+
+    // TODO - this is a bit annoying because we already have
+    // the KBD keyword in the VM code - it would be nice to be
+    // able to drop into VM code somehow and just use that directly...
+    let kbd = 26624;
+    return kbd[0];
+  }
+}

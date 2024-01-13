@@ -1,19 +1,11 @@
-# nand2tetris project
-
-TODO - add proper intro
+# Setup
 
 If using vscode, you should install the extensions recommended in `.vscode/extensions.json`.
 
-To assemble a program:
+# Running programs
 
 ```
-cargo run -- assemble ./programs/blinky.asm blinky
-```
-
-To run the compiled machine code on the emulator:
-
-```
-cargo run -- run blinky
+./scripts game_of_life
 ```
 
 ### Memory Layout

@@ -144,6 +144,7 @@ pub enum SubroutineCall {
 #[ts(export)]
 #[ts(export_to = "../web/bindings/")]
 pub enum Statement {
+    Block(Vec<ASTNode<Statement>>),
     Let {
         var_name: String,
         array_index: Option<ASTNode<Expression>>,
@@ -151,12 +152,12 @@ pub enum Statement {
     },
     If {
         condition: ASTNode<Expression>,
-        if_statements: Vec<ASTNode<Statement>>,
-        else_statements: Option<Vec<ASTNode<Statement>>>,
+        if_statement: ASTNode<Statement>,
+        else_statement: Option<ASTNode<Statement>>,
     },
     While {
         condition: ASTNode<Expression>,
-        statements: Vec<ASTNode<Statement>>,
+        statement: ASTNode<Statement>,
     },
     Do(ASTNode<SubroutineCall>),
     Return(Option<ASTNode<Expression>>),

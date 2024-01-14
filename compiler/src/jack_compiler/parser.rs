@@ -420,14 +420,15 @@ impl<'a> Parser<'a> {
         self.make_ast_node(statement, token_range, child_node_idxs)
     }
 
-    fn take_statement_block(&mut self) -> (Vec<ASTNode<Statement>>, Range<usize>) {
+    fn take_block_statement(&mut self) -> ASTNode<Statement> {
         let l_curly = self.take_token(TokenKind::LCurly);
         let statements = self.take_statements();
         let r_curly = self.take_token(TokenKind::RCurly);
-        (statements, l_curly.idx..r_curly.idx + 1)
+        let child_node_idxs = statements.iter().map(|statement| statement.node_idx).collect();
+        self.make_ast_node(Statement::Block(statements), l_curly.idx..r_curly.idx + 1, child_node_idxs)
     }
 
-    fn maybe_take_else_block(&mut self) -> Option<(Vec<ASTNode<Statement>>, Range<usize>)> {
+    fn maybe_take_else_block(&mut self) -> Option<ASTNode<Statement>> {
         self.token_iter
             .next_if(|token| {
                 matches!(
@@ -438,7 +439,7 @@ impl<'a> Parser<'a> {
                     }
                 )
             })
-            .map(|_| self.take_statement_block())
+            .map(|_| self.take_block_statement())
     }
 
     fn take_if_statement(&mut self, if_keyword_token_idx: usize) -> ASTNode<Statement> {
@@ -446,20 +447,21 @@ impl<'a> Parser<'a> {
         self.take_token(TokenKind::LParen);
         let condition = self.take_expression();
         self.take_token(TokenKind::RParen);
-        let (if_statements, if_statements_token_range) = self.take_statement_block();
-        let (else_statements, else_block_token_range) = self.maybe_take_else_block().unzip();
-        let mut child_node_idxs = vec![condition.node_idx];
-        child_node_idxs.extend(if_statements.iter().map(|stmt| stmt.node_idx));
-        if let Some(else_stmts) = &else_statements {
-            child_node_idxs.extend(else_stmts.iter().map(|stmt| stmt.node_idx));
+        let if_block_statement = self.take_block_statement();
+        let else_block_statement = self.maybe_take_else_block();
+        let mut child_node_idxs = vec![condition.node_idx, if_block_statement.node_idx];
+        if let Some(else_statement) = &else_block_statement {
+            child_node_idxs.push(else_statement.node_idx);
         }
+        let last_part_of_token_range = else_block_statement.as_ref().unwrap_or(&if_block_statement);
+        let end = last_part_of_token_range.token_range.end;
+        let token_range = if_keyword_token_idx..end;
+
         let statement = Statement::If {
             condition,
-            if_statements,
-            else_statements,
+            if_statement: if_block_statement,
+            else_statement: else_block_statement,
         };
-        let last_part_of_token_range = else_block_token_range.unwrap_or(if_statements_token_range);
-        let token_range = if_keyword_token_idx..last_part_of_token_range.end;
 
         self.make_ast_node(statement, token_range, child_node_idxs)
     }
@@ -469,11 +471,14 @@ impl<'a> Parser<'a> {
         self.take_token(TokenKind::LParen);
         let condition = self.take_expression();
         self.take_token(TokenKind::RParen);
-        let (statements, statements_token_range) = self.take_statement_block();
-        let mut child_node_idxs = vec![condition.node_idx];
-        child_node_idxs.extend(statements.iter().map(|stmt| stmt.node_idx));
-        let statement = Statement::While { condition, statements };
-        let token_range = while_keyword_token_idx..statements_token_range.end;
+        let block_statement = self.take_block_statement();
+        let child_node_idxs = vec![condition.node_idx, block_statement.node_idx];
+        let token_range = while_keyword_token_idx..block_statement.token_range.end;
+
+        let statement = Statement::While {
+            condition,
+            statement: block_statement,
+        };
         self.make_ast_node(statement, token_range, child_node_idxs)
     }
 
@@ -500,23 +505,24 @@ impl<'a> Parser<'a> {
 
     fn maybe_take_statement(&mut self) -> Option<ASTNode<Statement>> {
         use KeywordTokenVariant::*;
-        if let Some(Token {
-            kind: TokenKind::Keyword(keyword),
-            idx,
-            ..
-        }) = self.token_iter.peek()
-        {
-            let statement_keyword_idx = *idx;
-            match keyword {
-                Let => Some(self.take_let_statement(statement_keyword_idx)),
-                If => Some(self.take_if_statement(statement_keyword_idx)),
-                While => Some(self.take_while_statement(statement_keyword_idx)),
-                Do => Some(self.take_do_statement(statement_keyword_idx)),
-                Return => Some(self.take_return_statement(statement_keyword_idx)),
-                _ => None,
+        match self.token_iter.peek() {
+            Some(Token {
+                kind: TokenKind::Keyword(keyword),
+                idx,
+                ..
+            }) => {
+                let statement_keyword_idx = *idx;
+                match keyword {
+                    Let => Some(self.take_let_statement(statement_keyword_idx)),
+                    If => Some(self.take_if_statement(statement_keyword_idx)),
+                    While => Some(self.take_while_statement(statement_keyword_idx)),
+                    Do => Some(self.take_do_statement(statement_keyword_idx)),
+                    Return => Some(self.take_return_statement(statement_keyword_idx)),
+                    _ => None,
+                }
             }
-        } else {
-            None
+            Some(Token { kind: TokenKind::LCurly, .. }) => Some(self.take_block_statement()),
+            _ => None,
         }
     }
 
@@ -1090,170 +1096,184 @@ mod tests {
                                                 node_idx: 6,
                                                 token_range: 48..49,
                                             },
-                                            if_statements: vec![ASTNode {
-                                                node: Box::new(Statement::While {
-                                                    condition: (ASTNode {
-                                                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
-                                                        node_idx: 7,
-                                                        token_range: 56..57,
-                                                    }),
-                                                    statements: vec![
-                                                        ASTNode {
-                                                            node: Box::new(Statement::Do(ASTNode {
-                                                                node: Box::new(SubroutineCall::Direct {
-                                                                    subroutine_name: "foobar".to_string(),
-                                                                    arguments: vec![],
-                                                                }),
-                                                                node_idx: 8,
-                                                                token_range: 63..66,
-                                                            })),
-                                                            node_idx: 9,
-                                                            token_range: 61..67,
-                                                        },
-                                                        ASTNode {
-                                                            node: Box::new(Statement::Do(ASTNode {
-                                                                node: Box::new(SubroutineCall::Direct {
-                                                                    subroutine_name: "foobar".to_string(),
-                                                                    arguments: vec![
-                                                                        (ASTNode {
-                                                                            node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
-                                                                                "1".to_string()
-                                                                            ))),
-                                                                            node_idx: 10,
-                                                                            token_range: 72..73,
+                                            if_statement: ASTNode {
+                                                node: Box::new(Statement::Block(vec![ASTNode {
+                                                    node: Box::new(Statement::While {
+                                                        condition: (ASTNode {
+                                                            node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                                            node_idx: 7,
+                                                            token_range: 56..57,
+                                                        }),
+                                                        statement: ASTNode {
+                                                            node: Box::new(Statement::Block(vec![
+                                                                ASTNode {
+                                                                    node: Box::new(Statement::Do(ASTNode {
+                                                                        node: Box::new(SubroutineCall::Direct {
+                                                                            subroutine_name: "foobar".to_string(),
+                                                                            arguments: vec![],
                                                                         }),
-                                                                    ],
-                                                                }),
-                                                                node_idx: 11,
-                                                                token_range: 70..74,
-                                                            },)),
-                                                            node_idx: 12,
-                                                            token_range: 68..75,
+                                                                        node_idx: 8,
+                                                                        token_range: 63..66,
+                                                                    })),
+                                                                    node_idx: 9,
+                                                                    token_range: 61..67,
+                                                                },
+                                                                ASTNode {
+                                                                    node: Box::new(Statement::Do(ASTNode {
+                                                                        node: Box::new(SubroutineCall::Direct {
+                                                                            subroutine_name: "foobar".to_string(),
+                                                                            arguments: vec![
+                                                                                (ASTNode {
+                                                                                    node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                                                                        "1".to_string(),
+                                                                                    ))),
+                                                                                    node_idx: 10,
+                                                                                    token_range: 72..73,
+                                                                                }),
+                                                                            ],
+                                                                        }),
+                                                                        node_idx: 11,
+                                                                        token_range: 70..74,
+                                                                    })),
+                                                                    node_idx: 12,
+                                                                    token_range: 68..75,
+                                                                },
+                                                                ASTNode {
+                                                                    node: Box::new(Statement::Do(ASTNode {
+                                                                        node: Box::new(SubroutineCall::Direct {
+                                                                            subroutine_name: "foobar".to_string(),
+                                                                            arguments: vec![
+                                                                                ASTNode {
+                                                                                    node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                                                                        "1".to_string(),
+                                                                                    ))),
+                                                                                    node_idx: 13,
+                                                                                    token_range: 80..81,
+                                                                                },
+                                                                                ASTNode {
+                                                                                    node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                                                                        "2".to_string(),
+                                                                                    ))),
+                                                                                    node_idx: 14,
+                                                                                    token_range: 83..84,
+                                                                                },
+                                                                                ASTNode {
+                                                                                    node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                                                                        "3".to_string(),
+                                                                                    ))),
+                                                                                    node_idx: 15,
+                                                                                    token_range: 86..87,
+                                                                                },
+                                                                            ],
+                                                                        }),
+                                                                        node_idx: 16,
+                                                                        token_range: 78..88,
+                                                                    })),
+                                                                    node_idx: 17,
+                                                                    token_range: 76..89,
+                                                                },
+                                                                ASTNode {
+                                                                    node: Box::new(Statement::Do(ASTNode {
+                                                                        node: Box::new(SubroutineCall::Method {
+                                                                            this_name: "foo".to_string(),
+                                                                            method_name: "bar".to_string(),
+                                                                            arguments: vec![],
+                                                                        }),
+                                                                        node_idx: 18,
+                                                                        token_range: 94..97,
+                                                                    })),
+                                                                    node_idx: 19,
+                                                                    token_range: 90..98,
+                                                                },
+                                                                ASTNode {
+                                                                    node: Box::new(Statement::Do(ASTNode {
+                                                                        node: Box::new(SubroutineCall::Method {
+                                                                            this_name: "foo".to_string(),
+                                                                            method_name: "bar".to_string(),
+                                                                            arguments: vec![ASTNode {
+                                                                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                                                                    "1".to_string(),
+                                                                                ))),
+                                                                                node_idx: 20,
+                                                                                token_range: 105..106,
+                                                                            }],
+                                                                        }),
+                                                                        node_idx: 21,
+                                                                        token_range: 103..107,
+                                                                    })),
+                                                                    node_idx: 22,
+                                                                    token_range: 99..108,
+                                                                },
+                                                                ASTNode {
+                                                                    node: Box::new(Statement::Do(ASTNode {
+                                                                        node: Box::new(SubroutineCall::Method {
+                                                                            this_name: "foo".to_string(),
+                                                                            method_name: "bar".to_string(),
+                                                                            arguments: vec![
+                                                                                ASTNode {
+                                                                                    node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                                                                        "1".to_string(),
+                                                                                    ))),
+                                                                                    node_idx: 23,
+                                                                                    token_range: 115..116,
+                                                                                },
+                                                                                ASTNode {
+                                                                                    node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                                                                        "2".to_string(),
+                                                                                    ))),
+                                                                                    node_idx: 24,
+                                                                                    token_range: 118..119,
+                                                                                },
+                                                                                ASTNode {
+                                                                                    node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
+                                                                                        "3".to_string(),
+                                                                                    ))),
+                                                                                    node_idx: 25,
+                                                                                    token_range: 121..122,
+                                                                                },
+                                                                            ],
+                                                                        }),
+                                                                        node_idx: 26,
+                                                                        token_range: 113..123,
+                                                                    })),
+                                                                    node_idx: 27,
+                                                                    token_range: 109..124,
+                                                                },
+                                                            ])),
+                                                            node_idx: 28,
+                                                            token_range: 59..126
                                                         },
-                                                        ASTNode {
-                                                            node: Box::new(Statement::Do(ASTNode {
-                                                                node: Box::new(SubroutineCall::Direct {
-                                                                    subroutine_name: "foobar".to_string(),
-                                                                    arguments: vec![
-                                                                        ASTNode {
-                                                                            node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
-                                                                                "1".to_string()
-                                                                            ))),
-                                                                            node_idx: 13,
-                                                                            token_range: 80..81,
-                                                                        },
-                                                                        ASTNode {
-                                                                            node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
-                                                                                "2".to_string()
-                                                                            ))),
-                                                                            node_idx: 14,
-                                                                            token_range: 83..84,
-                                                                        },
-                                                                        ASTNode {
-                                                                            node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
-                                                                                "3".to_string()
-                                                                            ))),
-                                                                            node_idx: 15,
-                                                                            token_range: 86..87,
-                                                                        },
-                                                                    ],
-                                                                }),
-                                                                node_idx: 16,
-                                                                token_range: 78..88,
-                                                            })),
-                                                            node_idx: 17,
-                                                            token_range: 76..89,
-                                                        },
-                                                        ASTNode {
-                                                            node: Box::new(Statement::Do(ASTNode {
-                                                                node: Box::new(SubroutineCall::Method {
-                                                                    this_name: "foo".to_string(),
-                                                                    method_name: "bar".to_string(),
-                                                                    arguments: vec![],
-                                                                }),
-                                                                node_idx: 18,
-                                                                token_range: 94..97,
-                                                            })),
-                                                            node_idx: 19,
-                                                            token_range: 90..98,
-                                                        },
-                                                        ASTNode {
-                                                            node: Box::new(Statement::Do(ASTNode {
-                                                                node: Box::new(SubroutineCall::Method {
-                                                                    this_name: "foo".to_string(),
-                                                                    method_name: "bar".to_string(),
-                                                                    arguments: vec![ASTNode {
-                                                                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
-                                                                        node_idx: 20,
-                                                                        token_range: 105..106,
-                                                                    }],
-                                                                }),
-                                                                node_idx: 21,
-                                                                token_range: 103..107,
-                                                            })),
-                                                            node_idx: 22,
-                                                            token_range: 99..108,
-                                                        },
-                                                        ASTNode {
-                                                            node: Box::new(Statement::Do(ASTNode {
-                                                                node: Box::new(SubroutineCall::Method {
-                                                                    this_name: "foo".to_string(),
-                                                                    method_name: "bar".to_string(),
-                                                                    arguments: vec![
-                                                                        ASTNode {
-                                                                            node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
-                                                                                "1".to_string()
-                                                                            ))),
-                                                                            node_idx: 23,
-                                                                            token_range: 115..116
-                                                                        },
-                                                                        ASTNode {
-                                                                            node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
-                                                                                "2".to_string()
-                                                                            ))),
-                                                                            node_idx: 24,
-                                                                            token_range: 118..119
-                                                                        },
-                                                                        ASTNode {
-                                                                            node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
-                                                                                "3".to_string()
-                                                                            ))),
-                                                                            node_idx: 25,
-                                                                            token_range: 121..122
-                                                                        },
-                                                                    ],
-                                                                }),
-                                                                node_idx: 26,
-                                                                token_range: 113..123
-                                                            },)),
-                                                            node_idx: 27,
-                                                            token_range: 109..124
-                                                        },
-                                                    ],
-                                                }),
-                                                node_idx: 28,
-                                                token_range: 53..126
-                                            },],
-                                            else_statements: Some(vec![ASTNode {
-                                                node: Box::new(Statement::Return(Some(ASTNode {
-                                                    node: Box::new(Expression::PrimitiveTerm(IntegerConstant("123".to_string(),))),
+                                                    }),
                                                     node_idx: 29,
-                                                    token_range: 135..136
-                                                },))),
+                                                    token_range: 53..126
+                                                }])),
                                                 node_idx: 30,
-                                                token_range: 133..137
-                                            },]),
+                                                token_range: 51..128
+                                            },
+                                            else_statement: Some(ASTNode {
+                                                node: Box::new(Statement::Block(vec![ASTNode {
+                                                    node: Box::new(Statement::Return(Some(ASTNode {
+                                                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("123".to_string(),))),
+                                                        node_idx: 31,
+                                                        token_range: 135..136
+                                                    },))),
+                                                    node_idx: 32,
+                                                    token_range: 133..137
+                                                },])),
+                                                node_idx: 33,
+                                                token_range: 131..139
+                                            }),
                                         }),
-                                        node_idx: 31,
+                                        node_idx: 34,
                                         token_range: 45..139
                                     },
                                 ],
                             }),
-                            node_idx: 32,
+                            node_idx: 35,
                             token_range: 15..141
                         },
                     }),
-                    node_idx: 33,
+                    node_idx: 36,
                     token_range: 7..141
                 }],
             }

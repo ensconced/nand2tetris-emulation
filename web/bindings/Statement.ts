@@ -3,4 +3,4 @@ import type { ASTNode } from "./ASTNode";
 import type { Expression } from "./Expression";
 import type { SubroutineCall } from "./SubroutineCall";
 
-export type Statement = { Let: { var_name: string, array_index: ASTNode<Expression> | null, value: ASTNode<Expression>, } } | { If: { condition: ASTNode<Expression>, if_statements: Array<ASTNode<Statement>>, else_statements: Array<ASTNode<Statement>> | null, } } | { While: { condition: ASTNode<Expression>, statements: Array<ASTNode<Statement>>, } } | { Do: ASTNode<SubroutineCall> } | { Return: ASTNode<Expression> | null };
+export type Statement = { Block: Array<ASTNode<Statement>> } | { Let: { var_name: string, array_index: ASTNode<Expression> | null, value: ASTNode<Expression>, } } | { If: { condition: ASTNode<Expression>, if_statement: ASTNode<Statement>, else_statement: ASTNode<Statement> | null, } } | { While: { condition: ASTNode<Expression>, statement: ASTNode<Statement>, } } | { Do: ASTNode<SubroutineCall> } | { Return: ASTNode<Expression> | null };

@@ -85,6 +85,7 @@ impl CodeGenerator {
         }
         count
     }
+
     fn compile_do_statement(&mut self, subroutine_call: &ASTNode<SubroutineCall>) -> Vec<SourcemappedCommand> {
         let pop_return_val = Command::Memory(MemoryCommandVariant::Pop(MemorySegmentVariant::Constant, 0));
         let mut commands = self.compile_subroutine_call_expression(subroutine_call);
@@ -168,8 +169,8 @@ impl CodeGenerator {
     fn compile_if_statement(
         &mut self,
         condition: &ASTNode<Expression>,
-        if_statements: &[ASTNode<Statement>],
-        else_statements: &Option<Vec<ASTNode<Statement>>>,
+        if_statement: &ASTNode<Statement>,
+        else_statement: &Option<ASTNode<Statement>>,
         if_statement_node_idx: usize,
     ) -> Vec<SourcemappedCommand> {
         let if_count = self.subroutine_if_count;
@@ -182,8 +183,8 @@ impl CodeGenerator {
             jack_node_idx: if_statement_node_idx,
         });
 
-        if let Some(statements) = else_statements {
-            commands.extend(self.compile_statements(statements));
+        if let Some(statement) = else_statement {
+            commands.extend(self.compile_statement(statement));
         }
 
         commands.extend(
@@ -198,7 +199,7 @@ impl CodeGenerator {
             }),
         );
 
-        commands.extend(self.compile_statements(if_statements));
+        commands.extend(self.compile_statement(if_statement));
         commands.push(SourcemappedCommand {
             command: Command::Flow(FlowCommandVariant::Label(format!("end_if_{}", if_count))),
             jack_node_idx: if_statement_node_idx,
@@ -536,7 +537,7 @@ impl CodeGenerator {
     fn compile_while_statement(
         &mut self,
         condition: &ASTNode<Expression>,
-        statements: &[ASTNode<Statement>],
+        statement: &ASTNode<Statement>,
         while_statement_node_idx: usize,
     ) -> Vec<SourcemappedCommand> {
         let while_idx = self.subroutine_while_count;
@@ -560,7 +561,7 @@ impl CodeGenerator {
             }),
         );
 
-        commands.extend(self.compile_statements(statements));
+        commands.extend(self.compile_statement(statement));
         commands.extend(
             vec![
                 Command::Flow(FlowCommandVariant::GoTo(format!("start_while_{}", while_idx))),
@@ -577,6 +578,7 @@ impl CodeGenerator {
 
     fn compile_statement(&mut self, statement: &ASTNode<Statement>) -> Vec<SourcemappedCommand> {
         match &*statement.node {
+            Statement::Block(statements) => self.compile_statements(statements),
             Statement::Do(subroutine_call) => self.compile_do_statement(subroutine_call),
             Statement::Let {
                 var_name,
@@ -585,11 +587,11 @@ impl CodeGenerator {
             } => self.compile_let_statement(var_name, array_index, value, statement.node_idx),
             Statement::If {
                 condition,
-                if_statements,
-                else_statements,
-            } => self.compile_if_statement(condition, if_statements, else_statements, statement.node_idx),
+                if_statement,
+                else_statement,
+            } => self.compile_if_statement(condition, if_statement, else_statement, statement.node_idx),
             Statement::Return(expression) => self.compile_return_statement(expression, statement.node_idx),
-            Statement::While { condition, statements } => self.compile_while_statement(condition, statements, statement.node_idx),
+            Statement::While { condition, statement } => self.compile_while_statement(condition, statement, statement.node_idx),
         }
     }
 

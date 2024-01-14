@@ -1,12 +1,15 @@
 ### The Grand Plan
 
 - the worlds worst text editor
+
   - add inverting blinking cursor
   - enable arrow keys
   - enable backspace
+
 - allow negative literal numbers (so that e.g. you can say `let foo = -32768` or `let foo = 0b1111000000000000`)
 - allow `break;` in loop
 - allow `continue;` in loop
+- add hardware modulo
 - add keyboard initialisation to jack version of GOL.
 - implement other games
 

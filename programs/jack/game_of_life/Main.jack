@@ -10,9 +10,9 @@ class Main {
       let next_frame_buffer = Memory.calloc(32);
 
       // Initialise a glider (you can see it in the bit pattern!)
-      let current_frame_buffer[0] = 0b0000000000000010;
-      let current_frame_buffer[2] = 0b0000000000000001;
-      let current_frame_buffer[4] = 0b0000000000000111;
+      let current_frame_buffer[0] = 0b0010;
+      let current_frame_buffer[2] = 0b0001;
+      let current_frame_buffer[4] = 0b0111;
 
       do Drawing.draw_from_compact_representation(current_frame_buffer);
 

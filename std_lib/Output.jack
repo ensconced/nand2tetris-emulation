@@ -7,13 +7,6 @@ class Output {
     let cursor_y = 0;
   }
 
-  // moves the cursor to the j-th column of the i-th row,
-  // and erases the character displayed there.
-  function void moveCursor(int i, int j) {
-    let cursor_x = i;
-    let cursor_y = j;
-  }
-
   function void advanceCursor() {
     let cursor_x = (cursor_x + 1) & 63;
     if (cursor_x = 0) {
@@ -22,6 +15,7 @@ class Output {
   }
 
   function int getMsb(int word) {
+    // TODO - this would be much simpler if we had bitshift in hardware
     var int result, mask, i, bit;
 
     let result = 0;
@@ -118,9 +112,5 @@ class Output {
   function void println() {
     let cursor_x = 0;
     let cursor_y = (cursor_y + 1) & 31;
-  }
-
-  function void backSpace() {
-    let cursor_x = (cursor_x + 63) & 63;
   }
 }

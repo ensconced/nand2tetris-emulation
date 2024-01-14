@@ -2,12 +2,12 @@ class Keyboard {
   // TODO - this is a bit annoying because we already have
   // the KBD keyword in the VM code - it would be nice to be
   // able to drop into VM code somehow and just use that directly...
-  static int kbd, latest_key, modifiers_mask;
+  static int kbd, latest_key, key_mask;
 
   function void init() {
     let latest_key = 0;
     let kbd = 26624;
-    let modifiers_mask = ~0b0000111111111111;
+    let key_mask = 0b0000111111111111;
   }
 
   // gets the new non-modifier keys that were pressed since we last checked, or returns zero if no
@@ -16,7 +16,7 @@ class Keyboard {
     var int prev_key;
 
     let prev_key = latest_key;
-    let latest_key = kbd[0] & ~modifiers_mask;
+    let latest_key = kbd[0] & key_mask;
     if (latest_key = prev_key) {
       return 0;
     }

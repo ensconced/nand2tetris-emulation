@@ -439,7 +439,7 @@ impl<'a> Parser<'a> {
                     }
                 )
             })
-            .map(|_| self.take_block_statement())
+            .map(|_| self.take_statement())
     }
 
     fn take_if_statement(&mut self, if_keyword_token_idx: usize) -> ASTNode<Statement> {
@@ -447,7 +447,7 @@ impl<'a> Parser<'a> {
         self.take_token(TokenKind::LParen);
         let condition = self.take_expression();
         self.take_token(TokenKind::RParen);
-        let if_block_statement = self.take_block_statement();
+        let if_block_statement = self.take_statement();
         let else_block_statement = self.maybe_take_else_block();
         let mut child_node_idxs = vec![condition.node_idx, if_block_statement.node_idx];
         if let Some(else_statement) = &else_block_statement {
@@ -471,7 +471,7 @@ impl<'a> Parser<'a> {
         self.take_token(TokenKind::LParen);
         let condition = self.take_expression();
         self.take_token(TokenKind::RParen);
-        let block_statement = self.take_block_statement();
+        let block_statement = self.take_statement();
         let child_node_idxs = vec![condition.node_idx, block_statement.node_idx];
         let token_range = while_keyword_token_idx..block_statement.token_range.end;
 
@@ -524,6 +524,10 @@ impl<'a> Parser<'a> {
             Some(Token { kind: TokenKind::LCurly, .. }) => Some(self.take_block_statement()),
             _ => None,
         }
+    }
+
+    fn take_statement(&mut self) -> ASTNode<Statement> {
+        self.maybe_take_statement().unwrap_or_else(|| panic!("expected statement"))
     }
 
     fn take_statements(&mut self) -> Vec<ASTNode<Statement>> {

@@ -8,19 +8,16 @@ class Main {
         if ((key >= 1) & (key <= 10)) {
           // digits
           do Output.printChar(key + 47);
-        }
-        if ((key >= 11) & (key <= 36)) {
+        } else if ((key >= 11) & (key <= 36)) {
           // letters
           if (Keyboard.is_shift_down()) {
             do Output.printChar(key + 54);
           } else {
             do Output.printChar(key + 86);
           }
-        }
-        if (key = 41) {
+        } else if (key = 41) {
           do Output.println();
-        }
-        if (key = 54) {
+        } else if (key = 54) {
           do Output.printChar(32);
         }
       }

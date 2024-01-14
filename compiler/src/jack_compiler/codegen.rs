@@ -8,8 +8,8 @@ use crate::vm_compiler::parser::{
 
 use super::{
     jack_node_types::{
-        ASTNode, BinaryOperator, Class, ClassVarDeclaration, ClassVarDeclarationKind, Expression, Parameter, PrimitiveTermVariant, Statement,
-        SubroutineCall, SubroutineDeclaration, SubroutineKind, Type, UnaryOperator, VarDeclaration,
+        ASTNode, BinaryOperator, Class, ClassVarDeclaration, ClassVarDeclarationKind, Expression, NumericConstantVariant, Parameter,
+        PrimitiveTermVariant, Statement, SubroutineCall, SubroutineDeclaration, SubroutineKind, Type, UnaryOperator, VarDeclaration,
     },
     sourcemap::JackCodegenSourceMap,
 };
@@ -46,11 +46,21 @@ pub fn full_subroutine_name(class_name: &str, subroutine_name: &str) -> String {
     format!("{}.{}", class_name, subroutine_name)
 }
 
-fn get_constant_value(expression: &ASTNode<Expression>) -> Option<u16> {
-    match &*expression.node {
-        Expression::PrimitiveTerm(PrimitiveTermVariant::IntegerConstant(int)) => {
-            Some(str::parse(int).expect("failed to convert string constant to int"))
+fn compile_numeric_constant(numeric_constant: &NumericConstantVariant) -> u16 {
+    let signed_val = match numeric_constant {
+        NumericConstantVariant::IntegerDecimalConstant(decimal_string) => decimal_string
+            .parse::<i16>()
+            .unwrap_or_else(|_| panic!("{} is not a valid positive decimal i16", decimal_string)),
+        NumericConstantVariant::IntegerBinaryConstant(binary_string) => {
+            i16::from_str_radix(binary_string, 2).unwrap_or_else(|_| panic!("{} is not a valid positive binary i16", binary_string))
         }
+    };
+    signed_val as u16
+}
+
+fn maybe_get_constant_value(expression: &ASTNode<Expression>) -> Option<u16> {
+    match &*expression.node {
+        Expression::PrimitiveTerm(PrimitiveTermVariant::NumericConstant(numeric_constant)) => Some(compile_numeric_constant(numeric_constant)),
         _ => None,
     }
 }
@@ -112,7 +122,7 @@ impl CodeGenerator {
                 jack_node_idx: let_statement_node_idx,
             });
 
-            if let Some(constant_value) = get_constant_value(idx) {
+            if let Some(constant_value) = maybe_get_constant_value(idx) {
                 commands
                     .into_iter()
                     .chain(
@@ -304,11 +314,11 @@ impl CodeGenerator {
                 Command::Memory(MemoryCommandVariant::Push(MemorySegmentVariant::Constant, 0)),
                 Command::Arithmetic(ArithmeticCommandVariant::Unary(UnaryArithmeticCommandVariant::Not)),
             ],
-            PrimitiveTermVariant::IntegerConstant(int_string) => {
-                let val = int_string
-                    .parse::<i16>()
-                    .unwrap_or_else(|_| panic!("{} is not valid 16 bit int", int_string));
-                vec![Command::Memory(MemoryCommandVariant::Push(MemorySegmentVariant::Constant, val as u16))]
+            PrimitiveTermVariant::NumericConstant(numeric_constant) => {
+                vec![Command::Memory(MemoryCommandVariant::Push(
+                    MemorySegmentVariant::Constant,
+                    compile_numeric_constant(numeric_constant),
+                ))]
             }
             PrimitiveTermVariant::This => {
                 if let Some(SubroutineKind::Method | SubroutineKind::Constructor) = self.subroutine_kind {

@@ -16,8 +16,10 @@ class Main {
             do Output.printChar(key + 86);
           }
         } else if (key = 41) {
+          // enter
           do Output.println();
         } else if (key = 54) {
+          // space
           do Output.printChar(32);
         }
       }

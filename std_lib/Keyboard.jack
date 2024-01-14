@@ -7,7 +7,7 @@ class Keyboard {
   function void init() {
     let latest_key = 0;
     let kbd = 26624;
-    let modifiers_mask = -4096;  // 1111_0000_0000_0000
+    let modifiers_mask = ~0b0000111111111111;
   }
 
   // gets the new non-modifier keys that were pressed since we last checked, or returns zero if no

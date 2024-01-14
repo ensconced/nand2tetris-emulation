@@ -2,4 +2,4 @@
 import type { KeywordTokenVariant } from "./KeywordTokenVariant";
 import type { OperatorVariant } from "./OperatorVariant";
 
-export type TokenKind = { Keyword: KeywordTokenVariant } | { IntegerLiteral: string } | { StringLiteral: string } | { Identifier: string } | "LCurly" | "RCurly" | "LParen" | "RParen" | "LSquareBracket" | "RSquareBracket" | "Dot" | "Comma" | "Semicolon" | "Whitespace" | "SingleLineComment" | "MultiLineComment" | { Operator: OperatorVariant };
+export type TokenKind = { Keyword: KeywordTokenVariant } | { IntegerDecimalLiteral: string } | { IntegerBinaryLiteral: string } | { StringLiteral: string } | { Identifier: string } | "LCurly" | "RCurly" | "LParen" | "RParen" | "LSquareBracket" | "RSquareBracket" | "Dot" | "Comma" | "Semicolon" | "Whitespace" | "SingleLineComment" | "MultiLineComment" | { Operator: OperatorVariant };

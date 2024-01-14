@@ -4,8 +4,7 @@
   - add inverting blinking cursor
   - enable arrow keys
   - enable backspace
-- allow binary literals e.g. `0b1111111100000000` in jack code
-- allow `else if`
+- allow negative literal numbers (so that e.g. you can say `let foo = -32768` or `let foo = 0b1111000000000000`)
 - allow `break;` in loop
 - allow `continue;` in loop
 - add keyboard initialisation to jack version of GOL.

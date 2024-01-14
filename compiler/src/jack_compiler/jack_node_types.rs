@@ -60,8 +60,16 @@ pub enum SubroutineKind {
 #[derive(Serialize, TS, Debug, PartialEq, Eq)]
 #[ts(export)]
 #[ts(export_to = "../web/bindings/")]
+pub enum NumericConstantVariant {
+    IntegerDecimalConstant(String),
+    IntegerBinaryConstant(String),
+}
+
+#[derive(Serialize, TS, Debug, PartialEq, Eq)]
+#[ts(export)]
+#[ts(export_to = "../web/bindings/")]
 pub enum PrimitiveTermVariant {
-    IntegerConstant(String),
+    NumericConstant(NumericConstantVariant),
     StringConstant(String),
     True,
     False,

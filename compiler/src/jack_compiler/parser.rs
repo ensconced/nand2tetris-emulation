@@ -87,9 +87,17 @@ impl<'a> Parser<'a> {
         let peeked_token = self.token_iter.peek().cloned();
         let (expression, exp_token_idx) = peeked_token.and_then(|token| {
             let maybe_exp = match &token.kind {
-                IntegerLiteral(string) => {
+                IntegerDecimalLiteral(string) => {
                     self.token_iter.next();
-                    Some(Expression::PrimitiveTerm(IntegerConstant(string.to_string())))
+                    Some(Expression::PrimitiveTerm(NumericConstant(
+                        NumericConstantVariant::IntegerDecimalConstant(string.to_string()),
+                    )))
+                }
+                IntegerBinaryLiteral(string) => {
+                    self.token_iter.next();
+                    Some(Expression::PrimitiveTerm(NumericConstant(NumericConstantVariant::IntegerBinaryConstant(
+                        string.to_string(),
+                    ))))
                 }
                 StringLiteral(string) => {
                     self.token_iter.next();
@@ -1068,7 +1076,9 @@ mod tests {
                                             var_name: "a".to_string(),
                                             array_index: None,
                                             value: ASTNode {
-                                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1234".to_string(),))),
+                                                node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                    NumericConstantVariant::IntegerDecimalConstant("1234".to_string())
+                                                ))),
                                                 node_idx: 1,
                                                 token_range: 30..31,
                                             },
@@ -1080,12 +1090,16 @@ mod tests {
                                         node: Box::new(Statement::Let {
                                             var_name: "b".to_string(),
                                             array_index: Some(ASTNode {
-                                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("22".to_string()))),
+                                                node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                    NumericConstantVariant::IntegerDecimalConstant("22".to_string())
+                                                ))),
                                                 node_idx: 3,
                                                 token_range: 37..38,
                                             }),
                                             value: ASTNode {
-                                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("123".to_string(),))),
+                                                node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                    NumericConstantVariant::IntegerDecimalConstant("123".to_string())
+                                                ))),
                                                 node_idx: 4,
                                                 token_range: 42..43,
                                             }
@@ -1096,7 +1110,9 @@ mod tests {
                                     ASTNode {
                                         node: Box::new(Statement::If {
                                             condition: ASTNode {
-                                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                                node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                    NumericConstantVariant::IntegerDecimalConstant("1".to_string())
+                                                ))),
                                                 node_idx: 6,
                                                 token_range: 48..49,
                                             },
@@ -1104,7 +1120,9 @@ mod tests {
                                                 node: Box::new(Statement::Block(vec![ASTNode {
                                                     node: Box::new(Statement::While {
                                                         condition: (ASTNode {
-                                                            node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                                            node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                                NumericConstantVariant::IntegerDecimalConstant("1".to_string())
+                                                            ))),
                                                             node_idx: 7,
                                                             token_range: 56..57,
                                                         }),
@@ -1128,8 +1146,10 @@ mod tests {
                                                                             subroutine_name: "foobar".to_string(),
                                                                             arguments: vec![
                                                                                 (ASTNode {
-                                                                                    node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
-                                                                                        "1".to_string(),
+                                                                                    node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                                                        NumericConstantVariant::IntegerDecimalConstant(
+                                                                                            "1".to_string()
+                                                                                        )
                                                                                     ))),
                                                                                     node_idx: 10,
                                                                                     token_range: 72..73,
@@ -1148,22 +1168,28 @@ mod tests {
                                                                             subroutine_name: "foobar".to_string(),
                                                                             arguments: vec![
                                                                                 ASTNode {
-                                                                                    node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
-                                                                                        "1".to_string(),
+                                                                                    node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                                                        NumericConstantVariant::IntegerDecimalConstant(
+                                                                                            "1".to_string()
+                                                                                        )
                                                                                     ))),
                                                                                     node_idx: 13,
                                                                                     token_range: 80..81,
                                                                                 },
                                                                                 ASTNode {
-                                                                                    node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
-                                                                                        "2".to_string(),
+                                                                                    node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                                                        NumericConstantVariant::IntegerDecimalConstant(
+                                                                                            "2".to_string()
+                                                                                        )
                                                                                     ))),
                                                                                     node_idx: 14,
                                                                                     token_range: 83..84,
                                                                                 },
                                                                                 ASTNode {
-                                                                                    node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
-                                                                                        "3".to_string(),
+                                                                                    node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                                                        NumericConstantVariant::IntegerDecimalConstant(
+                                                                                            "3".to_string()
+                                                                                        ),
                                                                                     ))),
                                                                                     node_idx: 15,
                                                                                     token_range: 86..87,
@@ -1195,8 +1221,8 @@ mod tests {
                                                                             this_name: "foo".to_string(),
                                                                             method_name: "bar".to_string(),
                                                                             arguments: vec![ASTNode {
-                                                                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
-                                                                                    "1".to_string(),
+                                                                                node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                                                    NumericConstantVariant::IntegerDecimalConstant("1".to_string())
                                                                                 ))),
                                                                                 node_idx: 20,
                                                                                 token_range: 105..106,
@@ -1215,22 +1241,28 @@ mod tests {
                                                                             method_name: "bar".to_string(),
                                                                             arguments: vec![
                                                                                 ASTNode {
-                                                                                    node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
-                                                                                        "1".to_string(),
+                                                                                    node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                                                        NumericConstantVariant::IntegerDecimalConstant(
+                                                                                            "1".to_string()
+                                                                                        )
                                                                                     ))),
                                                                                     node_idx: 23,
                                                                                     token_range: 115..116,
                                                                                 },
                                                                                 ASTNode {
-                                                                                    node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
-                                                                                        "2".to_string(),
+                                                                                    node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                                                        NumericConstantVariant::IntegerDecimalConstant(
+                                                                                            "2".to_string()
+                                                                                        )
                                                                                     ))),
                                                                                     node_idx: 24,
                                                                                     token_range: 118..119,
                                                                                 },
                                                                                 ASTNode {
-                                                                                    node: Box::new(Expression::PrimitiveTerm(IntegerConstant(
-                                                                                        "3".to_string(),
+                                                                                    node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                                                        NumericConstantVariant::IntegerDecimalConstant(
+                                                                                            "3".to_string()
+                                                                                        )
                                                                                     ))),
                                                                                     node_idx: 25,
                                                                                     token_range: 121..122,
@@ -1257,7 +1289,9 @@ mod tests {
                                             else_statement: Some(ASTNode {
                                                 node: Box::new(Statement::Block(vec![ASTNode {
                                                     node: Box::new(Statement::Return(Some(ASTNode {
-                                                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("123".to_string(),))),
+                                                        node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                            NumericConstantVariant::IntegerDecimalConstant("123".to_string())
+                                                        ))),
                                                         node_idx: 31,
                                                         token_range: 135..136
                                                     },))),
@@ -1289,7 +1323,9 @@ mod tests {
         assert_eq!(
             parse_expression("1"),
             ASTNode {
-                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                    NumericConstantVariant::IntegerDecimalConstant("1".to_string())
+                ))),
                 node_idx: 0,
                 token_range: 0..1,
             }
@@ -1304,12 +1340,16 @@ mod tests {
                 node: Box::new(Expression::Binary {
                     operator: BinaryOperator::Plus,
                     lhs: ASTNode {
-                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                        node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                            NumericConstantVariant::IntegerDecimalConstant("1".to_string())
+                        ))),
                         node_idx: 0,
                         token_range: 0..5,
                     },
                     rhs: ASTNode {
-                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                        node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                            NumericConstantVariant::IntegerDecimalConstant("2".to_string())
+                        ))),
                         node_idx: 1,
                         token_range: 4..5,
                     }
@@ -1355,12 +1395,16 @@ mod tests {
                                                     node: Box::new(Expression::Binary {
                                                         operator: BinaryOperator::Plus,
                                                         lhs: ASTNode {
-                                                            node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                                            node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                                NumericConstantVariant::IntegerDecimalConstant("1".to_string())
+                                                            ))),
                                                             node_idx: 0,
                                                             token_range: 24..29,
                                                         },
                                                         rhs: ASTNode {
-                                                            node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                                                            node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                                NumericConstantVariant::IntegerDecimalConstant("2".to_string())
+                                                            ))),
                                                             node_idx: 1,
                                                             token_range: 28..29,
                                                         },
@@ -1369,7 +1413,9 @@ mod tests {
                                                     token_range: 24..33,
                                                 },
                                                 rhs: ASTNode {
-                                                    node: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
+                                                    node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                        NumericConstantVariant::IntegerDecimalConstant("3".to_string())
+                                                    ))),
                                                     node_idx: 3,
                                                     token_range: 32..33,
                                                 },
@@ -1407,12 +1453,16 @@ mod tests {
                                 node: Box::new(Expression::Binary {
                                     operator: BinaryOperator::Plus,
                                     lhs: ASTNode {
-                                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                        node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                            NumericConstantVariant::IntegerDecimalConstant("1".to_string())
+                                        ))),
                                         node_idx: 0,
                                         token_range: 0..5,
                                     },
                                     rhs: ASTNode {
-                                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                                        node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                            NumericConstantVariant::IntegerDecimalConstant("2".to_string())
+                                        ))),
                                         node_idx: 1,
                                         token_range: 4..5,
                                     },
@@ -1421,7 +1471,9 @@ mod tests {
                                 token_range: 0..9,
                             },
                             rhs: ASTNode {
-                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
+                                node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                    NumericConstantVariant::IntegerDecimalConstant("3".to_string())
+                                ))),
                                 node_idx: 3,
                                 token_range: 8..9,
                             },
@@ -1430,7 +1482,9 @@ mod tests {
                         token_range: 0..13,
                     },
                     rhs: ASTNode {
-                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("4".to_string()))),
+                        node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                            NumericConstantVariant::IntegerDecimalConstant("4".to_string())
+                        ))),
                         node_idx: 5,
                         token_range: 12..13,
                     },
@@ -1452,7 +1506,9 @@ mod tests {
                         node: Box::new(Expression::Binary {
                             operator: BinaryOperator::Plus,
                             lhs: ASTNode {
-                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                    NumericConstantVariant::IntegerDecimalConstant("1".to_string())
+                                ))),
                                 node_idx: 0,
                                 token_range: 0..9
                             },
@@ -1460,12 +1516,16 @@ mod tests {
                                 node: Box::new(Expression::Binary {
                                     operator: BinaryOperator::Multiply,
                                     lhs: ASTNode {
-                                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                                        node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                            NumericConstantVariant::IntegerDecimalConstant("2".to_string())
+                                        ))),
                                         node_idx: 1,
                                         token_range: 4..9
                                     },
                                     rhs: ASTNode {
-                                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
+                                        node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                            NumericConstantVariant::IntegerDecimalConstant("3".to_string())
+                                        ))),
                                         node_idx: 2,
                                         token_range: 8..9
                                     },
@@ -1478,7 +1538,9 @@ mod tests {
                         token_range: 0..13
                     },
                     rhs: ASTNode {
-                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("4".to_string()))),
+                        node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                            NumericConstantVariant::IntegerDecimalConstant("4".to_string())
+                        ))),
                         node_idx: 5,
                         token_range: 12..13
                     },
@@ -1497,7 +1559,9 @@ mod tests {
                 node: Box::new(Expression::Unary {
                     operator: UnaryOperator::Not,
                     operand: ASTNode {
-                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                        node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                            NumericConstantVariant::IntegerDecimalConstant("1".to_string())
+                        ))),
                         node_idx: 0,
                         token_range: 1..2
                     }
@@ -1519,7 +1583,9 @@ mod tests {
                         node: Box::new(Expression::Unary {
                             operator: UnaryOperator::Not,
                             operand: ASTNode {
-                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                    NumericConstantVariant::IntegerDecimalConstant("1".to_string())
+                                ))),
                                 node_idx: 0,
                                 token_range: 1..2
                             },
@@ -1531,7 +1597,9 @@ mod tests {
                         node: Box::new(Expression::Unary {
                             operator: UnaryOperator::Not,
                             operand: ASTNode {
-                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                                node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                    NumericConstantVariant::IntegerDecimalConstant("2".to_string())
+                                ))),
                                 node_idx: 2,
                                 token_range: 6..7
                             }
@@ -1557,7 +1625,9 @@ mod tests {
                         node: Box::new(Expression::Binary {
                             operator: BinaryOperator::Plus,
                             lhs: ASTNode {
-                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                    NumericConstantVariant::IntegerDecimalConstant("1".to_string())
+                                ))),
                                 node_idx: 0,
                                 token_range: 0..22
                             },
@@ -1567,7 +1637,9 @@ mod tests {
                                         subroutine_name: "foo".to_string(),
                                         arguments: vec![
                                             ASTNode {
-                                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                                node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                    NumericConstantVariant::IntegerDecimalConstant("1".to_string())
+                                                ))),
                                                 node_idx: 1,
                                                 token_range: 6..7
                                             },
@@ -1578,12 +1650,16 @@ mod tests {
                                                         method_name: "bar".to_string(),
                                                         arguments: vec![
                                                             ASTNode {
-                                                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                                                node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                                    NumericConstantVariant::IntegerDecimalConstant("1".to_string())
+                                                                ))),
                                                                 node_idx: 2,
                                                                 token_range: 13..14
                                                             },
                                                             ASTNode {
-                                                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                                                                node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                                    NumericConstantVariant::IntegerDecimalConstant("2".to_string())
+                                                                ))),
                                                                 node_idx: 3,
                                                                 token_range: 16..17
                                                             },
@@ -1596,7 +1672,9 @@ mod tests {
                                                 token_range: 11..18
                                             },
                                             ASTNode {
-                                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
+                                                node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                    NumericConstantVariant::IntegerDecimalConstant("3".to_string())
+                                                ))),
                                                 node_idx: 6,
                                                 token_range: 20..21
                                             },
@@ -1613,7 +1691,9 @@ mod tests {
                         token_range: 0..26
                     },
                     rhs: ASTNode {
-                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                        node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                            NumericConstantVariant::IntegerDecimalConstant("2".to_string())
+                        ))),
                         node_idx: 10,
                         token_range: 25..26
                     },
@@ -1635,7 +1715,9 @@ mod tests {
                         node: Box::new(Expression::Binary {
                             operator: BinaryOperator::Plus,
                             lhs: ASTNode {
-                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                    NumericConstantVariant::IntegerDecimalConstant("1".to_string())
+                                ))),
                                 node_idx: 0,
                                 token_range: 0..21
                             },
@@ -1645,7 +1727,9 @@ mod tests {
                                         subroutine_name: "foo".to_string(),
                                         arguments: vec![
                                             ASTNode {
-                                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                                node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                    NumericConstantVariant::IntegerDecimalConstant("1".to_string())
+                                                ))),
                                                 node_idx: 1,
                                                 token_range: 6..7
                                             },
@@ -1656,12 +1740,16 @@ mod tests {
                                                         node: Box::new(Expression::Binary {
                                                             operator: BinaryOperator::Plus,
                                                             lhs: ASTNode {
-                                                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                                                node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                                    NumericConstantVariant::IntegerDecimalConstant("1".to_string())
+                                                                ))),
                                                                 node_idx: 2,
                                                                 token_range: 11..16
                                                             },
                                                             rhs: ASTNode {
-                                                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                                                                node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                                    NumericConstantVariant::IntegerDecimalConstant("2".to_string())
+                                                                ))),
                                                                 node_idx: 3,
                                                                 token_range: 15..16
                                                             },
@@ -1674,7 +1762,9 @@ mod tests {
                                                 token_range: 10..17
                                             },
                                             ASTNode {
-                                                node: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
+                                                node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                    NumericConstantVariant::IntegerDecimalConstant("3".to_string())
+                                                ))),
                                                 node_idx: 6,
                                                 token_range: 19..20
                                             },
@@ -1691,7 +1781,9 @@ mod tests {
                         token_range: 0..25
                     },
                     rhs: ASTNode {
-                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                        node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                            NumericConstantVariant::IntegerDecimalConstant("2".to_string())
+                        ))),
                         node_idx: 10,
                         token_range: 24..25
                     },
@@ -1743,7 +1835,9 @@ mod tests {
                                                                 node: Box::new(Expression::ArrayAccess {
                                                                     var_name: "wox".to_string(),
                                                                     index: ASTNode {
-                                                                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("123".to_string()))),
+                                                                        node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                                            NumericConstantVariant::IntegerDecimalConstant("123".to_string())
+                                                                        ))),
                                                                         node_idx: 3,
                                                                         token_range: 19..20
                                                                     }
@@ -1803,7 +1897,9 @@ mod tests {
                                                 node: Box::new(Expression::Binary {
                                                     operator: BinaryOperator::Plus,
                                                     lhs: ASTNode {
-                                                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                                        node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                                            NumericConstantVariant::IntegerDecimalConstant("1".to_string())
+                                                        ))),
                                                         node_idx: 0,
                                                         token_range: 0..5
                                                     },
@@ -1867,12 +1963,16 @@ mod tests {
                             node: Box::new(Expression::Binary {
                                 operator: BinaryOperator::Plus,
                                 lhs: ASTNode {
-                                    node: Box::new(Expression::PrimitiveTerm(IntegerConstant("1".to_string()))),
+                                    node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                        NumericConstantVariant::IntegerDecimalConstant("1".to_string())
+                                    ))),
                                     node_idx: 0,
                                     token_range: 1..6
                                 },
                                 rhs: ASTNode {
-                                    node: Box::new(Expression::PrimitiveTerm(IntegerConstant("2".to_string()))),
+                                    node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                                        NumericConstantVariant::IntegerDecimalConstant("2".to_string())
+                                    ))),
                                     node_idx: 1,
                                     token_range: 5..6
                                 },
@@ -1884,7 +1984,9 @@ mod tests {
                         token_range: 0..11
                     },
                     rhs: ASTNode {
-                        node: Box::new(Expression::PrimitiveTerm(IntegerConstant("3".to_string()))),
+                        node: Box::new(Expression::PrimitiveTerm(NumericConstant(
+                            NumericConstantVariant::IntegerDecimalConstant("3".to_string())
+                        ))),
                         node_idx: 4,
                         token_range: 10..11
                     },

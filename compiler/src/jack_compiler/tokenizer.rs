@@ -53,7 +53,8 @@ pub enum OperatorVariant {
 #[ts(export_to = "../web/bindings/")]
 pub enum TokenKind {
     Keyword(KeywordTokenVariant),
-    IntegerLiteral(String),
+    IntegerDecimalLiteral(String),
+    IntegerBinaryLiteral(String),
     StringLiteral(String),
     Identifier(String),
     LCurly,
@@ -101,7 +102,8 @@ pub fn token_defs() -> Vec<TokenDef<TokenKind>> {
         TokenDef::new(r">=", |_| Operator(GreaterThanOrEquals)),
         TokenDef::new(r"=", |_| Operator(Equals)),
         TokenDef::new(r"~", |_| Operator(Tilde)),
-        TokenDef::new(r"\d+", IntegerLiteral),
+        TokenDef::new(r"\d+", IntegerDecimalLiteral),
+        TokenDef::new(r"0b[01]+", |match_str| IntegerBinaryLiteral(match_str[2..].to_string())),
         TokenDef::new("\"[^\"]*\"", |match_str| StringLiteral(match_str[1..match_str.len() - 1].to_string())),
         TokenDef::new(r"[a-zA-Z_][a-zA-Z0-9_]*", Identifier),
         TokenDef::new(r"class", |_| Keyword(Class)),
@@ -233,7 +235,7 @@ mod tests {
                 Token::new(Whitespace, " ".to_string(), 37),
                 Token::new(Operator(Tilde), "~".to_string(), 38),
                 Token::new(Whitespace, " ".to_string(), 39),
-                Token::new(IntegerLiteral("1234".to_string()), "1234".to_string(), 40),
+                Token::new(IntegerDecimalLiteral("1234".to_string()), "1234".to_string(), 40),
                 Token::new(Whitespace, " ".to_string(), 41),
                 Token::new(StringLiteral("hello".to_string()), "\"hello\"".to_string(), 42),
                 Token::new(Whitespace, " ".to_string(), 43),

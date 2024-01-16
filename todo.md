@@ -1,5 +1,9 @@
 ### The Grand Plan
 
+- add keyboard initialisation to jack version of GOL.
+- get it running on the real FPGA again, just using LEDs as output (need to resolve some differences in hardware first)
+- hook up screen
+
 - the worlds worst text editor
 
   - add inverting blinking cursor
@@ -10,7 +14,6 @@
 - allow `break;` in loop
 - allow `continue;` in loop
 - add hardware modulo
-- add keyboard initialisation to jack version of GOL.
 - implement other games
 
   - pong
@@ -21,8 +24,6 @@
   - snake
   - game selector / home screen
 
-- get it running on the real FPGA again, just using LEDs as output (need to resolve some differences in hardware first)
-- hook up screen
 - get game of life running on real screen
 - hook up keyboard and get other games running using keyboard
 - link layer (ethernet)

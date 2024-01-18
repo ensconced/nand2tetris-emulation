@@ -1,9 +1,7 @@
 # syntax=docker/dockerfile:1.6.0
 FROM --platform=linux/amd64 debian:12.4
 
-ENV F4PGA_INSTALL_DIR="/root/opt/f4pga" FPGA_FAM="xc7" F4PGA_TIMESTAMP="20220920-124259" F4PGA_HASH="007d1c1" TARGET="basys3"
-# TODO - see which of these we can remove
-ENV F4PGA_PACKAGES='install-xc7 xc7a50t_test xc7a100t_test xc7a200t_test xc7z010_test'
+ENV F4PGA_INSTALL_DIR="/root/opt/f4pga" FPGA_FAM="xc7" F4PGA_TIMESTAMP="20220920-124259" F4PGA_HASH="007d1c1" TARGET="basys3" F4PGA_PACKAGES='install-xc7 xc7a50t_test'
 
 RUN apt-get update -y
 RUN apt-get install -y git wget xz-utils build-essential

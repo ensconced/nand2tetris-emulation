@@ -6,12 +6,14 @@ use minifb::{Key, Scale, ScaleMode, Window, WindowOptions};
 use std::time::SystemTime;
 
 const WORD_SIZE: usize = 16;
-const WIDTH: usize = 512;
-const HEIGHT: usize = 256;
+const SCREEN_WIDTH: usize = 512;
+const SCREEN_HEIGHT: usize = 256;
 
 pub struct DesktopIO {
-    window: Window,
-    buffer: [u32; WIDTH * HEIGHT],
+    screen_window: Window,
+    led_window: Window,
+    screen_buffer: [u32; SCREEN_WIDTH * SCREEN_HEIGHT],
+    leds: u16,
     last_draw_time: SystemTime,
 }
 
@@ -96,33 +98,46 @@ impl Default for DesktopIO {
 
 impl IO for DesktopIO {
     fn refresh(&mut self, ram: &Ram) {
-        let time = SystemTime::now();
-        if let Ok(t) = time.duration_since(self.last_draw_time) {
-            if t.as_millis() >= 16 {
-                for (pixel_idx, pixel) in self.buffer.iter_mut().enumerate() {
-                    let word_idx = pixel_idx / WORD_SIZE;
-                    let word = ram.lock()[word_idx + 18432];
-                    let bit_position_in_word = 15 - (pixel_idx % 16);
-                    *pixel = if bit(word as u16, bit_position_in_word as u32) == 0 {
-                        0xff000000
-                    } else {
-                        0xffffffff
-                    }
-                }
-                self.last_draw_time = time;
-            }
-            ram.lock()[26624] = kbd_output(self.window.get_keys());
-            self.window.update_with_buffer(&self.buffer, WIDTH, HEIGHT).unwrap();
+        // let time = SystemTime::now();
+        // if let Ok(t) = time.duration_since(self.last_draw_time) {
+        // if t.as_millis() >= 16 {
+        //     for (pixel_idx, pixel) in self.screen_buffer.iter_mut().enumerate() {
+        //         let word_idx = pixel_idx / WORD_SIZE;
+        //         let word = ram.lock()[word_idx + 18432];
+        //         let bit_position_in_word = 15 - (pixel_idx % 16);
+        //         *pixel = if bit(word, bit_position_in_word as u32) == 0 {
+        //             0xff000000
+        //         } else {
+        //             0xffffffff
+        //         }
+        //     }
+
+        //     self.leds = ram.lock()[30425];
+        //     self.last_draw_time = time;
+        // }
+        // ram.lock()[26624] = kbd_output(self.screen_window.get_keys());
+        if let Some(key) = self.screen_window.get_keys().get(0) {
+            dbg!(key);
         }
+        // self.screen_window
+        //     .update_with_buffer(&self.screen_buffer, SCREEN_WIDTH, SCREEN_HEIGHT)
+        //     .unwrap();
+
+        let led_val: [u32; 16] = [
+            0xffff0000, 0xff00ff00, 0xffff0000, 0xff00ff00, 0xffff0000, 0xff00ff00, 0xffff0000, 0xff00ff00, 0xffff0000, 0xff00ff00, 0xffff0000,
+            0xff00ff00, 0xffff0000, 0xff00ff00, 0xffff0000, 0xff00ff00,
+        ];
+        self.led_window.update_with_buffer(&led_val, 16, 1).unwrap();
+        // }
     }
 }
 
 impl DesktopIO {
     pub fn new() -> Self {
-        let mut window = Window::new(
-            "Display",
-            WIDTH,
-            HEIGHT,
+        let mut screen_window = Window::new(
+            "Screen",
+            SCREEN_WIDTH,
+            SCREEN_HEIGHT,
             WindowOptions {
                 borderless: true,
                 title: true,
@@ -135,11 +150,31 @@ impl DesktopIO {
         .unwrap_or_else(|e| {
             panic!("{}", e);
         });
-        window.set_background_color(0xdb, 0xdb, 0xdb);
+        screen_window.set_background_color(0xdb, 0xdb, 0xdb);
+
+        let mut led_window = Window::new(
+            "LEDs",
+            16,
+            1,
+            WindowOptions {
+                borderless: true,
+                title: true,
+                resize: true,
+                scale: Scale::FitScreen,
+                scale_mode: ScaleMode::AspectRatioStretch,
+                ..WindowOptions::default()
+            },
+        )
+        .unwrap_or_else(|e| {
+            panic!("{}", e);
+        });
+        led_window.set_background_color(0xdb, 0xdb, 0xdb);
 
         Self {
-            window,
-            buffer: [0; WIDTH * HEIGHT],
+            screen_window,
+            led_window,
+            screen_buffer: [0; SCREEN_WIDTH * SCREEN_HEIGHT],
+            leds: 0,
             last_draw_time: SystemTime::now(),
         }
     }

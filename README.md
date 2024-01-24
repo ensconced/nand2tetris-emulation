@@ -26,10 +26,11 @@ Also, my TEMP segment is smaller, and I have more virtual registers.
 | 16-255        | STATIC                    |
 | 256-2047      | STACK                     |
 | 2048-18431    | HEAP                      |
-| 18432-26623   | SCREEN                    |
-| 26624         | KBD                       |
+| 18432-26623   | SCREEN MMO                |
+| 26624         | KBD MMI                   |
 | 26625-30424   | GLYPHS                    |
-| 30425-32767   | FREE FOR FUTURE USE       |
+| 30425         | LEDS MMO                  |
+| 30426-32767   | FREE FOR FUTURE USE       |
 
 ### Stack Frame Layout
 

@@ -40,6 +40,7 @@ class Screen {
     let row_offset = y1 * 32;
 
     let current_col = start_col;
+
     while (current_col <= end_col) {
       let mask = -1;
       if (current_col = start_col) {

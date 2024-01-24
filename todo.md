@@ -1,7 +1,8 @@
 ### The Grand Plan
 
+- add LED output to emulator
+- get it running on the real FPGA again, just using LEDs as output (need to resolve some differences in hardware first??)
 - add keyboard initialisation to jack version of GOL.
-- get it running on the real FPGA again, just using LEDs as output (need to resolve some differences in hardware first)
 - hook up screen
 
 - the worlds worst text editor

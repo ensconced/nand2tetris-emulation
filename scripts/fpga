@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -euxo pipefail
+
+# ssh into debian machine...
+# ...build docker image
+docker run -it --privileged --mount source=xc7/counter_test,target=/f4pga-examples/xc7/computer /bin/bash

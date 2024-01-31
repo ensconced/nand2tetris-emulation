@@ -3,7 +3,7 @@ use emulator_core::{
     run::IO,
 };
 use minifb::{Key, Scale, ScaleMode, Window, WindowOptions};
-use std::time::SystemTime;
+use std::{array, time::SystemTime};
 
 const WORD_SIZE: usize = 16;
 const SCREEN_WIDTH: usize = 512;
@@ -98,37 +98,35 @@ impl Default for DesktopIO {
 
 impl IO for DesktopIO {
     fn refresh(&mut self, ram: &Ram) {
-        // let time = SystemTime::now();
-        // if let Ok(t) = time.duration_since(self.last_draw_time) {
-        // if t.as_millis() >= 16 {
-        //     for (pixel_idx, pixel) in self.screen_buffer.iter_mut().enumerate() {
-        //         let word_idx = pixel_idx / WORD_SIZE;
-        //         let word = ram.lock()[word_idx + 18432];
-        //         let bit_position_in_word = 15 - (pixel_idx % 16);
-        //         *pixel = if bit(word, bit_position_in_word as u32) == 0 {
-        //             0xff000000
-        //         } else {
-        //             0xffffffff
-        //         }
-        //     }
+        let time = SystemTime::now();
+        if let Ok(t) = time.duration_since(self.last_draw_time) {
+            if t.as_millis() >= 16 {
+                for (pixel_idx, pixel) in self.screen_buffer.iter_mut().enumerate() {
+                    let word_idx = pixel_idx / WORD_SIZE;
+                    let word = ram.lock()[word_idx + 18432];
+                    let bit_position_in_word = 15 - (pixel_idx % 16);
+                    *pixel = if bit(word, bit_position_in_word as u32) == 0 {
+                        0xff000000
+                    } else {
+                        0xffffffff
+                    }
+                }
 
-        //     self.leds = ram.lock()[30425];
-        //     self.last_draw_time = time;
-        // }
-        // ram.lock()[26624] = kbd_output(self.screen_window.get_keys());
-        if let Some(key) = self.screen_window.get_keys().get(0) {
-            dbg!(key);
+                self.leds = ram.lock()[30425];
+                self.last_draw_time = time;
+            }
+            // Note that if `update_with_buffer` is called on one screen, it must be called on all
+            // screens: https://github.com/emoon/rust_minifb/issues/343#issuecomment-1918601505
+            self.screen_window
+                .update_with_buffer(&self.screen_buffer, SCREEN_WIDTH, SCREEN_HEIGHT)
+                .unwrap();
+
+            let led_buffer: [u32; 16] =
+                array::from_fn(|i| 15 - i as u32).map(|i| if 2u16.pow(i) & self.leds == 0 { 0xff000000u32 } else { 0xff00ff00u32 });
+            self.led_window.update_with_buffer(&led_buffer, 16, 1).unwrap();
+
+            ram.lock()[26624] = kbd_output(self.screen_window.get_keys());
         }
-        // self.screen_window
-        //     .update_with_buffer(&self.screen_buffer, SCREEN_WIDTH, SCREEN_HEIGHT)
-        //     .unwrap();
-
-        let led_val: [u32; 16] = [
-            0xffff0000, 0xff00ff00, 0xffff0000, 0xff00ff00, 0xffff0000, 0xff00ff00, 0xffff0000, 0xff00ff00, 0xffff0000, 0xff00ff00, 0xffff0000,
-            0xff00ff00, 0xffff0000, 0xff00ff00, 0xffff0000, 0xff00ff00,
-        ];
-        self.led_window.update_with_buffer(&led_val, 16, 1).unwrap();
-        // }
     }
 }
 

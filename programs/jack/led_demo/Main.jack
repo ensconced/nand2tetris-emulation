@@ -1,0 +1,21 @@
+class Main {
+  static int LEDS;
+
+  function void main() {
+    var int i;
+    var int j;
+
+    let i = 0;
+    let LEDS = 30425;
+
+    while (true) {
+      let j = 0;
+      while (j < 32767) {
+        let j = j + 1;
+      }
+      let i = i + 1;
+      let LEDS[0] = i;
+    }
+  }
+}
+

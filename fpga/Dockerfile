@@ -26,5 +26,5 @@ RUN for PKG in $F4PGA_PACKAGES; do wget -qO- https://storage.googleapis.com/symb
 RUN echo conda activate $FPGA_FAM >> /etc/profile
 
 WORKDIR /f4pga-examples/xc7
-# RUN make -C counter_test
-# RUN make download -C counter_test
+RUN make -C counter_test
+RUN make download -C counter_test

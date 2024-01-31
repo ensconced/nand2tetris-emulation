@@ -4,5 +4,5 @@ set -euxo pipefail
 
 # ssh into debian machine...
 cd fpga
-docker run -it --privileged --mount type=bind,source=xc7/counter_test,target=/f4pga-examples/xc7/computer \
+docker run -it --privileged --mount type=bind,source=xc7/counter_test,target=/f4pga-examples/xc7/computer fpga \
   /bin/bash -c 'make -C computer && make download -C computer'

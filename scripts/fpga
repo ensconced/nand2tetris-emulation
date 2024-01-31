@@ -1,7 +1,0 @@
-#!/bin/bash
-
-set -euxo pipefail
-
-cd fpga
-docker run --privileged --mount type=bind,source="$(realpath xc7/counter_test)",target=/f4pga-examples/xc7/computer fpga \
-  /bin/bash -c 'make -C computer && make download -C computer'

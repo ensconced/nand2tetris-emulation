@@ -5,5 +5,5 @@ set -euxo pipefail
 scp -i ~/.ssh/A2D9A10570F977E8.pub -r ./fpga/counter_test/. deb:/home/joe/dev/nand2tetris-emulation/fpga/counter_test
 
 ssh -i ~/.ssh/A2D9A10570F977E8.pub deb \
-  'cd dev/nand2tetris-emulation/fpga && docker run --privileged --mount type=bind,source="$(realpath counter_test)",target=/f4pga-examples/xc7/computer fpga \
+  'cd dev/nand2tetris-emulation/fpga && docker run --rm --privileged --mount type=bind,source="$(realpath counter_test)",target=/f4pga-examples/xc7/computer fpga \
   /bin/bash -c '\''make -C computer && make download -C computer'\'

@@ -1,6 +1,6 @@
 current_dir := ${CURDIR}
-TOP := top
-SOURCES := ${current_dir}/counter.v
+TOP := computer
+SOURCES = $(shell find ${current_dir}/components -type f -name '*.v')
 
 ifeq ($(TARGET),arty_35)
 ifdef F4PGA_USE_DEPRECATED

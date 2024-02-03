@@ -1,5 +1,6 @@
 ### The Grand Plan
 
+- figure out how to define ROM_FILE macro
 - get it running on the real FPGA again, just using LEDs as output (need to resolve some differences in hardware first??)
 - update readme including info on how to run hardware test benches...
 - hook up screen

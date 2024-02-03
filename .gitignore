@@ -1,5 +1,5 @@
 target/
 node_modules/
-yarn-error.log
 .DS_Store
 /fpga/**/build
+*.vcd

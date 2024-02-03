@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -eu
+set -euxo pipefail
 
 rm -f ./web/bindings/*
 cargo run --package compiler -- debug-compile "./programs/jack/$1" /dev/null ./web/debug-output.json

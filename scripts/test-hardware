@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+set -euxo pipefail
+
+cd fpga/verilog
+
+node romgen.js blinky >components/rom.mem
+
+ICARUS_OUT_FILENAME="icarus.out"
+ALL_VERILOG_FILES=$(find . -name '*.v' ! -path './build/*')
+ROM_FILE="\"$(realpath ./components/rom.mem)\""
+export ROM_FILE
+iverilog -v -gassertions -g2012 -DROM_FILE="$ROM_FILE" -o "$ICARUS_OUT_FILENAME" $ALL_VERILOG_FILES
+vvp "$ICARUS_OUT_FILENAME" -v -vcd
+echo "tests passed!"

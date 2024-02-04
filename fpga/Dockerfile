@@ -5,6 +5,8 @@ ENV F4PGA_INSTALL_DIR="/root/opt/f4pga" FPGA_FAM="xc7" F4PGA_TIMESTAMP="20220920
 
 RUN apt-get update -y
 RUN apt-get install -y git wget xz-utils build-essential
+# we only need nodejs for the romgen script...we should be able to get rid of that eventually
+RUN curl -fsSL https://deb.nodesource.com/setup_21.x | bash - && apt-get install -y nodejs
 RUN git clone https://github.com/chipsalliance/f4pga-examples
 WORKDIR /f4pga-examples
 RUN git reset --hard a5a44fa
@@ -26,5 +28,3 @@ RUN for PKG in $F4PGA_PACKAGES; do wget -qO- https://storage.googleapis.com/symb
 RUN echo conda activate $FPGA_FAM >> ~/.bashrc
 
 WORKDIR /f4pga-examples/xc7
-# RUN make -C counter_test
-# RUN make download -C counter_test

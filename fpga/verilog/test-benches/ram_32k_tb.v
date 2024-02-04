@@ -1,10 +1,10 @@
 `timescale 1 ns/10 ps
 
-module ram_16k_tb;
+module ram_32k_tb;
     reg [15:0] in, out, val_a, val_b, expected_out;
-    reg [13:0] addr, addr_a, addr_b; 
+    reg [13:0] addr, addr_a, addr_b;
     reg load, clock;
-    ram_16k UUT (.in(in), .addr(addr), .load(load), .clock(clock), .out(out));
+    ram_32k UUT (.in(in), .addr(addr), .load(load), .clock(clock), .out(out));
     initial
     begin
         for (int i = 0; i < 128; i++) begin
@@ -43,7 +43,7 @@ module ram_16k_tb;
                 $display("addr_a: ", addr_a, ", addr_b: ", addr_b, ", val_a: ", val_a, " , val_b: ", val_b, ", out: ", out);
                 $fatal(1);
             end;
-            
+
             // synchronously read value from the second address
             addr = addr_b;
             #10

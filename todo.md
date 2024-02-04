@@ -1,7 +1,9 @@
 ### The Grand Plan
 
+- use full 15 bits of address space on 32k ram
 - fix location of LED MMIO
 - get compiled output running on FPGA...
+- use simple `f4pga build` CLI with flow.json & get rid of all makefiles etc?
 - get it running on the real FPGA again, just using LEDs as output (need to resolve some differences in hardware first??)
 - update readme including info on how to run hardware test benches...
 - hook up screen

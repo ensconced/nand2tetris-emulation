@@ -6,14 +6,17 @@ ENV F4PGA_INSTALL_DIR="/root/opt/f4pga" FPGA_FAM="xc7" F4PGA_TIMESTAMP="20220920
 # We only need nodejs for the romgen script...we should be able to get rid of this eventually...
 RUN curl -fsSL https://deb.nodesource.com/setup_21.x | bash
 RUN apt-get update -y
-RUN apt-get install -y git wget xz-utils build-essential nodejs
+RUN apt-get install -y git wget xz-utils build-essential nodejs autoconf gperf
 
 # install iverilog
 RUN git clone https://github.com/steveicarus/iverilog.git && \
   cd iverilog && \
   git checkout 2299fc1b2b4aa03b10c1e9083233704c628eb88b && \
   rm -rf .git && \
-  sh autoconf.sh
+  sh autoconf.sh && \
+  ./configure && \
+  make && \
+  make install
 
 RUN git clone https://github.com/chipsalliance/f4pga-examples
 WORKDIR /f4pga-examples

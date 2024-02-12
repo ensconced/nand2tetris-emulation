@@ -1,16 +1,16 @@
 `timescale 1 ns/10 ps
 
 module ram_32k_tb;
-    reg [15:0] in, out, val_a, val_b, expected_out;
-    reg [13:0] addr, addr_a, addr_b;
+    reg [15:0] in, out, led_out val_a, val_b, expected_out;
+    reg [14:0] addr, addr_a, addr_b;
     reg load, clock;
-    ram_32k UUT (.in(in), .addr(addr), .load(load), .clock(clock), .out(out));
+    ram_32k UUT (.in(in), .addr(addr), .load(load), .clock(clock), .out(out), .led_out(led_out));
     initial
     begin
         for (int i = 0; i < 128; i++) begin
             val_a = $random();
             val_b = $random();
-            addr_a = $random();
+            addr_a = $random();x§§
             addr_b = $random();
 
             // load a value in to the first address

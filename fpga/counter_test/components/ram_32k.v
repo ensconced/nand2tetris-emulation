@@ -1,8 +1,10 @@
 module ram_32k(input [15:0] in,
-               input [13:0] addr,
+               input [14:0] addr,
                input load,
                input clock,
-               output [15:0] out);
+               output [15:0] out,
+               output [15:0] led_out);
+    (* ram_style = "block" *)
     reg [15:0] memory [32767:0];
     integer i;
     initial begin
@@ -15,4 +17,5 @@ module ram_32k(input [15:0] in,
         end
     end
     assign out = memory[addr];
+    assign led_out = memory[30425];
 endmodule

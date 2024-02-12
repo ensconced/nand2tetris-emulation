@@ -1,12 +1,11 @@
 #!/bin/bash
 set -e
 
-MYPATH=`realpath $(which symbiflow_synth)`
-MYPATH=`dirname ${MYPATH}`
+MYPATH=$(realpath $(which symbiflow_synth))
+MYPATH=$(dirname ${MYPATH})
 echo MYPATH IS $MYPATH
-export SHARE_DIR_PATH=`realpath ${MYPATH}/../share/symbiflow`
+export SHARE_DIR_PATH=$(realpath ${MYPATH}/../share/symbiflow)
 export TECHMAP_PATH=${SHARE_DIR_PATH}/techmaps/xc7_vpr/techmap
-
 
 export UTILS_PATH=${SHARE_DIR_PATH}/scripts
 SYNTH_TCL_PATH=${UTILS_PATH}/xc7/synth.tcl
@@ -28,60 +27,60 @@ PARTNAME=0
 for arg in $@; do
 	echo $arg
 	case "$arg" in
-		-t|--top)
-			echo "adding top"
-			VERILOGLIST=0
-			XDCLIST=0
-			TOPNAME=1
-			DEVICENAME=0
-			PARTNAME=0
-			;;
-		-x|--xdc)
-			VERILOGLIST=0
-			XDCLIST=1
-			TOPNAME=0
-			DEVICENAME=0
-			PARTNAME=0
-			;;
-		-v|--verilog)
-			VERILOGLIST=1
-			XDCLIST=0
-			TOPNAME=0
-			DEVICENAME=0
-			PARTNAME=0
-			;;
-		-d|--device)
-			VERILOGLIST=0
-			XDCLIST=0
-			TOPNAME=0
-			DEVICENAME=1
-			PARTNAME=0
-			;;
-		-p|--part)
-			VERILOGLIST=0
-			XDCLIST=0
-			TOPNAME=0
-			DEVICENAME=0
-			PARTNAME=1
-			;;
-		*)
-			if [ $VERILOGLIST -eq 1 ]; then
-				VERILOG_FILES+=($arg)
-			elif [ $XDCLIST -eq 1 ]; then
-				XDC_FILES+=($arg)
-			elif [ $TOPNAME -eq 1 ]; then
-				TOP=$arg
-			elif [ $DEVICENAME -eq 1 ]; then
-				DEVICE=$arg
-			elif [ $PARTNAME -eq 1 ]; then
-				PART=$arg
-			else
-				echo "Usage: synth [-t|--top <top module name> -v|--verilog <Verilog files list> [-x|--xdc <XDC files list>]"
-				echo "             [-d|--device <device type (e.g. artix7)>] [-p|--part <part name>]"
-				echo "note: device and part parameters are required if xdc is passed"
-				exit 1
-			fi
-			;;
+	-t | --top)
+		echo "adding top"
+		VERILOGLIST=0
+		XDCLIST=0
+		TOPNAME=1
+		DEVICENAME=0
+		PARTNAME=0
+		;;
+	-x | --xdc)
+		VERILOGLIST=0
+		XDCLIST=1
+		TOPNAME=0
+		DEVICENAME=0
+		PARTNAME=0
+		;;
+	-v | --verilog)
+		VERILOGLIST=1
+		XDCLIST=0
+		TOPNAME=0
+		DEVICENAME=0
+		PARTNAME=0
+		;;
+	-d | --device)
+		VERILOGLIST=0
+		XDCLIST=0
+		TOPNAME=0
+		DEVICENAME=1
+		PARTNAME=0
+		;;
+	-p | --part)
+		VERILOGLIST=0
+		XDCLIST=0
+		TOPNAME=0
+		DEVICENAME=0
+		PARTNAME=1
+		;;
+	*)
+		if [ $VERILOGLIST -eq 1 ]; then
+			VERILOG_FILES+=($arg)
+		elif [ $XDCLIST -eq 1 ]; then
+			XDC_FILES+=($arg)
+		elif [ $TOPNAME -eq 1 ]; then
+			TOP=$arg
+		elif [ $DEVICENAME -eq 1 ]; then
+			DEVICE=$arg
+		elif [ $PARTNAME -eq 1 ]; then
+			PART=$arg
+		else
+			echo "Usage: synth [-t|--top <top module name> -v|--verilog <Verilog files list> [-x|--xdc <XDC files list>]"
+			echo "             [-d|--device <device type (e.g. artix7)>] [-p|--part <part name>]"
+			echo "note: device and part parameters are required if xdc is passed"
+			exit 1
+		fi
+		;;
 	esac
 done
 
@@ -100,7 +99,7 @@ export OUT_SDC=${TOP}.sdc
 export SYNTH_JSON=${TOP}_io.json
 export OUT_SYNTH_V=${TOP}_synth.v
 export OUT_EBLIF=${TOP}.eblif
-export PART_JSON=`realpath ${DATABASE_DIR}/$DEVICE/$PART/part.json`
+export PART_JSON=$(realpath ${DATABASE_DIR}/$DEVICE/$PART/part.json)
 export OUT_FASM_EXTRA=${TOP}_fasm_extra.fasm
 export PYTHON3=${PYTHON3:=$(which python3)}
 LOG=${TOP}_synth.log

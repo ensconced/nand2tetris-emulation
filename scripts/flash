@@ -4,5 +4,5 @@ set -euxo pipefail
 
 scp -i ~/.ssh/A2D9A10570F977E8.pub -r ./fpga deb:/home/joe/dev/nand2tetris-emulation/fpga
 
-ssh -i ~/.ssh/A2D9A10570F977E8.pub deb \
-  'cd dev/nand2tetris-emulation/fpga && docker run --rm --privileged --mount type=bind,source="$(realpath .)",target=/f4pga-examples/xc7 fpga /f4pga-examples/xc7/fpga/build.sh'
+ssh -o ServerAliveInterval=5 -o ServerAliveCountMax=10000 -i ~/.ssh/A2D9A10570F977E8.pub deb \
+  'cd dev/nand2tetris-emulation/fpga/fpga && /media/ssd/Xilinx/Vivado/2023.2/bin/vivado -mode batch -nojournal -source build.tcl'

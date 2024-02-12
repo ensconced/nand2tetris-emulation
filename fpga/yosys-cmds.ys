@@ -1,0 +1,52 @@
+read_verilog -sv -formal counter_test/components/ram_32k.v
+
+# hierarchy -check -auto-top
+
+#     coarse:
+#         proc
+#         flatten      (if -flatten)
+#         opt_expr
+#         opt_clean
+#         check
+#         opt -nodffe -nosdff
+#         fsm          (unless -nofsm)
+#         opt
+#         wreduce
+#         peepopt
+#         opt_clean
+#         techmap -map +/cmp2lut.v -map +/cmp2lcu.v     (if -lut)
+#         booth        (if -booth)
+#         alumacc      (unless -noalumacc)
+#         share        (unless -noshare)
+#         opt
+#         memory -nomap
+#         opt_clean
+
+#     fine:
+#         opt -fast -full
+#         memory_map
+#         opt -full
+#         techmap
+#         techmap -map +/gate2lut.v    (if -noabc and -lut)
+#         clean; opt_lut               (if -noabc and -lut)
+#         flowmap -maxlut K            (if -flowmap and -lut)
+#         opt -fast
+#         abc -fast           (unless -noabc, unless -lut)
+#         abc -fast -lut k    (unless -noabc, if -lut)
+#         opt -fast           (unless -noabc)
+
+#     check:
+#         hierarchy -check
+#         stat
+#         check
+
+# # generic synthesis
+# # synth -top ram_32k
+
+# # mapping to mycells.lib
+# # dfflibmap -liberty mycells.lib
+# # abc -liberty mycells.lib
+# # clean
+
+# # write synthesized design
+# # write_verilog synth.v
